@@ -1,7 +1,7 @@
 laravel-spanner
 ================
 
-Laravel database driver for Cloud Spanner
+Laravel database driver for Google Cloud Spanner
 
 ## Requirements
 
@@ -44,7 +44,7 @@ $conn = DB::conection('spanner');
 $conn->...
 ```
 
-## Additional Configuration
+## Additional Configurations
 You can pass `SpannerClient` config and `CacheSessionPool` options as below.
 For more information, please see [Google Client Library docs](http://googleapis.github.io/google-cloud-php/#/docs/google-cloud/latest/spanner/spannerclient?method=__construct)
 
@@ -82,10 +82,10 @@ For more information, please see [Google Client Library docs](http://googleapis.
 
 ### Migrations
 Most functions of `SchemaBuilder` (eg, `Schema` facade, and `Blueprint`) can be used.
-However, `artisan migrate` command does not work due to limitation that AUTO_INCREMENT does not exist in Cloud Spanner.
+However, `artisan migrate` command does not work since AUTO_INCREMENT does not exist in Google Cloud Spanner.
 
 ### Eloquent
-Most functions of [Eloquent](https://laravel.com/docs/5.7/eloquent) can be used. However, some functions are not available due to the limitation that AUTO_INCREMENT does not exist.
+Most functions of [Eloquent](https://laravel.com/docs/5.7/eloquent) can be used. However, some functions are not available.
 For example, `belongsToMany` relationship is not available.
 
 If you use interleaved keys, you MUST define them in the `interleaveKeys` property or you won't be able to save. For more detailed instructions, see `Colopl\Spanner\Tests\Eloquent\ModelTest`.
@@ -94,7 +94,7 @@ If you use interleaved keys, you MUST define them in the `interleaveKeys` proper
 ## Additional Information
 
 ### Transactions
-Cloud Spanner sometimes requests transaction retries (e.g. `UNAVAILABLE`, and `ABORTED`), even if the logic is correct. For the above reasons, please do not manage transaction manually.
+Google Cloud Spanner sometimes requests transaction retries (e.g. `UNAVAILABLE`, and `ABORTED`), even if the logic is correct. For that reason, please do not manage transactions manually.
 
 You should always use the `transaction` method which handles retry requests internally.
 
@@ -114,7 +114,7 @@ DB::transaction(function() {
 });
 ```
 
-Cloud Spanner creates transactions for all data operations even if you do not explicitly create transactions.
+Google Cloud Spanner creates transactions for all data operations even if you do not explicitly create transactions.
 
 In particular, in the SELECT statement, the type of transaction varies depending on whether it is explicit or implicit.
 
@@ -144,7 +144,7 @@ $conn->transaction(function() {
 For more information, see [Cloud Spanner Documentation about transactions](https://cloud.google.com/spanner/docs/transactions)
 
 ### Data Types
-Some data types of Cloud Spanner does not have corresponding built-in type of PHP.
+Some data types of Google Cloud Spanner does not have corresponding built-in type of PHP.
 You can use following classes by [Google Cloud PHP Client](https://github.com/googleapis/google-cloud-php)
 
 - DATE: `Google\Cloud\Spanner\Date`
@@ -220,9 +220,9 @@ defined variables.
 
 | Name | Value |
 | :-- | :--   |
-| `GOOGLE_APPLICATION_CREDENTIALS` | The path of the service account key file with access privilege to Cloud Spanner instance |
-| `DB_SPANNER_INSTANCE_ID` | Instance ID of your Cloud Spanner |
-| `DB_SPANNER_DATABASE_ID` | Name of the database with in the Cloud Spanner instance |
+| `GOOGLE_APPLICATION_CREDENTIALS` | The path of the service account key file with access privilege to Google Cloud Spanner instance |
+| `DB_SPANNER_INSTANCE_ID` | Instance ID of your Google Cloud Spanner |
+| `DB_SPANNER_DATABASE_ID` | Name of the database with in the Google Cloud Spanner instance |
 | `DB_SPANNER_PROJECT_ID` | Not required if your credential includes the project ID  |
 
 ```sh
