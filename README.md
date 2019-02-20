@@ -202,7 +202,7 @@ $queryBuilder->deleteUsingMutation($values);
 
 Please note that mutation api does not work the same way as DML.
 All mutations calls within a transaction are queued and sent as batch at the time you commit.
-This means that if you made a modification will not reflect any modifications you've made within the transaction.
+This means that if you make any modifications through the above functions and then try to SELECT the same records before committing, the returned results will not include any of the modifications you've made inside the transaction.
 
 
 
