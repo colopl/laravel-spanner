@@ -22,6 +22,7 @@ use Google\Cloud\Spanner\Transaction;
 use Colopl\Spanner\Connection;
 use Illuminate\Database\Events\TransactionCommitted;
 use Illuminate\Database\Events\TransactionRolledBack;
+use Illuminate\Support\Str;
 
 class TransactionTest extends TestCase
 {
@@ -88,7 +89,7 @@ class TransactionTest extends TestCase
                 throw new \RuntimeException('abort test');
             });
         } catch (\RuntimeException $ex) {
-            if (!str_contains($ex->getMessage(), 'abort test')) {
+            if (!Str::contains($ex->getMessage(), 'abort test')) {
                 throw $ex;
             }
         }

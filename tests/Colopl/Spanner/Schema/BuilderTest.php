@@ -19,6 +19,7 @@ namespace Colopl\Spanner\Tests\Schema;
 
 use Colopl\Spanner\Schema\Blueprint;
 use Colopl\Spanner\Tests\TestCase;
+use Illuminate\Support\Str;
 
 class BuilderTest extends TestCase
 {
@@ -98,7 +99,7 @@ class BuilderTest extends TestCase
                 $table->primary('id');
             });
         } catch (\Exception $e) {
-            if (!str_contains($e->getMessage(), 'Duplicate name')) {
+            if (!Str::contains($e->getMessage(), 'Duplicate name')) {
                 throw $e;
             }
         }

@@ -18,6 +18,7 @@
 namespace Colopl\Spanner\Query;
 
 use Exception;
+use Illuminate\Support\Str;
 
 /**
  * @internal
@@ -75,9 +76,9 @@ class Parameterizer
      */
     private static function hasLikeWildcard(string $query, $value)
     {
-        return str_contains(strtolower($query), 'like')
-            && str_contains($value, ['%', '_'])
-            && (starts_with($value, ['%', '_']) || preg_match('/[^\\\\][%_]/', $value));
+        return Str::contains(strtolower($query), 'like')
+            && Str::contains($value, ['%', '_'])
+            && (Str::startsWith($value, ['%', '_']) || preg_match('/[^\\\\][%_]/', $value));
     }
 
     /**
@@ -86,7 +87,7 @@ class Parameterizer
      */
     private static function createLikeClause(string $value)
     {
-        if (str_contains($value, "\n")) {
+        if (Str::contains($value, "\n")) {
             return "'''".addslashes($value)."'''";
         }
         return "'".addslashes($value)."'";
