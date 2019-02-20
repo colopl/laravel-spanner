@@ -1,0 +1,11 @@
+version: "3"
+services:
+  test:
+    build:
+      context: .
+    command: /bin/sh -c "composer install && vendor/bin/phpunit"
+    env_file:
+      - .env
+    volumes:
+      - .:/project:delegated
+      - ${GOOGLE_APPLICATION_CREDENTIALS}:${GOOGLE_APPLICATION_CREDENTIALS}

@@ -1,0 +1,45 @@
+{
+  "name": "colopl/laravel-spanner",
+  "description": "Laravel database driver for Google Cloud Spanner",
+  "type": "library",
+  "license": "Apache-2.0",
+  "authors": [
+    {"name": "Hiroki Awata", "email": "h-awata@colopl.co.jp"},
+    {"name": "Takayasu Oyama", "email": "t-oyama@colopl.co.jp"}
+  ],
+  "require": {
+    "php": ">=7.1",
+    "ext-grpc": "*",
+    "ext-json": "*",
+    "laravel/framework": "5.5.*",
+    "illuminate/support": "5.5.*",
+    "illuminate/container": "5.5.*",
+    "illuminate/database": "5.5.*",
+    "google/cloud-spanner": "1.11.*",
+    "grpc/grpc": "^1.15.0",
+    "ramsey/uuid": "^3.7",
+    "symfony/cache": "^4.2",
+    "symfony/lock": "^4.1"
+  },
+  "require-dev": {
+    "orchestra/testbench": "~3.5",
+    "phpunit/phpunit": "~6.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "Colopl\\Spanner\\": "src/Colopl/Spanner"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Colopl\\Spanner\\Tests\\": "tests/Colopl/Spanner"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Colopl\\Spanner\\SpannerServiceProvider"
+      ]
+    }
+  }
+}
