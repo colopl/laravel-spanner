@@ -3,6 +3,10 @@ laravel-spanner
 
 Laravel database driver for Google Cloud Spanner
 
+[![License](https://img.shields.io/packagist/l/colopl/laravel-spanner.svg?style=flat-square)](https://github.com/colopl/laravel-spanner/blob/master/LICENSE)
+[![Latest Stable Version](https://img.shields.io/packagist/v/colopl/laravel-spanner.svg?style=flat-square)](https://packagist.org/packages/colopl/laravel-spanner)
+[![Minimum PHP Version](https://img.shields.io/packagist/php-v/colopl/laravel-spanner.svg?style=flat-square)](https://secure.php.net/)
+
 ## Requirements
 
 - PHP >= 7.1
