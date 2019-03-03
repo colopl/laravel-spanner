@@ -17,6 +17,7 @@
 
 namespace Colopl\Spanner\Schema;
 
+use RuntimeException;
 use Illuminate\Database\Connection;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Fluent;
@@ -276,6 +277,17 @@ class Grammar extends \Illuminate\Database\Schema\Grammars\Grammar
     }
 
     /**
+     * Create the column definition for a char type.
+     *
+     * @param  Fluent  $column
+     * @return string
+     */
+    protected function typeChar(Fluent $column)
+    {
+        return "string({$column->length})";
+    }
+
+    /**
      * Create the column definition for a binary type.
      *
      * @param  Fluent  $column
@@ -298,6 +310,17 @@ class Grammar extends \Illuminate\Database\Schema\Grammars\Grammar
     }
 
     /**
+     * Create the column definition for a medium integer type.
+     *
+     * @param  Fluent  $column
+     * @return string
+     */
+    protected function typeMediumInteger(Fluent $column)
+    {
+        return 'int64';
+    }
+
+    /**
      * Create the column definition for an integer type.
      *
      * @param  Fluent  $column
@@ -309,12 +332,56 @@ class Grammar extends \Illuminate\Database\Schema\Grammars\Grammar
     }
 
     /**
+     * Create the column definition for a tiny integer type.
+     *
+     * @param  Fluent  $column
+     * @return string
+     */
+    protected function typeTinyInteger(Fluent $column)
+    {
+        return 'int64';
+    }
+
+    /**
+     * Create the column definition for a small integer type.
+     *
+     * @param  Fluent  $column
+     * @return string
+     */
+    protected function typeSmallInteger(Fluent $column)
+    {
+        return 'int64';
+    }
+
+    /**
      * Create the column definition for a float type.
      *
      * @param  Fluent  $column
      * @return string
      */
     protected function typeFloat(Fluent $column)
+    {
+        return 'float64';
+    }
+
+    /**
+     * Create the column definition for a double type.
+     *
+     * @param  Fluent  $column
+     * @return string
+     */
+    protected function typeDouble(Fluent $column)
+    {
+        return 'float64';
+    }
+
+    /**
+     * Create the column definition for a decimal type.
+     *
+     * @param  Fluent  $column
+     * @return string
+     */
+    protected function typeDecimal(Fluent $column)
     {
         return 'float64';
     }
@@ -342,6 +409,39 @@ class Grammar extends \Illuminate\Database\Schema\Grammars\Grammar
     }
 
     /**
+     * Create the column definition for a date-time (with timezone) type.
+     *
+     * @param  Fluent  $column
+     * @return string
+     */
+    protected function typeDateTimeTz(Fluent $column)
+    {
+        return 'string';
+    }
+
+    /**
+     * Create the column definition for a time type.
+     *
+     * @param  Fluent  $column
+     * @return string
+     */
+    protected function typeTime(Fluent $column)
+    {
+        return 'string';
+    }
+
+    /**
+     * Create the column definition for a time (with timezone) type.
+     *
+     * @param  Fluent  $column
+     * @return string
+     */
+    protected function typeTimeTz(Fluent $column)
+    {
+        return 'string';
+    }
+
+    /**
      * Create the column definition for a timestamp type.
      *
      * @param  Fluent  $column
@@ -350,6 +450,28 @@ class Grammar extends \Illuminate\Database\Schema\Grammars\Grammar
     protected function typeTimestamp(Fluent $column)
     {
         return 'timestamp';
+    }
+
+    /**
+     * Create the column definition for a timestamp (with  timezone) type.
+     *
+     * @param  Fluent  $column
+     * @return string
+     */
+    protected function typeTimestampTz(Fluent $column)
+    {
+        return 'timestamp';
+    }
+
+    /**
+     * Create the column definition for a year type.
+     *
+     * @param  Fluent  $column
+     * @return string
+     */
+    protected function typeYear(Fluent $column)
+    {
+        return 'int64';
     }
 
     /**
@@ -384,6 +506,195 @@ class Grammar extends \Illuminate\Database\Schema\Grammars\Grammar
     protected function typeBoolean(Fluent $column)
     {
         return 'bool';
+    }
+
+    /**
+     * Create the column definition for a text type.
+     *
+     * @param  Fluent  $column
+     * @return string
+     */
+    protected function typeText(Fluent $column)
+    {
+        return 'string';
+    }
+
+    /**
+     * Create the column definition for a medium text type.
+     *
+     * @param  Fluent  $column
+     * @return string
+     */
+    protected function typeMediumText(Fluent $column)
+    {
+        return 'string';
+    }
+
+    /**
+     * Create the column definition for a long text type.
+     *
+     * @param  Fluent  $column
+     * @return string
+     */
+    protected function typeLongText(Fluent $column)
+    {
+        return 'string';
+    }
+
+    /**
+     * Create the column definition for an enumeration type.
+     *
+     * @param  Fluent  $column
+     * @return string
+     */
+    protected function typeEnum(Fluent $column)
+    {
+        return 'string';
+    }
+
+    /**
+     * Create the column definition for a json type.
+     *
+     * @param  Fluent  $column
+     * @return string
+     */
+    protected function typeJson(Fluent $column)
+    {
+        return 'string';
+    }
+
+    /**
+     * Create the column definition for a jsonb type.
+     *
+     * @param  Fluent  $column
+     * @return string
+     */
+    protected function typeJsonb(Fluent $column)
+    {
+        return 'string';
+    }
+
+    /**
+     * Create the column definition for an ip address type.
+     *
+     * @param  Fluent  $column
+     * @return string
+     */
+    protected function typeIpAddress(Fluent $column)
+    {
+        return 'string';
+    }
+
+    /**
+     * Create the column definition for a mac address type.
+     *
+     * @param  Fluent  $column
+     * @return string
+     */
+    protected function typeMacAddress(Fluent $column)
+    {
+        return 'string';
+    }
+
+    /**
+     * Create the column definition for a geometry type.
+     *
+     * @param  Fluent  $column
+     * @return string
+     */
+    protected function typeGeometry(Fluent $column)
+    {
+        return 'string';
+    }
+
+    /**
+     * Create the column definition for a point type.
+     *
+     * @param  Fluent  $column
+     * @return string
+     */
+    protected function typePoint(Fluent $column)
+    {
+        return 'string';
+    }
+
+    /**
+     * Create the column definition for a line string type.
+     *
+     * @param  Fluent  $column
+     * @return string
+     */
+    protected function typeLineString(Fluent $column)
+    {
+        return 'string';
+    }
+
+    /**
+     * Create the column definition for a polygon type.
+     *
+     * @param  Fluent  $column
+     * @return string
+     */
+    protected function typePolygon(Fluent $column)
+    {
+        return 'string';
+    }
+
+    /**
+     * Create the column definition for a geometry collection type.
+     *
+     * @param  Fluent  $column
+     * @return string
+     */
+    protected function typeGeometryCollection(Fluent $column)
+    {
+        return 'string';
+    }
+
+    /**
+     * Create the column definition for a multi point type.
+     *
+     * @param  Fluent  $column
+     * @return string
+     */
+    protected function typeMultiPoint(Fluent $column)
+    {
+        return 'string';
+    }
+
+    /**
+     * Create the column definition for a multi line string type.
+     *
+     * @param  Fluent  $column
+     * @return string
+     */
+    protected function typeMultiLineString(Fluent $column)
+    {
+        return 'string';
+    }
+
+    /**
+     * Create the column definition for a multi polygon type.
+     *
+     * @param  Fluent  $column
+     * @return string
+     */
+    protected function typeMultiPolygon(Fluent $column)
+    {
+        return 'string';
+    }
+
+    /**
+     * Create the column definition for a computed type.
+     *
+     * @param  Fluent  $column
+     * @return string
+     *
+     * @throws \RuntimeException
+     */
+    protected function typeComputed(Fluent $column)
+    {
+        throw new RuntimeException('This database driver requires a type, see the virtualAs / storedAs modifiers.');
     }
 
     /**
