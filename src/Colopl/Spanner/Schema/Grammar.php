@@ -516,7 +516,7 @@ class Grammar extends \Illuminate\Database\Schema\Grammars\Grammar
      */
     protected function typeText(Fluent $column)
     {
-        return 'string';
+        return 'string(2621440)';
     }
 
     /**
@@ -527,7 +527,7 @@ class Grammar extends \Illuminate\Database\Schema\Grammars\Grammar
      */
     protected function typeMediumText(Fluent $column)
     {
-        return 'string';
+        return 'string(2621440)';
     }
 
     /**
@@ -538,7 +538,7 @@ class Grammar extends \Illuminate\Database\Schema\Grammars\Grammar
      */
     protected function typeLongText(Fluent $column)
     {
-        return 'string';
+        return 'string(2621440)';
     }
 
     /**
