@@ -103,7 +103,7 @@ class DatabaseMigrationRepository implements MigrationRepositoryInterface
      */
     public function log($file, $batch)
     {
-        $record = ['id' => Uuid::uuid4(), 'migration' => $file, 'batch' => $batch];
+        $record = ['id' => Uuid::uuid4()->toString(), 'migration' => $file, 'batch' => $batch];
 
         $this->table()->insert($record);
     }
