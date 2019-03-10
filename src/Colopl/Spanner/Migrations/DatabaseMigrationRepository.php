@@ -97,9 +97,10 @@ class DatabaseMigrationRepository implements MigrationRepositoryInterface
     /**
      * Log that a migration was run.
      *
-     * @param  string  $file
-     * @param  int  $batch
+     * @param  string $file
+     * @param  int $batch
      * @return void
+     * @throws \Exception
      */
     public function log($file, $batch)
     {
