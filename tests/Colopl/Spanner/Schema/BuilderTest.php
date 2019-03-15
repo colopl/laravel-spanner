@@ -21,8 +21,13 @@ use Colopl\Spanner\Schema\Blueprint;
 use Colopl\Spanner\Tests\TestCase;
 use Illuminate\Support\Str;
 
+/**
+ * CAUTION: THIS TAKES A LONG TIME
+ */
 class BuilderTest extends TestCase
 {
+    protected const TEST_DB_REQUIRED = true;
+
     private const TABLE_NAME_CREATED = 'schema_builder_test_table';
     private const TABLE_NAME_RELATION_PARENT = 'users';
     private const TABLE_NAME_RELATION_CHILD = 'user_items';
@@ -48,9 +53,6 @@ class BuilderTest extends TestCase
         $this->skipUnlessEnvVarSet();
     }
 
-    /**
-     * CAUTION: THIS TAKES A LONG TIME
-     */
     public function testSchemaCreate()
     {
         $conn = $this->getDefaultConnection();
@@ -70,9 +72,6 @@ class BuilderTest extends TestCase
         $this->assertCount(0, collect(['id', 'name', 'age', 'created_at'])->diff($columnNames));
     }
 
-    /**
-     * CAUTION: THIS TAKES A LONG TIME
-     */
     public function testSchemaDrop()
     {
         $conn = $this->getDefaultConnection();
