@@ -18,7 +18,7 @@
 namespace Colopl\Spanner\Schema;
 
 use Closure;
-use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Database\Schema\Blueprint as BaseBlueprint;
 
 class Builder extends \Illuminate\Database\Schema\Builder
 {
@@ -88,7 +88,7 @@ class Builder extends \Illuminate\Database\Schema\Builder
      *
      * @param  string  $table
      * @param  Closure|null  $callback
-     * @return Blueprint
+     * @return BaseBlueprint
      */
     protected function createBlueprint($table, Closure $callback = null)
     {
