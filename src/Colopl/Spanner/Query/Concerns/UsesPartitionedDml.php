@@ -31,19 +31,6 @@ trait UsesPartitionedDml
      * @param array $values
      * @return int affected rows count
      */
-    public function partitionedInsert(array $values)
-    {
-        $values = $this->prepareInsertForDml($values);
-        return $this->connection->runPartitionedDml(
-            $this->grammar->compileInsert($this, $values),
-            $this->cleanBindings(Arr::flatten($values, 1))
-        );
-    }
-
-    /**
-     * @param array $values
-     * @return int affected rows count
-     */
     public function partitionedUpdate(array $values)
     {
         $sql = $this->grammar->compileUpdate($this, $values);

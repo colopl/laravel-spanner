@@ -162,11 +162,10 @@ You can run partitioned DML as below.
 
 ```php
 // by Connection
-$connection->runPartitionedDml('INSERT ...');
+$connection->runPartitionedDml('UPDATE ...');
 
 
 // by Query Builder
-$queryBuilder->partitionedInsert($values);
 $queryBuilder->partitionedUpdate($values);
 $queryBuilder->partitionedDelete($values);
 ```
