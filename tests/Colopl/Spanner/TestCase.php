@@ -117,6 +117,7 @@ class TestCase extends \Orchestra\Testbench\TestCase
                 $conn->dropDatabase();
             }
             $conn->createDatabase($this->getTestDatabaseDDLs());
+            $conn->clearSessionPool();
         }
     }
 

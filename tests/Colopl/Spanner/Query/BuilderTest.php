@@ -19,7 +19,9 @@ namespace Colopl\Spanner\Tests\Query;
 
 use Colopl\Spanner\Connection;
 use Colopl\Spanner\Tests\TestCase;
+use Colopl\Spanner\TimestampBound\ExactStaleness;
 use Google\Cloud\Spanner\Bytes;
+use Google\Cloud\Spanner\Duration;
 use const Grpc\STATUS_ALREADY_EXISTS;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Database\QueryException;
@@ -792,5 +794,20 @@ class BuilderTest extends TestCase
         foreach ($escapeChars as $ec) {
             $this->assertEquals(1, $conn->table($tableName)->where('name', $ec)->count());
         }
+    }
+
+    public function testStaleReads()
+    {
+        $conn = $this->getDefaultConnection();
+        $tableName = self::TABLE_NAME_USER;
+        $qb = $conn->table($tableName);
+
+        $insertData = ['userId' => $this->generateUuid(), 'name' => 'first'];
+        $qb->insert($insertData);
+        $this->assertDatabaseHas($tableName, $insertData);
+
+        $stalenessRow = $qb->withStaleness(new ExactStaleness(new Duration(60)))
+            ->first();
+        $this->assertEmpty($stalenessRow);
     }
 }

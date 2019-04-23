@@ -81,7 +81,6 @@ For more information, please see [Google Client Library docs](http://googleapis.
 ## Unsupported features
 
 - STRUCT data types
-- Stale reads
 - Explicit Read-only transaction (snapshot)
 
 ## Limitations
@@ -148,6 +147,25 @@ $conn->transaction(function() {
 | explicit transaction | **Read-write** transaction | **Read-write** transaction |
 
 For more information, see [Cloud Spanner Documentation about transactions](https://cloud.google.com/spanner/docs/transactions)
+
+### Stale reads
+
+You can use [Stale reads (timestamp bounds)](https://cloud.google.com/spanner/docs/timestamp-bounds) as below.
+
+```php
+// There are four types of timestamp bounds: ExactStaleness, MaxStaleness, MinReadTimestamp and ReadTimestamp.
+$timestampBound = new ExactStaleness(10);
+
+// by Connection
+$connection->selectWithTimestampBound('SELECT ...', $bindings, $timestampBound);
+
+// by Query Builder
+$queryBuilder
+    ->withStaleness($timestampBound)
+    ->get();
+```
+
+Stale reads always runs as read-only transaction with `singleUse` option. So you can not run as read-write transaction.
 
 ### Data Types
 Some data types of Google Cloud Spanner does not have corresponding built-in type of PHP.

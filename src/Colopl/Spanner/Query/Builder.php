@@ -26,6 +26,7 @@ class Builder extends \Illuminate\Database\Query\Builder
     use Concerns\AppliesForceIndex,
         Concerns\UsesMutations,
         Concerns\UsesPartitionedDml,
+        Concerns\UsesStaleReads,
         MarksAsNotSupported;
 
     /**
@@ -127,5 +128,22 @@ class Builder extends \Illuminate\Database\Query\Builder
         }
 
         return $values;
+    }
+
+    /**
+     * Run the query as a "select" statement against the connection.
+     *
+     * @return array
+     * @throws \Throwable
+     */
+    protected function runSelect()
+    {
+        if ($this->timestampBound !== null) {
+            return $this->connection->selectWithTimestampBound(
+                $this->toSql(), $this->getBindings(), $this->timestampBound
+            );
+        }
+
+        return parent::runSelect();
     }
 }
