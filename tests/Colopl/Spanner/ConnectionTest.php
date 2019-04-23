@@ -20,11 +20,21 @@ namespace Colopl\Spanner\Tests;
 use Colopl\Spanner\Connection;
 use Colopl\Spanner\Events\MutatingData;
 use Colopl\Spanner\Session;
+use Colopl\Spanner\TimestampBound\ExactStaleness;
+use Colopl\Spanner\TimestampBound\MaxStaleness;
+use Colopl\Spanner\TimestampBound\MinReadTimestamp;
+use Colopl\Spanner\TimestampBound\ReadTimestamp;
+use Colopl\Spanner\TimestampBound\StrongRead;
+use Google\Cloud\Spanner\Duration;
 use Google\Cloud\Spanner\KeySet;
 use Google\Cloud\Spanner\Session\CacheSessionPool;
+use Google\Cloud\Spanner\SpannerClient;
+use Google\Cloud\Spanner\Timestamp;
+use Google\Cloud\Spanner\Transaction;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Database\Events\TransactionBeginning;
 use Illuminate\Database\Events\TransactionCommitted;
+use Illuminate\Support\Carbon;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
 
 class ConnectionTest extends TestCase
@@ -286,5 +296,50 @@ class ConnectionTest extends TestCase
         $sessions = $conn->listSessions();
         $this->assertNotEmpty($sessions);
         $this->assertInstanceOf(Session::class, $sessions[0]);
+    }
+
+    public function testStaleReads()
+    {
+        $conn = $this->getDefaultConnection();
+        $tableName = self::TABLE_NAME_USER;
+        $uuid = $this->generateUuid();
+
+        $db = (new SpannerClient())->connect(config('database.connections.main.instance'), config('database.connections.main.database'));
+        /** @var Timestamp|null $timestamp */
+        $timestamp = null;
+        $db->runTransaction(function(Transaction $tx) use ($conn, $tableName, $uuid, &$timestamp) {
+            $name = 'first';
+            $tx->executeUpdate("INSERT INTO ${tableName} (`userId`, `name`) VALUES ('${uuid}', '${name}')");
+            $timestamp = $tx->commit();
+        });
+        $this->assertNotEmpty($timestamp);
+
+        $timestampBound = new StrongRead();
+        $row = $conn->selectOneWithTimestampBound("SELECT * FROM ${tableName} WHERE userID = ?", [$uuid], $timestampBound);
+        $this->assertNotEmpty($row);
+        $this->assertEquals($uuid, $row['userId']);
+        $this->assertEquals('first', $row['name']);
+
+        $oldDatetime = Carbon::instance($timestamp->get())->subSeconds(1);
+
+        $timestampBound = new ReadTimestamp($oldDatetime);
+        $row = $conn->selectOneWithTimestampBound("SELECT * FROM ${tableName} WHERE userID = ?", [$uuid], $timestampBound);
+        $this->assertEmpty($row);
+
+        $timestampBound = new ExactStaleness(10);
+        $row = $conn->selectOneWithTimestampBound("SELECT * FROM ${tableName} WHERE userID = ?", [$uuid], $timestampBound);
+        $this->assertEmpty($row);
+
+        $timestampBound = new MaxStaleness(10);
+        $row = $conn->selectOneWithTimestampBound("SELECT * FROM ${tableName} WHERE userID = ?", [$uuid], $timestampBound);
+        $this->assertNotEmpty($row);
+        $this->assertEquals($uuid, $row['userId']);
+        $this->assertEquals('first', $row['name']);
+
+        $timestampBound = new MinReadTimestamp($oldDatetime);
+        $row = $conn->selectOneWithTimestampBound("SELECT * FROM ${tableName} WHERE userID = ?", [$uuid], $timestampBound);
+        $this->assertNotEmpty($row);
+        $this->assertEquals($uuid, $row['userId']);
+        $this->assertEquals('first', $row['name']);
     }
 }
