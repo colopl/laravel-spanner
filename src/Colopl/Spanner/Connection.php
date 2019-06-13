@@ -306,21 +306,30 @@ class Connection extends BaseConnection
      */
     public function affectingStatement($query, $bindings = []): int
     {
-        return $this->run($query, $bindings, function ($query, $bindings) {
-            if ($this->pretending()) {
-                return 0;
-            }
+        $body = function () use ($query, $bindings) {
+            return $this->run($query, $bindings, function ($query, $bindings) {
+                if ($this->pretending()) {
+                    return 0;
+                }
 
-            $queryCall = function() use ($query, $bindings) {
-                return $this->getCurrentTransaction()->executeUpdate($query, ['parameters' => $this->prepareBindings($bindings)]);
-            };
+                $queryCall = function () use ($query, $bindings) {
+                    return $this->getCurrentTransaction()->executeUpdate($query, ['parameters' => $this->prepareBindings($bindings)]);
+                };
 
-            $rowCount = $this->inTransaction() ? $queryCall() : $this->transaction($queryCall);
+                $rowCount = $queryCall();
 
-            $this->recordsHaveBeenModified($rowCount > 0);
+                $this->recordsHaveBeenModified($rowCount > 0);
 
-            return $rowCount;
-        });
+                return $rowCount;
+            });
+        };
+
+        if ($this->inTransaction()) {
+            return $body();
+        }
+
+        // Create a temporary transaction for single affecting statement
+        return $this->transaction($body);
     }
 
     /**
