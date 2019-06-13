@@ -342,4 +342,24 @@ class ConnectionTest extends TestCase
         $this->assertEquals($uuid, $row['userId']);
         $this->assertEquals('first', $row['name']);
     }
+
+    public function testEventListenOrder()
+    {
+        $receivedEventClasses = [];
+        $this->app['events']->listen(TransactionBeginning::class, function () use (&$receivedEventClasses) { $receivedEventClasses[] = TransactionBeginning::class; });
+        $this->app['events']->listen(QueryExecuted::class, function () use (&$receivedEventClasses) { $receivedEventClasses[] = QueryExecuted::class; });
+        $this->app['events']->listen(TransactionCommitted::class, function () use (&$receivedEventClasses) { $receivedEventClasses[] = TransactionCommitted::class; });
+
+        $conn = $this->getDefaultConnection();
+
+        $tableName = self::TABLE_NAME_USER;
+        $uuid = $this->generateUuid();
+        $name = 'test';
+        $conn->insert("INSERT INTO ${tableName} (`userId`, `name`) VALUES ('${uuid}', '${name}')");
+
+        $this->assertCount(3, $receivedEventClasses);
+        $this->assertEquals(TransactionBeginning::class, $receivedEventClasses[0]);
+        $this->assertEquals(QueryExecuted::class, $receivedEventClasses[1]);
+        $this->assertEquals(TransactionCommitted::class, $receivedEventClasses[2]);
+    }
 }
