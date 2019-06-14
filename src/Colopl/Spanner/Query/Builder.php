@@ -72,7 +72,7 @@ class Builder extends \Illuminate\Database\Query\Builder
             return $this->insert(array_merge($attributes, $values));
         }
 
-        return (bool) $this->take(1)->update(array_except($values, array_keys($attributes)));
+        return (bool) $this->take(1)->update(Arr::except($values, array_keys($attributes)));
     }
 
     public function truncate()
