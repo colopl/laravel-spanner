@@ -127,6 +127,23 @@ class TransactionTest extends TestCase
         });
         $this->assertDatabaseHas($tableName, $insertRow);
         $this->assertEquals(3, $committedCount);
+
+        $rolledBackCount = 0;
+        $this->app['events']->listen(TransactionRolledBack::class, function ($ev) use(&$rolledBackCount) {
+            $rolledBackCount++;
+        });
+
+        $cnt = 0;
+        $conn->transaction(function () use ($conn, &$cnt) {
+            $cnt++;
+            $conn->transaction(function () use ($conn, &$cnt) {
+                if ($cnt < 2) {
+                    throw new AbortedException('aborted');
+                }
+            });
+        });
+        $this->assertEquals(2, $cnt);
+        $this->assertEquals(1, $rolledBackCount);
     }
 
     public function testReadOnTransaction()
