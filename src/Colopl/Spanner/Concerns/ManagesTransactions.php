@@ -22,13 +22,12 @@ use Exception;
 use Google\Cloud\Core\Exception\AbortedException;
 use Google\Cloud\Spanner\Database;
 use Google\Cloud\Spanner\Transaction;
-use Illuminate\Database\Events\TransactionBeginning;
-use Illuminate\Database\Events\TransactionCommitted;
 use Throwable;
 
 /**
- * @see ManagesTransactions
- * @method Database getSpannerDatabase
+ * Transaction extensions for Cloud Spanner based on Laravel's transaction management
+ *
+ * @see \Illuminate\Database\Concerns\ManagesTransactions
  */
 trait ManagesTransactions
 {
@@ -47,11 +46,17 @@ trait ManagesTransactions
      */
     public function transaction(Closure $callback, $attempts = Database::MAX_RETRIES)
     {
+        // Since Cloud Spanner does not support nested transactions,
+        // we use Laravel's transaction management for nested transactions only.
+        if ($this->transactions > 0) {
+            return parent::transaction($callback, $attempts);
+        }
+
         return $this->getSpannerDatabase()->runTransaction(function (Transaction $tx) use ($callback) {
             try {
                 $this->currentTransaction = $tx;
                 $this->transactions++;
-                $this->event(new TransactionBeginning($this));
+                $this->fireConnectionEvent('beganTransaction');
                 $result = $callback($this);
                 $this->commit();
                 return $result;
@@ -69,21 +74,6 @@ trait ManagesTransactions
     public function getCurrentTransaction()
     {
         return $this->currentTransaction;
-    }
-
-    /**
-     * Start a new database transaction.
-     *
-     * @return void
-     * @throws Exception
-     * @deprecated Use self::transaction() instead
-     */
-    public function beginTransaction()
-    {
-        $this->createTransaction();
-        $this->transactions++;
-
-        $this->event(new TransactionBeginning($this));
     }
 
     /**
@@ -141,7 +131,7 @@ trait ManagesTransactions
             $this->currentTransaction = null;
         }
 
-        $this->event(new TransactionCommitted($this));
+        $this->fireConnectionEvent('committed');
     }
 
     /**

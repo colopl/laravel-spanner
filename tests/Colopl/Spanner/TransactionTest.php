@@ -26,7 +26,7 @@ use Illuminate\Support\Str;
 
 class TransactionTest extends TestCase
 {
-    protected $preparingTestDatabaseRequired = true;
+    protected const TEST_DB_REQUIRED = true;
 
     public function testBegin()
     {
@@ -76,7 +76,6 @@ class TransactionTest extends TestCase
         $conn = $this->getDefaultConnection();
 
         $tableName = self::TABLE_NAME_USER;
-        $qb = $conn->table($tableName);
 
         $insertRow = [
             'userId' => $this->generateUuid(),
@@ -84,7 +83,7 @@ class TransactionTest extends TestCase
         ];
 
         try {
-            $conn->transaction(function (Connection $conn) use ($qb, $insertRow) {
+            $conn->transaction(function (Connection $conn) use ($insertRow) {
                 $this->assertEquals(Transaction::STATE_ACTIVE, $conn->getCurrentTransaction()->state());
                 throw new \RuntimeException('abort test');
             });
@@ -100,17 +99,34 @@ class TransactionTest extends TestCase
     public function testNestedTransaction()
     {
         $conn = $this->getDefaultConnection();
-        $catchedException = null;
-        try {
-            $conn->transaction(function () use ($conn) {
-                $this->assertEquals(1, $conn->transactionLevel());
-                $conn->transaction(function () {});
+
+        $committedCount = 0;
+        $this->app['events']->listen(TransactionCommitted::class, function ($ev) use(&$committedCount) {
+            $committedCount++;
+        });
+
+        $tableName = self::TABLE_NAME_USER;
+        $qb = $conn->table($tableName);
+
+        $insertRow = [
+            'userId' => $this->generateUuid(),
+            'name' => 'test',
+        ];
+
+        $conn->transaction(function () use ($conn, $qb, $insertRow, $tableName) {
+            $this->assertEquals(1, $conn->transactionLevel());
+            $conn->transaction(function () use ($conn, $qb, $insertRow) {
+                $this->assertEquals(2, $conn->transactionLevel());
+                $conn->transaction(function () use ($conn, $qb, $insertRow) {
+                    $this->assertEquals(3, $conn->transactionLevel());
+                    $qb->insert($insertRow);
+                });
+                $this->assertEquals(2, $conn->transactionLevel());
             });
-        } catch (\Exception $ex) {
-            $catchedException = $ex;
-        }
-        $this->assertContains('Nested transactions are not supported', $catchedException->getMessage());
-        $this->assertInstanceOf(\BadMethodCallException::class, $catchedException);
+            $this->assertEquals(1, $conn->transactionLevel());
+        });
+        $this->assertDatabaseHas($tableName, $insertRow);
+        $this->assertEquals(3, $committedCount);
     }
 
     public function testReadOnTransaction()
