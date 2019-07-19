@@ -234,6 +234,18 @@ In order to improve the performance of the first connection per request, we use 
 
 By default, laravel-spanner uses [Filesystem Cache Adapter](https://symfony.com/doc/current/components/cache/adapters/filesystem_adapter.html) as the caching pool. If you want to use your own caching pool, you can extend ServiceProvider and inject it into the constructor of `Colopl\Spanner\Connection`.
 
+
+### Laravel Tinker
+You can use [Laravel Tinker](https://github.com/laravel/tinker) with commands such as `php artisan tinker`.
+But your session may hang when accessing Cloud Spanner. This is known gRPC issue that occurs when PHP forks a process.
+The workaround is to add following line to `php.ini`.
+
+```ini
+grpc.enable_fork_support=1
+```
+
+
+
 ## Development
 
 ### Testing
