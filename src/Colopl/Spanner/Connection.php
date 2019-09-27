@@ -29,6 +29,7 @@ use DateTimeInterface;
 use Exception;
 use Generator;
 use Google\Cloud\Core\Exception\AbortedException;
+use Google\Cloud\Core\Exception\DeadlineExceededException;
 use Google\Cloud\Core\Exception\GoogleException;
 use Google\Cloud\Spanner\Database;
 use Google\Cloud\Spanner\Session\SessionPoolInterface;
@@ -209,11 +210,12 @@ class Connection extends BaseConnection
      * Begin a fluent query against a database table.
      *
      * @param  string $table
+     * @param  string $as
      * @return QueryBuilder
      */
-    public function table($table): QueryBuilder
+    public function table($table, $as = null): QueryBuilder
     {
-        return $this->query()->from($table);
+        return $this->query()->from($table, $as);
     }
 
     /**

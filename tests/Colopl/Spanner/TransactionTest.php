@@ -227,7 +227,7 @@ class TransactionTest extends TestCase
             $catchedException = $ex;
         }
         $this->assertInstanceOf(AbortedException::class, $catchedException);
-        $this->assertContains('aborted.', $catchedException->getMessage());
+        $this->assertStringContainsString('aborted.', $catchedException->getMessage());
     }
 
     /**

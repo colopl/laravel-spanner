@@ -45,7 +45,7 @@ class TestCase extends \Orchestra\Testbench\TestCase
     protected const TABLE_NAME_ITEM_TAG = 'ItemTag';
     protected const TABLE_NAME_ARRAY_TEST = 'ArrayTest';
 
-    protected function tearDown()
+    protected function tearDown(): void
     {
         if (static::TEST_DB_REQUIRED) {
             $this->cleanupDatabaseRecords();
