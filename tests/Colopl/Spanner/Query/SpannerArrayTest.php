@@ -74,7 +74,7 @@ class SpannerArrayTest extends TestCase
             $qb = $conn->table($tableName);
             $qb->whereInArray('int64Array`) UNION ALL SELECT "a", [2], ["3"];//', 0)->get();
         } catch (\Exception $ex) {
-            $this->assertContains('column name must be match', $ex->getMessage());
+            $this->assertStringContainsString('column name must be match', $ex->getMessage());
             $expectedThrown = true;
         }
         $this->assertTrue($expectedThrown);

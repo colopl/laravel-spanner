@@ -710,7 +710,7 @@ class BuilderTest extends TestCase
             $caughtException = $ex;
         }
         $this->assertInstanceOf(QueryException::class, $caughtException);
-        $this->assertContains('too many mutations', $caughtException->getMessage());
+        $this->assertStringContainsString('too many mutations', $caughtException->getMessage());
 
         $this->assertEquals(20001, $conn->table($tableName)
             ->where('stringTest', 'test')
@@ -768,7 +768,7 @@ class BuilderTest extends TestCase
         } catch (QueryException $ex) {
             $caughtException = $ex;
         }
-        $this->assertContains('Given string is not UTF8 encoded', $caughtException->getMessage());
+        $this->assertStringContainsString('Given string is not UTF8 encoded', $caughtException->getMessage());
     }
 
     public function testEscapeCharacter()

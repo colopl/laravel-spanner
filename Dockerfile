@@ -5,6 +5,7 @@ ENV TZ Asia/Tokyo
 
 RUN apk add --no-cache --allow-untrusted \
     libxml2 \
+    libstdc++ \
   && apk add --no-cache --virtual=.build-deps --allow-untrusted \
     tzdata \
     pcre-dev \

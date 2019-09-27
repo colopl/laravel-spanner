@@ -47,7 +47,7 @@ class BuilderTest extends TestCase
         }
     }
 
-    protected function setUp()
+    protected function setUp(): void
     {
         parent::setUp();
         $this->skipUnlessEnvVarSet();
@@ -108,7 +108,7 @@ class BuilderTest extends TestCase
             // NOTE: spanner only allows nullable columns to be added
             $table->string('description')->nullable();
         });
-        $this->assertContains('description', $sb->getColumnListing($tableName));
+        $this->assertStringContainsString('description', $sb->getColumnListing($tableName));
 
         $sb->drop($tableName);
         $this->assertNotTrue($sb->hasTable($tableName));
