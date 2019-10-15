@@ -19,6 +19,7 @@ namespace Colopl\Spanner\Tests\Schema;
 
 use Colopl\Spanner\Schema\Blueprint;
 use Colopl\Spanner\Tests\TestCase;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 
 /**
@@ -108,7 +109,7 @@ class BuilderTest extends TestCase
             // NOTE: spanner only allows nullable columns to be added
             $table->string('description')->nullable();
         });
-        $this->assertStringContainsString('description', $sb->getColumnListing($tableName));
+        $this->assertTrue(in_array('description', $sb->getColumnListing($tableName), true));
 
         $sb->drop($tableName);
         $this->assertNotTrue($sb->hasTable($tableName));

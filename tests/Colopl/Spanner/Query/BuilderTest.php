@@ -22,6 +22,7 @@ use Colopl\Spanner\Tests\TestCase;
 use Colopl\Spanner\TimestampBound\ExactStaleness;
 use Google\Cloud\Spanner\Bytes;
 use Google\Cloud\Spanner\Duration;
+use Illuminate\Support\Str;
 use const Grpc\STATUS_ALREADY_EXISTS;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Database\QueryException;
@@ -710,7 +711,7 @@ class BuilderTest extends TestCase
             $caughtException = $ex;
         }
         $this->assertInstanceOf(QueryException::class, $caughtException);
-        $this->assertStringContainsString('too many mutations', $caughtException->getMessage());
+        $this->assertTrue(Str::contains($caughtException->getMessage(), 'too many mutations'));
 
         $this->assertEquals(20001, $conn->table($tableName)
             ->where('stringTest', 'test')
@@ -768,7 +769,7 @@ class BuilderTest extends TestCase
         } catch (QueryException $ex) {
             $caughtException = $ex;
         }
-        $this->assertStringContainsString('Given string is not UTF8 encoded', $caughtException->getMessage());
+        $this->assertTrue(Str::contains($caughtException->getMessage(), 'Given string is not UTF8 encoded'));
     }
 
     public function testEscapeCharacter()
