@@ -18,6 +18,7 @@
 namespace Colopl\Spanner\Tests\Query;
 
 use Colopl\Spanner\Tests\TestCase;
+use Illuminate\Support\Str;
 
 class SpannerArrayTest extends TestCase
 {
@@ -74,7 +75,7 @@ class SpannerArrayTest extends TestCase
             $qb = $conn->table($tableName);
             $qb->whereInArray('int64Array`) UNION ALL SELECT "a", [2], ["3"];//', 0)->get();
         } catch (\Exception $ex) {
-            $this->assertStringContainsString('column name must be match', $ex->getMessage());
+            $this->assertTrue(Str::contains($ex->getMessage(), 'column name must be match'));
             $expectedThrown = true;
         }
         $this->assertTrue($expectedThrown);
