@@ -97,4 +97,15 @@ class DatetimeTest extends TestCase
         $this->assertEquals(6, $dateCarbon->month);
         $this->assertEquals(7, $dateCarbon->day);
     }
+
+    public function testTimestampWithConnection()
+    {
+        $conn = $this->getDefaultConnection();
+        $row = $conn->selectOne('SELECT TIMESTAMP("2019-12-12T14:45:00+09:00") as ts');
+        /** @var Timestamp $ts */
+        $ts = $row['ts'];
+        $this->assertInstanceOf(Timestamp::class, $ts);
+        // Cloud Spanner TIMESTAMP always has UTC timezone
+        $this->assertEquals('Z', $ts->get()->getTimezone()->getName());
+    }
 }
