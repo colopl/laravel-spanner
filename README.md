@@ -173,6 +173,12 @@ You can use following classes by [Google Cloud PHP Client](https://github.com/go
 
 - DATE: `Google\Cloud\Spanner\Date`
 - BYTES: `Google\Cloud\Spanner\Bytes` 
+- TIMESTAMP: `Google\Cloud\Spanner\Timestamp`
+
+`Google\Cloud\Spanner\Timestamp` is a DateTime representation with UTC timezone and nanoseconds.
+In laravel-spanner QueryBuilder converts `Timestamp` in the fetched rows to [Carbon](https://laravel.com/api/6.x/Illuminate/Support/Carbon.html) with the default timezone in PHP.
+
+Note that if you execute a query without QueryBuilder, it will not have a conversion to Carbon.
 
 
 ### Partitioned DML
