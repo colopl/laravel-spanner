@@ -22,6 +22,7 @@ use Symfony\Component\Cache\Adapter\AbstractAdapter;
 use Symfony\Component\Cache\Marshaller\DefaultMarshaller;
 use Symfony\Component\Cache\Marshaller\MarshallerInterface;
 use Symfony\Component\Cache\PruneableInterface;
+use Symfony\Component\Cache\Traits\FilesystemCommonTrait;
 use Symfony\Component\Cache\Traits\FilesystemTrait;
 
 class FileCacheAdapter extends AbstractAdapter implements PruneableInterface
@@ -77,6 +78,26 @@ class FileCacheAdapter extends AbstractAdapter implements PruneableInterface
             $this->ensureDirectory();
         }
         return $this->resolvePath($id);
+    }
+
+    /**
+     * OVERRIDE implementation from FilesystemCommonTrait since our directory structure differs from one provided
+     * @see FilesystemCommonTrait::scanHashDir()
+     *
+     * @param string $directory
+     * @return \Generator
+     */
+    protected function scanHashDir(string $directory): \Generator
+    {
+        if (!file_exists($directory)) {
+            return;
+        }
+
+        foreach (@scandir($directory, SCANDIR_SORT_NONE) ?: [] as $file) {
+            if ('.' !== $file && '..' !== $file) {
+                yield $directory.\DIRECTORY_SEPARATOR.$file;
+            }
+        }
     }
 
     /**
