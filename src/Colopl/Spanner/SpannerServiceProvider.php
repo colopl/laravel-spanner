@@ -58,7 +58,11 @@ class SpannerServiceProvider extends ServiceProvider
      */
     protected function parseConfig(array $config, $name)
     {
-        return Arr::add(Arr::add($config, 'prefix', ''), 'name', $name);
+        return $config + [
+            'prefix' => '',
+            'name' => $name,
+            'useGapicBackoffs' => true,
+        ];
     }
 
     /**
