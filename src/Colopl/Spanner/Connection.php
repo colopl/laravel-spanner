@@ -428,7 +428,7 @@ class Connection extends BaseConnection
             $result = $callback($query, $bindings);
         }
 
-        // AbortedExceptions are expected to be thrown upastream by the Google Client Library upstream,
+        // AbortedExceptions are expected to be thrown upstream by the Google Client Library upstream,
         // so AbortedExceptions will not be wrapped with QueryException.
         catch (AbortedException $e) {
             throw $e;
