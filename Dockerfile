@@ -14,6 +14,7 @@ RUN apk add --no-cache --allow-untrusted \
     g++ \
     make \
     autoconf \
+    linux-headers \
   && pecl install -o -f \
     xdebug \
     protobuf \
