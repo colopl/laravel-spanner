@@ -122,7 +122,7 @@ trait ManagesTransactions
      */
     public function commit()
     {
-        if ($this->transactions == 1) {
+        if ($this->transactions == 1 && $this->currentTransaction !== null) {
             $this->currentTransaction->commit();
         }
 
