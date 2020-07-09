@@ -36,14 +36,16 @@ class Parameterizer
      * @see https://googlecloudplatform.github.io/google-cloud-php/#/docs/google-cloud/latest/spanner/database?method=execute
      *
      * @param string $query
-     * @param array $bindings
+     * @param array<mixed> $bindings
      * @return array [0]: converted SQL, [1]: spanner execute options
+     * @phpstan-return array{0: string, 1: array<string>}
      * @throws Exception
      */
     public function parameterizeQuery(string $query, array $bindings): array
     {
         $newBindings = [];
         $i = 0;
+        /** @var string $newQuery */
         $newQuery = preg_replace_callback('/\?/', function () use ($query, $bindings, &$newBindings, &$i) {
             $binding = $bindings[$i];
             $result = null;
@@ -69,9 +71,8 @@ class Parameterizer
     }
 
     /**
-     *
      * @param string $query
-     * @param $value
+     * @param string $value
      * @return bool
      */
     private static function hasLikeWildcard(string $query, $value)

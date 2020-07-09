@@ -35,7 +35,7 @@ class Builder extends \Illuminate\Database\Query\Builder
     public $connection;
 
     /**
-     * @param array $values
+     * @param array<mixed> $values
      * @return bool
      */
     public function insert(array $values)
@@ -47,7 +47,7 @@ class Builder extends \Illuminate\Database\Query\Builder
      * This will return the last value used since Spanner does not have the
      * feature to return the last inserted ID.
      *
-     * @param  array        $values
+     * @param  array<mixed>        $values
      * @param  string|null  $sequence the name of primary key
      * @return string
      * @throws \InvalidArgumentException
@@ -62,8 +62,8 @@ class Builder extends \Illuminate\Database\Query\Builder
     }
 
     /**
-     * @param array $attributes
-     * @param array $values
+     * @param array<mixed> $attributes
+     * @param array<mixed> $values
      * @return bool
      */
     public function updateOrInsert(array $attributes, array $values = [])
@@ -75,16 +75,25 @@ class Builder extends \Illuminate\Database\Query\Builder
         return (bool) $this->take(1)->update(Arr::except($values, array_keys($attributes)));
     }
 
+    /**
+     * @inheritDoc
+     */
     public function truncate()
     {
         $this->markAsNotSupported('truncate table');
     }
 
+    /**
+     * @inheritDoc
+     */
     public function sharedLock()
     {
         $this->markAsNotSupported('shared lock');
     }
 
+    /**
+     * @inheritDoc
+     */
     public function lockForUpdate()
     {
         $this->markAsNotSupported('lock for update');
@@ -114,8 +123,8 @@ class Builder extends \Illuminate\Database\Query\Builder
     }
 
     /**
-     * @param array $values
-     * @return array
+     * @param array<mixed> $values
+     * @return array<mixed>
      */
     protected function prepareInsertForDml($values)
     {
@@ -133,7 +142,7 @@ class Builder extends \Illuminate\Database\Query\Builder
     /**
      * Run the query as a "select" statement against the connection.
      *
-     * @return array
+     * @return array<mixed>
      * @throws \Throwable
      */
     protected function runSelect()

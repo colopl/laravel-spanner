@@ -23,7 +23,7 @@ class StrongRead implements TimestampBoundInterface
      * transactionOptions is used for $options on read/query or read-only transaction (eg Database::snapshot)
      *
      * @see https://cloud.google.com/spanner/docs/reference/rpc/google.spanner.v1#google.spanner.v1.TransactionOptions
-     * @return array
+     * @return array<bool>
      */
     public function transactionOptions(): array
     {

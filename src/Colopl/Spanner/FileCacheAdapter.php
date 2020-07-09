@@ -34,6 +34,7 @@ class FileCacheAdapter extends AbstractAdapter implements PruneableInterface
      */
     protected $prefix;
 
+    /** @var array<string> */
     protected $pathCache = [];
 
     /**
@@ -53,6 +54,7 @@ class FileCacheAdapter extends AbstractAdapter implements PruneableInterface
 
     /**
      * @throws Exception
+     * @return void
      */
     protected function ensureDirectory()
     {
@@ -85,7 +87,7 @@ class FileCacheAdapter extends AbstractAdapter implements PruneableInterface
      * @see FilesystemCommonTrait::scanHashDir()
      *
      * @param string $directory
-     * @return \Generator
+     * @return \Generator<string>
      */
     protected function scanHashDir(string $directory): \Generator
     {

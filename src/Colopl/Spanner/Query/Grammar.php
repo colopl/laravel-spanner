@@ -37,7 +37,7 @@ class Grammar extends \Illuminate\Database\Query\Grammars\Grammar
      */
     protected function compileForceIndex(Builder $query)
     {
-        $forceIndex = $query->forceIndex ?? null;
+        $forceIndex = property_exists($query, 'forceIndex') ? $query->forceIndex : null;
         return $forceIndex ? "@{FORCE_INDEX=$forceIndex}" : '';
     }
 

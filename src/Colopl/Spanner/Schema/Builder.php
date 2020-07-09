@@ -62,6 +62,7 @@ class Builder extends \Illuminate\Database\Schema\Builder
     /**
      * @param string $table
      * @param string $name
+     * @return void
      */
     public function dropIndex($table, $name)
     {
@@ -73,6 +74,7 @@ class Builder extends \Illuminate\Database\Schema\Builder
     /**
      * @param string $table
      * @param string $name
+     * @return void
      */
     public function dropIndexIfExist($table, $name)
     {

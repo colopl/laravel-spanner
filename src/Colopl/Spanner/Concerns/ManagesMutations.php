@@ -27,13 +27,14 @@ use Illuminate\Database\Events\TransactionCommitted;
 use Illuminate\Support\Arr;
 
 /**
- * @method Database|Transaction getDatabaseContext
+ * @method Database|Transaction getDatabaseContext()
  */
 trait ManagesMutations
 {
     /**
      * @param string $table
-     * @param array $dataSet
+     * @param array<mixed> $dataSet
+     * @return void
      */
     public function insertUsingMutation(string $table, array $dataSet)
     {
@@ -46,7 +47,8 @@ trait ManagesMutations
 
     /**
      * @param string $table
-     * @param array $dataSet
+     * @param array<mixed> $dataSet
+     * @return void
      */
     public function updateUsingMutation(string $table, array $dataSet)
     {
@@ -59,7 +61,8 @@ trait ManagesMutations
 
     /**
      * @param string $table
-     * @param mixed|array|KeySet $keySet
+     * @param mixed|array<string>|KeySet $keySet
+     * @return void
      */
     public function deleteUsingMutation(string $table, $keySet)
     {
@@ -88,8 +91,8 @@ trait ManagesMutations
     }
 
     /**
-     * @param array $dataSet
-     * @return array
+     * @param array<mixed> $dataSet
+     * @return array<mixed>
      */
     private function prepareForMutation(array $dataSet): array
     {
@@ -113,8 +116,8 @@ trait ManagesMutations
     }
 
     /**
-     * @param mixed|array|KeySet $keys
-     * @return array|KeySet
+     * @param mixed|array<mixed>|KeySet $keys
+     * @return KeySet
      */
     private function createDeleteMutationKeySet($keys)
     {

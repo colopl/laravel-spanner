@@ -47,7 +47,7 @@ trait DoesNotAutoIncrement
 
     /**
      * @param  Builder  $query
-     * @param  array  $attributes
+     * @param  array<mixed>  $attributes
      * @return void
      */
     protected function insertAndSetId(Builder $query, $attributes): void

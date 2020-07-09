@@ -28,7 +28,7 @@ use Illuminate\Support\Arr;
 trait UsesPartitionedDml
 {
     /**
-     * @param array $values
+     * @param array<mixed> $values
      * @return int affected rows count
      */
     public function partitionedUpdate(array $values)

@@ -26,7 +26,8 @@ use Google\Cloud\Spanner\KeySet;
 trait UsesMutations
 {
     /**
-     * @param array $values
+     * @param array<mixed> $values
+     * @return void
      */
     public function insertUsingMutation(array $values)
     {
@@ -34,7 +35,8 @@ trait UsesMutations
     }
 
     /**
-     * @param array $values
+     * @param array<mixed> $values
+     * @return void
      */
     public function updateUsingMutation(array $values)
     {
@@ -42,7 +44,8 @@ trait UsesMutations
     }
 
     /**
-     * @param mixed|array|KeySet $keys
+     * @param mixed|array<mixed>|KeySet $keys
+     * @return void
      */
     public function deleteUsingMutation($keys)
     {

@@ -24,46 +24,98 @@ class Blueprint extends \Illuminate\Database\Schema\Blueprint
 {
     use MarksAsNotSupported;
 
+    /**
+     * @inheritDoc
+     */
     public function temporary()
     {
         $this->markAsNotSupported('temporary table');
     }
 
+    /**
+     * Indicate that the given primary key should be dropped.
+     *
+     * @param  string|array<string>|null  $index
+     * @return void
+     */
     public function dropPrimary($index = null)
     {
         $this->markAsNotSupported('dropping primary key');
     }
 
+    /**
+     * Create a new auto-incrementing integer (4-byte) column on the table.
+     *
+     * @param  string  $column
+     * @return void
+     */
     public function increments($column)
     {
         $this->markAsNotSupported('AUTO_INCREMENT');
     }
 
+    /**
+     * Create a new auto-incrementing big integer (8-byte) column on the table.
+     *
+     * @param  string  $column
+     * @return void
+     */
     public function bigIncrements($column)
     {
-        return $this->increments($column);
+        $this->increments($column);
     }
 
-    public function mediumIncrements($column)
-    {
-        return $this->increments($column);
-    }
-
+    /**
+     * Create a new auto-incrementing small integer (2-byte) column on the table.
+     *
+     * @param  string  $column
+     * @return void
+     */
     public function smallIncrements($column)
     {
-        return $this->increments($column);
+        $this->increments($column);
     }
 
+    /**
+     * Create a new auto-incrementing medium integer (3-byte) column on the table.
+     *
+     * @param  string  $column
+     * @return void
+     */
+    public function mediumIncrements($column)
+    {
+        $this->increments($column);
+    }
+
+    /**
+     * Create a new auto-incrementing tiny integer (1-byte) column on the table.
+     *
+     * @param  string  $column
+     * @return void
+     */
     public function tinyIncrements($column)
     {
-        return $this->increments($column);
+        $this->increments($column);
     }
 
+    /**
+     * Specify a foreign key for the table.
+     *
+     * @param  string|array<string>  $columns
+     * @param  string|null  $name
+     * @return void
+     */
     public function foreign($columns, $name = null)
     {
         $this->markAsNotSupported('foreign key');
     }
 
+    /**
+     * Indicate that the given foreign key should be dropped.
+     *
+     * @param  string|array<string>  $index
+     * @return void
+     */
     public function dropForeign($index)
     {
         $this->markAsNotSupported('foreign key');
@@ -76,7 +128,7 @@ class Blueprint extends \Illuminate\Database\Schema\Blueprint
      *
      * @param  string  $column
      * @param  int  $length
-     * @return \Illuminate\Support\Fluent
+     * @return Fluent
      */
     public function binary($column, $length = null)
     {
@@ -86,7 +138,7 @@ class Blueprint extends \Illuminate\Database\Schema\Blueprint
     }
 
     /**
-     * @param $column
+     * @param string $column
      * @return Fluent
      */
     public function booleanArray($column)
@@ -95,7 +147,7 @@ class Blueprint extends \Illuminate\Database\Schema\Blueprint
     }
 
     /**
-     * @param $column
+     * @param string $column
      * @return Fluent
      */
     public function integerArray($column)
@@ -104,7 +156,7 @@ class Blueprint extends \Illuminate\Database\Schema\Blueprint
     }
 
     /**
-     * @param $column
+     * @param string $column
      * @return Fluent
      */
     public function floatArray($column)
@@ -113,8 +165,8 @@ class Blueprint extends \Illuminate\Database\Schema\Blueprint
     }
 
     /**
-     * @param $column
-     * @param $length
+     * @param string $column
+     * @param string $length
      * @return Fluent
      */
     public function stringArray($column, $length)
@@ -123,7 +175,7 @@ class Blueprint extends \Illuminate\Database\Schema\Blueprint
     }
 
     /**
-     * @param $column
+     * @param string $column
      * @return Fluent
      */
     public function dateArray($column)
@@ -132,7 +184,7 @@ class Blueprint extends \Illuminate\Database\Schema\Blueprint
     }
 
     /**
-     * @param $column
+     * @param string $column
      * @return Fluent
      */
     public function timestampArray($column)

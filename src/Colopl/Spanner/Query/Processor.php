@@ -26,8 +26,8 @@ class Processor extends \Illuminate\Database\Query\Processors\Processor
 {
     /**
      * @param Builder $query
-     * @param array $results
-     * @return array
+     * @param array<mixed> $results
+     * @return array<array<mixed>>
      * @throws Exception
      */
     public function processSelect(Builder $query, $results): array
@@ -46,8 +46,8 @@ class Processor extends \Illuminate\Database\Query\Processors\Processor
     }
 
     /**
-     * @param  array  $results
-     * @return array
+     * @param  array<mixed>  $results
+     * @return array<string>
      */
     public function processColumnListing($results)
     {
@@ -57,8 +57,8 @@ class Processor extends \Illuminate\Database\Query\Processors\Processor
     }
 
     /**
-     * @param  array  $results
-     * @return array
+     * @param  array<mixed>  $results
+     * @return array<string>
      */
     public function processIndexListing($results)
     {

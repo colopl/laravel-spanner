@@ -18,7 +18,7 @@ class MutatingData extends ConnectionEvent
     public $command;
 
     /**
-     * @var array
+     * @var array<mixed>
      */
     public $values;
 
@@ -26,7 +26,7 @@ class MutatingData extends ConnectionEvent
      * @param Connection $connection
      * @param string $tableName
      * @param string $command
-     * @param array $values
+     * @param array<mixed> $values
      */
     public function __construct($connection, string $tableName, string $command, array $values)
     {

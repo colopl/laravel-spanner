@@ -25,9 +25,9 @@ trait ManagesStaleReads
 {
     /**
      * @param  string  $query
-     * @param  array  $bindings
+     * @param  array<mixed>  $bindings
      * @param  TimestampBoundInterface $timestampBound
-     * @return Generator
+     * @return Generator<mixed>
      * @throws Throwable
      */
     public function cursorWithTimestampBound($query, $bindings = [], TimestampBoundInterface $timestampBound = null): Generator
@@ -50,9 +50,9 @@ trait ManagesStaleReads
 
     /**
      * @param  string  $query
-     * @param  array  $bindings
+     * @param  array<mixed>  $bindings
      * @param  TimestampBoundInterface $timestampBound
-     * @return array
+     * @return array<mixed>
      * @throws Throwable
      */
     public function selectWithTimestampBound($query, $bindings = [], TimestampBoundInterface $timestampBound = null): array
@@ -62,9 +62,9 @@ trait ManagesStaleReads
 
     /**
      * @param  string  $query
-     * @param  array  $bindings
+     * @param  array<mixed>  $bindings
      * @param  TimestampBoundInterface $timestampBound
-     * @return array|null
+     * @return array<mixed>|null
      * @throws Throwable
      */
     public function selectOneWithTimestampBound($query, $bindings = [], TimestampBoundInterface $timestampBound = null): ?array

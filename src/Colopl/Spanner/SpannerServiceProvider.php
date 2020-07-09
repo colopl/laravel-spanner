@@ -40,7 +40,7 @@ class SpannerServiceProvider extends ServiceProvider
     }
 
     /**
-     * @param array $config
+     * @param array<mixed> $config
      * @return Connection
      * @throws Exception
      */
@@ -52,9 +52,9 @@ class SpannerServiceProvider extends ServiceProvider
     }
 
     /**
-     * @param  array   $config
-     * @param  string  $name
-     * @return array
+     * @param  array<mixed> $config
+     * @param  string $name
+     * @return array<mixed>
      */
     protected function parseConfig(array $config, $name)
     {
@@ -66,7 +66,7 @@ class SpannerServiceProvider extends ServiceProvider
     }
 
     /**
-     * @param array $sessionPoolConfig
+     * @param array<int> $sessionPoolConfig
      * @return SessionPoolInterface
      * @throws Exception
      */
