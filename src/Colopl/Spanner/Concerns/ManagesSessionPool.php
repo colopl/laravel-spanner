@@ -32,14 +32,15 @@ use ReflectionException;
 use ReflectionObject;
 
 /**
- * @property Database spannerDatabase
- * @method Database getSpannerDatabase
+ * @property Database $spannerDatabase
+ * @method Database getSpannerDatabase()
  */
 trait ManagesSessionPool
 {
     /**
      * Clear the session pool
      * @throws GoogleException
+     * @return void
      */
     public function clearSessionPool()
     {
@@ -57,7 +58,7 @@ trait ManagesSessionPool
     public function warmupSessionPool()
     {
         $sessionPool = $this->getSpannerDatabase()->sessionPool();
-        if(method_exists($sessionPool, 'warmup')) {
+        if ($sessionPool !== null && method_exists($sessionPool, 'warmup')) {
             return $sessionPool->warmup();
         }
         return 0;
@@ -77,7 +78,7 @@ trait ManagesSessionPool
     }
 
     /**
-     * @return array
+     * @return array<mixed>
      * @throws ReflectionException
      */
     public function __debugInfo()
@@ -95,7 +96,8 @@ trait ManagesSessionPool
             /** @var ConnectionInterface $internalConnection */
             $internalConnection = $internalConnectionProperty->getValue($this->spannerClient);
             if ($internalConnection instanceof Grpc) {
-                $credentialFetcher = $internalConnection->requestWrapper()->getCredentialsFetcher();
+                $requestWrapper = $internalConnection->requestWrapper();
+                $credentialFetcher = $requestWrapper !== null ? $requestWrapper->getCredentialsFetcher() : null;
             }
         }
 
