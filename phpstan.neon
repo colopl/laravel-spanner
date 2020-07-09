@@ -1,0 +1,30 @@
+includes:
+    - ./vendor/nunomaduro/larastan/extension.neon
+parameters:
+    level: max
+    parallel:
+        processTimeout: 60.0
+    paths:
+        - src
+    ignoreErrors:
+        - '#^Access to an undefined property Illuminate\\Support\\Fluent::\$columns\.$#'
+        - '#^Access to an undefined property Illuminate\\Support\\Fluent::\$index\.$#'
+        - '#^Access to an undefined property Illuminate\\Support\\Fluent::\$indexType\.$#'
+        - '#^Access to an undefined property Illuminate\\Support\\Fluent::\$length\.$#'
+        - '#^Access to an undefined property Illuminate\\Support\\Fluent::\$arrayType\.$#'
+        - '#^Access to an undefined property Illuminate\\Support\\Fluent::\$storedAs\.$#'
+        - '#^Access to an undefined property Illuminate\\Support\\Fluent::\$virtualAs\.$#'
+        - '#^Access to an undefined property Illuminate\\Support\\Fluent::\$nullable\.$#'
+        - '#^Cannot access property \$columns on Illuminate\\Support\\Fluent\|null\.$#'
+        - '#^Cannot access property \$parentTableName on Illuminate\\Support\\Fluent\|null\.$#'
+        - '#^Cannot access property \$onDelete on Illuminate\\Support\\Fluent\|null\.$#'
+        - '#^Call to an undefined method Illuminate\\Database\\Schema\\Grammars\\Grammar::compileColumnListing\(\)\.$#'
+        - '#^Call to an undefined method Illuminate\\Database\\Schema\\Grammars\\Grammar::compileIndexListing\(\)\.$#'
+        - '#^Call to an undefined method Illuminate\\Database\\Query\\Processors\\Processor::processIndexListing\(\)\.$#'
+        - '#^Parameter \#1 \$value of method Illuminate\\Database\\Schema\\Grammars\\Grammar::wrap\(\) expects Illuminate\\Database\\Query\\Expression\|string, Illuminate\\Database\\Schema\\ColumnDefinition given.$#'
+        - '#^Return type \(void\) of method Colopl\\Spanner\\Schema\\(Blueprint|ColumnDefinition)::(dropPrimary|increments|bigIncrements|smallIncrements|mediumIncrements|tinyIncrements|foreign|dropForeign)\(\) should be compatible with return type \((Illuminate\\Support\\Fluent|Illuminate\\Database\\Schema\\ColumnDefinition)\) of method Illuminate\\Database\\Schema\\Blueprint::(dropPrimary|increments|bigIncrements|smallIncrements|mediumIncrements|tinyIncrements|foreign|dropForeign)\(\)$#'
+        - '#^Parameter \#1 \$pdo of method Illuminate\\Database\\Connection::__construct\(\) expects Closure\|PDO, null given\.$#'
+        - '#^Return type \(string\) of method Colopl\\Spanner\\Query\\Builder::insertGetId\(\) should be compatible with return type \(int\) of method Illuminate\\Database\\Query\\Builder::insertGetId\(\)$#'
+        - '#^Method Colopl\\Spanner\\Query\\Builder::(sharedLock|lockForUpdate)\(\) should return Illuminate\\Database\\Query\\Builder but return statement is missing\.$#'
+        - '#^Return type \(void\) of method Colopl\\Spanner\\Connection::(setDatabaseName|getPdo|getReadPdo|getDoctrineConnection)\(\) should be compatible with return type \(\$this\(Illuminate\\Database\\Connection\)|PDO|Doctrine\\DBAL\\Connection\) of method Illuminate\\Database\\Connection::(setDatabaseName|getPdo|getReadPdo|getDoctrineConnection)\(\)$#'
+        - '#^Method Colopl\\Spanner\\Connection::(getSpannerDatabase|getDatabaseContext)\(\) should return (Google\\Cloud\\Spanner\\Database|Google\\Cloud\\Spanner\\Database\|Google\\Cloud\\Spanner\\Transaction) but returns (Google\\Cloud\\Spanner\\Database\|null|Google\\Cloud\\Spanner\\Database\|Google\\Cloud\\Spanner\\Transaction\|null).$#'

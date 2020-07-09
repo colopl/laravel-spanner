@@ -15,6 +15,8 @@ env:
 cache:
   directories:
     - $HOME/.composer/cache/files
+    - /tmp/phpstan
 
 script:
   - vendor/bin/phpunit
+  - vendor/bin/phpstan --memory-limit=-1

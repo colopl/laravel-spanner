@@ -20,7 +20,8 @@
   },
   "require-dev": {
     "orchestra/testbench": "~3.5|~4.0",
-    "phpunit/phpunit": "~6.0|~8.0"
+    "phpunit/phpunit": "~6.0|~8.0",
+    "nunomaduro/larastan": "^0.6.1"
   },
   "autoload": {
     "psr-4": {
@@ -38,6 +39,10 @@
         "Colopl\\Spanner\\SpannerServiceProvider"
       ]
     }
+  },
+  "scripts": {
+    "analyse": [
+      "phpstan analyse --memory-limit=-1"
+    ]
   }
 }
-
