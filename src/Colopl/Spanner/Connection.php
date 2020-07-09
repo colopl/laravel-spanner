@@ -87,7 +87,7 @@ class Connection extends BaseConnection
      * @param string $instanceId instance ID
      * @param string $databaseName
      * @param string $tablePrefix
-     * @param array $config
+     * @param array<mixed> $config
      * @param CacheItemPoolInterface $authCache
      * @param SessionPoolInterface $sessionPool
      * @throws Exception
@@ -230,9 +230,9 @@ class Connection extends BaseConnection
      * Run a select statement against the database.
      *
      * @param  string $query
-     * @param  array  $bindings
+     * @param  array<mixed>  $bindings
      * @param  bool   $useReadPdo  Not used. This is here for compatibility reasons.
-     * @return array
+     * @return array<mixed>
      * @throws Throwable
      */
     public function select($query, $bindings = [], $useReadPdo = true): array
@@ -254,9 +254,9 @@ class Connection extends BaseConnection
      * Run a select statement against the database and returns a generator.
      *
      * @param  string  $query
-     * @param  array  $bindings
+     * @param  array<mixed>  $bindings
      * @param  bool   $useReadPdo  Not used. This is here for compatibility reasons.
-     * @return Generator
+     * @return Generator<mixed>
      * @throws Throwable
      */
     public function cursor($query, $bindings = [], $useReadPdo = true): Generator
@@ -276,7 +276,7 @@ class Connection extends BaseConnection
      * Execute an SQL statement and return the boolean result.
      *
      * @param  string $query
-     * @param  array $bindings
+     * @param  array<mixed> $bindings
      * @return bool
      * @throws Throwable
      */
@@ -302,7 +302,7 @@ class Connection extends BaseConnection
      * Run an SQL statement and get the number of rows affected.
      *
      * @param  string $query
-     * @param  array $bindings
+     * @param  array<mixed> $bindings
      * @return int
      * @throws Throwable
      */
@@ -310,11 +310,12 @@ class Connection extends BaseConnection
     {
         $runQueryCall = function () use ($query, $bindings) {
             return $this->run($query, $bindings, function ($query, $bindings) {
-                if ($this->pretending()) {
+                $transaction = $this->getCurrentTransaction();
+                if ($this->pretending() || $transaction === null) {
                     return 0;
                 }
-
-                $rowCount = $this->getCurrentTransaction()->executeUpdate($query, ['parameters' => $this->prepareBindings($bindings)]);
+                
+                $rowCount = $transaction->executeUpdate($query, ['parameters' => $this->prepareBindings($bindings)]);
 
                 $this->recordsHaveBeenModified($rowCount > 0);
 
@@ -351,7 +352,7 @@ class Connection extends BaseConnection
 
     /**
      * @param string $database
-     * @return string|void
+     * @return void
      * @throws BadMethodCallException
      * @internal
      */
@@ -393,8 +394,8 @@ class Connection extends BaseConnection
     /**
      * Prepare the query bindings for execution.
      *
-     * @param  array  $bindings
-     * @return array
+     * @param  array<mixed>  $bindings
+     * @return array<mixed>
      */
     public function prepareBindings(array $bindings)
     {
@@ -414,7 +415,7 @@ class Connection extends BaseConnection
 
     /**
      * @param  string    $query
-     * @param  array     $bindings
+     * @param  array<mixed>     $bindings
      * @param  Closure  $callback
      * @return mixed
      * @throws AbortedException|QueryException
