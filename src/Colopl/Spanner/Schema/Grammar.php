@@ -26,7 +26,7 @@ class Grammar extends \Illuminate\Database\Schema\Grammars\Grammar
     /**
      * The possible column modifiers.
      *
-     * @var array
+     * @var array<string>
      */
     protected $modifiers = ['Nullable'];
 
@@ -93,7 +93,7 @@ class Grammar extends \Illuminate\Database\Schema\Grammars\Grammar
      * @param  Blueprint  $blueprint
      * @param  Fluent  $command
      * @param  Connection $connection
-     * @return string
+     * @return array<string>
      *
      * @throws \RuntimeException
      */
@@ -101,7 +101,7 @@ class Grammar extends \Illuminate\Database\Schema\Grammars\Grammar
     {
         $columns = $this->prefixArray('alter column', $this->getChangedColumns($blueprint));
 
-        return 'alter table '.$this->wrapTable($blueprint).' '.implode(', ', $columns);
+        return ['alter table '.$this->wrapTable($blueprint).' '.implode(', ', $columns)];
     }
 
     /**
@@ -420,7 +420,7 @@ class Grammar extends \Illuminate\Database\Schema\Grammars\Grammar
      * Compile the blueprint's column definitions.
      *
      * @param  Blueprint $blueprint
-     * @return array
+     * @return array<string>
      */
     protected function getChangedColumns(Blueprint $blueprint)
     {
