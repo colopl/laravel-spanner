@@ -28,7 +28,6 @@ class ReadTimestamp implements TimestampBoundInterface
     public $timestamp;
 
     /**
-     * ReadTimestamp constructor.
      * @param Timestamp|DateTimeInterface $timestamp
      */
     public function __construct($timestamp)

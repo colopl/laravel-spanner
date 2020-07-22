@@ -108,9 +108,9 @@ trait ManagesTransactions
             $this->reconnect();
 
             return $this->getSpannerDatabase()->transaction();
-        } else {
-            throw $e;
         }
+
+        throw $e;
     }
 
     /**
