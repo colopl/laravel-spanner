@@ -27,7 +27,6 @@ class MaxStaleness implements TimestampBoundInterface
     public $duration;
 
     /**
-     * MaxStaleness constructor.
      * @param Duration|int $duration
      */
     public function __construct($duration)

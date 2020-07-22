@@ -27,7 +27,6 @@ class ExactStaleness implements TimestampBoundInterface
     public $duration;
 
     /**
-     * ExactStaleness constructor.
      * @param Duration|int $duration
      */
     public function __construct($duration)

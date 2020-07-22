@@ -28,7 +28,6 @@ class MinReadTimestamp implements TimestampBoundInterface
     public $timestamp;
 
     /**
-     * MinReadTimestamp constructor.
      * @param Timestamp|DateTimeInterface $timestamp
      */
     public function __construct($timestamp)
