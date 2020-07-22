@@ -50,6 +50,22 @@ trait ManagesSessionPool
     }
 
     /**
+     * Maintain the session pool
+     * @return bool
+     */
+    public function maintainSessionPool()
+    {
+        $sessionPool = $this->getSpannerDatabase()->sessionPool();
+        if ($sessionPool !== null) {
+            $sessionPool->maintain();
+            return true;
+        }
+        return false;
+    }
+
+
+
+    /**
      * Returns the number of warmed up sessions
      * @return int
      * @throws GoogleException
@@ -57,7 +73,7 @@ trait ManagesSessionPool
     public function warmupSessionPool()
     {
         $sessionPool = $this->getSpannerDatabase()->sessionPool();
-        if(method_exists($sessionPool, 'warmup')) {
+        if($sessionPool !== null && method_exists($sessionPool, 'warmup')) {
             return $sessionPool->warmup();
         }
         return 0;
