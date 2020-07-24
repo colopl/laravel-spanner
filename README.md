@@ -46,7 +46,7 @@ Add connection config to `config/database.php`
 That's all. You can use database connection as usual.
 
 ```php
-$conn = DB::conection('spanner');
+$conn = DB::connection('spanner');
 $conn->...
 ```
 
