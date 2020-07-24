@@ -14,12 +14,12 @@
     "laravel/framework": "~5.5|~6.0|~7.0",
     "google/cloud-spanner": "^1.30",
     "grpc/grpc": "^1.15.0",
-    "ramsey/uuid": "^3 || ^4",
-    "symfony/cache": "^4.3",
-    "symfony/lock": "^4.3"
+    "ramsey/uuid": "~3|~4",
+    "symfony/cache": "~4.3|~5.0",
+    "symfony/lock": "~4.3|~5.0"
   },
   "require-dev": {
-    "orchestra/testbench": "~3.5|~4.0",
+    "orchestra/testbench": "~3.5|~4.0|~5.0",
     "phpunit/phpunit": "~6.0|~8.0"
   },
   "autoload": {
