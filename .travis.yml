@@ -2,15 +2,11 @@ language: php
 php:
   - 7.1
   - 7.2
+  - 7.4
 
 install:
   - pecl install grpc protobuf apcu igbinary
   - travis_retry composer install
-  - echo $GOOGLE_CREDENTIALS_ENCODED | base64 -i --decode > /tmp/key.json
-
-env:
-  # DATABASE_ID with ${TRAVIS_JOB_ID} to avoid conflict by parallel test
-  - GOOGLE_APPLICATION_CREDENTIALS=/tmp/key.json DB_SPANNER_DATABASE_ID=travis-${TRAVIS_JOB_ID}
 
 cache:
   directories:

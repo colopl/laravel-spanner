@@ -688,6 +688,10 @@ class BuilderTest extends TestCase
 
     public function testPartitionedDml()
     {
+        if (getenv('SPANNER_EMULATOR_HOST')) {
+            $this->markTestSkipped('Cannot test PartitionedDml on emulator');
+        }
+
         $conn = $this->getDefaultConnection();
         $tableName = self::TABLE_NAME_TEST;
 
@@ -769,7 +773,11 @@ class BuilderTest extends TestCase
         } catch (QueryException $ex) {
             $caughtException = $ex;
         }
-        $this->assertTrue(Str::contains($caughtException->getMessage(), 'Given string is not UTF8 encoded'));
+        if (getenv('SPANNER_EMULATOR_HOST')) {
+            $this->assertTrue(Str::contains($caughtException->getMessage(), 'INTERNAL'));
+        } else {
+            $this->assertTrue(Str::contains($caughtException->getMessage(), 'Given string is not UTF8 encoded'));
+        }
     }
 
     public function testEscapeCharacter()
