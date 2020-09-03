@@ -21,6 +21,7 @@ use Colopl\Spanner\Connection;
 use Colopl\Spanner\SpannerServiceProvider;
 use Google\Cloud\Spanner\Bytes;
 use Google\Cloud\Spanner\Date;
+use Google\Cloud\Spanner\SpannerClient;
 use Ramsey\Uuid\Uuid;
 
 class TestCase extends \Orchestra\Testbench\TestCase
@@ -113,11 +114,26 @@ class TestCase extends \Orchestra\Testbench\TestCase
     {
         if (!self::$databasePrepared) {
             self::$databasePrepared = true;
+            if (!empty(getenv('SPANNER_EMULATOR_HOST'))) {
+                $this->createEmulatorInstance($conn);
+            }
+
             if ($conn->databaseExists()) {
                 $conn->dropDatabase();
             }
             $conn->createDatabase($this->getTestDatabaseDDLs());
             $conn->clearSessionPool();
+        }
+    }
+
+    protected function createEmulatorInstance(Connection $conn)
+    {
+        $spanner = new SpannerClient($conn->getConfig('client'));
+        $name = $conn->getConfig('instance');
+        if (! $spanner->instance($name)->exists()) {
+            $config = $spanner->instanceConfiguration('emulator-config');
+            $spanner->createInstance($config, $name)->pollUntilComplete();
+            logger()->debug('Created Spanner Emulator Instance: ' . $name);
         }
     }
 
@@ -140,6 +156,7 @@ class TestCase extends \Orchestra\Testbench\TestCase
         $ddlFile = __DIR__.'/test.ddl';
         return collect(explode(';', file_get_contents($ddlFile)))
             ->map(function($ddl) { return trim($ddl); })
+            ->filter()
             ->all();
     }
 
