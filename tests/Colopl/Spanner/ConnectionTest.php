@@ -253,6 +253,10 @@ class ConnectionTest extends TestCase
 
     public function testCredentialFetcher()
     {
+        if (getenv('SPANNER_EMULATOR_HOST')) {
+            $this->markTestSkipped('Cannot test credential fetcher on emulator');
+        }
+
         $conn = $this->getDefaultConnection();
         /** @var \Google\Auth\FetchAuthTokenInterface|null $credentialFetcher */
         $credentialFetcher = $conn->__debugInfo()['credentialFetcher'];
@@ -263,6 +267,10 @@ class ConnectionTest extends TestCase
 
     public function testAuthCache()
     {
+        if (getenv('SPANNER_EMULATOR_HOST')) {
+            $this->markTestSkipped('Cannot test AuthCache on emulator');
+        }
+
         $config = $this->app['config']->get('database.connections.main');
 
         $authCache = new ArrayAdapter();
@@ -291,6 +299,10 @@ class ConnectionTest extends TestCase
 
     public function testListSessions()
     {
+        if (getenv('SPANNER_EMULATOR_HOST')) {
+            $this->markTestSkipped('Cannot list sessions on emulator');
+        }
+
         $conn = $this->getDefaultConnection();
 
         $sessions = $conn->listSessions();
