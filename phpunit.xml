@@ -23,7 +23,8 @@
          convertNoticesToExceptions="true"
          convertWarningsToExceptions="true"
          processIsolation="false"
-         stopOnFailure="false">
+         stopOnError="true"
+         stopOnFailure="true">
     <testsuite name="all">
         <directory suffix="Test.php">./tests</directory>
     </testsuite>
