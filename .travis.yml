@@ -1,15 +1,5 @@
-language: php
-php:
-  - 7.1
-  - 7.4
-
-install:
-  - pecl install grpc protobuf apcu igbinary
-  - travis_retry composer install
-
-cache:
-  directories:
-    - $HOME/.composer/cache/files
+services:
+  - docker
 
 script:
-  - vendor/bin/phpunit
+  - docker-compose run test
