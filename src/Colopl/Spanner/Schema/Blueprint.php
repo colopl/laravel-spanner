@@ -59,16 +59,6 @@ class Blueprint extends \Illuminate\Database\Schema\Blueprint
         return $this->increments($column);
     }
 
-    public function foreign($columns, $name = null)
-    {
-        $this->markAsNotSupported('foreign key');
-    }
-
-    public function dropForeign($index)
-    {
-        $this->markAsNotSupported('foreign key');
-    }
-
     // region Spanner Specific Types
 
     /**
