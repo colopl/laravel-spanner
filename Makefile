@@ -13,3 +13,6 @@ update:
 
 bash:
 	$(BASE_COMMAND) run test /bin/sh
+
+down:
+	$(BASE_COMMAND) down --remove-orphans
