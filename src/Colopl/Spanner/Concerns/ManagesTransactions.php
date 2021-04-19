@@ -52,19 +52,23 @@ trait ManagesTransactions
             return parent::transaction($callback, $attempts);
         }
 
-        return $this->getSpannerDatabase()->runTransaction(function (Transaction $tx) use ($callback) {
+        $return = $this->getSpannerDatabase()->runTransaction(function (Transaction $tx) use ($callback) {
             try {
                 $this->currentTransaction = $tx;
                 $this->transactions++;
                 $this->fireConnectionEvent('beganTransaction');
                 $result = $callback($this);
-                $this->commit();
+                $this->performSpannerCommit();
                 return $result;
             } catch (Throwable $e) {
                 $this->rollBack();
                 throw $e;
             }
         }, ['maxRetries' => $attempts - 1]);
+
+        $this->fireConnectionEvent('committed');
+
+        return $return;
     }
 
     /**
@@ -122,6 +126,15 @@ trait ManagesTransactions
      */
     public function commit()
     {
+        $this->performSpannerCommit();
+        $this->fireConnectionEvent('committed');
+    }
+
+    /**
+     * @throws AbortedException
+     */
+    protected function performSpannerCommit()
+    {
         if ($this->transactions == 1) {
             $this->currentTransaction->commit();
         }
@@ -130,8 +143,6 @@ trait ManagesTransactions
         if ($this->isTransactionFinished()) {
             $this->currentTransaction = null;
         }
-
-        $this->fireConnectionEvent('committed');
     }
 
     /**
