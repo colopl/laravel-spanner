@@ -88,7 +88,7 @@ trait ManagesTransactions
      */
     protected function createTransaction()
     {
-        if ($this->transactions == 0) {
+        if ($this->transactions === 0) {
             try {
                 $this->reconnectIfMissingConnection();
                 $this->currentTransaction = $this->getSpannerDatabase()->transaction();
@@ -135,7 +135,7 @@ trait ManagesTransactions
      */
     protected function performSpannerCommit()
     {
-        if ($this->transactions == 1) {
+        if ($this->transactions === 1) {
             $this->currentTransaction->commit();
         }
 
