@@ -10,7 +10,7 @@ ENV CPPFLAGS="-Wno-maybe-uninitialized"
 RUN apk add --no-cache bash gmp libxml2 libstdc++ \
   && apk add --no-cache --virtual=.build-deps autoconf curl-dev gcc gmp-dev g++ libxml2-dev linux-headers make pcre-dev tzdata \
   && docker-php-ext-install -j$(nproc) bcmath gmp \
-  && pecl install -o -f protobuf grpc-1.35.0 \
+  && pecl install -o -f protobuf grpc \
   && docker-php-ext-enable grpc opcache protobuf \
   && apk del .build-deps \
   && rm -rf /tmp/* \
