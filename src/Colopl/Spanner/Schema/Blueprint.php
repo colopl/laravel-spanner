@@ -76,7 +76,7 @@ class Blueprint extends \Illuminate\Database\Schema\Blueprint
     }
 
     /**
-     * @param $column
+     * @param string $column
      * @return Fluent
      */
     public function booleanArray($column)
@@ -85,7 +85,7 @@ class Blueprint extends \Illuminate\Database\Schema\Blueprint
     }
 
     /**
-     * @param $column
+     * @param string $column
      * @return Fluent
      */
     public function integerArray($column)
@@ -94,7 +94,7 @@ class Blueprint extends \Illuminate\Database\Schema\Blueprint
     }
 
     /**
-     * @param $column
+     * @param string $column
      * @return Fluent
      */
     public function floatArray($column)
@@ -103,8 +103,8 @@ class Blueprint extends \Illuminate\Database\Schema\Blueprint
     }
 
     /**
-     * @param $column
-     * @param $length
+     * @param string $column
+     * @param int $length
      * @return Fluent
      */
     public function stringArray($column, $length)
@@ -113,7 +113,7 @@ class Blueprint extends \Illuminate\Database\Schema\Blueprint
     }
 
     /**
-     * @param $column
+     * @param string $column
      * @return Fluent
      */
     public function dateArray($column)
@@ -122,7 +122,7 @@ class Blueprint extends \Illuminate\Database\Schema\Blueprint
     }
 
     /**
-     * @param $column
+     * @param string $column
      * @return Fluent
      */
     public function timestampArray($column)
