@@ -27,6 +27,7 @@ trait UsesMutations
 {
     /**
      * @param array $values
+     * @return void
      */
     public function insertUsingMutation(array $values)
     {
@@ -35,6 +36,7 @@ trait UsesMutations
 
     /**
      * @param array $values
+     * @return void
      */
     public function updateUsingMutation(array $values)
     {
@@ -42,7 +44,8 @@ trait UsesMutations
     }
 
     /**
-     * @param mixed|array|KeySet $keys
+     * @param array|KeySet $keys
+     * @return void
      */
     public function deleteUsingMutation($keys)
     {

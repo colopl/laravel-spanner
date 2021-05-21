@@ -69,7 +69,6 @@ class Parameterizer
     }
 
     /**
-     *
      * @param string $query
      * @param string $value
      * @return bool
