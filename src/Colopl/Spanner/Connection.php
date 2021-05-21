@@ -129,7 +129,7 @@ class Connection extends BaseConnection
      */
     protected function getDatabaseContext()
     {
-        return $this->inTransaction() ? $this->getCurrentTransaction() : $this->getSpannerDatabase();
+        return $this->getCurrentTransaction() ?? $this->getSpannerDatabase();
     }
 
     /**
