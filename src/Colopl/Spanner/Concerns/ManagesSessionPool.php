@@ -110,7 +110,10 @@ trait ManagesSessionPool
             /** @var ConnectionInterface $internalConnection */
             $internalConnection = $internalConnectionProperty->getValue($this->spannerClient);
             if ($internalConnection instanceof Grpc) {
-                $credentialFetcher = $internalConnection->requestWrapper()->getCredentialsFetcher();
+                $requestWrapper = $internalConnection->requestWrapper();
+                if ($requestWrapper !== null) {
+                    $credentialFetcher = $requestWrapper->getCredentialsFetcher();
+                }
             }
         }
 

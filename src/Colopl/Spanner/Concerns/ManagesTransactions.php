@@ -136,7 +136,7 @@ trait ManagesTransactions
      */
     protected function performSpannerCommit()
     {
-        if ($this->transactions === 1) {
+        if ($this->transactions === 1 && $this->currentTransaction !== null) {
             $this->currentTransaction->commit();
         }
 
