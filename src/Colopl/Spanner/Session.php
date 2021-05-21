@@ -46,8 +46,12 @@ class Session
     {
         $this->fullName = $protobufSession->getName();
         $this->name = collect(explode('/', $protobufSession->getName()))->last();
-        $this->createdAt = Carbon::instance($protobufSession->getCreateTime()->toDateTime());
-        $this->lastUsedAt = Carbon::instance($protobufSession->getApproximateLastUseTime()->toDateTime());
+        if (($createTime = $protobufSession->getCreateTime()) !== null) {
+            $this->createdAt = Carbon::instance($createTime->toDateTime());
+        }
+        if (($approximateLastUseTime = $protobufSession->getApproximateLastUseTime()) !== null) {
+            $this->lastUsedAt = Carbon::instance($approximateLastUseTime->toDateTime());
+        }
     }
 
     /**
