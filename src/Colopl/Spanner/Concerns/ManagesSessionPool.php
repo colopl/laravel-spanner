@@ -32,14 +32,14 @@ use ReflectionException;
 use ReflectionObject;
 
 /**
- * @property Database spannerDatabase
- * @method Database getSpannerDatabase
+ * @property Database $spannerDatabase
+ * @method Database getSpannerDatabase()
  */
 trait ManagesSessionPool
 {
     /**
      * Clear the session pool
-     * @throws GoogleException
+     * @return void
      */
     public function clearSessionPool()
     {
@@ -68,7 +68,6 @@ trait ManagesSessionPool
     /**
      * Returns the number of warmed up sessions
      * @return int
-     * @throws GoogleException
      */
     public function warmupSessionPool()
     {

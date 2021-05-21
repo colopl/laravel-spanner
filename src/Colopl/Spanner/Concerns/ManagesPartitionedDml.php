@@ -20,7 +20,7 @@ namespace Colopl\Spanner\Concerns;
 use Google\Cloud\Spanner\Database;
 
 /**
- * @method Database getSpannerDatabase
+ * @method Database getSpannerDatabase()
  */
 trait ManagesPartitionedDml
 {

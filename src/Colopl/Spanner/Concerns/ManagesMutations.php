@@ -34,6 +34,7 @@ trait ManagesMutations
     /**
      * @param string $table
      * @param array $dataSet
+     * @return void
      */
     public function insertUsingMutation(string $table, array $dataSet)
     {
@@ -47,6 +48,7 @@ trait ManagesMutations
     /**
      * @param string $table
      * @param array $dataSet
+     * @return void
      */
     public function updateUsingMutation(string $table, array $dataSet)
     {
@@ -59,13 +61,14 @@ trait ManagesMutations
 
     /**
      * @param string $table
-     * @param mixed|array|KeySet $keySet
+     * @param array|KeySet $keySet
+     * @return void
      */
     public function deleteUsingMutation(string $table, $keySet)
     {
         $this->withTransactionEvents(function () use ($table, $keySet) {
             $keySet = $this->createDeleteMutationKeySet($keySet);
-            $dataSet = $keySet->keys() ? $keySet->keys() : $keySet->keySetObject();
+            $dataSet = $keySet->keys() ?: $keySet->keySetObject();
             $this->event(new MutatingData($this, $table, 'delete', $dataSet));
             $this->getDatabaseContext()->delete($table, $keySet);
         });
@@ -114,7 +117,7 @@ trait ManagesMutations
 
     /**
      * @param mixed|array|KeySet $keys
-     * @return array|KeySet
+     * @return KeySet
      */
     private function createDeleteMutationKeySet($keys)
     {
