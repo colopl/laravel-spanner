@@ -24,10 +24,6 @@ parameters:
         -
             message: '#^Method Colopl\\Spanner\\Connection::getSpannerDatabase\(\) should return Google\\Cloud\\Spanner\\Database but returns Google\\Cloud\\Spanner\\Database\|null.$#'
             path: src/Colopl/Spanner/Connection.php
-        # Useless null check
-        -
-            message: '#^Cannot call method executeUpdate\(\) on Google\\Cloud\\Spanner\\Transaction\|null.$#'
-            path: src/Colopl/Spanner/Connection.php
         # Return always Colopl\Spanner\Query\Processor.
         -
             message: '#^Call to an undefined method Illuminate\\Database\\Query\\Processors\\Processor::processIndexListing\(\).$#'
