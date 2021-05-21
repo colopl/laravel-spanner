@@ -21,6 +21,9 @@ use Closure;
 use Illuminate\Database\Schema\Blueprint as BaseBlueprint;
 use Illuminate\Database\Schema\Builder as BaseBuilder;
 
+/**
+ * @property Grammar $grammar
+ */
 class Builder extends BaseBuilder
 {
     /**

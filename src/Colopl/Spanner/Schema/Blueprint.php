@@ -17,6 +17,7 @@
 
 namespace Colopl\Spanner\Schema;
 
+use BadMethodCallException;
 use Colopl\Spanner\Concerns\MarksAsNotSupported;
 use Illuminate\Support\Fluent;
 
@@ -24,36 +25,64 @@ class Blueprint extends \Illuminate\Database\Schema\Blueprint
 {
     use MarksAsNotSupported;
 
+    /**
+     * @return void
+     * @throws BadMethodCallException
+     */
     public function temporary()
     {
         $this->markAsNotSupported('temporary table');
     }
 
+    /**
+     * @return void
+     * @throws BadMethodCallException
+     */
     public function dropPrimary($index = null)
     {
         $this->markAsNotSupported('dropping primary key');
     }
 
+    /**
+     * @return void
+     * @throws BadMethodCallException
+     */
     public function increments($column)
     {
         $this->markAsNotSupported('AUTO_INCREMENT');
     }
 
+    /**
+     * @return void
+     * @throws BadMethodCallException
+     */
     public function bigIncrements($column)
     {
         $this->markAsNotSupported('AUTO_INCREMENT');
     }
 
+    /**
+     * @return void
+     * @throws BadMethodCallException
+     */
     public function mediumIncrements($column)
     {
         $this->markAsNotSupported('AUTO_INCREMENT');
     }
 
+    /**
+     * @return void
+     * @throws BadMethodCallException
+     */
     public function smallIncrements($column)
     {
         $this->markAsNotSupported('AUTO_INCREMENT');
     }
 
+    /**
+     * @return void
+     * @throws BadMethodCallException
+     */
     public function tinyIncrements($column)
     {
         $this->markAsNotSupported('AUTO_INCREMENT');
