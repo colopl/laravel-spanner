@@ -131,6 +131,7 @@ trait ManagesTransactions
     }
 
     /**
+     * @return void
      * @throws AbortedException
      */
     protected function performSpannerCommit()
