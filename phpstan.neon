@@ -1,0 +1,34 @@
+parameters:
+    level: max
+    checkMissingIterableValueType: false
+    paths:
+        - src
+    ignoreErrors:
+        # Fluent magic properties.
+        - '#^Access to an undefined property Illuminate\\Support\\Fluent::.*$#'
+        # Not supported operations.
+        - '#^Return type \(void\) of method .*? should be compatible with return type \(.*?\) of method .*?$#'
+        # Spanner specific types.
+        -
+            message: '#^Return type \(string\) of method Colopl\\Spanner\\Query\\Builder::insertGetId\(\) should be compatible with return type \(int\) of method Illuminate\\Database\\Query\\Builder::insertGetId\(\)$#'
+            path: src/Colopl/Spanner/Query/Builder.php
+        # Spanner not use PDO.
+        -
+            message: '#^Parameter \#1 \$pdo of method Illuminate\\Database\\Connection::__construct\(\) expects Closure|PDO, null given.$#'
+            path: src/Colopl/Spanner/Connection.php
+        # Upstream PHPDoc is incorrect.
+        -
+            message: '#^Parameter \#1 \$value of method Illuminate\\Database\\Schema\\Grammars\\Grammar::wrap\(\) expects Illuminate\\Database\\Query\\Expression\|string, Illuminate\\Database\\Schema\\ColumnDefinition given.$#'
+            path: src/Colopl/Spanner/Schema/Grammar.php
+        # Can't tracing PHPStan
+        -
+            message: '#^Method Colopl\\Spanner\\Connection::getSpannerDatabase\(\) should return Google\\Cloud\\Spanner\\Database but returns Google\\Cloud\\Spanner\\Database\|null.$#'
+            path: src/Colopl/Spanner/Connection.php
+        # Useless null check
+        -
+            message: '#^Cannot call method executeUpdate\(\) on Google\\Cloud\\Spanner\\Transaction\|null.$#'
+            path: src/Colopl/Spanner/Connection.php
+        # Return always Colopl\Spanner\Query\Processor.
+        -
+            message: '#^Call to an undefined method Illuminate\\Database\\Query\\Processors\\Processor::processIndexListing\(\).$#'
+            path: src/Colopl/Spanner/Schema/Builder.php

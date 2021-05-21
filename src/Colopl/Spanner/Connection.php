@@ -38,6 +38,7 @@ use Google\Cloud\Spanner\Transaction;
 use Illuminate\Database\Connection as BaseConnection;
 use Illuminate\Database\QueryException;
 use Psr\Cache\CacheItemPoolInterface;
+use RuntimeException;
 use Throwable;
 
 class Connection extends BaseConnection
@@ -311,7 +312,13 @@ class Connection extends BaseConnection
                     return 0;
                 }
 
-                $rowCount = $this->getCurrentTransaction()->executeUpdate($query, ['parameters' => $this->prepareBindings($bindings)]);
+                $transaction = $this->getCurrentTransaction();
+
+                if ($transaction === null) {
+                    throw new RuntimeException('Tried to run update outside of transaction! Affecting statements must be done inside a transaction');
+                }
+
+                $rowCount = $transaction->executeUpdate($query, ['parameters' => $this->prepareBindings($bindings)]);
 
                 $this->recordsHaveBeenModified($rowCount > 0);
 
