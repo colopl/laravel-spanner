@@ -17,11 +17,15 @@
 
 namespace Colopl\Spanner\Query;
 
+use BadMethodCallException;
 use Colopl\Spanner\Concerns\MarksAsNotSupported;
 use Colopl\Spanner\Connection;
+use Illuminate\Database\Query\Builder as BaseBuilder;
 use Illuminate\Support\Arr;
+use InvalidArgumentException;
+use Throwable;
 
-class Builder extends \Illuminate\Database\Query\Builder
+class Builder extends BaseBuilder
 {
     use Concerns\AppliesForceIndex,
         Concerns\UsesMutations,
@@ -50,7 +54,7 @@ class Builder extends \Illuminate\Database\Query\Builder
      * @param  array        $values
      * @param  string|null  $sequence the name of primary key
      * @return string
-     * @throws \InvalidArgumentException
+     * @throws InvalidArgumentException
      */
     public function insertGetId(array $values, $sequence = null)
     {
@@ -75,16 +79,28 @@ class Builder extends \Illuminate\Database\Query\Builder
         return (bool) $this->take(1)->update(Arr::except($values, array_keys($attributes)));
     }
 
+    /**
+     * @return void
+     * @throws BadMethodCallException
+     */
     public function truncate()
     {
         $this->markAsNotSupported('truncate table');
     }
 
+    /**
+     * @return void
+     * @throws BadMethodCallException
+     */
     public function sharedLock()
     {
         $this->markAsNotSupported('shared lock');
     }
 
+    /**
+     * @return void
+     * @throws BadMethodCallException
+     */
     public function lockForUpdate()
     {
         $this->markAsNotSupported('lock for update');
@@ -131,10 +147,8 @@ class Builder extends \Illuminate\Database\Query\Builder
     }
 
     /**
-     * Run the query as a "select" statement against the connection.
-     *
      * @return array
-     * @throws \Throwable
+     * @throws Throwable
      */
     protected function runSelect()
     {

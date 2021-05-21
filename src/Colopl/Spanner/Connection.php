@@ -82,15 +82,12 @@ class Connection extends BaseConnection
     protected $sessionPool;
 
     /**
-     * Create a new spanner database connection instance.
-     *
      * @param string $instanceId instance ID
      * @param string $databaseName
      * @param string $tablePrefix
      * @param array $config
-     * @param CacheItemPoolInterface $authCache
-     * @param SessionPoolInterface $sessionPool
-     * @throws Exception
+     * @param CacheItemPoolInterface|null $authCache
+     * @param SessionPoolInterface|null $sessionPool
      */
     public function __construct(string $instanceId, string $databaseName, $tablePrefix = '', array $config = [], CacheItemPoolInterface $authCache = null, SessionPoolInterface $sessionPool = null)
     {
@@ -351,7 +348,7 @@ class Connection extends BaseConnection
 
     /**
      * @param string $database
-     * @return string|void
+     * @return void
      * @throws BadMethodCallException
      * @internal
      */

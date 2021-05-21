@@ -27,7 +27,7 @@ use Illuminate\Database\Events\TransactionCommitted;
 use Illuminate\Support\Arr;
 
 /**
- * @method Database|Transaction getDatabaseContext
+ * @method Database|Transaction getDatabaseContext()
  */
 trait ManagesMutations
 {

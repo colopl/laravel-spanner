@@ -19,9 +19,11 @@ namespace Colopl\Spanner\Schema;
 
 use Illuminate\Database\Connection;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Database\Schema\Grammars\Grammar as BaseGrammar;
 use Illuminate\Support\Fluent;
+use RuntimeException;
 
-class Grammar extends \Illuminate\Database\Schema\Grammars\Grammar
+class Grammar extends BaseGrammar
 {
     /**
      * The possible column modifiers.

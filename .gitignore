@@ -1,5 +1,6 @@
 .env
 .idea
+.phpunit.result.cache
 key.json
 vendor
 composer.lock
