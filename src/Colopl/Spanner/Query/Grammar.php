@@ -37,8 +37,11 @@ class Grammar extends \Illuminate\Database\Query\Grammars\Grammar
      */
     protected function compileForceIndex(Builder $query)
     {
-        $forceIndex = $query->forceIndex ?? null;
-        return $forceIndex ? "@{FORCE_INDEX=$forceIndex}" : '';
+        if ($query instanceof SpannerBuilder) {
+            return $query->forceIndex ? "@{FORCE_INDEX=$query->forceIndex}" : '';
+        }
+
+        throw new RuntimeException('Unexpected Builder: '.get_class($query).' Expected: '.SpannerBuilder::class);
     }
 
     /**
