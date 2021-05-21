@@ -56,7 +56,7 @@ trait ManagesSessionPool
     public function maintainSessionPool()
     {
         $sessionPool = $this->getSpannerDatabase()->sessionPool();
-        if ($sessionPool !== null) {
+        if ($sessionPool !== null && method_exists($sessionPool, 'maintain')) {
             $sessionPool->maintain();
             return true;
         }
