@@ -22,7 +22,7 @@ use Exception;
 use Google\Cloud\Spanner\Database;
 
 /**
- * @method Database getSpannerDatabase
+ * @method Database getSpannerDatabase()
  */
 trait ManagesDataDefinitions
 {
@@ -46,15 +46,16 @@ trait ManagesDataDefinitions
 
     /**
      * @param string[] $statements Additional DDL statements
+     * @return void
      * @throws Exception
      */
-    public function createDatabase($statements = [])
+    public function createDatabase(array $statements = [])
     {
         $operation = $this->getSpannerDatabase()->create(['statements' => $statements]);
         $operation->pollUntilComplete();
         $error = $operation->error();
         if ($error !== null) {
-            throw new Exception(json_encode($operation->error()));
+            throw new Exception((string) json_encode($operation->error()));
         }
     }
 

@@ -22,7 +22,7 @@ use Google\Cloud\Core\LongRunning\LongRunningOperation;
 use Google\Cloud\Spanner\Database;
 
 /**
- * @method Database getSpannerDatabase
+ * @method Database getSpannerDatabase()
  */
 trait ManagesLongRunningOperations
 {
@@ -40,7 +40,7 @@ trait ManagesLongRunningOperations
     {
         $result = $operation->pollUntilComplete(['maxPollingDurationSeconds' => $this->longRunningOperationTimeoutSeconds]);
         if ($operation->error() !== null) {
-            throw new Exception(json_encode($operation->error()));
+            throw new Exception((string) json_encode($operation->error()));
         }
         return $result;
     }
@@ -54,7 +54,7 @@ trait ManagesLongRunningOperations
     {
         $operation->reload(['maxPollingDurationSeconds' => $this->longRunningOperationTimeoutSeconds]);
         if ($operation->error() !== null) {
-            throw new Exception(json_encode($operation->error()));
+            throw new Exception((string) json_encode($operation->error()));
         }
 
         $endTime = microtime(true) + $this->longRunningOperationTimeoutSeconds;
