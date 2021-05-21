@@ -41,22 +41,22 @@ class Blueprint extends \Illuminate\Database\Schema\Blueprint
 
     public function bigIncrements($column)
     {
-        return $this->increments($column);
+        $this->markAsNotSupported('AUTO_INCREMENT');
     }
 
     public function mediumIncrements($column)
     {
-        return $this->increments($column);
+        $this->markAsNotSupported('AUTO_INCREMENT');
     }
 
     public function smallIncrements($column)
     {
-        return $this->increments($column);
+        $this->markAsNotSupported('AUTO_INCREMENT');
     }
 
     public function tinyIncrements($column)
     {
-        return $this->increments($column);
+        $this->markAsNotSupported('AUTO_INCREMENT');
     }
 
     // region Spanner Specific Types
