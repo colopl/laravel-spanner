@@ -95,15 +95,14 @@ class Grammar extends BaseGrammar
      * @param  Blueprint  $blueprint
      * @param  Fluent  $command
      * @param  Connection $connection
-     * @return string
-     *
-     * @throws \RuntimeException
+     * @return string[]
+     * @throws RuntimeException
      */
     public function compileChange(Blueprint $blueprint, Fluent $command, Connection $connection)
     {
         $columns = $this->prefixArray('alter column', $this->getChangedColumns($blueprint));
 
-        return 'alter table '.$this->wrapTable($blueprint).' '.implode(', ', $columns);
+        return ['alter table '.$this->wrapTable($blueprint).' '.implode(', ', $columns)];
     }
 
     /**
