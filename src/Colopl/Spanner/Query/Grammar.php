@@ -17,13 +17,16 @@
 
 namespace Colopl\Spanner\Query;
 
+use Colopl\Spanner\Query\Builder as SpannerBuilder;
 use Illuminate\Database\Query\Builder;
+use Illuminate\Database\Query\Grammars\Grammar as BaseGrammar;
+use RuntimeException;
 
-class Grammar extends \Illuminate\Database\Query\Grammars\Grammar
+class Grammar extends BaseGrammar
 {
     /**
-     * @param  Builder  $query
-     * @param  string  $table
+     * @param Builder $query
+     * @param string $table
      * @return string
      */
     protected function compileFrom(Builder $query, $table)
@@ -45,7 +48,7 @@ class Grammar extends \Illuminate\Database\Query\Grammars\Grammar
     }
 
     /**
-     * @param  string  $value
+     * @param string $value
      * @return string
      */
     protected function wrapValue($value)
