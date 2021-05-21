@@ -34,6 +34,9 @@ class FileCacheAdapter extends AbstractAdapter implements PruneableInterface
      */
     protected $prefix;
 
+    /**
+     * @var string[]
+     */
     protected $pathCache = [];
 
     /**
@@ -52,6 +55,7 @@ class FileCacheAdapter extends AbstractAdapter implements PruneableInterface
     }
 
     /**
+     * @return void
      * @throws Exception
      */
     protected function ensureDirectory()

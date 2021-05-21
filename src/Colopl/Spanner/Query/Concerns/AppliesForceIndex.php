@@ -27,7 +27,7 @@ use Colopl\Spanner\Query\Grammar;
 trait AppliesForceIndex
 {
     /**
-     * @var string
+     * @var string|null
      */
     public $forceIndex;
 
