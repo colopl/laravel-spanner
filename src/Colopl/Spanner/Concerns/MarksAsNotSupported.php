@@ -23,6 +23,7 @@ trait MarksAsNotSupported
 {
     /**
      * @param string $methodName
+     * @return void
      * @throws BadMethodCallException
      */
     protected function markAsNotSupported(string $methodName)
