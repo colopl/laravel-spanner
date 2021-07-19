@@ -131,13 +131,17 @@ class BlueprintTest extends TestCase
         $conn = $this->getDefaultConnection();
 
         $blueprint = new Blueprint('Test3', function (Blueprint $table) {
+            $table->dropUnique('test3_name_unique');
             $table->dropIndex('test3_createdat_index');
         });
 
         $queries = $blueprint->toSql($conn, new Grammar());
         $this->assertEquals(
-            'drop index `test3_createdat_index`',
-            $queries[0]
+            [
+                'drop index `test3_name_unique`',
+                'drop index `test3_createdat_index`',
+            ],
+            $queries
         );
     }
 
