@@ -209,6 +209,17 @@ class Grammar extends BaseGrammar
     }
 
     /**
+     * @param Blueprint $blueprint
+     * @param Fluent $command
+     * @return string
+     * @see https://cloud.google.com/spanner/docs/data-definition-language?hl=en
+     */
+    public function compileDropUnique(Blueprint $blueprint, Fluent $command)
+    {
+        return $this->compileDropIndex($blueprint, $command);
+    }
+
+    /**
      * Get the primary key syntax for a table creation statement.
      *
      * @param  Blueprint  $blueprint
