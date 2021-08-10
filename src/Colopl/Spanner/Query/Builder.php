@@ -20,6 +20,7 @@ namespace Colopl\Spanner\Query;
 use BadMethodCallException;
 use Colopl\Spanner\Concerns\MarksAsNotSupported;
 use Colopl\Spanner\Connection;
+use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Query\Builder as BaseBuilder;
 use Illuminate\Support\Arr;
 use InvalidArgumentException;
@@ -131,6 +132,24 @@ class Builder extends BaseBuilder
         return $this;
     }
 
+    /**
+     * @param string $column
+     * @param array|Arrayable|Nested $values
+     * @param string $boolean
+     * @return $this
+     */
+    public function whereInUnnest(string $column, $values, string $boolean = 'and')
+    {
+        $type = 'InUnnest';
+
+        // prevent getBindings() from flattening the array by wrapping it in a class
+        $values = ($values instanceof Nested) ? $values : new Nested($values);
+
+        $this->wheres[] = compact('type', 'column', 'values', 'boolean');
+
+        $this->addBinding($values);
+
+        return $this;
     }
 
     /**
