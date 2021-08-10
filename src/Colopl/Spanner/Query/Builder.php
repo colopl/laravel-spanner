@@ -117,16 +117,20 @@ class Builder extends BaseBuilder
      *
      * @param string $column
      * @param mixed $value
+     * @param string $boolean
      * @return $this
-     * @throws \InvalidArgumentException
      */
-    public function whereInArray(string $column, $value)
+    public function whereInArray(string $column, $value, string $boolean = 'and')
     {
-        if (!preg_match('/^[A-Za-z_][A-Za-z_0-9]*$/', $column)) {
-            throw new \InvalidArgumentException('column name must be match [A-Za-z_][A-Za-z_0-9]*');
-        }
-        $where = sprintf('? IN UNNEST(`%s`)', $column);
-        return $this->whereRaw($where, [$value]);
+        $type = 'InArray';
+
+        $this->wheres[] = compact('type', 'column', 'value', 'boolean');
+
+        $this->addBinding($value);
+
+        return $this;
+    }
+
     }
 
     /**

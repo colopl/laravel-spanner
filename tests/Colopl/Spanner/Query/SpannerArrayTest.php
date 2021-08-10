@@ -18,7 +18,6 @@
 namespace Colopl\Spanner\Tests\Query;
 
 use Colopl\Spanner\Tests\TestCase;
-use Illuminate\Support\Str;
 
 class SpannerArrayTest extends TestCase
 {
@@ -50,7 +49,7 @@ class SpannerArrayTest extends TestCase
         $conn = $this->getDefaultConnection();
         $tableName = self::TABLE_NAME_ARRAY_TEST;
 
-        $testDataCount = 100;
+        $testDataCount = 10;
         $insertValues = [];
         for ($i = 0; $i < $testDataCount; $i++) {
             $row = $this->generateArrayTestRow();
@@ -61,24 +60,20 @@ class SpannerArrayTest extends TestCase
         $qb->insert($insertValues);
 
         $qb = $conn->table($tableName);
-        $this->assertCount(1, $qb->whereInArray('int64Array', 0)->get());
+        $result = $qb->whereInArray('int64Array', 0)->get();
+        $this->assertCount(1, $result);
 
         $qb = $conn->table($tableName);
-        $this->assertCount(2, $qb->whereInArray('int64Array', 1)->get());
+        $result = $qb->whereInArray('int64Array', 1)->get();
+        $this->assertCount(2, $result);
 
         $qb = $conn->table($tableName);
-        $this->assertCount(3, $qb->whereInArray('int64Array', 2)->get());
+        $result = $qb->whereInArray('int64Array', 2)->get();
+        $this->assertCount(3, $result);
 
-        // try SQL-injection
-        $expectedThrown = false;
-        try {
-            $qb = $conn->table($tableName);
-            $qb->whereInArray('int64Array`) UNION ALL SELECT "a", [2], ["3"];//', 0)->get();
-        } catch (\Exception $ex) {
-            $this->assertTrue(Str::contains($ex->getMessage(), 'column name must be match'));
-            $expectedThrown = true;
-        }
-        $this->assertTrue($expectedThrown);
+        $qb = $conn->table($tableName);
+        $result = $qb->whereInArray('int64Array', 300)->get();
+        $this->assertCount(0, $result);
     }
 
     public function testInsertArray()
