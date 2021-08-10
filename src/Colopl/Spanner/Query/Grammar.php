@@ -48,6 +48,16 @@ class Grammar extends BaseGrammar
     }
 
     /**
+     * @param Builder $query
+     * @param $where
+     * @return string
+     */
+    protected function whereInArray(Builder $query, $where)
+    {
+        return '? in unnest('.$this->wrap($where['column']).')';
+    }
+
+    /**
      * @param string $value
      * @return string
      */
