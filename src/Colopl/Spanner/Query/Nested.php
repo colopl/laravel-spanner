@@ -22,7 +22,7 @@ use Illuminate\Contracts\Support\Arrayable;
 /**
  * @internal use only for UNNESTing
  */
-class Nested
+class Nested implements Arrayable
 {
     /**
      * @var array
