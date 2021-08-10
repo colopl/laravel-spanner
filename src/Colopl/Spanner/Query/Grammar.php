@@ -58,6 +58,20 @@ class Grammar extends BaseGrammar
     }
 
     /**
+     * @param Builder $query
+     * @param $where
+     * @return string
+     */
+    protected function whereInUnnest(Builder $query, $where)
+    {
+        if (! empty($where['values'])) {
+            return $this->wrap($where['column']).' in unnest(?)';
+        }
+
+        return '0 = 1';
+    }
+
+    /**
      * @param string $value
      * @return string
      */

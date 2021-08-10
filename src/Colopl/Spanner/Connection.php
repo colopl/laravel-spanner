@@ -19,6 +19,7 @@ namespace Colopl\Spanner;
 
 use BadMethodCallException;
 use Closure;
+use Colopl\Spanner\Query\Nested;
 use Colopl\Spanner\Query\Builder as QueryBuilder;
 use Colopl\Spanner\Query\Grammar as QueryGrammar;
 use Colopl\Spanner\Query\Parameterizer as QueryParameterizer;
@@ -410,6 +411,9 @@ class Connection extends BaseConnection
             // so we'll just ask the grammar for the format to get from the date.
             if ($value instanceof DateTimeInterface) {
                 $bindings[$key] = $value->format($grammar->getDateFormat());
+            }
+            else if ($value instanceof Nested) {
+                $bindings[$key] = $value->toArray();
             }
         }
 
