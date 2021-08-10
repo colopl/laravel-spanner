@@ -36,6 +36,7 @@ use Google\Cloud\Spanner\Database;
 use Google\Cloud\Spanner\Session\SessionPoolInterface;
 use Google\Cloud\Spanner\SpannerClient;
 use Google\Cloud\Spanner\Transaction;
+use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Connection as BaseConnection;
 use Illuminate\Database\QueryException;
 use Psr\Cache\CacheItemPoolInterface;
@@ -412,7 +413,7 @@ class Connection extends BaseConnection
             if ($value instanceof DateTimeInterface) {
                 $bindings[$key] = $value->format($grammar->getDateFormat());
             }
-            else if ($value instanceof Nested) {
+            else if ($value instanceof Arrayable) {
                 $bindings[$key] = $value->toArray();
             }
         }
