@@ -58,4 +58,17 @@ class UnnestTest extends TestCase
         self::assertCount(3, $results);
         self::assertEquals($ids->all(), $results->all());
     }
+
+    public function testUnnestingEmpty()
+    {
+        $conn = $this->getDefaultConnection();
+        $tableName = self::TABLE_NAME_TEST;
+        $qb = $conn->table($tableName);
+        $qb = $qb->whereInUnnest('testId', []);
+        $sql = $qb->toSql();
+        $results = $qb->get('testId')->pluck('testId')->sort()->values();
+
+        self::assertEquals('select * from `Test` where 0 = 1', $sql);
+        self::assertEquals([], $results->all());
+    }
 }
