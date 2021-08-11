@@ -64,11 +64,15 @@ class Grammar extends BaseGrammar
      */
     protected function whereInUnnest(Builder $query, $where)
     {
-        if (! empty($where['values'])) {
-            return $this->wrap($where['column']).' in unnest(?)';
+        $values = $where['values'];
+
+        if (!($values instanceof Nested)) {
+            throw new RuntimeException('Invalid Type:'.get_class($values).' given. '.Nested::class.' expected.');
         }
 
-        return '0 = 1';
+        return (count($values) > 0)
+            ? $this->wrap($where['column']).' in unnest(?)'
+            : '0 = 1';
     }
 
     /**

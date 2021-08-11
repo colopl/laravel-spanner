@@ -18,13 +18,14 @@
 namespace Colopl\Spanner\Query;
 
 use ArrayIterator;
+use Countable;
 use Illuminate\Contracts\Support\Arrayable;
 use IteratorAggregate;
 
 /**
  * @internal use only for UNNESTing
  */
-class Nested implements Arrayable, IteratorAggregate
+class Nested implements Arrayable, IteratorAggregate, Countable
 {
     /**
      * @var array
@@ -55,5 +56,13 @@ class Nested implements Arrayable, IteratorAggregate
     public function getIterator(): ArrayIterator
     {
         return new ArrayIterator($this->array);
+    }
+
+    /**
+     * @return int
+     */
+    public function count(): int
+    {
+        return count($this->array);
     }
 }
