@@ -17,12 +17,14 @@
 
 namespace Colopl\Spanner\Query;
 
+use ArrayIterator;
 use Illuminate\Contracts\Support\Arrayable;
+use IteratorAggregate;
 
 /**
  * @internal use only for UNNESTing
  */
-class Nested implements Arrayable
+class Nested implements Arrayable, IteratorAggregate
 {
     /**
      * @var array
@@ -42,8 +44,16 @@ class Nested implements Arrayable
     /**
      * @return array
      */
-    public function toArray()
+    public function toArray(): array
     {
         return array_values($this->array);
+    }
+
+    /**
+     * @return ArrayIterator
+     */
+    public function getIterator(): ArrayIterator
+    {
+        return new ArrayIterator($this->array);
     }
 }
