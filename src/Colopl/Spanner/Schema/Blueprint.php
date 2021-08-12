@@ -19,9 +19,10 @@ namespace Colopl\Spanner\Schema;
 
 use BadMethodCallException;
 use Colopl\Spanner\Concerns\MarksAsNotSupported;
+use Illuminate\Database\Schema\Blueprint as BaseBlueprint;
 use Illuminate\Support\Fluent;
 
-class Blueprint extends \Illuminate\Database\Schema\Blueprint
+class Blueprint extends BaseBlueprint
 {
     use MarksAsNotSupported;
 
@@ -168,5 +169,4 @@ class Blueprint extends \Illuminate\Database\Schema\Blueprint
         return $this->addCommand('interleave', compact('parentTableName'));
     }
 
-    // endregion
 }
