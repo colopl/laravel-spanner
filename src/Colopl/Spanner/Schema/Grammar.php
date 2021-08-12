@@ -71,7 +71,7 @@ class Grammar extends BaseGrammar
             $this->wrapTable($blueprint),
             implode(', ', $this->getColumns($blueprint)),
             $this->addPrimaryKeys($blueprint),
-            $this->addCluster($blueprint)
+            $this->addInterleaveToTable($blueprint),
         );
     }
 
@@ -117,6 +117,23 @@ class Grammar extends BaseGrammar
         $columns = $this->prefixArray('drop column', $this->wrapArray($command->columns));
 
         return 'alter table '.$this->wrapTable($blueprint).' '.implode(', ', $columns);
+    }
+
+    /**
+     * @see https://cloud.google.com/spanner/docs/data-definition-language?hl=ja#create_table
+     * @param Blueprint $blueprint
+     * @return string
+     */
+    protected function addInterleaveToTable(Blueprint $blueprint)
+    {
+        if (! is_null($command = $this->getCommandByName($blueprint, 'interleave'))) {
+            $schema = ", interleave in parent {$this->wrap($command->parentTableName)}";
+            if (! is_null($command->onDelete)) {
+                $schema .= " on delete {$command->onDelete}";
+            }
+            return $schema;
+        }
+        return '';
     }
 
     /**
@@ -229,23 +246,6 @@ class Grammar extends BaseGrammar
     {
         if (! is_null($primary = $this->getCommandByName($blueprint, 'primary'))) {
             return "primary key ({$this->columnize($primary->columns)})";
-        }
-        return '';
-    }
-
-    /**
-     * @see https://cloud.google.com/spanner/docs/data-definition-language?hl=ja#create_table
-     * @param Blueprint $blueprint
-     * @return string
-     */
-    protected function addCluster(Blueprint $blueprint)
-    {
-        if (! is_null($interleave = $this->getCommandByName($blueprint, 'interleave'))) {
-            $cluster = ", interleave in parent {$this->wrap($interleave->parentTableName)}";
-            if (! is_null($interleave->onDelete)) {
-                $cluster .= " on delete {$interleave->onDelete}";
-            }
-            return $cluster;
         }
         return '';
     }
