@@ -67,11 +67,12 @@ class Grammar extends BaseGrammar
      */
     public function compileCreate(Blueprint $blueprint, Fluent $command)
     {
-        return sprintf('create table %s (%s) %s%s',
+        return sprintf('create table %s (%s) %s%s%s',
             $this->wrapTable($blueprint),
             implode(', ', $this->getColumns($blueprint)),
             $this->addPrimaryKeys($blueprint),
             $this->addInterleaveToTable($blueprint),
+            $this->addRowDeletionPolicy($blueprint)
         );
     }
 
@@ -132,6 +133,22 @@ class Grammar extends BaseGrammar
                 $schema .= " on delete {$command->onDelete}";
             }
             return $schema;
+        }
+        return '';
+    }
+
+    /**
+     * @see https://cloud.google.com/spanner/docs/ttl#defining_a_row_deletion_policy
+     * @param Blueprint $blueprint
+     * @return string
+     */
+    protected function addRowDeletionPolicy(Blueprint $blueprint)
+    {
+        if (! is_null($command = $this->getCommandByName($blueprint, 'rowDeletionPolicy'))) {
+            if ($command->policy === 'olderThan') {
+                return ', row deletion policy (older_than('.$command->column.', interval '.$command->days.' day))';
+            }
+            throw new RuntimeException('Unknown deletion policy:'.$command->policy);
         }
         return '';
     }

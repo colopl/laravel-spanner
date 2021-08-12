@@ -169,4 +169,18 @@ class Blueprint extends BaseBlueprint
         return $this->addCommand('interleave', compact('parentTableName'));
     }
 
+    /**
+     * @see https://cloud.google.com/spanner/docs/ttl#defining_a_row_deletion_policy
+     * @param string $column
+     * @param int $days
+     * @return Fluent
+     */
+    public function deleteRowsOlderThan(string $column, int $days)
+    {
+        return $this->addCommand('rowDeletionPolicy', [
+            'policy' => 'olderThan',
+            'column' => $column,
+            'days' => $days,
+        ]);
+    }
 }
