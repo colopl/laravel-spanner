@@ -30,6 +30,20 @@ CREATE TABLE `UserItem` (
 ) PRIMARY KEY(userId, userItemId),
   INTERLEAVE IN PARENT `User` ON DELETE CASCADE;
 
+CREATE TABLE `Item` (
+    `itemId` STRING(36) NOT NULL,
+    `name` STRING(100) NOT NULL,
+  ) PRIMARY KEY(`itemId`);
+
+CREATE TABLE `ItemTag` (
+  `itemId` STRING(36) NOT NULL,
+  `tagId` STRING(36) NOT NULL,
+) PRIMARY KEY(`itemId`);
+
+CREATE TABLE `Tag` (
+  `tagId` STRING(100) NOT NULL,
+) PRIMARY KEY(`tagId`);
+
 CREATE TABLE `UserInfo` (
   userId STRING(36) NOT NULL,
   userInfoId STRING(36) NOT NULL,

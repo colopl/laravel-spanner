@@ -112,13 +112,12 @@ class Item extends Model
 
     public function tags()
     {
-        return $this->belongsToMany(Tag::class, 'ItemTag', 'tagId', 'itemId');
+        return $this->belongsToMany(Tag::class, 'ItemTag', 'itemId', 'tagId');
     }
 }
 
 /**
  * @property string $tagId
- * @property string $name
  */
 class Tag extends Model
 {
@@ -166,6 +165,12 @@ class Test extends Model
 class EloquentTest extends TestCase
 {
     protected const TEST_DB_REQUIRED = true;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->getDefaultConnection();
+    }
 
     /**
      * @return User
@@ -296,6 +301,31 @@ class EloquentTest extends TestCase
 
         $fetchedUser = $fetchedUserItems->first()->user;
         $this->assertEquals($user->userId, $fetchedUser->userId);
+    }
+
+    /**
+     * @group test
+     */
+    public function testBelongsToMany()
+    {
+        $this->getConnection()->enableQueryLog();
+
+        $item = new Item();
+        $item->itemId = $this->generateUuid();
+        $item->name = 'test';
+        $item->saveOrFail();
+
+        $tag = new Tag();
+        $tag->tagId = $this->generateUuid();
+        $tag->saveOrFail();
+
+        $item->tags()->save($tag);
+
+        $tagFromQuery = $item->tags->first();
+
+        self::assertEquals($item->getKey(), $tagFromQuery->pivot->itemId);
+        self::assertEquals($tag->getKey(), $tagFromQuery->pivot->tagId);
+        self::assertEquals($tag->getKey(), $tagFromQuery->getKey());
     }
 
     public function testFind()

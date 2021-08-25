@@ -90,9 +90,6 @@ Most functions of `SchemaBuilder` (eg, `Schema` facade, and `Blueprint`) can be 
 However, `artisan migrate` command does not work since AUTO_INCREMENT does not exist in Google Cloud Spanner.
 
 ### Eloquent
-Most functions of [Eloquent](https://laravel.com/docs/5.7/eloquent) can be used. However, some functions are not available.
-For example, `belongsToMany` relationship is not available.
-
 If you use interleaved keys, you MUST define them in the `interleaveKeys` property or you won't be able to save. For more detailed instructions, see `Colopl\Spanner\Tests\Eloquent\ModelTest`.
 
 
