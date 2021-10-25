@@ -1,7 +1,7 @@
 BASE_COMMAND=docker-compose -p $(shell basename $(CURDIR))
 
 build:
-	$(BASE_COMMAND) build
+	$(BASE_COMMAND) build --pull
 
 test: build
 	$(BASE_COMMAND) run test
