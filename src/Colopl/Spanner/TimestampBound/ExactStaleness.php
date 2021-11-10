@@ -27,7 +27,11 @@ class ExactStaleness implements TimestampBoundInterface
     public $duration;
 
     /**
-     * @param Duration|int $duration
+     * Stale reads (i.e. using the bounded or exact staleness types) have the maximum performance benefit at
+     * longest staleness intervals. Use a minimum staleness of 10 seconds to get a benefit.
+     * @see https://cloud.google.com/spanner/docs/timestamp-bounds?hl=en#timestamp_bound_types
+     *
+     * @param Duration|int $duration Use a minimum staleness of 10 seconds for best results
      */
     public function __construct($duration)
     {
