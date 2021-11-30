@@ -120,7 +120,7 @@ class Connection extends BaseConnection
      * @return Database
      * @throws GoogleException
      */
-    protected function getSpannerDatabase(): Database
+    public function getSpannerDatabase(): Database
     {
         $this->reconnectIfMissingConnection();
         return $this->spannerDatabase;
