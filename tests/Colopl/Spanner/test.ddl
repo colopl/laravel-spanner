@@ -55,3 +55,10 @@ CREATE TABLE `ArrayTest` (
   `arrayTestId` STRING(36) NOT NULL,
   `int64Array` ARRAY<INT64> NOT NULL,
 ) PRIMARY KEY (`arrayTestId`);
+
+CREATE TABLE `Binding` (`id` INT64 NOT NULL) PRIMARY KEY(`id`);
+CREATE TABLE `BindingChild` (
+    `id` INT64 NOT NULL,
+    `childId` INT64 NOT NULL
+) PRIMARY KEY(`id`, `childId`),
+  INTERLEAVE IN PARENT `Binding` ON DELETE CASCADE;
