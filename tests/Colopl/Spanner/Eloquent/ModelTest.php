@@ -21,8 +21,9 @@ use Colopl\Spanner\Eloquent\Model;
 use Colopl\Spanner\Tests\TestCase;
 use Google\Cloud\Spanner\Bytes;
 use Google\Cloud\Spanner\Date;
+use Illuminate\Routing\Middleware\SubstituteBindings;
+use Illuminate\Routing\Router;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 
 /**
  * @property string $userId
@@ -31,11 +32,8 @@ use Illuminate\Support\Facades\DB;
 class User extends Model
 {
     protected $table = 'User';
-
     protected $primaryKey = 'userId';
-
     protected $keyType = 'string';
-
     public $timestamps = false;
 
     public function info()
@@ -57,13 +55,9 @@ class User extends Model
 class UserInfo extends Model
 {
     protected $table = 'UserInfo';
-
     protected $primaryKey = 'userInfoId';
-
     protected $keyType = 'string';
-
     protected $interleaveKeys = ['userId', 'userInfoId'];
-
     public $timestamps = false;
 
     public function user()
@@ -81,13 +75,9 @@ class UserInfo extends Model
 class UserItem extends Model
 {
     protected $table = 'UserItem';
-
     protected $primaryKey = 'userItemId';
-
     protected $keyType = 'string';
-
     protected $interleaveKeys = ['userId', 'userItemId'];
-
     public $timestamps = false;
 
     public function user()
@@ -103,11 +93,8 @@ class UserItem extends Model
 class Item extends Model
 {
     protected $table = 'Item';
-
     protected $primaryKey = 'itemId';
-
     protected $keyType = 'string';
-
     public $timestamps = false;
 
     public function tags()
@@ -122,11 +109,8 @@ class Item extends Model
 class Tag extends Model
 {
     protected $table = 'Tag';
-
     protected $primaryKey = 'tagId';
-
     protected $keyType = 'string';
-
     public $timestamps = false;
 
     public function items()
@@ -154,11 +138,29 @@ class Tag extends Model
 class Test extends Model
 {
     protected $table = 'Test';
-
     protected $primaryKey = 'testId';
-
     protected $keyType = 'string';
+    public $timestamps = false;
+}
 
+/**
+ * @property int $id
+ */
+class Binding extends Model
+{
+    protected $table = 'Binding';
+    public $timestamps = false;
+}
+
+/**
+ * @property int $id
+ * @property int $childId
+ */
+class BindingChild extends Model
+{
+    protected $table = 'BindingChild';
+    protected $primaryKey = 'childId';
+    protected $interleaveKeys = ['id', 'childId'];
     public $timestamps = false;
 }
 
@@ -303,10 +305,7 @@ class EloquentTest extends TestCase
         $this->assertEquals($user->userId, $fetchedUser->userId);
     }
 
-    /**
-     * @group test
-     */
-    public function testBelongsToMany()
+    public function testBelongsToMany(): void
     {
         $this->getConnection()->enableQueryLog();
 
@@ -406,5 +405,54 @@ class EloquentTest extends TestCase
             $pkValues[$keyName] = $userItem->getAttribute($keyName);
         }
         $this->assertDatabaseMissing($userItem->getTable(), $pkValues);
+    }
+
+    public function testRouteBinding(): void
+    {
+        /** @var Router $router */
+        $router = $this->app->make('router');
+
+        $record = new Binding();
+        $record->id = 1;
+        $record->save();
+
+        $result = null;
+        $router->middleware(SubstituteBindings::class)->get('/b/{b}', function (Binding $binding) use (&$result) {
+            $result = $binding;
+            return response()->noContent(200);
+        });
+
+        $this->get('/b/'.$record->id)
+            ->assertOk();
+
+        self::assertEquals($record->id, $result->id);
+    }
+
+    public function testChildRouteBinding(): void
+    {
+        /** @var Router $router */
+        $router = $this->app->make('router');
+
+        $parentRecord = new Binding();
+        $parentRecord->id = 1;
+        $parentRecord->save();
+
+        $childRecord = new BindingChild();
+        $childRecord->id = 1;
+        $childRecord->childId = 2;
+        $childRecord->save();
+
+        $results = [];
+        $router->middleware(SubstituteBindings::class)->get('/p/{p}/c/{c}', function (Binding $p, BindingChild $c) use (&$results) {
+            $results[] = $p;
+            $results[] = $c;
+            return response()->noContent(200);
+        });
+
+        $this->get('/p/'.$parentRecord->id.'/c/'.$childRecord->childId)
+            ->assertOk();
+
+        self::assertEquals($parentRecord->id, $results[0]->id);
+        self::assertEquals($childRecord->childId, $results[1]->childId);
     }
 }
