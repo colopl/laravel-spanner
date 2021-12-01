@@ -24,6 +24,7 @@ use IteratorAggregate;
 
 /**
  * @internal use only for UNNESTing
+ * @implements IteratorAggregate<int, mixed>
  */
 class Nested implements Arrayable, IteratorAggregate, Countable
 {
@@ -51,7 +52,7 @@ class Nested implements Arrayable, IteratorAggregate, Countable
     }
 
     /**
-     * @return ArrayIterator
+     * @return ArrayIterator<int, mixed>
      */
     public function getIterator(): ArrayIterator
     {

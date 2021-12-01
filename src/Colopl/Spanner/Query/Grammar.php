@@ -49,7 +49,7 @@ class Grammar extends BaseGrammar
 
     /**
      * @param Builder $query
-     * @param $where
+     * @param array $where
      * @return string
      */
     protected function whereInArray(Builder $query, $where)
@@ -59,7 +59,7 @@ class Grammar extends BaseGrammar
 
     /**
      * @param Builder $query
-     * @param $where
+     * @param array $where
      * @return string
      */
     protected function whereInUnnest(Builder $query, $where)
