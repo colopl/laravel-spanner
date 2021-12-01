@@ -4,7 +4,7 @@
   "type": "library",
   "license": "Apache-2.0",
   "authors": [
-    {"name": "Hiroki Awata", "email": "h-awata@colopl.co.jp (deactivated)"},
+    {"name": "Hiroki Awata", "email": "deactivated@colopl.co.jp"},
     {"name": "Takayasu Oyama", "email": "t-oyama@colopl.co.jp"}
   ],
   "require": {
