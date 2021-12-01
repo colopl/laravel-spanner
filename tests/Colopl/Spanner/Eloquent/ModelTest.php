@@ -417,8 +417,8 @@ class EloquentTest extends TestCase
         $record->save();
 
         $result = null;
-        $router->middleware(SubstituteBindings::class)->get('/b/{b}', function (Binding $binding) use (&$result) {
-            $result = $binding;
+        $router->middleware(SubstituteBindings::class)->get('/b/{b}', function (Binding $b) use (&$result) {
+            $result = $b;
             return response()->noContent(200);
         });
 
