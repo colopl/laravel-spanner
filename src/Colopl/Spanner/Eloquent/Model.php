@@ -19,7 +19,8 @@ namespace Colopl\Spanner\Eloquent;
 
 use Colopl\Spanner\Query\Builder as QueryBuilder;
 use Illuminate\Database\Eloquent\Model as BaseModel;
-use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Str;
 
 /**
@@ -43,7 +44,7 @@ class Model extends BaseModel
     /**
      * Method overridden so that the class returns the query builder for Spanner
      *
-     * @return \Illuminate\Database\Query\Builder
+     * @return Builder
      */
     protected function newBaseQueryBuilder()
     {
@@ -55,35 +56,36 @@ class Model extends BaseModel
     }
 
     /**
+     * @param BaseModel|Relation $query
      * @param mixed $value
-     * @param string|null  $field
-     * @return BaseModel|null
+     * @param string|null $field
+     * @return Relation
      */
-    public function resolveRouteBinding($value, $field = null)
+    public function resolveRouteBindingQuery($query, $value, $field = null)
     {
         // value needs to be casted to prevent "No matching signature" error.
         // Ex: if table is INT64 and value is string it would throw this error.
         $key = $field ?? $this->getRouteKeyName();
-        return parent::resolveRouteBinding($this->tryCastAttribute($key, $value), $field);
+        return parent::resolveRouteBindingQuery($query, $this->tryCastAttribute($key, $value), $field);
     }
 
     /**
      * @param  string  $childType
      * @param  mixed  $value
      * @param  string|null  $field
-     * @return BaseModel|null
+     * @return Relation
      */
-    public function resolveChildRouteBinding($childType, $value, $field)
+    protected function resolveChildRouteBindingQuery($childType, $value, $field)
     {
         $relationship = $this->{Str::plural(Str::camel($childType))}();
         $key = $field ?: $relationship->getRelated()->getRouteKeyName();
-        return parent::resolveChildRouteBinding($childType, $this->tryCastAttribute($key, $value), $field);
+        return parent::resolveChildRouteBindingQuery($childType, $this->tryCastAttribute($key, $value), $field);
     }
 
     /**
      * @param string $key
      * @param mixed $value
-     * @return bool|Collection|int|mixed|string|null
+     * @return mixed
      */
     protected function tryCastAttribute(string $key, $value)
     {
