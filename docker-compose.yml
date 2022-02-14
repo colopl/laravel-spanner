@@ -3,7 +3,7 @@ services:
   test:
     build:
       context: .
-    command: /bin/sh -c "composer install && vendor/bin/phpstan --memory-limit=-1 && vendor/bin/phpunit"
+    command: /bin/sh -c "composer install --no-progress && vendor/bin/phpstan --no-progress --memory-limit=-1 && vendor/bin/phpunit"
     volumes:
       - .:/project:delegated
     depends_on:
