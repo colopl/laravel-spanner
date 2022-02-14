@@ -24,11 +24,10 @@ use Throwable;
 trait ManagesStaleReads
 {
     /**
-     * @param  string  $query
-     * @param  array  $bindings
-     * @param  TimestampBoundInterface $timestampBound
+     * @param string $query
+     * @param array<string, mixed> $bindings
+     * @param TimestampBoundInterface|null $timestampBound
      * @return Generator
-     * @throws Throwable
      */
     public function cursorWithTimestampBound($query, $bindings = [], TimestampBoundInterface $timestampBound = null): Generator
     {

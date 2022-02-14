@@ -62,7 +62,7 @@ class Grammar extends BaseGrammar
      * Compile a create table command.
      *
      * @param  Blueprint  $blueprint
-     * @param  Fluent  $command
+     * @param  Fluent<string, mixed> $command
      * @return string
      */
     public function compileCreate(Blueprint $blueprint, Fluent $command)
@@ -80,7 +80,7 @@ class Grammar extends BaseGrammar
      * Compile an add column command.
      *
      * @param  Blueprint  $blueprint
-     * @param  Fluent  $command
+     * @param  Fluent<string, mixed> $command
      * @return string
      */
     public function compileAdd(Blueprint $blueprint, Fluent $command)
@@ -94,7 +94,7 @@ class Grammar extends BaseGrammar
      * Compile a change column command into a series of SQL statements.
      *
      * @param  Blueprint  $blueprint
-     * @param  Fluent  $command
+     * @param  Fluent<string, mixed> $command
      * @param  Connection $connection
      * @return string[]
      * @throws RuntimeException
@@ -110,7 +110,7 @@ class Grammar extends BaseGrammar
      * Compile a drop column command.
      *
      * @param  Blueprint  $blueprint
-     * @param  Fluent  $command
+     * @param  Fluent<string, mixed> $command
      * @return string
      */
     public function compileDropColumn(Blueprint $blueprint, Fluent $command)
@@ -157,7 +157,7 @@ class Grammar extends BaseGrammar
      * Compile a unique key command.
      *
      * @param  Blueprint  $blueprint
-     * @param  Fluent  $command
+     * @param  Fluent<string, mixed> $command
      * @return string
      */
     public function compileUnique(Blueprint $blueprint, Fluent $command)
@@ -170,7 +170,7 @@ class Grammar extends BaseGrammar
      * Compile a plain index key command.
      *
      * @param  Blueprint  $blueprint
-     * @param  Fluent  $command
+     * @param  Fluent<string, mixed> $command
      * @return string
      * @see https://cloud.google.com/spanner/docs/data-definition-language?hl=en#create_index
      */
@@ -203,7 +203,7 @@ class Grammar extends BaseGrammar
     }
 
     /**
-     * @param Fluent $indexCommand
+     * @param Fluent<string, mixed> $indexCommand
      * @return string
      * @see https://cloud.google.com/spanner/docs/data-definition-language?hl=en#create_index
      */
@@ -213,7 +213,7 @@ class Grammar extends BaseGrammar
     }
 
     /**
-     * @param Fluent $indexCommand
+     * @param Fluent<string, mixed> $indexCommand
      * @return string
      * @see https://cloud.google.com/spanner/docs/data-definition-language?hl=en#create_index
      */
@@ -231,7 +231,7 @@ class Grammar extends BaseGrammar
 
     /**
      * @param Blueprint $blueprint
-     * @param Fluent $command
+     * @param Fluent<string, mixed> $command
      * @return string
      * @see https://cloud.google.com/spanner/docs/data-definition-language?hl=en
      */
@@ -244,7 +244,7 @@ class Grammar extends BaseGrammar
 
     /**
      * @param Blueprint $blueprint
-     * @param Fluent $command
+     * @param Fluent<string, mixed> $command
      * @return string
      * @see https://cloud.google.com/spanner/docs/data-definition-language?hl=en
      */
@@ -272,7 +272,7 @@ class Grammar extends BaseGrammar
      * Note: you can't drop a table if there are indexes over it, or if there are any tables or indexes interleaved within it.
      *
      * @param  Blueprint  $blueprint
-     * @param  Fluent  $command
+     * @param  Fluent<string, mixed> $command
      * @return string
      * @see https://cloud.google.com/spanner/docs/data-definition-language?hl=en#drop_table
      */
@@ -285,7 +285,7 @@ class Grammar extends BaseGrammar
      * Compile a drop table (if exists) command.
      *
      * @param  Blueprint  $blueprint
-     * @param  Fluent  $command
+     * @param  Fluent<string, mixed> $command
      * @return string
      */
     public function compileDropIfExists(Blueprint $blueprint, Fluent $command)
@@ -296,7 +296,7 @@ class Grammar extends BaseGrammar
     /**
      * Create the column definition for a string type.
      *
-     * @param  Fluent  $column
+     * @param  Fluent<string, mixed> $column
      * @return string
      */
     protected function typeString(Fluent $column)
@@ -307,7 +307,7 @@ class Grammar extends BaseGrammar
     /**
      * Create the column definition for a binary type.
      *
-     * @param  Fluent  $column
+     * @param  Fluent<string, mixed> $column
      * @return string
      */
     protected function typeBinary(Fluent $column)
@@ -318,7 +318,7 @@ class Grammar extends BaseGrammar
     /**
      * Create the column definition for a big integer type.
      *
-     * @param  Fluent  $column
+     * @param  Fluent<string, mixed> $column
      * @return string
      */
     protected function typeBigInteger(Fluent $column)
@@ -329,7 +329,7 @@ class Grammar extends BaseGrammar
     /**
      * Create the column definition for an integer type.
      *
-     * @param  Fluent  $column
+     * @param  Fluent<string, mixed> $column
      * @return string
      */
     protected function typeInteger(Fluent $column)
@@ -340,7 +340,7 @@ class Grammar extends BaseGrammar
     /**
      * Create the column definition for a float type.
      *
-     * @param  Fluent  $column
+     * @param  Fluent<string, mixed> $column
      * @return string
      */
     protected function typeFloat(Fluent $column)
@@ -351,7 +351,7 @@ class Grammar extends BaseGrammar
     /**
      * Create the column definition for a date type.
      *
-     * @param  Fluent  $column
+     * @param  Fluent<string, mixed> $column
      * @return string
      */
     protected function typeDate(Fluent $column)
@@ -362,7 +362,7 @@ class Grammar extends BaseGrammar
     /**
      * Create the column definition for a date-time type.
      *
-     * @param  Fluent  $column
+     * @param  Fluent<string, mixed> $column
      * @return string
      */
     protected function typeDateTime(Fluent $column)
@@ -373,7 +373,7 @@ class Grammar extends BaseGrammar
     /**
      * Create the column definition for a timestamp type.
      *
-     * @param  Fluent  $column
+     * @param  Fluent<string, mixed>  $column
      * @return string
      */
     protected function typeTimestamp(Fluent $column)
@@ -384,7 +384,7 @@ class Grammar extends BaseGrammar
     /**
      * Create the column definition for a uuid type.
      *
-     * @param  Fluent  $column
+     * @param  Fluent<string, mixed> $column
      * @return string
      */
     protected function typeUuid(Fluent $column)
@@ -396,7 +396,7 @@ class Grammar extends BaseGrammar
      * Create the column definition for a ARRAY<T> type.
      * https://cloud.google.com/spanner/docs/arrays
      *
-     * @param Fluent $column
+     * @param Fluent<string, mixed> $column
      * @return string
      */
     protected function typeArray(Fluent $column)
@@ -407,7 +407,7 @@ class Grammar extends BaseGrammar
     /**
      * Create the column definition for a boolean type.
      *
-     * @param  Fluent  $column
+     * @param  Fluent<string, mixed> $column
      * @return string
      */
     protected function typeBoolean(Fluent $column)
@@ -419,7 +419,7 @@ class Grammar extends BaseGrammar
      * Get the SQL for a nullable column modifier.
      *
      * @param  Blueprint  $blueprint
-     * @param  Fluent  $column
+     * @param  Fluent<string, mixed> $column
      * @return string|null
      */
     protected function modifyNullable(Blueprint $blueprint, Fluent $column)
@@ -449,7 +449,7 @@ class Grammar extends BaseGrammar
      * Compile the blueprint's column definitions.
      *
      * @param  Blueprint $blueprint
-     * @return array
+     * @return array<int, string>
      */
     protected function getChangedColumns(Blueprint $blueprint)
     {

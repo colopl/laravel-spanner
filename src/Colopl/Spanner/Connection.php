@@ -19,7 +19,6 @@ namespace Colopl\Spanner;
 
 use BadMethodCallException;
 use Closure;
-use Colopl\Spanner\Query\Nested;
 use Colopl\Spanner\Query\Builder as QueryBuilder;
 use Colopl\Spanner\Query\Grammar as QueryGrammar;
 use Colopl\Spanner\Query\Parameterizer as QueryParameterizer;
@@ -30,7 +29,6 @@ use DateTimeInterface;
 use Exception;
 use Generator;
 use Google\Cloud\Core\Exception\AbortedException;
-use Google\Cloud\Core\Exception\DeadlineExceededException;
 use Google\Cloud\Core\Exception\GoogleException;
 use Google\Cloud\Spanner\Database;
 use Google\Cloud\Spanner\Session\SessionPoolInterface;
@@ -70,7 +68,7 @@ class Connection extends BaseConnection
     protected $spannerDatabase;
 
     /**
-     * @var QueryParameterizer
+     * @var QueryParameterizer|null
      */
     protected $parameterizer;
 
@@ -230,10 +228,9 @@ class Connection extends BaseConnection
      * Run a select statement against the database.
      *
      * @param  string $query
-     * @param  array  $bindings
-     * @param  bool   $useReadPdo  Not used. This is here for compatibility reasons.
+     * @param  array<string, mixed> $bindings
+     * @param  bool $useReadPdo  Not used. This is here for compatibility reasons.
      * @return array
-     * @throws Throwable
      */
     public function select($query, $bindings = [], $useReadPdo = true): array
     {
@@ -257,7 +254,6 @@ class Connection extends BaseConnection
      * @param  array  $bindings
      * @param  bool   $useReadPdo  Not used. This is here for compatibility reasons.
      * @return Generator
-     * @throws Throwable
      */
     public function cursor($query, $bindings = [], $useReadPdo = true): Generator
     {
@@ -304,10 +300,10 @@ class Connection extends BaseConnection
      * @param  string $query
      * @param  array $bindings
      * @return int
-     * @throws Throwable
      */
     public function affectingStatement($query, $bindings = []): int
     {
+        /** @var Closure(): int $runQueryCall */
         $runQueryCall = function () use ($query, $bindings) {
             return $this->run($query, $bindings, function ($query, $bindings) {
                 if ($this->pretending()) {
@@ -378,7 +374,6 @@ class Connection extends BaseConnection
 
     /**
      * @return void
-     * @throws BadMethodCallException
      * @internal
      */
     public function getReadPdo()
@@ -388,7 +383,6 @@ class Connection extends BaseConnection
 
     /**
      * @return void
-     * @throws BadMethodCallException
      * @internal
      */
     public function getDoctrineConnection()
@@ -397,10 +391,8 @@ class Connection extends BaseConnection
     }
 
     /**
-     * Prepare the query bindings for execution.
-     *
-     * @param  array  $bindings
-     * @return array
+     * @param array<string, mixed> $bindings
+     * @return array<string, mixed>
      */
     public function prepareBindings(array $bindings)
     {
@@ -426,7 +418,6 @@ class Connection extends BaseConnection
      * @param  array     $bindings
      * @param  Closure  $callback
      * @return mixed
-     * @throws AbortedException|QueryException
      */
     protected function runQueryCallback($query, $bindings, Closure $callback)
     {
