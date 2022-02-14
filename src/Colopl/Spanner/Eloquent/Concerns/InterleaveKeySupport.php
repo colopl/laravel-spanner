@@ -29,9 +29,9 @@ trait InterleaveKeySupport
      *
      * @return string[]
      */
-    public function getInterleaveKeys()
+    public function getInterleaveKeys(): array
     {
-        return $this->interleaveKeys ?? [];
+        return $this->interleaveKeys;
     }
 
     /**

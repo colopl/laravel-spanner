@@ -4,27 +4,31 @@ parameters:
     paths:
         - src
     ignoreErrors:
-        # Fluent magic properties.
-        - '#^Access to an undefined property Illuminate\\Support\\Fluent::.*$#'
-        # Not supported operations.
+        - '#^Access to an undefined property Illuminate\\Support\\Fluent.*$#'
         - '#^Return type \(void\) of method .*? should be compatible with return type \(.*?\) of method .*?$#'
-        # Spanner specific types.
-        -
-            message: '#^Return type \(string\) of method Colopl\\Spanner\\Query\\Builder::insertGetId\(\) should be compatible with return type \(int\) of method Illuminate\\Database\\Query\\Builder::insertGetId\(\)$#'
-            path: src/Colopl/Spanner/Query/Builder.php
-        # Spanner not use PDO.
-        -
-            message: '#^Parameter \#1 \$pdo of method Illuminate\\Database\\Connection::__construct\(\) expects Closure|PDO, null given.$#'
-            path: src/Colopl/Spanner/Connection.php
-        # Upstream PHPDoc is incorrect.
-        -
-            message: '#^Parameter \#1 \$value of method Illuminate\\Database\\Schema\\Grammars\\Grammar::wrap\(\) expects Illuminate\\Database\\Query\\Expression\|string, Illuminate\\Database\\Schema\\ColumnDefinition given.$#'
-            path: src/Colopl/Spanner/Schema/Grammar.php
-        # Can't tracing PHPStan
-        -
-            message: '#^Method Colopl\\Spanner\\Connection::getSpannerDatabase\(\) should return Google\\Cloud\\Spanner\\Database but returns Google\\Cloud\\Spanner\\Database\|null.$#'
-            path: src/Colopl/Spanner/Connection.php
-        # Return always Colopl\Spanner\Query\Processor.
-        -
-            message: '#^Call to an undefined method Illuminate\\Database\\Query\\Processors\\Processor::processIndexListing\(\).$#'
-            path: src/Colopl/Spanner/Schema/Builder.php
+        - message: '#^Method Colopl\\Spanner\\Connection::runPartitionedDml\(\) should return int but returns mixed\.$#'
+          path: src/Colopl/Spanner/Concerns/ManagesPartitionedDml.php
+        - message: '#^Unable to resolve the template type TKey in call to function collect$#'
+          path: src/Colopl/Spanner/Concerns/ManagesSessionPool.php
+        - message: '#^Parameter \#1 \$pdo of method Illuminate\\Database\\Connection::__construct\(\) expects Closure|PDO, null given.$#'
+          path: src/Colopl/Spanner/Connection.php
+        - message: '#^Method Colopl\\Spanner\\Connection::select\(\) should return array but returns mixed\.$#'
+          path: src/Colopl/Spanner/Connection.php
+        - message: '#^Method Colopl\\Spanner\\Connection::getSpannerDatabase\(\) should return Google\\Cloud\\Spanner\\Database but returns Google\\Cloud\\Spanner\\Database\|null.$#'
+          path: src/Colopl/Spanner/Connection.php
+        - message: '#^Method Colopl\\Spanner\\Connection::transaction\(\) should return T but returns mixed\.$#'
+          path: src/Colopl/Spanner/Connection.php
+        - message: '#^Cannot cast mixed to int\.$#'
+          path: src/Colopl/Spanner/Eloquent/Model.php
+        - message: '#^Return type \(string\) of method Colopl\\Spanner\\Query\\Builder::insertGetId\(\) should be compatible with return type \(int\) of method Illuminate\\Database\\Query\\Builder::insertGetId\(\)$#'
+          path: src/Colopl/Spanner/Query/Builder.php
+        - message: '#^Method Colopl\\Spanner\\Query\\Builder::insertGetId\(\) should return string but returns mixed\.$#'
+          path: src/Colopl/Spanner/Query/Builder.php
+        - message: '#^Cannot access offset string\|null on mixed\.$#'
+          path: src/Colopl/Spanner/Query/Builder.php
+        - message: '#^Method Colopl\\Spanner\\Schema\\Builder::createBlueprint\(\) should return Illuminate\\Database\\Schema\\Blueprint but returns mixed\.$#'
+          path: src/Colopl/Spanner/Schema/Builder.php
+        - message: '#^Property Illuminate\\Database\\Schema\\Builder::\$resolver \(Closure\) in isset\(\) is not nullable.$#'
+          path: src/Colopl/Spanner/Schema/Builder.php
+        - message: '#^Parameter \#1 \$value of method Illuminate\\Database\\Schema\\Grammars\\Grammar::wrap\(\) expects Illuminate\\Database\\Query\\Expression\|string, Illuminate\\Database\\Schema\\ColumnDefinition given.$#'
+          path: src/Colopl/Spanner/Schema/Grammar.php

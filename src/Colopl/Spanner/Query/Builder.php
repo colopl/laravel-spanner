@@ -82,7 +82,6 @@ class Builder extends BaseBuilder
 
     /**
      * @return void
-     * @throws BadMethodCallException
      */
     public function truncate()
     {
@@ -91,7 +90,6 @@ class Builder extends BaseBuilder
 
     /**
      * @return void
-     * @throws BadMethodCallException
      */
     public function sharedLock()
     {
@@ -100,7 +98,6 @@ class Builder extends BaseBuilder
 
     /**
      * @return void
-     * @throws BadMethodCallException
      */
     public function lockForUpdate()
     {
@@ -134,7 +131,7 @@ class Builder extends BaseBuilder
 
     /**
      * @param string $column
-     * @param array|Arrayable|Nested $values
+     * @param array<array-key, mixed>|Arrayable<array-key, mixed>|Nested $values
      * @param string $boolean
      * @return $this
      */
@@ -153,8 +150,8 @@ class Builder extends BaseBuilder
     }
 
     /**
-     * @param array $values
-     * @return array
+     * @param array<array-key, mixed> $values
+     * @return array<int, mixed>
      */
     protected function prepareInsertForDml($values)
     {

@@ -164,7 +164,7 @@ class BindingChild extends Model
     public $timestamps = false;
 }
 
-class EloquentTest extends TestCase
+class ModelTest extends TestCase
 {
     protected const TEST_DB_REQUIRED = true;
 
