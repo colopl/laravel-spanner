@@ -18,6 +18,7 @@
 namespace Colopl\Spanner\Schema;
 
 use Closure;
+use Colopl\Spanner\Query\Processor;
 use Illuminate\Database\Schema\Blueprint as BaseBlueprint;
 use Illuminate\Database\Schema\Builder as BaseBuilder;
 
@@ -60,7 +61,10 @@ class Builder extends BaseBuilder
             $this->grammar->compileIndexListing(), [$table]
         );
 
-        return $this->connection->getPostProcessor()->processIndexListing($results);
+        /** @var Processor $processor */
+        $processor = $this->connection->getPostProcessor();
+
+        return $processor->processIndexListing($results);
     }
 
     /**
@@ -98,10 +102,8 @@ class Builder extends BaseBuilder
      */
     protected function createBlueprint($table, Closure $callback = null)
     {
-        if (isset($this->resolver)) {
-            return call_user_func($this->resolver, $table, $callback);
-        }
-
-        return new Blueprint($table, $callback);
+        return isset($this->resolver)
+            ? call_user_func($this->resolver, $table, $callback)
+            : new Blueprint($table, $callback);
     }
 }

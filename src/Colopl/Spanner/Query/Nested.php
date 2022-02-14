@@ -24,19 +24,20 @@ use IteratorAggregate;
 
 /**
  * @internal use only for UNNESTing
+ * @implements Arrayable<int, mixed>
  * @implements IteratorAggregate<int, mixed>
  */
 class Nested implements Arrayable, IteratorAggregate, Countable
 {
     /**
-     * @var array
+     * @var array<int, mixed>
      */
-    private $array;
+    private array $array;
 
     /**
-     * @param array|Arrayable $array
+     * @param array<int, mixed>|Arrayable<int, mixed> $array
      */
-    public function __construct($array)
+    public function __construct(array|Arrayable $array)
     {
         $this->array = ($array instanceof Arrayable)
             ? $array->toArray()
@@ -44,7 +45,7 @@ class Nested implements Arrayable, IteratorAggregate, Countable
     }
 
     /**
-     * @return array
+     * @return array<int, mixed>
      */
     public function toArray(): array
     {

@@ -37,12 +37,10 @@ trait ManagesTransactions
     protected $currentTransaction;
 
     /**
-     * Execute a Closure within a transaction.
-     *
-     * @param  Closure  $callback
-     * @param  int  $attempts
-     * @return mixed
-     * @throws Throwable
+     * @template T
+     * @param  Closure(static): T $callback
+     * @param  int $attempts
+     * @return T
      */
     public function transaction(Closure $callback, $attempts = Database::MAX_RETRIES)
     {
