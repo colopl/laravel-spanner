@@ -45,7 +45,7 @@ class Session
     public function __construct(ProtoBufSession $protobufSession)
     {
         $this->fullName = $protobufSession->getName();
-        $this->name = collect(explode('/', $protobufSession->getName()))->last();
+        $this->name = collect(explode('/', $protobufSession->getName()))->last() ?? 'undefined';
         if (($createTime = $protobufSession->getCreateTime()) !== null) {
             $this->createdAt = Carbon::instance($createTime->toDateTime());
         }

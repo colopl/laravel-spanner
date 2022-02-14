@@ -19,6 +19,7 @@ namespace Colopl\Spanner\Query;
 
 use Colopl\Spanner\Query\Builder as SpannerBuilder;
 use Illuminate\Database\Query\Builder;
+use Illuminate\Database\Query\Expression;
 use Illuminate\Database\Query\Grammars\Grammar as BaseGrammar;
 use RuntimeException;
 
@@ -49,7 +50,7 @@ class Grammar extends BaseGrammar
 
     /**
      * @param Builder $query
-     * @param array $where
+     * @param array<string, Expression|string> $where
      * @return string
      */
     protected function whereInArray(Builder $query, $where)

@@ -96,7 +96,7 @@ class Blueprint extends BaseBlueprint
      *
      * @param  string  $column
      * @param  int  $length
-     * @return \Illuminate\Support\Fluent
+     * @return Fluent<string, mixed>
      */
     public function binary($column, $length = null)
     {
@@ -107,7 +107,7 @@ class Blueprint extends BaseBlueprint
 
     /**
      * @param string $column
-     * @return Fluent
+     * @return Fluent<string, mixed>
      */
     public function booleanArray($column)
     {
@@ -116,7 +116,7 @@ class Blueprint extends BaseBlueprint
 
     /**
      * @param string $column
-     * @return Fluent
+     * @return Fluent<string, mixed>
      */
     public function integerArray($column)
     {
@@ -125,7 +125,7 @@ class Blueprint extends BaseBlueprint
 
     /**
      * @param string $column
-     * @return Fluent
+     * @return Fluent<string, mixed>
      */
     public function floatArray($column)
     {
@@ -135,7 +135,7 @@ class Blueprint extends BaseBlueprint
     /**
      * @param string $column
      * @param int $length
-     * @return Fluent
+     * @return Fluent<string, mixed>
      */
     public function stringArray($column, $length)
     {
@@ -144,7 +144,7 @@ class Blueprint extends BaseBlueprint
 
     /**
      * @param string $column
-     * @return Fluent
+     * @return Fluent<string, mixed>
      */
     public function dateArray($column)
     {
@@ -153,7 +153,7 @@ class Blueprint extends BaseBlueprint
 
     /**
      * @param string $column
-     * @return Fluent
+     * @return Fluent<string, mixed>
      */
     public function timestampArray($column)
     {
@@ -162,7 +162,7 @@ class Blueprint extends BaseBlueprint
 
     /**
      * @param string $parentTableName
-     * @return Fluent
+     * @return Fluent<string, mixed>
      */
     public function interleave(string $parentTableName)
     {
@@ -173,7 +173,7 @@ class Blueprint extends BaseBlueprint
      * @see https://cloud.google.com/spanner/docs/ttl#defining_a_row_deletion_policy
      * @param string $column
      * @param int $days
-     * @return Fluent
+     * @return Fluent<string, mixed>
      */
     public function deleteRowsOlderThan(string $column, int $days)
     {

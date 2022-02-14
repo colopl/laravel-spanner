@@ -18,13 +18,11 @@
 namespace Colopl\Spanner\Concerns;
 
 use Colopl\Spanner\Session;
-use Google\ApiCore\ApiException;
-use Google\ApiCore\ValidationException;
 use Google\Auth\FetchAuthTokenInterface;
-use Google\Cloud\Core\Exception\GoogleException;
 use Google\Cloud\Spanner\Connection\ConnectionInterface;
 use Google\Cloud\Spanner\Connection\Grpc;
 use Google\Cloud\Spanner\Database;
+use Google\Cloud\Spanner\Session\Session as CloudSpannerSession;
 use Google\Cloud\Spanner\V1\Session as ProtobufSpannerSession;
 use Google\Cloud\Spanner\V1\SpannerClient as ProtobufSpannerClient;
 use Illuminate\Support\Collection;
@@ -38,10 +36,9 @@ use ReflectionObject;
 trait ManagesSessionPool
 {
     /**
-     * Clear the session pool
      * @return void
      */
-    public function clearSessionPool()
+    public function clearSessionPool(): void
     {
         $sessionPool = $this->getSpannerDatabase()->sessionPool();
         if ($sessionPool !== null) {
@@ -50,10 +47,9 @@ trait ManagesSessionPool
     }
 
     /**
-     * Maintain the session pool
      * @return bool
      */
-    public function maintainSessionPool()
+    public function maintainSessionPool(): bool
     {
         $sessionPool = $this->getSpannerDatabase()->sessionPool();
         if ($sessionPool !== null && method_exists($sessionPool, 'maintain')) {
@@ -69,7 +65,7 @@ trait ManagesSessionPool
      * Returns the number of warmed up sessions
      * @return int
      */
-    public function warmupSessionPool()
+    public function warmupSessionPool(): int
     {
         $sessionPool = $this->getSpannerDatabase()->sessionPool();
         if($sessionPool !== null && method_exists($sessionPool, 'warmup')) {
@@ -79,10 +75,9 @@ trait ManagesSessionPool
     }
 
     /**
-     * @return Collection
-     * @throws ApiException|ValidationException|GoogleException
+     * @return Collection<int, Session>
      */
-    public function listSessions()
+    public function listSessions(): Collection
     {
         $databaseName = $this->getSpannerDatabase()->name();
         $response = (new ProtobufSpannerClient())->listSessions($databaseName);
@@ -100,7 +95,6 @@ trait ManagesSessionPool
         // -------------------------------------------------------------------------
         // HACK: Use reflection to extract some information from a private method
         // -------------------------------------------------------------------------
-        /** @var Session|null $session */
         $session = null;
         /** @var FetchAuthTokenInterface $credentialFetcher */
         $credentialFetcher = null;
@@ -122,14 +116,15 @@ trait ManagesSessionPool
             $sessionProperty = (new ReflectionObject($spannerDatabase))->getProperty('session');
             if ($sessionProperty !== null) {
                 $sessionProperty->setAccessible(true);
+                /** @var CloudSpannerSession $session */
                 $session = $sessionProperty->getValue($spannerDatabase);
             }
         }
 
         return [
-            'identity' => $spannerDatabase !== null ? $spannerDatabase->identity() : null,
-            'session' => $session !== null ? $session->name() : null,
-            'sessionPool' => $spannerDatabase !== null ? $spannerDatabase->sessionPool() : null,
+            'identity' => $spannerDatabase?->identity(),
+            'session' => $session?->name(),
+            'sessionPool' => $spannerDatabase?->sessionPool(),
             'credentialFetcher' => $credentialFetcher,
         ];
     }
