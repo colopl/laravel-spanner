@@ -20,12 +20,6 @@ parameters:
           path: src/Colopl/Spanner/Connection.php
         - message: '#^Cannot cast mixed to int\.$#'
           path: src/Colopl/Spanner/Eloquent/Model.php
-        - message: '#^Return type \(string\) of method Colopl\\Spanner\\Query\\Builder::insertGetId\(\) should be compatible with return type \(int\) of method Illuminate\\Database\\Query\\Builder::insertGetId\(\)$#'
-          path: src/Colopl/Spanner/Query/Builder.php
-        - message: '#^Method Colopl\\Spanner\\Query\\Builder::insertGetId\(\) should return string but returns mixed\.$#'
-          path: src/Colopl/Spanner/Query/Builder.php
-        - message: '#^Cannot access offset string\|null on mixed\.$#'
-          path: src/Colopl/Spanner/Query/Builder.php
         - message: '#^Method Colopl\\Spanner\\Schema\\Builder::createBlueprint\(\) should return Illuminate\\Database\\Schema\\Blueprint but returns mixed\.$#'
           path: src/Colopl/Spanner/Schema/Builder.php
         - message: '#^Property Illuminate\\Database\\Schema\\Builder::\$resolver \(Closure\) in isset\(\) is not nullable.$#'

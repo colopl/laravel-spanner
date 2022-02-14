@@ -52,18 +52,14 @@ class Builder extends BaseBuilder
      * This will return the last value used since Spanner does not have the
      * feature to return the last inserted ID.
      *
-     * @param  array        $values
-     * @param  string|null  $sequence the name of primary key
-     * @return string
-     * @throws InvalidArgumentException
+     * @param array $values
+     * @param string|null $sequence the name of primary key
+     * @return int
      */
     public function insertGetId(array $values, $sequence = null)
     {
-        $values = $this->prepareInsertForDml($values);
-        $this->insert($values);
-
-        $lastValue = array_values(array_slice($values, -1))[0];
-        return $lastValue[$sequence] ?? null;
+        $this->markAsNotSupported('insertGetId');
+        return -1;
     }
 
     /**
