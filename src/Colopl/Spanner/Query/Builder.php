@@ -49,9 +49,6 @@ class Builder extends BaseBuilder
     }
 
     /**
-     * This will return the last value used since Spanner does not have the
-     * feature to return the last inserted ID.
-     *
      * @param array $values
      * @param string|null $sequence the name of primary key
      * @return int
@@ -59,7 +56,6 @@ class Builder extends BaseBuilder
     public function insertGetId(array $values, $sequence = null)
     {
         $this->markAsNotSupported('insertGetId');
-        return -1;
     }
 
     /**
