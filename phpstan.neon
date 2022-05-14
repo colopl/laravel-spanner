@@ -16,8 +16,6 @@ parameters:
           path: src/Colopl/Spanner/Connection.php
         - message: '#^Method Colopl\\Spanner\\Connection::getSpannerDatabase\(\) should return Google\\Cloud\\Spanner\\Database but returns Google\\Cloud\\Spanner\\Database\|null.$#'
           path: src/Colopl/Spanner/Connection.php
-        - message: '#^Method Colopl\\Spanner\\Connection::transaction\(\) should return T but returns mixed\.$#'
-          path: src/Colopl/Spanner/Connection.php
         - message: '#^Cannot cast mixed to int\.$#'
           path: src/Colopl/Spanner/Eloquent/Model.php
         - message: '#^Method Colopl\\Spanner\\Query\\Builder::insertGetId\(\) should return int but return statement is missing\.$#'
