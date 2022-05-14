@@ -20,6 +20,7 @@ namespace Colopl\Spanner\Concerns;
 use Closure;
 use Exception;
 use Google\Cloud\Core\Exception\AbortedException;
+use Google\Cloud\Core\Exception\NotFoundException;
 use Google\Cloud\Spanner\Database;
 use Google\Cloud\Spanner\Transaction;
 use Throwable;
@@ -44,29 +45,31 @@ trait ManagesTransactions
      */
     public function transaction(Closure $callback, $attempts = Database::MAX_RETRIES)
     {
-        // Since Cloud Spanner does not support nested transactions,
-        // we use Laravel's transaction management for nested transactions only.
-        if ($this->transactions > 0) {
-            return parent::transaction($callback, $attempts);
-        }
-
-        $return = $this->getSpannerDatabase()->runTransaction(function (Transaction $tx) use ($callback) {
-            try {
-                $this->currentTransaction = $tx;
-                $this->transactions++;
-                $this->fireConnectionEvent('beganTransaction');
-                $result = $callback($this);
-                $this->performSpannerCommit();
-                return $result;
-            } catch (Throwable $e) {
-                $this->rollBack();
-                throw $e;
+		return $this->sessionNotFoundWrapper(function () use ($callback, $attempts) {
+            // Since Cloud Spanner does not support nested transactions,
+            // we use Laravel's transaction management for nested transactions only.
+            if ($this->transactions > 0) {
+                return parent::transaction($callback, $attempts);
             }
-        }, ['maxRetries' => $attempts - 1]);
 
-        $this->fireConnectionEvent('committed');
+			$return = $this->getSpannerDatabase()->runTransaction(function (Transaction $tx) use ($callback) {
+				try {
+					$this->currentTransaction = $tx;
+					$this->transactions++;
+					$this->fireConnectionEvent('beganTransaction');
+					$result = $callback($this);
+					$this->performSpannerCommit();
+					return $result;
+				} catch (Throwable $e) {
+					$this->rollBack();
+					throw $e;
+				}
+			}, ['maxRetries' => $attempts - 1]);
 
-        return $return;
+			$this->fireConnectionEvent('committed');
+
+			return $return;
+		});
     }
 
     /**
@@ -158,7 +161,14 @@ trait ManagesTransactions
 
         if ($this->currentTransaction !== null) {
             if ($this->currentTransaction->state() === Transaction::STATE_ACTIVE) {
-                $this->currentTransaction->rollBack();
+                try {
+                    $this->currentTransaction->rollBack();
+                } catch (NotFoundException $e) {
+                    // ignore session not found error
+                    if (empty($this->getSessionNotFoundMode()) || !$this->causedBySessionNotFound($e)) {
+                        throw $e;
+                    }
+                }
             }
             $this->currentTransaction = null;
         }

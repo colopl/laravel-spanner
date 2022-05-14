@@ -81,7 +81,8 @@ trait ManagesSessionPool
     {
         $databaseName = $this->getSpannerDatabase()->name();
         $response = (new ProtobufSpannerClient())->listSessions($databaseName);
-        return collect($response->iterateAllElements())->map(function (ProtobufSpannerSession $session) {
+        return collect($response->iterateAllElements())->map(function ($session) {
+            assert($session instanceof ProtobufSpannerSession);
             return new Session($session);
         });
     }
