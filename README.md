@@ -236,6 +236,68 @@ In order to improve the performance of the first connection per request, we use 
 By default, laravel-spanner uses [Filesystem Cache Adapter](https://symfony.com/doc/current/components/cache/adapters/filesystem_adapter.html) as the caching pool. If you want to use your own caching pool, you can extend ServiceProvider and inject it into the constructor of `Colopl\Spanner\Connection`.
 
 
+
+### 'Session not found' exception handling
+There are a few cases when a 'Session not found' error can
+[happen](https://cloud.google.com/spanner/docs/sessions#handle_deleted_sessions):
+
+ - Scripts that idle too long - for example, a [Laravel queue worker](https://laravel.com/docs/9.x/queues#the-queue-work-command)
+or anything that doesn't call Spanner frequently enough (more than once an hour).
+ - The session is more than 28 days old.
+ - Some random flukes on Google's side.
+
+The errors can be handled by one of the supported modes:
+
+- **MAINTAIN_SESSION_POOL** - When the 'session not found' error is encountered, the library tries to disconnect,
+[maintain a session pool](https://github.com/googleapis/google-cloud-php/blob/077810260b58f5de8a3bbdfd999a5e9a48f71a7f/Spanner/src/Session/CacheSessionPool.php#L864)
+(to remove outdated sessions), reconnect, and then try querying again.
+```php
+        'spanner' => [
+            'driver' => 'spanner',
+        ...
+   	        'sessionNotFoundErrorMode' => 'MAINTAIN_SESSION_POOL',
+        ]
+```
+
+- **CLEAR_SESSION_POOL** (default) - The **MAINTAIN_SESSION_POOL** mode is tried first. If the error still happens, then
+the [clearing of the session pool](https://github.com/googleapis/google-cloud-php/blob/077810260b58f5de8a3bbdfd999a5e9a48f71a7f/Spanner/src/Session/CacheSessionPool.php#L465)
+is enforced and the query is tried once again.
+As a consequence of session pool clearing, all processes that share the current session pool will be forced
+to use the new session on the next call. The mode is enabled by default, but you can enable it explicitly via congifuration:
+```php
+        'spanner' => [
+            'driver' => 'spanner',
+        ...
+       	    'sessionNotFoundErrorMode' => 'CLEAR_SESSION_POOL'
+        ]
+```
+
+- none - The QueryException is raised and the client code is free to handle it by itself.:
+```php
+        'spanner' => [
+            'driver' => 'spanner',
+        ...
+   	        'sessionNotFoundErrorMode' => false,
+        ]
+```
+
+Please note, that [`getDatabaseContext()->execute(...)->rows()`](https://github.com/googleapis/google-cloud-php/blob/077810260b58f5de8a3bbdfd999a5e9a48f71a7f/Spanner/src/Result.php#L175)
+returns a `/Generator` object, which only accesses Spanner when iterated. That affects `cursor()`
+and `cursorWithTimestampBound()` functions and many low-level calls. So you might still
+get `Google\Cloud\Core\Exception\NotFoundException` when trying to resolve cursor.
+To avoid that, please run cursor* functions inside
+[explicit transactions](#transactions) so statements will repeat on error.
+
+```php
+$conn->transaction(function () use ($conn) {
+    $cursor = $conn->cursor('SELECT ...');
+
+    foearch ($cursor as $value) { ...
+});
+```
+
+
+
 ### Laravel Tinker
 You can use [Laravel Tinker](https://github.com/laravel/tinker) with commands such as `php artisan tinker`.
 But your session may hang when accessing Cloud Spanner. This is known gRPC issue that occurs when PHP forks a process.
