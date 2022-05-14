@@ -30,6 +30,7 @@ use Exception;
 use Generator;
 use Google\Cloud\Core\Exception\AbortedException;
 use Google\Cloud\Core\Exception\GoogleException;
+use Google\Cloud\Core\Exception\NotFoundException;
 use Google\Cloud\Spanner\Database;
 use Google\Cloud\Spanner\Session\SessionPoolInterface;
 use Google\Cloud\Spanner\SpannerClient;
@@ -37,6 +38,7 @@ use Google\Cloud\Spanner\Transaction;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Connection as BaseConnection;
 use Illuminate\Database\QueryException;
+use InvalidArgumentException;
 use Psr\Cache\CacheItemPoolInterface;
 use RuntimeException;
 use Throwable;
@@ -81,6 +83,21 @@ class Connection extends BaseConnection
      * @var SessionPoolInterface|null
      */
     protected $sessionPool;
+
+    /**
+     * Try to maintain session pool on 'session not found' error
+     */
+    public const MAINTAIN_SESSION_POOL = 'MAINTAIN_SESSION_POOL';
+
+    /**
+     * Try to maintain and then clear session pool on 'session not found' error
+     */
+    public const CLEAR_SESSION_POOL = 'CLEAR_SESSION_POOL';
+
+    /**
+     * Used to detect specific exception
+     */
+    public const SESSION_NOT_FOUND_CONDITION = 'Session does not exist';
 
     /**
      * @param string $instanceId instance ID
@@ -425,7 +442,9 @@ class Connection extends BaseConnection
         [$query, $bindings] = $this->parameterizer->parameterizeQuery($query, $bindings);
 
         try {
-            $result = $callback($query, $bindings);
+            $result = $this->sessionNotFoundWrapper(function () use ($query, $bindings, $callback) {
+                return $callback($query, $bindings);
+            });
         }
 
         // AbortedExceptions are expected to be thrown upstream by the Google Client Library upstream,
@@ -443,4 +462,83 @@ class Connection extends BaseConnection
 
         return $result;
     }
+
+    /**
+     * Returns current mode
+     *
+     * @return string
+     */
+    protected function getSessionNotFoundMode()
+    {
+        return $this->config['sessionNotFoundErrorMode'] ?? self::CLEAR_SESSION_POOL;
+    }
+
+    /**
+     * Handle "session not found" errors
+     *
+     * @template T
+     * @param  Closure(): T $callback
+     * @return T
+     * @throws InvalidArgumentException|NotFoundException|AbortedException
+     */
+    protected function sessionNotFoundWrapper(Closure $callback)
+    {
+        $handlerMode = $this->getSessionNotFoundMode();
+        if (empty($handlerMode) || $this->sessionPool === null) {
+            // skip handlers
+            return $callback();
+        }
+
+        if (!in_array($handlerMode, [
+                self::MAINTAIN_SESSION_POOL,
+                self::CLEAR_SESSION_POOL,
+            ])
+        ) {
+            throw new InvalidArgumentException("Unsupported sessionNotFoundErrorMode [{$handlerMode}].");
+        }
+        try {
+            return $callback();
+        } catch (NotFoundException $e) {
+            // ensure if this really error with session
+            if ($this->causedBySessionNotFound($e)) {
+                if ($this->inTransaction()) {
+                    // if we inside transaction then throw abort exception
+                    throw new AbortedException(self::SESSION_NOT_FOUND_CONDITION, $e->getCode(), $e);
+                }
+                $this->disconnect();
+                // clear expired sessions, manually deleted sessions still raise error
+                $this->maintainSessionPool();
+                $this->reconnect();
+                try {
+                    return $callback();
+                } catch (NotFoundException $e) {
+                    if ($handlerMode == self::CLEAR_SESSION_POOL && $this->causedBySessionNotFound($e)) {
+                        $this->disconnect();
+                        // forcefully clearing sessions, might affect parallel processes
+                        // also cleared sessions are still accounted toward spanner limit - 10k sessions per node
+                        $this->clearSessionPool();
+                        $this->reconnect();
+                        return $callback();
+                    } else {
+                        throw $e;
+                    }
+                }
+            } else {
+                throw $e;
+            }
+        }
+    }
+
+    /**
+     * Check if this is "session not found" error
+     *
+     * @param  Throwable  $e
+     * @return boolean
+     */
+    public function causedBySessionNotFound(Throwable $e): bool
+    {
+        return ($e instanceof NotFoundException)
+            && strpos($e->getMessage(), self::SESSION_NOT_FOUND_CONDITION) !== false;
+    }
+
 }
