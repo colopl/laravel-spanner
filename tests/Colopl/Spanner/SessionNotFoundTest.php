@@ -31,9 +31,23 @@ class SessionNotFoundTest extends TestCase
         $connection->getSpannerDatabase()->__debugInfo()['session']->delete();
     }
 
+    private function getSessionNotFoundConnection($sessionNotFoundErrorMode): Connection
+    {
+        $config = $this->app['config']->get('database.connections.main');
+
+        // old behavior, just raise QueryException
+        $config['sessionNotFoundErrorMode'] = $sessionNotFoundErrorMode;
+
+        $cacheItemPool = new ArrayAdapter();
+        $cacheSessionPool = new CacheSessionPool($cacheItemPool);
+        $conn = new Connection($config['instance'], $config['database'], '', $config, null, $cacheSessionPool);
+
+        return $conn;
+    }
+
     public function testSessionNotFoundHandledError()
     {
-        $conn = $this->getDefaultConnection();
+        $conn = $this->getSessionNotFoundConnection(Connection::CLEAR_SESSION_POOL);
 
         $conn->selectOne('SELECT 1');
 
@@ -44,7 +58,7 @@ class SessionNotFoundTest extends TestCase
 
     public function testInTransactionSessionNotFoundHandledError()
     {
-        $conn = $this->getDefaultConnection();
+        $conn = $this->getSessionNotFoundConnection(Connection::CLEAR_SESSION_POOL);
 
         $passes = 0;
 
@@ -64,7 +78,7 @@ class SessionNotFoundTest extends TestCase
 
     public function testInTransactionCommitSessionNotFoundHandledError()
     {
-        $conn = $this->getDefaultConnection();
+        $conn = $this->getSessionNotFoundConnection(Connection::CLEAR_SESSION_POOL);
 
         $passes = 0;
 
@@ -82,7 +96,7 @@ class SessionNotFoundTest extends TestCase
 
     public function testInTransactionRollbackSessionNotFoundHandledError()
     {
-        $conn = $this->getDefaultConnection();
+        $conn = $this->getSessionNotFoundConnection(Connection::CLEAR_SESSION_POOL);
 
         $passes = 0;
 
@@ -102,7 +116,7 @@ class SessionNotFoundTest extends TestCase
 
     public function testNestedTransactionsSessionNotFoundHandledError()
     {
-        $conn = $this->getDefaultConnection();
+        $conn = $this->getSessionNotFoundConnection(Connection::CLEAR_SESSION_POOL);
 
         $passes = 0;
 
@@ -121,7 +135,7 @@ class SessionNotFoundTest extends TestCase
 
     public function testCusrorSessionNotFoundHandledError()
     {
-        $conn = $this->getDefaultConnection();
+        $conn = $this->getSessionNotFoundConnection(Connection::CLEAR_SESSION_POOL);
 
         $passes = 0;
 
@@ -142,18 +156,10 @@ class SessionNotFoundTest extends TestCase
 
     public function testSessionNotFoundUnhandledError()
     {
-        $config = $this->app['config']->get('database.connections.main');
-
-        // old behavior, just raise QueryException
-        $config['sessionNotFoundErrorMode'] = false;
-
-        $cacheItemPool = new ArrayAdapter();
-        $cacheSessionPool = new CacheSessionPool($cacheItemPool);
-        $conn = new Connection($config['instance'], $config['database'], '', $config, null, $cacheSessionPool);
+        $conn = $this->getSessionNotFoundConnection(Connection::THROW_EXCEPTION);
         $this->assertInstanceOf(Connection::class, $conn);
 
         $conn->selectOne('SELECT 1');
-        $this->assertNotEmpty($cacheItemPool->getValues(), 'After executing some query, cache is created.');
 
         // deliberately delete session on spanner side
         $this->deleteSession($conn);
@@ -169,18 +175,10 @@ class SessionNotFoundTest extends TestCase
 
     public function testCursorSessionNotFoundUnhandledError()
     {
-        $config = $this->app['config']->get('database.connections.main');
-
-        // old behavior, just raise QueryException
-        $config['sessionNotFoundErrorMode'] = false;
-
-        $cacheItemPool = new ArrayAdapter();
-        $cacheSessionPool = new CacheSessionPool($cacheItemPool);
-        $conn = new Connection($config['instance'], $config['database'], '', $config, null, $cacheSessionPool);
+        $conn = $this->getSessionNotFoundConnection(Connection::THROW_EXCEPTION);
         $this->assertInstanceOf(Connection::class, $conn);
 
         $cursor = $conn->cursor('SELECT 1');
-        $this->assertNotEmpty($cacheItemPool->getValues(), 'After executing some query, cache is created.');
 
         // deliberately delete session on spanner side
         $this->deleteSession($conn);
@@ -196,14 +194,7 @@ class SessionNotFoundTest extends TestCase
 
     public function testInTransactionSessionNotFoundUnhandledError()
     {
-        $config = $this->app['config']->get('database.connections.main');
-
-        // old behavior, just raise QueryException
-        $config['sessionNotFoundErrorMode'] = false;
-
-        $cacheItemPool = new ArrayAdapter();
-        $cacheSessionPool = new CacheSessionPool($cacheItemPool);
-        $conn = new Connection($config['instance'], $config['database'], '', $config, null, $cacheSessionPool);
+        $conn = $this->getSessionNotFoundConnection(Connection::THROW_EXCEPTION);
         $this->assertInstanceOf(Connection::class, $conn);
 
         $this->expectException(NotFoundException::class);
