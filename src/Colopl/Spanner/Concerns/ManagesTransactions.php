@@ -47,7 +47,7 @@ trait ManagesTransactions
      */
     public function transaction(Closure $callback, $attempts = Database::MAX_RETRIES)
     {
-        return $this->sessionNotFoundWrapper(function () use ($callback, $attempts) {
+        return $this->withSessionNotFoundHandling(function () use ($callback, $attempts) {
             // Since Cloud Spanner does not support nested transactions,
             // we use Laravel's transaction management for nested transactions only.
             if ($this->transactions > 0) {

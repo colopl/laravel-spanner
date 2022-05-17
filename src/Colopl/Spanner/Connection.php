@@ -447,7 +447,7 @@ class Connection extends BaseConnection
         [$query, $bindings] = $this->parameterizer->parameterizeQuery($query, $bindings);
 
         try {
-            $result = $this->sessionNotFoundWrapper(function () use ($query, $bindings, $callback) {
+            $result = $this->withSessionNotFoundHandling(function () use ($query, $bindings, $callback) {
                 return $callback($query, $bindings);
             });
         }
@@ -486,7 +486,7 @@ class Connection extends BaseConnection
      * @return T
      * @throws InvalidArgumentException|NotFoundException|AbortedException
      */
-    protected function sessionNotFoundWrapper(Closure $callback)
+    protected function withSessionNotFoundHandling(Closure $callback): mixed
     {
         $handlerMode = $this->getSessionNotFoundMode();
         if (!in_array($handlerMode, [
