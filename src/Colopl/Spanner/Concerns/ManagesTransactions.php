@@ -37,6 +37,8 @@ trait ManagesTransactions
      */
     protected $currentTransaction;
 
+    protected bool $ignoreSessionNotFoundErrorOnRollback = false;
+
     /**
      * @template T
      * @param  Closure(static): T $callback
@@ -60,6 +62,33 @@ trait ManagesTransactions
                     $result = $callback($this);
                     $this->performSpannerCommit();
                     return $result;
+                } catch (NotFoundException $e) {
+                    // if session is lost, there is no way to rollback transaction at all,
+                    // so quietly ignore 'session not found' error
+                    // and then abort current transaction and rerun everything again
+                    $savedIgnoreError = $this->ignoreSessionNotFoundErrorOnRollback;
+                    $this->ignoreSessionNotFoundErrorOnRollback = !empty($this->getSessionNotFoundMode())
+                        && $this->causedBySessionNotFound($e);
+
+                    try {
+                        $this->rollBack();
+                        throw $e;
+                    } finally {
+                        $this->ignoreSessionNotFoundErrorOnRollback = $savedIgnoreError;
+                    }
+                } catch (AbortedException $e) {
+                    // if aborted was caused by session not found, then ignore errors on rollback
+                    $savedIgnoreError = $this->ignoreSessionNotFoundErrorOnRollback;
+                    $this->ignoreSessionNotFoundErrorOnRollback = !empty($this->getSessionNotFoundMode())
+                        && $e->hasServiceException()
+                        && $this->causedBySessionNotFound($e->getServiceException());
+
+                    try {
+                        $this->rollBack();
+                        throw $e;
+                    } finally {
+                        $this->ignoreSessionNotFoundErrorOnRollback = $savedIgnoreError;
+                    }
                 } catch (Throwable $e) {
                     $this->rollBack();
                     throw $e;
@@ -164,8 +193,7 @@ trait ManagesTransactions
                 try {
                     $this->currentTransaction->rollBack();
                 } catch (NotFoundException $e) {
-                    // ignore session not found error
-                    if (empty($this->getSessionNotFoundMode()) || !$this->causedBySessionNotFound($e)) {
+                    if (!$this->ignoreSessionNotFoundErrorOnRollback) {
                         throw $e;
                     }
                 }
