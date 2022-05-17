@@ -56,7 +56,7 @@ trait ManagesStaleReads
      */
     public function selectWithTimestampBound($query, $bindings = [], TimestampBoundInterface $timestampBound = null): array
     {
-        return $this->sessionNotFoundWrapper(function () use ($query, $bindings, $timestampBound) {
+        return $this->withSessionNotFoundHandling(function () use ($query, $bindings, $timestampBound) {
             return iterator_to_array($this->cursorWithTimestampBound($query, $bindings, $timestampBound));
         });
     }
@@ -70,7 +70,7 @@ trait ManagesStaleReads
      */
     public function selectOneWithTimestampBound($query, $bindings = [], TimestampBoundInterface $timestampBound = null): ?array
     {
-        $result = $this->sessionNotFoundWrapper(function () use ($query, $bindings, $timestampBound) {
+        $result = $this->withSessionNotFoundHandling(function () use ($query, $bindings, $timestampBound) {
             return $this->cursorWithTimestampBound($query, $bindings, $timestampBound)->current();
         });
         assert(is_null($result) || is_array($result));

@@ -166,8 +166,8 @@ class SessionNotFoundTest extends TestCase
 
         $this->expectException(QueryException::class);
 
-        // that string is used in sessionNotFoundWrapper() to catch session not found error,
-        // if google changes it then string should be changed in sessionNotFoundWrapper() as well
+        // the string is used in sessionNotFoundWrapper() to catch 'session not found' error,
+        // if google changes it then string should be changed in Connection::SESSION_NOT_FOUND_CONDITION
         $this->expectExceptionMessage($conn::SESSION_NOT_FOUND_CONDITION);
 
         $conn->selectOne('SELECT 1');
@@ -185,8 +185,8 @@ class SessionNotFoundTest extends TestCase
 
         $this->expectException(NotFoundException::class);
 
-        // that string is used in sessionNotFoundWrapper() to catch session not found error,
-        // if google changes it then string should be changed in sessionNotFoundWrapper() as well
+        // the string is used in sessionNotFoundWrapper() to catch 'session not found' error,
+        // if google changes it then string should be changed in Connection::SESSION_NOT_FOUND_CONDITION
         $this->expectExceptionMessage($conn::SESSION_NOT_FOUND_CONDITION);
 
         iterator_to_array($cursor);
@@ -199,8 +199,8 @@ class SessionNotFoundTest extends TestCase
 
         $this->expectException(NotFoundException::class);
 
-        // that string is used in sessionNotFoundWrapper() to catch session not found error,
-        // if google changes it then string should be changed in sessionNotFoundWrapper() as well
+        // the string is used in sessionNotFoundWrapper() to catch 'session not found' error,
+        // if google changes it then string should be changed in Connection::SESSION_NOT_FOUND_CONDITION
         $this->expectExceptionMessage($conn::SESSION_NOT_FOUND_CONDITION);
 
         $passes = 0;
