@@ -80,6 +80,26 @@ class SessionNotFoundTest extends TestCase
         $this->assertEquals(2, $passes, 'Transaction should be called twice');
     }
 
+    public function testInTransactionRollbackSessionNotFoundHandledError()
+    {
+        $conn = $this->getDefaultConnection();
+
+        $passes = 0;
+
+        $conn->transaction(function () use ($conn, &$passes) {
+
+            $this->assertEquals(12345, $conn->selectOne('SELECT 12345')[0]);
+
+            if ($passes == 0) {
+                $this->deleteSession($conn);
+            }
+            $passes++;
+            // explicit rollback should force rerunning of code
+            $conn->rollback();
+        });
+        $this->assertEquals(2, $passes, 'Transaction should be called twice');
+    }
+
     public function testNestedTransactionsSessionNotFoundHandledError()
     {
         $conn = $this->getDefaultConnection();
