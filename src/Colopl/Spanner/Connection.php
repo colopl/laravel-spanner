@@ -95,6 +95,11 @@ class Connection extends BaseConnection
     public const CLEAR_SESSION_POOL = 'CLEAR_SESSION_POOL';
 
     /**
+     * The QueryException is raised and the client code is free to handle it by itself
+     */
+    public const THROW_EXCEPTION = 'THROW_EXCEPTION';
+
+    /**
      * Used to detect specific exception
      */
     public const SESSION_NOT_FOUND_CONDITION = 'Session does not exist';
@@ -468,9 +473,9 @@ class Connection extends BaseConnection
      *
      * @return string
      */
-    protected function getSessionNotFoundMode()
+    protected function getSessionNotFoundMode(): string
     {
-        return $this->config['sessionNotFoundErrorMode'] ?? self::CLEAR_SESSION_POOL;
+        return $this->config['sessionNotFoundErrorMode'] ?? self::MAINTAIN_SESSION_POOL;
     }
 
     /**
@@ -484,18 +489,20 @@ class Connection extends BaseConnection
     protected function sessionNotFoundWrapper(Closure $callback)
     {
         $handlerMode = $this->getSessionNotFoundMode();
-        if (empty($handlerMode) || $this->sessionPool === null) {
-            // skip handlers
-            return $callback();
-        }
-
         if (!in_array($handlerMode, [
                 self::MAINTAIN_SESSION_POOL,
                 self::CLEAR_SESSION_POOL,
+                self::THROW_EXCEPTION,
             ])
         ) {
             throw new InvalidArgumentException("Unsupported sessionNotFoundErrorMode [{$handlerMode}].");
         }
+
+        if ($handlerMode === self::THROW_EXCEPTION || $this->sessionPool === null) {
+            // skip handlers
+            return $callback();
+        }
+
         try {
             return $callback();
         } catch (NotFoundException $e) {
