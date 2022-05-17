@@ -67,7 +67,7 @@ trait ManagesTransactions
                     // so quietly ignore 'session not found' error
                     // and then abort current transaction and rerun everything again
                     $savedIgnoreError = $this->ignoreSessionNotFoundErrorOnRollback;
-                    $this->ignoreSessionNotFoundErrorOnRollback = !empty($this->getSessionNotFoundMode())
+                    $this->ignoreSessionNotFoundErrorOnRollback = $this->getSessionNotFoundMode() != self::THROW_EXCEPTION
                         && $this->causedBySessionNotFound($e);
 
                     try {
@@ -79,7 +79,7 @@ trait ManagesTransactions
                 } catch (AbortedException $e) {
                     // if aborted was caused by session not found, then ignore errors on rollback
                     $savedIgnoreError = $this->ignoreSessionNotFoundErrorOnRollback;
-                    $this->ignoreSessionNotFoundErrorOnRollback = !empty($this->getSessionNotFoundMode())
+                    $this->ignoreSessionNotFoundErrorOnRollback = $this->getSessionNotFoundMode() != self::THROW_EXCEPTION
                         && $e->hasServiceException()
                         && $this->causedBySessionNotFound($e->getServiceException());
 
