@@ -62,13 +62,16 @@ trait ManagesTransactions
                     $result = $callback($this);
                     $this->performSpannerCommit();
                     return $result;
-                } catch (NotFoundException $e) {
+                } catch (Throwable $e) {
                     // if session is lost, there is no way to rollback transaction at all,
-                    // so quietly ignore 'session not found' error
+                    // so quietly ignore 'session not found' error in rollBack()
                     // and then abort current transaction and rerun everything again
                     $savedIgnoreError = $this->ignoreSessionNotFoundErrorOnRollback;
-                    $this->ignoreSessionNotFoundErrorOnRollback = $this->getSessionNotFoundMode() != self::THROW_EXCEPTION
-                        && $this->causedBySessionNotFound($e);
+                    $exceptionToCheck = $e instanceof AbortedException ? $e->getServiceException() : $e;
+                    $this->ignoreSessionNotFoundErrorOnRollback =
+                        $exceptionToCheck instanceOf NotFoundException
+                        && $this->getSessionNotFoundMode() != self::THROW_EXCEPTION
+                        && $this->causedBySessionNotFound($exceptionToCheck);
 
                     try {
                         $this->rollBack();
@@ -76,22 +79,6 @@ trait ManagesTransactions
                     } finally {
                         $this->ignoreSessionNotFoundErrorOnRollback = $savedIgnoreError;
                     }
-                } catch (AbortedException $e) {
-                    // if aborted was caused by session not found, then ignore errors on rollback
-                    $savedIgnoreError = $this->ignoreSessionNotFoundErrorOnRollback;
-                    $this->ignoreSessionNotFoundErrorOnRollback = $this->getSessionNotFoundMode() != self::THROW_EXCEPTION
-                        && $e->hasServiceException()
-                        && $this->causedBySessionNotFound($e->getServiceException());
-
-                    try {
-                        $this->rollBack();
-                        throw $e;
-                    } finally {
-                        $this->ignoreSessionNotFoundErrorOnRollback = $savedIgnoreError;
-                    }
-                } catch (Throwable $e) {
-                    $this->rollBack();
-                    throw $e;
                 }
             }, ['maxRetries' => $attempts - 1]);
 
