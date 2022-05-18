@@ -64,7 +64,7 @@ class SessionNotFoundTest extends TestCase
 
         $conn->transaction(function () use ($conn, &$passes) {
 
-            if ($passes == 0) {
+            if ($passes === 0) {
                 $this->deleteSession($conn);
                 $passes++;
             }
@@ -86,7 +86,7 @@ class SessionNotFoundTest extends TestCase
 
             $this->assertEquals(12345, $conn->selectOne('SELECT 12345')[0]);
 
-            if ($passes == 0) {
+            if ($passes === 0) {
                 $this->deleteSession($conn);
             }
             $passes++;
@@ -104,7 +104,7 @@ class SessionNotFoundTest extends TestCase
 
             $this->assertEquals(12345, $conn->selectOne('SELECT 12345')[0]);
 
-            if ($passes == 0) {
+            if ($passes === 0) {
                 $this->deleteSession($conn);
             }
             $passes++;
@@ -124,7 +124,7 @@ class SessionNotFoundTest extends TestCase
             $conn->transaction(function () use ($conn, &$passes) {
                 $this->assertEquals(12345, $conn->selectOne('SELECT 12345')[0]);
 
-                if ($passes == 0) {
+                if ($passes === 0) {
                     $this->deleteSession($conn);
                 }
                 $passes++;
@@ -142,7 +142,7 @@ class SessionNotFoundTest extends TestCase
         $conn->transaction(function () use ($conn, &$passes) {
             $cursor = $conn->cursor('SELECT 12345');
 
-            if ($passes == 0) {
+            if ($passes === 0) {
                 $this->deleteSession($conn);
                 $passes++;
             }
@@ -207,7 +207,7 @@ class SessionNotFoundTest extends TestCase
 
         $conn->transaction(function () use ($conn, &$passes) {
 
-            if ($passes == 0) {
+            if ($passes === 0) {
                 $this->deleteSession($conn);
                 $passes++;
             }
