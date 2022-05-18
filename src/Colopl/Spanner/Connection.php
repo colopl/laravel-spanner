@@ -519,7 +519,7 @@ class Connection extends BaseConnection
                 try {
                     return $callback();
                 } catch (NotFoundException $e) {
-                    if ($handlerMode == self::CLEAR_SESSION_POOL && $this->causedBySessionNotFound($e)) {
+                    if ($handlerMode === self::CLEAR_SESSION_POOL && $this->causedBySessionNotFound($e)) {
                         $this->disconnect();
                         // forcefully clearing sessions, might affect parallel processes
                         // also cleared sessions are still accounted toward spanner limit - 10k sessions per node
