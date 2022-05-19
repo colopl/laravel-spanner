@@ -25,6 +25,8 @@ use Symfony\Component\Cache\Adapter\ArrayAdapter;
 
 class SessionNotFoundTest extends TestCase
 {
+    protected const TEST_DB_REQUIRED = true;
+
     private function deleteSession(Connection $connection)
     {
         // delete session on spanner side
@@ -42,6 +44,9 @@ class SessionNotFoundTest extends TestCase
         $cacheSessionPool = new CacheSessionPool($cacheItemPool);
         $conn = new Connection($config['instance'], $config['database'], '', $config, null, $cacheSessionPool);
 
+        if (static::TEST_DB_REQUIRED) {
+            $this->setUpDatabaseOnce($conn);
+        }
         return $conn;
     }
 
