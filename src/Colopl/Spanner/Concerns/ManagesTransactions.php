@@ -23,6 +23,7 @@ use Google\Cloud\Core\Exception\AbortedException;
 use Google\Cloud\Core\Exception\NotFoundException;
 use Google\Cloud\Spanner\Database;
 use Google\Cloud\Spanner\Transaction;
+use Illuminate\Database\QueryException;
 use Throwable;
 
 /**
@@ -47,13 +48,13 @@ trait ManagesTransactions
      */
     public function transaction(Closure $callback, $attempts = Database::MAX_RETRIES)
     {
-        return $this->withSessionNotFoundHandling(function () use ($callback, $attempts) {
-            // Since Cloud Spanner does not support nested transactions,
-            // we use Laravel's transaction management for nested transactions only.
-            if ($this->transactions > 0) {
-                return parent::transaction($callback, $attempts);
-            }
+        // Since Cloud Spanner does not support nested transactions,
+        // we use Laravel's transaction management for nested transactions only.
+        if ($this->transactions > 0) {
+            return parent::transaction($callback, $attempts);
+        }
 
+        return $this->withSessionNotFoundHandling(function () use ($callback, $attempts) {
             $return = $this->getSpannerDatabase()->runTransaction(function (Transaction $tx) use ($callback) {
                 try {
                     $this->currentTransaction = $tx;
@@ -67,7 +68,7 @@ trait ManagesTransactions
                     // so quietly ignore 'session not found' error in rollBack()
                     // and then abort current transaction and rerun everything again
                     $savedIgnoreError = $this->ignoreSessionNotFoundErrorOnRollback;
-                    $exceptionToCheck = $e instanceof AbortedException ? $e->getServiceException() : $e;
+                    $exceptionToCheck = $e instanceof QueryException ? $e->getPrevious() : $e;
                     $this->ignoreSessionNotFoundErrorOnRollback =
                         $exceptionToCheck instanceOf NotFoundException
                         && $this->getSessionNotFoundMode() != self::THROW_EXCEPTION
@@ -75,7 +76,11 @@ trait ManagesTransactions
 
                     try {
                         $this->rollBack();
-                        throw $e;
+                        // rethrow NotFoundException instead of QueryException
+                        $eToThrow = $this->ignoreSessionNotFoundErrorOnRollback ? $exceptionToCheck : $e;
+                        // mute phpstan
+                        assert($eToThrow !== null);
+                        throw $eToThrow;
                     } finally {
                         $this->ignoreSessionNotFoundErrorOnRollback = $savedIgnoreError;
                     }
