@@ -251,6 +251,7 @@ The errors can be handled by one of the supported modes:
 - **MAINTAIN_SESSION_POOL** (default) - When the 'session not found' error is encountered, the library tries to disconnect,
 [maintain a session pool](https://github.com/googleapis/google-cloud-php/blob/077810260b58f5de8a3bbdfd999a5e9a48f71a7f/Spanner/src/Session/CacheSessionPool.php#L864)
 (to remove outdated sessions), reconnect, and then try querying again.
+The mode is enabled by default, but you can enable it explicitly via congifuration:
 ```php
         'spanner' => [
             'driver' => 'spanner',
@@ -263,7 +264,7 @@ The errors can be handled by one of the supported modes:
 the [clearing of the session pool](https://github.com/googleapis/google-cloud-php/blob/077810260b58f5de8a3bbdfd999a5e9a48f71a7f/Spanner/src/Session/CacheSessionPool.php#L465)
 is enforced and the query is tried once again.
 As a consequence of session pool clearing, all processes that share the current session pool will be forced
-to use the new session on the next call. The mode is enabled by default, but you can enable it explicitly via congifuration:
+to use the new session on the next call.
 ```php
         'spanner' => [
             'driver' => 'spanner',
