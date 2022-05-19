@@ -484,7 +484,7 @@ class Connection extends BaseConnection
      * @template T
      * @param  Closure(): T $callback
      * @return T
-     * @throws InvalidArgumentException|NotFoundException|AbortedException
+     * @throws AbortedException|NotFoundException|InvalidArgumentException
      */
     protected function withSessionNotFoundHandling(Closure $callback): mixed
     {
@@ -498,8 +498,11 @@ class Connection extends BaseConnection
             throw new InvalidArgumentException("Unsupported sessionNotFoundErrorMode [{$handlerMode}].");
         }
 
-        if ($handlerMode === self::THROW_EXCEPTION || $this->sessionPool === null) {
-            // skip handlers
+        if ($handlerMode === self::THROW_EXCEPTION
+            || $this->sessionPool === null
+            || $this->inTransaction()
+        ) {
+            // skip handlers, transaction() will handle error by self
             return $callback();
         }
 
@@ -508,10 +511,6 @@ class Connection extends BaseConnection
         } catch (NotFoundException $e) {
             // ensure if this really error with session
             if ($this->causedBySessionNotFound($e)) {
-                if ($this->inTransaction()) {
-                    // if we inside transaction then throw abort exception
-                    throw new AbortedException(self::SESSION_NOT_FOUND_CONDITION, $e->getCode(), $e);
-                }
                 $this->disconnect();
                 // clear expired sessions, manually deleted sessions still raise error
                 $this->maintainSessionPool();
