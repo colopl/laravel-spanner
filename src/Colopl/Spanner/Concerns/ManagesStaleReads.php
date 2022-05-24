@@ -27,13 +27,15 @@ trait ManagesStaleReads
      * @param string $query
      * @param array<string, mixed> $bindings
      * @param TimestampBoundInterface|null $timestampBound
-     * @return Generator
+     * @return Generator<int, list<mixed>|null>
      */
     public function cursorWithTimestampBound($query, $bindings = [], TimestampBoundInterface $timestampBound = null): Generator
     {
         return $this->run($query, $bindings, function ($query, $bindings) use ($timestampBound) {
             if ($this->pretending()) {
-                return call_user_func(function() { yield from []; });
+                return call_user_func(function() {
+                    yield from [];
+                });
             }
 
             $options = ['parameters' => $this->prepareBindings($bindings)];
@@ -50,7 +52,7 @@ trait ManagesStaleReads
     /**
      * @param  string  $query
      * @param  array  $bindings
-     * @param  TimestampBoundInterface $timestampBound
+     * @param  TimestampBoundInterface|null $timestampBound
      * @return array
      * @throws Throwable
      */
@@ -62,19 +64,16 @@ trait ManagesStaleReads
     }
 
     /**
-     * @param  string  $query
-     * @param  array  $bindings
-     * @param  TimestampBoundInterface $timestampBound
-     * @return array|null
-     * @throws Throwable
+     * @param string $query
+     * @param array<string, mixed> $bindings
+     * @param TimestampBoundInterface|null $timestampBound
+     * @return array<mixed>|null
      */
     public function selectOneWithTimestampBound($query, $bindings = [], TimestampBoundInterface $timestampBound = null): ?array
     {
-        $result = $this->withSessionNotFoundHandling(function () use ($query, $bindings, $timestampBound) {
+        return $this->withSessionNotFoundHandling(function () use ($query, $bindings, $timestampBound) {
             return $this->cursorWithTimestampBound($query, $bindings, $timestampBound)->current();
         });
-        assert(is_null($result) || is_array($result));
-        return $result;
     }
 }
 
