@@ -32,12 +32,12 @@ class Nested implements Arrayable, IteratorAggregate, Countable
     /**
      * @var array<int, mixed>
      */
-    private array $array;
+    private $array;
 
     /**
      * @param array<int, mixed>|Arrayable<int, mixed> $array
      */
-    public function __construct(array|Arrayable $array)
+    public function __construct($array)
     {
         $this->array = ($array instanceof Arrayable)
             ? $array->toArray()

@@ -123,9 +123,9 @@ trait ManagesSessionPool
         }
 
         return [
-            'identity' => $spannerDatabase?->identity(),
-            'session' => $session?->name(),
-            'sessionPool' => $spannerDatabase?->sessionPool(),
+            'identity' => $spannerDatabase !== null ? $spannerDatabase->identity() : null,
+            'session' => $session !== null ? $session->name() : null,
+            'sessionPool' => $spannerDatabase !== null ? $spannerDatabase->sessionPool() : null,
             'credentialFetcher' => $credentialFetcher,
         ];
     }

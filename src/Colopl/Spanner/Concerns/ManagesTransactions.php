@@ -38,7 +38,10 @@ trait ManagesTransactions
      */
     protected $currentTransaction;
 
-    protected bool $ignoreSessionNotFoundErrorOnRollback = false;
+    /**
+     * @var bool
+     */
+    protected $ignoreSessionNotFoundErrorOnRollback = false;
 
     /**
      * @template T

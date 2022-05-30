@@ -486,7 +486,7 @@ class Connection extends BaseConnection
      * @return T
      * @throws AbortedException|NotFoundException|InvalidArgumentException
      */
-    protected function withSessionNotFoundHandling(Closure $callback): mixed
+    protected function withSessionNotFoundHandling(Closure $callback)
     {
         $handlerMode = $this->getSessionNotFoundMode();
         if (!in_array($handlerMode, [
