@@ -186,7 +186,7 @@ $connection->runPartitionedDml('UPDATE ...');
 
 // by Query Builder
 $queryBuilder->partitionedUpdate($values);
-$queryBuilder->partitionedDelete($values);
+$queryBuilder->partitionedDelete();
 ```
 
 However, Partitioned DML has some limitations. See [Cloud Spanner Documentation about Partitioned DML](https://cloud.google.com/spanner/docs/dml-partitioned#dml_and_partitioned_dml) for more information.
