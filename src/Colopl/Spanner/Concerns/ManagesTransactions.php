@@ -41,6 +41,7 @@ trait ManagesTransactions
     protected bool $ignoreSessionNotFoundErrorOnRollback = false;
 
     /**
+     * @inheritDoc
      * @template T
      * @param  Closure(static): T $callback
      * @param  int $attempts
@@ -103,10 +104,7 @@ trait ManagesTransactions
     }
 
     /**
-     * Create a transaction within the database.
-     *
-     * @return Transaction|null
-     * @throws Exception
+     * @inheritDoc
      */
     protected function createTransaction()
     {
@@ -122,11 +120,7 @@ trait ManagesTransactions
     }
 
     /**
-     * Handle an exception from a transaction beginning.
-     *
-     * @param  Exception  $e
-     * @return Transaction|null
-     * @throws Exception
+     * @inheritDoc
      */
     protected function handleBeginTransactionException($e)
     {
@@ -140,10 +134,7 @@ trait ManagesTransactions
     }
 
     /**
-     * Commit the active database transaction.
-     *
-     * @return void
-     * @throws AbortedException
+     * @inheritDoc
      * @deprecated Use self::transaction() instead
      */
     public function commit()
@@ -169,10 +160,7 @@ trait ManagesTransactions
     }
 
     /**
-     * Perform a rollback within the database.
-     *
-     * @param  int  $toLevel
-     * @return void
+     * @inheritDoc
      */
     protected function performRollBack($toLevel)
     {
@@ -215,10 +203,7 @@ trait ManagesTransactions
      * Unlike MySQL all error cases including deadlocks are thrown as
      * AbortedException so causedByDeadlock will not be called here.
      *
-     * @param  Exception  $e
-     * @param  int  $currentAttempt
-     * @param  int  $maxAttempts
-     * @throws Exception
+     * @inheritDoc
      */
     protected function handleTransactionException($e, $currentAttempt, $maxAttempts)
     {

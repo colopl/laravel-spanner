@@ -29,7 +29,7 @@ trait DoesNotAutoIncrement
     use MarksAsNotSupported;
 
     /**
-     * @return bool
+     * @inheritDoc
      */
     public function getIncrementing()
     {
@@ -37,8 +37,7 @@ trait DoesNotAutoIncrement
     }
 
     /**
-     * @param bool $value
-     * @return $this|void
+     * @inheritDoc
      */
     public function setIncrementing($value)
     {
@@ -46,9 +45,7 @@ trait DoesNotAutoIncrement
     }
 
     /**
-     * @param  Builder  $query
-     * @param  array  $attributes
-     * @return void
+     * @inheritDoc
      */
     protected function insertAndSetId(Builder $query, $attributes): void
     {

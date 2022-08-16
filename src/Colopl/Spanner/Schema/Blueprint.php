@@ -27,8 +27,8 @@ class Blueprint extends BaseBlueprint
     use MarksAsNotSupported;
 
     /**
-     * @return void
-     * @throws BadMethodCallException
+     * @inheritDoc
+     * @return never
      */
     public function temporary()
     {
@@ -36,8 +36,8 @@ class Blueprint extends BaseBlueprint
     }
 
     /**
-     * @return void
-     * @throws BadMethodCallException
+     * @inheritDoc
+     * @return never
      */
     public function dropPrimary($index = null)
     {
@@ -45,8 +45,8 @@ class Blueprint extends BaseBlueprint
     }
 
     /**
-     * @return void
-     * @throws BadMethodCallException
+     * @inheritDoc
+     * @return never
      */
     public function increments($column)
     {
@@ -54,8 +54,8 @@ class Blueprint extends BaseBlueprint
     }
 
     /**
-     * @return void
-     * @throws BadMethodCallException
+     * @inheritDoc
+     * @return never
      */
     public function bigIncrements($column)
     {
@@ -63,8 +63,8 @@ class Blueprint extends BaseBlueprint
     }
 
     /**
-     * @return void
-     * @throws BadMethodCallException
+     * @inheritDoc
+     * @return never
      */
     public function mediumIncrements($column)
     {
@@ -72,8 +72,8 @@ class Blueprint extends BaseBlueprint
     }
 
     /**
-     * @return void
-     * @throws BadMethodCallException
+     * @inheritDoc
+     * @return never
      */
     public function smallIncrements($column)
     {
@@ -81,8 +81,8 @@ class Blueprint extends BaseBlueprint
     }
 
     /**
-     * @return void
-     * @throws BadMethodCallException
+     * @inheritDoc
+     * @return never
      */
     public function tinyIncrements($column)
     {
@@ -92,10 +92,8 @@ class Blueprint extends BaseBlueprint
     // region Spanner Specific Types
 
     /**
-     * Create a new binary column on the table.
-     *
      * @param  string  $column
-     * @param  int  $length
+     * @param int|null $length
      * @return Fluent<string, mixed>
      */
     public function binary($column, $length = null)

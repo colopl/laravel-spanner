@@ -26,9 +26,7 @@ use RuntimeException;
 class Grammar extends BaseGrammar
 {
     /**
-     * @param Builder $query
-     * @param string $table
-     * @return string
+     * @inheritDoc
      */
     protected function compileFrom(Builder $query, $table)
     {
@@ -77,8 +75,7 @@ class Grammar extends BaseGrammar
     }
 
     /**
-     * @param string $value
-     * @return string
+     * @inheritDoc
      */
     protected function wrapValue($value)
     {
@@ -90,8 +87,8 @@ class Grammar extends BaseGrammar
     }
 
     /**
+     * @inheritDoc
      * @see https://cloud.google.com/spanner/docs/data-types#time-zones
-     * @return string
      */
     public function getDateFormat()
     {
@@ -99,7 +96,7 @@ class Grammar extends BaseGrammar
     }
 
     /**
-     * @return bool
+     * @inheritDoc
      */
     public function supportsSavepoints()
     {

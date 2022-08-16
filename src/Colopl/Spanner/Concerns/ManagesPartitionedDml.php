@@ -27,8 +27,8 @@ trait ManagesPartitionedDml
     /**
      * Run an SQL statement as partitioned DML and get the number of rows affected.
      *
-     * @param  string $query
-     * @param  array $bindings
+     * @param string $query
+     * @param array<mixed> $bindings
      * @return int
      */
     public function runPartitionedDml($query, $bindings = [])

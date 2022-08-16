@@ -20,15 +20,13 @@ namespace Colopl\Spanner\Query;
 use Exception;
 use Google\Cloud\Spanner\Timestamp;
 use Illuminate\Database\Query\Builder;
+use Illuminate\Database\Query\Processors\Processor as BaseProcessor;
 use Illuminate\Support\Carbon;
 
-class Processor extends \Illuminate\Database\Query\Processors\Processor
+class Processor extends BaseProcessor
 {
     /**
-     * @param Builder $query
-     * @param array $results
-     * @return array
-     * @throws Exception
+     * @inheritDoc
      */
     public function processSelect(Builder $query, $results): array
     {
@@ -46,8 +44,7 @@ class Processor extends \Illuminate\Database\Query\Processors\Processor
     }
 
     /**
-     * @param  array  $results
-     * @return array
+     * @inheritDoc
      */
     public function processColumnListing($results)
     {
@@ -57,7 +54,7 @@ class Processor extends \Illuminate\Database\Query\Processors\Processor
     }
 
     /**
-     * @param  array  $results
+     * @param array $results
      * @return array
      */
     public function processIndexListing($results)

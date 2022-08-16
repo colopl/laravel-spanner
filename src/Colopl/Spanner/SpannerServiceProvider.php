@@ -42,7 +42,6 @@ class SpannerServiceProvider extends ServiceProvider
     /**
      * @param array $config
      * @return Connection
-     * @throws Exception
      */
     protected function createSpannerConnection(array $config)
     {
@@ -52,9 +51,9 @@ class SpannerServiceProvider extends ServiceProvider
     }
 
     /**
-     * @param  array   $config
-     * @param  string  $name
-     * @return array
+     * @param array<string, mixed> $config
+     * @param string $name
+     * @return array<string, mixed>
      */
     protected function parseConfig(array $config, $name)
     {

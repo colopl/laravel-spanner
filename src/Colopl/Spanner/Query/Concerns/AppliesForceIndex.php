@@ -17,13 +17,6 @@
 
 namespace Colopl\Spanner\Query\Concerns;
 
-use Colopl\Spanner\Connection;
-use Colopl\Spanner\Query\Grammar;
-
-/**
- * @property Connection $connection
- * @property Grammar $grammar
- */
 trait AppliesForceIndex
 {
     /**

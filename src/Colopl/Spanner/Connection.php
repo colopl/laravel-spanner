@@ -17,7 +17,6 @@
 
 namespace Colopl\Spanner;
 
-use BadMethodCallException;
 use Closure;
 use Colopl\Spanner\Query\Builder as QueryBuilder;
 use Colopl\Spanner\Query\Grammar as QueryGrammar;
@@ -39,6 +38,7 @@ use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Connection as BaseConnection;
 use Illuminate\Database\QueryException;
 use InvalidArgumentException;
+use LogicException;
 use Psr\Cache\CacheItemPoolInterface;
 use RuntimeException;
 use Throwable;
@@ -138,26 +138,23 @@ class Connection extends BaseConnection
 
     /**
      * @return Database
-     * @throws GoogleException
      */
     public function getSpannerDatabase(): Database
     {
         $this->reconnectIfMissingConnection();
-        return $this->spannerDatabase;
+        return $this->spannerDatabase ?? throw new LogicException('Spanner Database does not exist');
     }
 
     /**
      * @return Database|Transaction
-     * @throws GoogleException
      */
-    protected function getDatabaseContext()
+    protected function getDatabaseContext(): Database|Transaction
     {
         return $this->getCurrentTransaction() ?? $this->getSpannerDatabase();
     }
 
     /**
-     * @return void
-     * @throws GoogleException
+     * @inheritDoc
      */
     public function reconnect()
     {
@@ -170,7 +167,7 @@ class Connection extends BaseConnection
     }
 
     /**
-     * @throws GoogleException
+     * @inheritDoc
      */
     protected function reconnectIfMissingConnection()
     {
@@ -180,7 +177,7 @@ class Connection extends BaseConnection
     }
 
     /**
-     * @return void
+     * @inheritDoc
      */
     public function disconnect()
     {
@@ -191,6 +188,7 @@ class Connection extends BaseConnection
     }
 
     /**
+     * @inheritDoc
      * @return QueryGrammar
      */
     protected function getDefaultQueryGrammar(): QueryGrammar
@@ -199,6 +197,7 @@ class Connection extends BaseConnection
     }
 
     /**
+     * @inheritDoc
      * @return SchemaGrammar
      */
     protected function getDefaultSchemaGrammar(): SchemaGrammar
@@ -207,7 +206,8 @@ class Connection extends BaseConnection
     }
 
     /**
-     * @return SchemaBuilder|\Illuminate\Database\Schema\Builder
+     * @inheritDoc
+     * @return SchemaBuilder
      */
     public function getSchemaBuilder()
     {
@@ -219,6 +219,7 @@ class Connection extends BaseConnection
     }
 
     /**
+     * @inheritDoc
      * @return QueryProcessor
      */
     protected function getDefaultPostProcessor(): QueryProcessor
@@ -227,11 +228,7 @@ class Connection extends BaseConnection
     }
 
     /**
-     * Begin a fluent query against a database table.
-     *
-     * @param  string $table
-     * @param  string $as
-     * @return QueryBuilder
+     * @inheritDoc OVERRIDDEN for return type change
      */
     public function table($table, $as = null): QueryBuilder
     {
@@ -239,6 +236,7 @@ class Connection extends BaseConnection
     }
 
     /**
+     * @inheritDoc OVERRIDDEN for return type change
      * @return QueryBuilder
      */
     public function query(): QueryBuilder
@@ -247,12 +245,7 @@ class Connection extends BaseConnection
     }
 
     /**
-     * Run a select statement against the database.
-     *
-     * @param  string $query
-     * @param  array<string, mixed> $bindings
-     * @param  bool $useReadPdo  Not used. This is here for compatibility reasons.
-     * @return array
+     * @inheritDoc
      */
     public function select($query, $bindings = [], $useReadPdo = true): array
     {
@@ -270,12 +263,7 @@ class Connection extends BaseConnection
     }
 
     /**
-     * Run a select statement against the database and returns a generator.
-     *
-     * @param  string  $query
-     * @param  array  $bindings
-     * @param  bool   $useReadPdo  Not used. This is here for compatibility reasons.
-     * @return Generator
+     * @inheritDoc
      */
     public function cursor($query, $bindings = [], $useReadPdo = true): Generator
     {
@@ -291,12 +279,7 @@ class Connection extends BaseConnection
     }
 
     /**
-     * Execute an SQL statement and return the boolean result.
-     *
-     * @param  string $query
-     * @param  array $bindings
-     * @return bool
-     * @throws Throwable
+     * @inheritDoc
      */
     public function statement($query, $bindings = []): bool
     {
@@ -317,11 +300,7 @@ class Connection extends BaseConnection
     }
 
     /**
-     * Run an SQL statement and get the number of rows affected.
-     *
-     * @param  string $query
-     * @param  array $bindings
-     * @return int
+     * @inheritDoc
      */
     public function affectingStatement($query, $bindings = []): int
     {
@@ -355,9 +334,7 @@ class Connection extends BaseConnection
     }
 
     /**
-     * @param  string $query
-     * @return bool
-     * @throws Throwable
+     * @inheritDoc
      */
     public function unprepared($query): bool
     {
@@ -365,8 +342,7 @@ class Connection extends BaseConnection
     }
 
     /**
-     * @return string
-     * @throws GoogleException
+     * @inheritDoc
      */
     public function getDatabaseName()
     {
@@ -374,10 +350,9 @@ class Connection extends BaseConnection
     }
 
     /**
-     * @param string $database
-     * @return void
-     * @throws BadMethodCallException
      * @internal
+     * @inheritDoc
+     * @return void
      */
     public function setDatabaseName($database)
     {
@@ -385,8 +360,9 @@ class Connection extends BaseConnection
     }
 
     /**
+     * @internal
+     * @inheritDoc
      * @return void
-     * @throws BadMethodCallException
      * @internal
      */
     public function getPdo()
@@ -395,6 +371,8 @@ class Connection extends BaseConnection
     }
 
     /**
+     * @internal
+     * @inheritDoc
      * @return void
      * @internal
      */
@@ -404,8 +382,9 @@ class Connection extends BaseConnection
     }
 
     /**
-     * @return void
      * @internal
+     * @inheritDoc
+     * @return void
      */
     public function getDoctrineConnection()
     {
@@ -413,8 +392,7 @@ class Connection extends BaseConnection
     }
 
     /**
-     * @param array<string, mixed> $bindings
-     * @return array<string, mixed>
+     * @inheritDoc
      */
     public function prepareBindings(array $bindings)
     {
@@ -436,10 +414,7 @@ class Connection extends BaseConnection
     }
 
     /**
-     * @param  string    $query
-     * @param  array     $bindings
-     * @param  Closure  $callback
-     * @return mixed
+     * @inheritDoc
      */
     protected function runQueryCallback($query, $bindings, Closure $callback)
     {
@@ -538,7 +513,7 @@ class Connection extends BaseConnection
     /**
      * Check if this is "session not found" error
      *
-     * @param  Throwable  $e
+     * @param Throwable $e
      * @return boolean
      */
     public function causedBySessionNotFound(Throwable $e): bool

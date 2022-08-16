@@ -27,7 +27,7 @@ trait InterleaveKeySupport
     /**
      * Get the model's interleave keys.
      *
-     * @return string[]
+     * @return list<string>
      */
     public function getInterleaveKeys(): array
     {
@@ -35,10 +35,7 @@ trait InterleaveKeySupport
     }
 
     /**
-     * Set the keys for a save update query.
-     *
-     * @param Builder $query
-     * @return Builder
+     * @inheritDoc
      */
     protected function setKeysForSaveQuery($query)
     {
