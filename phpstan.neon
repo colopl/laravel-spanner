@@ -14,12 +14,8 @@ parameters:
           path: src/Colopl/Spanner/Connection.php
         - message: '#^Method Colopl\\Spanner\\Connection::select\(\) should return array but returns mixed\.$#'
           path: src/Colopl/Spanner/Connection.php
-        - message: '#^Method Colopl\\Spanner\\Connection::getSpannerDatabase\(\) should return Google\\Cloud\\Spanner\\Database but returns Google\\Cloud\\Spanner\\Database\|null.$#'
-          path: src/Colopl/Spanner/Connection.php
         - message: '#^Cannot cast mixed to int\.$#'
           path: src/Colopl/Spanner/Eloquent/Model.php
-        - message: '#^Method Colopl\\Spanner\\Query\\Builder::insertGetId\(\) should return int but return statement is missing\.$#'
-          path: src/Colopl/Spanner/Query/Builder.php
         - message: '#^Method Colopl\\Spanner\\Schema\\Builder::createBlueprint\(\) should return Illuminate\\Database\\Schema\\Blueprint but returns mixed\.$#'
           path: src/Colopl/Spanner/Schema/Builder.php
         - message: '#^Property Illuminate\\Database\\Schema\\Builder::\$resolver \(Closure\) in isset\(\) is not nullable.$#'

@@ -17,14 +17,11 @@
 
 namespace Colopl\Spanner\Query;
 
-use BadMethodCallException;
 use Colopl\Spanner\Concerns\MarksAsNotSupported;
 use Colopl\Spanner\Connection;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Query\Builder as BaseBuilder;
 use Illuminate\Support\Arr;
-use InvalidArgumentException;
-use Throwable;
 
 class Builder extends BaseBuilder
 {
@@ -40,8 +37,7 @@ class Builder extends BaseBuilder
     public $connection;
 
     /**
-     * @param array $values
-     * @return bool
+     * @inheritDoc
      */
     public function insert(array $values)
     {
@@ -49,9 +45,7 @@ class Builder extends BaseBuilder
     }
 
     /**
-     * @param array $values
-     * @param string|null $sequence the name of primary key
-     * @return int
+     * @inheritDoc
      */
     public function insertGetId(array $values, $sequence = null)
     {
@@ -59,9 +53,7 @@ class Builder extends BaseBuilder
     }
 
     /**
-     * @param array $attributes
-     * @param array $values
-     * @return bool
+     * @inheritDoc
      */
     public function updateOrInsert(array $attributes, array $values = [])
     {
@@ -73,7 +65,7 @@ class Builder extends BaseBuilder
     }
 
     /**
-     * @return void
+     * @inheritDoc
      */
     public function truncate()
     {
@@ -81,7 +73,7 @@ class Builder extends BaseBuilder
     }
 
     /**
-     * @return void
+     * @inheritDoc
      */
     public function sharedLock()
     {
@@ -89,7 +81,7 @@ class Builder extends BaseBuilder
     }
 
     /**
-     * @return void
+     * @inheritDoc
      */
     public function lockForUpdate()
     {
@@ -159,8 +151,7 @@ class Builder extends BaseBuilder
     }
 
     /**
-     * @return array
-     * @throws Throwable
+     * @inheritDoc
      */
     protected function runSelect()
     {

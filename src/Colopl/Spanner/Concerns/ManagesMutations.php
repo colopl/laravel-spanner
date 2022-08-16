@@ -116,7 +116,7 @@ trait ManagesMutations
     }
 
     /**
-     * @param mixed|array|KeySet $keys
+     * @param mixed|list<string>|KeySet $keys
      * @return KeySet
      */
     private function createDeleteMutationKeySet($keys)

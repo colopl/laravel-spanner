@@ -19,7 +19,6 @@ namespace Colopl\Spanner\Schema;
 
 use Closure;
 use Colopl\Spanner\Query\Processor;
-use Illuminate\Database\Schema\Blueprint as BaseBlueprint;
 use Illuminate\Database\Schema\Builder as BaseBuilder;
 
 /**
@@ -35,8 +34,7 @@ class Builder extends BaseBuilder
     public static $defaultBinaryLength = 255;
 
     /**
-     * @param string $table
-     * @return string[]
+     * @inheritDoc
      */
     public function getColumnListing($table)
     {
@@ -94,11 +92,7 @@ class Builder extends BaseBuilder
     }
 
     /**
-     * Create a new command set with a Closure.
-     *
-     * @param  string  $table
-     * @param  Closure|null  $callback
-     * @return BaseBlueprint
+     * @inheritDoc
      */
     protected function createBlueprint($table, Closure $callback = null)
     {

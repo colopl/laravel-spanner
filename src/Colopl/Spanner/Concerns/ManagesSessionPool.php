@@ -62,8 +62,7 @@ trait ManagesSessionPool
 
 
     /**
-     * Returns the number of warmed up sessions
-     * @return int
+     * @return int  Number of warmed up sessions
      */
     public function warmupSessionPool(): int
     {
@@ -88,7 +87,7 @@ trait ManagesSessionPool
     }
 
     /**
-     * @return array
+     * @return array<string, mixed>
      * @throws ReflectionException
      */
     public function __debugInfo()
