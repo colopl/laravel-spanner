@@ -42,20 +42,6 @@ class Model extends BaseModel
     public $incrementing = false;
 
     /**
-     * Method overridden so that the class returns the query builder for Spanner
-     *
-     * @return Builder
-     */
-    protected function newBaseQueryBuilder()
-    {
-        $connection = $this->getConnection();
-
-        return new QueryBuilder(
-            $connection, $connection->getQueryGrammar(), $connection->getPostProcessor()
-        );
-    }
-
-    /**
      * @param BaseModel|Relation $query
      * @param mixed $value
      * @param string|null $field
