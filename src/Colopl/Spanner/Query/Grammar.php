@@ -41,7 +41,7 @@ class Grammar extends BaseGrammar
      */
     public function compileTruncate(Builder $query)
     {
-        return ['delete from ' . $this->wrapTable($query->from) . ' where true' => []];
+        return ['delete from '.$this->wrapTable($query->from).' where true' => []];
     }
 
     /**
