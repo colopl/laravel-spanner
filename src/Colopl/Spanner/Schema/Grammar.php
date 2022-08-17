@@ -431,18 +431,15 @@ class Grammar extends BaseGrammar
     }
 
     /**
-     * Wrap a single string in keyword identifiers.
-     *
-     * @param  string  $value
-     * @return string
+     * @inheritDoc
      */
     protected function wrapValue($value)
     {
-        if ($value !== '*') {
-            return '`'.str_replace('`', '``', $value).'`';
+        if ($value === '*') {
+            return $value;
         }
 
-        return $value;
+        return '`'.str_replace('`', '``', $value).'`';
     }
 
     /**
