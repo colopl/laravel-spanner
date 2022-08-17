@@ -33,7 +33,7 @@ class BuilderTest extends TestCase
 {
     protected const TEST_DB_REQUIRED = true;
 
-    public function testSimpleSelect()
+    public function testSimpleSelect(): void
     {
         $conn = $this->getDefaultConnection();
         $values = $conn->select('SELECT 12345');
@@ -41,7 +41,7 @@ class BuilderTest extends TestCase
         $this->assertEquals(12345, $values[0][0]);
     }
 
-    public function testInsert()
+    public function testInsert(): void
     {
         $conn = $this->getDefaultConnection();
         $tableName = self::TABLE_NAME_USER;
@@ -70,7 +70,7 @@ class BuilderTest extends TestCase
         $this->assertTrue($expectedThrown);
     }
 
-    public function testUpdate()
+    public function testUpdate(): void
     {
         $conn = $this->getDefaultConnection();
         $tableName = self::TABLE_NAME_USER;
@@ -107,7 +107,7 @@ class BuilderTest extends TestCase
         $this->assertEquals($afterName, $afterRow['name']);
     }
 
-    public function testDelete()
+    public function testDelete(): void
     {
         $conn = $this->getDefaultConnection();
         $tableName = self::TABLE_NAME_USER;
@@ -131,7 +131,7 @@ class BuilderTest extends TestCase
         $this->assertNull($insertedRow);
     }
 
-    public function testStatementWithSelect()
+    public function testStatementWithSelect(): void
     {
         $executedCount = 0;
         $this->app['events']->listen(QueryExecuted::class, function () use (&$executedCount) { $executedCount++; });
@@ -143,7 +143,7 @@ class BuilderTest extends TestCase
         $this->assertEquals(1, $executedCount);
     }
 
-    public function testStatementWithDml()
+    public function testStatementWithDml(): void
     {
         $conn = $this->getDefaultConnection();
         $userId = $this->generateUuid();
@@ -160,7 +160,7 @@ class BuilderTest extends TestCase
         $this->assertEquals(3, $executedCount);
     }
 
-    public function testUnpreparedWithSelect()
+    public function testUnpreparedWithSelect(): void
     {
         $executedCount = 0;
         $this->app['events']->listen(QueryExecuted::class, function () use (&$executedCount) { $executedCount++; });
@@ -172,7 +172,7 @@ class BuilderTest extends TestCase
         $this->assertEquals(1, $executedCount);
     }
 
-    public function testUnpreparedWithDml()
+    public function testUnpreparedWithDml(): void
     {
         $conn = $this->getDefaultConnection();
         $userId = $this->generateUuid();
@@ -189,7 +189,7 @@ class BuilderTest extends TestCase
         $this->assertEquals(3, $executedCount);
     }
 
-    public function testPretend()
+    public function testPretend(): void
     {
         $executedCount = 0;
         $this->app['events']->listen(QueryExecuted::class, function () use (&$executedCount) { $executedCount++; });
@@ -207,7 +207,7 @@ class BuilderTest extends TestCase
         $this->assertEquals(2, $executedCount);
     }
 
-    public function testCompositePrimaryKeyTest()
+    public function testCompositePrimaryKeyTest(): void
     {
         $conn = $this->getDefaultConnection();
 
@@ -257,7 +257,7 @@ class BuilderTest extends TestCase
         $this->assertDatabaseMissing($tableName, $userItems[0]);
     }
 
-    public function testCountRows()
+    public function testCountRows(): void
     {
         $conn = $this->getDefaultConnection();
         $tableName = self::TABLE_NAME_USER;
@@ -278,7 +278,7 @@ class BuilderTest extends TestCase
         $this->assertEquals(100, $qb->count('userId'));
     }
 
-    public function testAggregate()
+    public function testAggregate(): void
     {
         $conn = $this->getDefaultConnection();
         $tableName = self::TABLE_NAME_TEST;
@@ -299,7 +299,7 @@ class BuilderTest extends TestCase
         $this->assertEquals(99, $qb->max('intTest'));
     }
 
-    public function testOrderBy()
+    public function testOrderBy(): void
     {
         $conn = $this->getDefaultConnection();
         $tableName = self::TABLE_NAME_TEST;
@@ -319,7 +319,7 @@ class BuilderTest extends TestCase
         $this->assertEquals(99, $qb->first()['intTest']);
     }
 
-    public function testExistsSubquery()
+    public function testExistsSubquery(): void
     {
         $conn = $this->getDefaultConnection();
         $tableNameParent = self::TABLE_NAME_USER;
@@ -336,7 +336,7 @@ class BuilderTest extends TestCase
             ['userId' => $userId1, 'userItemId' => $this->generateUuid(), 'itemId' => $this->generateUuid(), 'count' => 10],
         ]);
 
-        $qb = $conn->table($tableNameParent)->whereExists(function (\Colopl\Spanner\Query\Builder $query) use ($tableNameParent, $tableNameChild) {
+        $qb = $conn->table($tableNameParent)->whereExists(function (Builder $query) use ($tableNameParent, $tableNameChild) {
             $query->selectRaw(1)
                 ->from($tableNameChild)
                 ->whereRaw("{$tableNameChild}.userId = {$tableNameParent}.userId");
@@ -350,7 +350,7 @@ class BuilderTest extends TestCase
         $this->assertEquals($userId1, $qb->get()->first()['userId']);
     }
 
-    public function testGroupBy()
+    public function testGroupBy(): void
     {
         $conn = $this->getDefaultConnection();
         $tableName = self::TABLE_NAME_TEST;
@@ -383,7 +383,7 @@ class BuilderTest extends TestCase
         ]), $qb->groupBy('intTest')->having('intTest', '>', 20)->selectRaw('intTest, count(*) as cnt')->get()->keyBy('intTest'));
     }
 
-    public function testJoin()
+    public function testJoin(): void
     {
         $conn = $this->getDefaultConnection();
         $tableNameParent = self::TABLE_NAME_USER;
@@ -409,7 +409,7 @@ class BuilderTest extends TestCase
         $this->assertEquals(10, $users->first()['count']);
     }
 
-    public function testPaginate()
+    public function testPaginate(): void
     {
         $conn = $this->getDefaultConnection();
         $tableName = self::TABLE_NAME_USER;
@@ -427,7 +427,7 @@ class BuilderTest extends TestCase
         $this->assertEquals(100, $pagination->total());
     }
 
-    public function testForceIndex()
+    public function testForceIndex(): void
     {
         $conn = $this->getDefaultConnection();
         $tableName = self::TABLE_NAME_USER;
@@ -447,7 +447,7 @@ class BuilderTest extends TestCase
         $this->assertInstanceOf(\Colopl\Spanner\Query\Builder::class, $qb->forceIndex(null));
     }
 
-    public function testInterleaveTable()
+    public function testInterleaveTable(): void
     {
         $conn = $this->getDefaultConnection();
 
@@ -494,7 +494,7 @@ class BuilderTest extends TestCase
         $this->assertDatabaseMissing($childTableName, $childUserItems[0]);
     }
 
-    public function testInsertDatetime()
+    public function testInsertDatetime(): void
     {
         date_default_timezone_set('Asia/Tokyo');
 
@@ -513,7 +513,7 @@ class BuilderTest extends TestCase
         $this->assertEquals($carbonMax->getTimestamp(), $insertedTimestamp->getTimestamp());
     }
 
-    public function testWhereDatetime()
+    public function testWhereDatetime(): void
     {
         date_default_timezone_set('Asia/Tokyo');
 
@@ -533,10 +533,8 @@ class BuilderTest extends TestCase
 
     /**
      * null ではない列を null で上書きできるか
-     *
-     * @throws \Exception
      */
-    public function testUpdateWithNull()
+    public function testUpdateWithNull(): void
     {
         $conn = $this->getDefaultConnection();
         $tableName = self::TABLE_NAME_TEST;
@@ -565,7 +563,7 @@ class BuilderTest extends TestCase
         $this->assertEquals(null, $afterRow['nullableStringTest']);
     }
 
-    public function testUpdateOrInsert()
+    public function testUpdateOrInsert(): void
     {
         $conn = $this->getDefaultConnection();
         $tableName = self::TABLE_NAME_TEST;
@@ -590,7 +588,7 @@ class BuilderTest extends TestCase
         $this->assertEquals('updated', $record['stringTest']);
     }
 
-    public function testDeleteOnCascase()
+    public function testDeleteOnCascase(): void
     {
         $conn = $this->getDefaultConnection();
 
@@ -633,7 +631,7 @@ class BuilderTest extends TestCase
         $this->assertDatabaseMissing($tableName, $userItems[1]);
     }
 
-    public function testInsertBytes()
+    public function testInsertBytes(): void
     {
         $conn = $this->getDefaultConnection();
         $tableName = self::TABLE_NAME_TEST;
@@ -644,13 +642,13 @@ class BuilderTest extends TestCase
         $row['bytesTest'] = $bytes;
         $qb->insert($row);
 
-        $insertedRow = $qb->get()->first();
+        $insertedRow = $qb->first();
         /** @var Bytes $insertedBytes */
         $insertedBytes = $insertedRow['bytesTest'];
         $this->assertEquals($bytes->formatAsString(), $insertedBytes->formatAsString());
     }
 
-    public function testWhereBytes()
+    public function testWhereBytes(): void
     {
         $conn = $this->getDefaultConnection();
         $tableName = self::TABLE_NAME_TEST;
@@ -665,7 +663,7 @@ class BuilderTest extends TestCase
         $this->assertEquals(0, $qb->where('bytesTest', '=', new Bytes("\x00\x01"))->count());
     }
 
-    public function testWhereIn()
+    public function testWhereIn(): void
     {
         $conn = $this->getDefaultConnection();
         $tableName = self::TABLE_NAME_TEST;
@@ -686,7 +684,7 @@ class BuilderTest extends TestCase
         $this->assertEquals(2, $conn->table($tableName)->whereIn('bytesTest', [new Bytes(chr(10)), new Bytes(chr(20))])->count());
     }
 
-    public function testPartitionedDml()
+    public function testPartitionedDml(): void
     {
         if (getenv('SPANNER_EMULATOR_HOST')) {
             $this->markTestSkipped('Cannot test PartitionedDml on emulator');
@@ -736,7 +734,7 @@ class BuilderTest extends TestCase
             ->count());
     }
 
-    public function testWhereLike()
+    public function testWhereLike(): void
     {
         $conn = $this->getDefaultConnection();
         $tableName = self::TABLE_NAME_USER;
@@ -780,7 +778,7 @@ class BuilderTest extends TestCase
         }
     }
 
-    public function testEscapeCharacter()
+    public function testEscapeCharacter(): void
     {
         $conn = $this->getDefaultConnection();
         $tableName = self::TABLE_NAME_USER;
@@ -805,7 +803,7 @@ class BuilderTest extends TestCase
         }
     }
 
-    public function testStaleReads()
+    public function testStaleReads(): void
     {
         $conn = $this->getDefaultConnection();
         $tableName = self::TABLE_NAME_USER;
