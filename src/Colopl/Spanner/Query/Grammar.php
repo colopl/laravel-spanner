@@ -37,14 +37,11 @@ class Grammar extends BaseGrammar
     }
 
     /**
-     * Compile a truncate table statement into SQL.
-     *
-     * @param  \Illuminate\Database\Query\Builder  $query
-     * @return array
+     * @inheritDoc
      */
     public function compileTruncate(Builder $query)
     {
-        return ['delete from '.$this->wrapTable($query->from) . 'where true' => []];
+        return ['delete from ' . $this->wrapTable($query->from) . ' where true' => []];
     }
 
     /**
