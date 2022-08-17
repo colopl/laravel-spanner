@@ -17,7 +17,6 @@
 
 namespace Colopl\Spanner\Schema;
 
-use BadMethodCallException;
 use Colopl\Spanner\Concerns\MarksAsNotSupported;
 use Illuminate\Database\Schema\Blueprint as BaseBlueprint;
 use Illuminate\Support\Fluent;

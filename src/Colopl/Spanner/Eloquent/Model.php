@@ -17,10 +17,8 @@
 
 namespace Colopl\Spanner\Eloquent;
 
-use Colopl\Spanner\Query\Builder as QueryBuilder;
 use Illuminate\Database\Eloquent\Model as BaseModel;
 use Illuminate\Database\Eloquent\Relations\Relation;
-use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Str;
 
 /**
