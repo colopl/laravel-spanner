@@ -17,6 +17,7 @@
 
 namespace Colopl\Spanner\Query;
 
+use Colopl\Spanner\Concerns\SharedGrammarCalls;
 use Colopl\Spanner\Query\Builder as SpannerBuilder;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Database\Query\Expression;
@@ -25,6 +26,8 @@ use RuntimeException;
 
 class Grammar extends BaseGrammar
 {
+    use SharedGrammarCalls;
+
     /**
      * @inheritDoc
      */
@@ -84,15 +87,6 @@ class Grammar extends BaseGrammar
         }
 
         return '`'.str_replace('`', '``', $value).'`';
-    }
-
-    /**
-     * @inheritDoc
-     * @see https://cloud.google.com/spanner/docs/data-types#time-zones
-     */
-    public function getDateFormat()
-    {
-        return 'Y-m-d\TH:i:s.uP';
     }
 
     /**
