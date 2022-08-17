@@ -18,6 +18,7 @@
 namespace Colopl\Spanner\Tests\Query;
 
 use Colopl\Spanner\Connection;
+use Colopl\Spanner\Query\Builder;
 use Colopl\Spanner\Tests\TestCase;
 use Colopl\Spanner\TimestampBound\ExactStaleness;
 use Google\Cloud\Spanner\Bytes;
@@ -89,11 +90,6 @@ class BuilderTest extends TestCase
         $res = $conn->table($tableName)
             ->insert($insertRow);
         $this->assertTrue($res);
-
-        /** @var array $insertedRow */
-        $insertedRow = $conn->table($tableName)
-            ->where('userId', $insertRow['userId'])
-            ->first();
 
         $afterName = 'changed by testUpdate()';
         $conn->table($tableName)
@@ -444,7 +440,7 @@ class BuilderTest extends TestCase
         $qb->forceIndex(null);
         $this->assertEquals('select * from `User`', $qb->toSql());
 
-        $this->assertInstanceOf(\Colopl\Spanner\Query\Builder::class, $qb->forceIndex(null));
+        $this->assertInstanceOf(Builder::class, $qb->forceIndex(null));
     }
 
     public function testInterleaveTable(): void
