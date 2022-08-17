@@ -17,6 +17,7 @@
 
 namespace Colopl\Spanner\Schema;
 
+use Colopl\Spanner\Concerns\SharedGrammarCalls;
 use Illuminate\Database\Connection;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Schema\Grammars\Grammar as BaseGrammar;
@@ -25,6 +26,8 @@ use RuntimeException;
 
 class Grammar extends BaseGrammar
 {
+    use SharedGrammarCalls;
+
     /**
      * The possible column modifiers.
      *
