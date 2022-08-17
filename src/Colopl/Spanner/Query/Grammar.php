@@ -80,18 +80,6 @@ class Grammar extends BaseGrammar
     /**
      * @inheritDoc
      */
-    protected function wrapValue($value)
-    {
-        if ($value === '*') {
-            return $value;
-        }
-
-        return '`'.str_replace('`', '``', $value).'`';
-    }
-
-    /**
-     * @inheritDoc
-     */
     public function supportsSavepoints()
     {
         return false;

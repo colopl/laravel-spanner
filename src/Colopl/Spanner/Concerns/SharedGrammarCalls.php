@@ -29,4 +29,17 @@ trait SharedGrammarCalls
     {
         return 'Y-m-d\TH:i:s.uP';
     }
+
+    /**
+     * @inheritDoc
+     */
+    protected function wrapValue($value)
+    {
+        if ($value === '*') {
+            return $value;
+        }
+
+        return '`'.str_replace('`', '``', $value).'`';
+    }
+
 }
