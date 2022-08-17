@@ -113,10 +113,9 @@ trait ManagesTransactions
                 $this->reconnectIfMissingConnection();
                 $this->currentTransaction = $this->getSpannerDatabase()->transaction();
             } catch (Exception $e) {
-                $this->currentTransaction = $this->handleBeginTransactionException($e);
+                $this->handleBeginTransactionException($e);
             }
         }
-        return $this->currentTransaction;
     }
 
     /**
@@ -127,7 +126,8 @@ trait ManagesTransactions
         if ($this->causedByLostConnection($e)) {
             $this->reconnect();
 
-            return $this->getSpannerDatabase()->transaction();
+            $this->currentTransaction = $this->getSpannerDatabase()->transaction();
+            return;
         }
 
         throw $e;
