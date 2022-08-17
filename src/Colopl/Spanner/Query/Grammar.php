@@ -37,6 +37,14 @@ class Grammar extends BaseGrammar
     }
 
     /**
+     * @inheritDoc
+     */
+    public function compileTruncate(Builder $query)
+    {
+        return ['delete from '.$this->wrapTable($query->from).' where true' => []];
+    }
+
+    /**
      * @param Builder $query
      * @return string
      */
