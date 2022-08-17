@@ -820,7 +820,9 @@ class BuilderTest extends TestCase
         $tableName = self::TABLE_NAME_USER;
         $query = $conn->table($tableName);
 
-        $query->insert(['userId' => $this->generateUuid(), 'name' => 'first']);
+        $insertData = ['userId' => $this->generateUuid(), 'name' => 'first'];
+        $query->insert($insertData);
+        $this->assertDatabaseHas(self::TABLE_NAME_USER, $insertData);
 
         $query->truncate();
 
