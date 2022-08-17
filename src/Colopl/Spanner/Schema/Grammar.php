@@ -434,18 +434,6 @@ class Grammar extends BaseGrammar
     }
 
     /**
-     * @inheritDoc
-     */
-    protected function wrapValue($value)
-    {
-        if ($value === '*') {
-            return $value;
-        }
-
-        return '`'.str_replace('`', '``', $value).'`';
-    }
-
-    /**
      * Compile the blueprint's column definitions.
      *
      * @param  Blueprint $blueprint
