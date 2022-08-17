@@ -768,9 +768,9 @@ class BuilderTest extends TestCase
             $caughtException = $ex;
         }
         if (getenv('SPANNER_EMULATOR_HOST')) {
-            $this->assertTrue(Str::contains($caughtException->getMessage(), 'INTERNAL'));
+            $this->assertStringContainsString('INTERNAL', $caughtException?->getMessage());
         } else {
-            $this->assertTrue(Str::contains($caughtException->getMessage(), 'Given string is not UTF8 encoded'));
+            $this->assertStringContainsString('Given string is not UTF8 encoded', $caughtException?->getMessage());
         }
     }
 
@@ -812,5 +812,18 @@ class BuilderTest extends TestCase
         $stalenessRow = $qb->withStaleness(new ExactStaleness(new Duration(60)))
             ->first();
         $this->assertEmpty($stalenessRow);
+    }
+
+    public function testTruncate(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $tableName = self::TABLE_NAME_USER;
+        $query = $conn->table($tableName);
+
+        $query->insert(['userId' => $this->generateUuid(), 'name' => 'first']);
+
+        $query->truncate();
+
+        $this->assertDatabaseCount($tableName, 0);
     }
 }

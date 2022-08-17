@@ -69,7 +69,11 @@ class Builder extends BaseBuilder
      */
     public function truncate()
     {
-        $this->markAsNotSupported('truncate table');
+        $this->applyBeforeQueryCallbacks();
+
+        foreach ($this->grammar->compileTruncate($this) as $sql => $bindings) {
+            $this->connection->runPartitionedDml($sql, $bindings);
+        }
     }
 
     /**
