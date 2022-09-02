@@ -23,35 +23,36 @@ use Colopl\Spanner\Connection;
 use Illuminate\Database\Events\TransactionCommitted;
 use Illuminate\Database\Events\TransactionRolledBack;
 use Illuminate\Support\Str;
+use RuntimeException;
 
 class TransactionTest extends TestCase
 {
     protected const TEST_DB_REQUIRED = true;
 
-    public function testBegin()
+    public function testBegin(): void
     {
         $conn = $this->getDefaultConnection();
 
         $conn->beginTransaction();
         $t = $conn->getCurrentTransaction();
         $this->assertInstanceOf(Transaction::class, $t);
-        $this->assertEquals(Transaction::STATE_ACTIVE, $t->state());
+        $this->assertEquals(Transaction::STATE_ACTIVE, $t?->state());
 
         $conn->commit();
-        $this->assertEquals(Transaction::STATE_COMMITTED, $t->state());
+        $this->assertEquals(Transaction::STATE_COMMITTED, $t?->state());
     }
 
-    public function testCallback()
+    public function testCallback(): void
     {
         $conn = $this->getDefaultConnection();
         $result = $conn->transaction(function (Connection $conn) {
-            $this->assertEquals(Transaction::STATE_ACTIVE, $conn->getCurrentTransaction()->state());
+            $this->assertEquals(Transaction::STATE_ACTIVE, $conn->getCurrentTransaction()?->state());
             return 1;
         });
         $this->assertSame(1, $result);
     }
 
-    public function testCommit()
+    public function testCommit(): void
     {
         $conn = $this->getDefaultConnection();
 
@@ -64,14 +65,14 @@ class TransactionTest extends TestCase
         ];
 
         $conn->transaction(function (Connection $conn) use($qb, $insertRow) {
-            $this->assertEquals(Transaction::STATE_ACTIVE, $conn->getCurrentTransaction()->state());
+            $this->assertEquals(Transaction::STATE_ACTIVE, $conn->getCurrentTransaction()?->state());
             $qb->insert($insertRow);
         });
 
         $this->assertDatabaseHas($tableName, $insertRow);
     }
 
-    public function testRollbackBeforeCommit()
+    public function testRollbackBeforeCommit(): void
     {
         $conn = $this->getDefaultConnection();
 
@@ -83,8 +84,8 @@ class TransactionTest extends TestCase
         ];
 
         try {
-            $conn->transaction(function (Connection $conn) use ($insertRow) {
-                $this->assertEquals(Transaction::STATE_ACTIVE, $conn->getCurrentTransaction()->state());
+            $conn->transaction(function (Connection $conn) {
+                $this->assertEquals(Transaction::STATE_ACTIVE, $conn->getCurrentTransaction()?->state());
                 throw new \RuntimeException('abort test');
             });
         } catch (\RuntimeException $ex) {
@@ -96,7 +97,7 @@ class TransactionTest extends TestCase
         $this->assertDatabaseMissing($tableName, $insertRow);
     }
 
-    public function testNestedTransaction()
+    public function testNestedTransaction(): void
     {
         $conn = $this->getDefaultConnection();
 
@@ -113,7 +114,7 @@ class TransactionTest extends TestCase
             'name' => 'test',
         ];
 
-        $conn->transaction(function () use ($conn, $qb, $insertRow, $tableName) {
+        $conn->transaction(function () use ($conn, $qb, $insertRow) {
             $this->assertEquals(1, $conn->transactionLevel());
             $conn->transaction(function () use ($conn, $qb, $insertRow) {
                 $this->assertEquals(2, $conn->transactionLevel());
@@ -136,7 +137,7 @@ class TransactionTest extends TestCase
         $cnt = 0;
         $conn->transaction(function () use ($conn, &$cnt) {
             $cnt++;
-            $conn->transaction(function () use ($conn, &$cnt) {
+            $conn->transaction(function () use (&$cnt) {
                 if ($cnt < 2) {
                     throw new AbortedException('aborted');
                 }
@@ -146,7 +147,7 @@ class TransactionTest extends TestCase
         $this->assertEquals(1, $rolledBackCount);
     }
 
-    public function testReadOnTransaction()
+    public function testReadOnTransaction(): void
     {
         $conn = $this->getDefaultConnection();
 
@@ -165,7 +166,7 @@ class TransactionTest extends TestCase
         $this->assertDatabaseHas($tableName, $insertRow);
     }
 
-    public function testRetrySuccess()
+    public function testRetrySuccess(): void
     {
         $conn = $this->getDefaultConnection();
 
@@ -195,7 +196,7 @@ class TransactionTest extends TestCase
     /**
      * NOTE: This test will take at least 10 seconds to complete
      */
-    public function testLockTimeout()
+    public function testLockTimeout(): void
     {
         $conn = $this->getDefaultConnection();
         $conn2 = $this->getAlternativeConnection();
@@ -212,7 +213,7 @@ class TransactionTest extends TestCase
         $qb->insert($insertRow);
         $mutation = ['userId' => $insertRow['userId'], 'name' => 'updated'];
 
-        $catchedException = null;
+        $caughtException = null;
         try {
             $conn->transaction(function () use ($conn2, $qb, $qb2, $mutation) {
                 // SELECTing within a read-write transaction causes row to aquire shared lock
@@ -224,16 +225,13 @@ class TransactionTest extends TestCase
                 }, 1);
             }, 1);
         } catch (\Exception $ex) {
-            $catchedException = $ex;
+            $caughtException = $ex;
         }
-        $this->assertInstanceOf(AbortedException::class, $catchedException);
-        $this->assertTrue(Str::contains($catchedException->getMessage(), 'ABORTED'));
+        $this->assertInstanceOf(AbortedException::class, $caughtException);
+        $this->assertStringContainsString($caughtException?->getMessage() ?? '', 'ABORTED');
     }
 
-    /**
-     * @throws \Throwable
-     */
-    public function testAbortedException()
+    public function testAbortedException(): void
     {
         $committedCount = 0;
         $this->app['events']->listen(TransactionCommitted::class, function ($ev) use(&$committedCount) {
@@ -247,7 +245,7 @@ class TransactionTest extends TestCase
 
         $conn = $this->getDefaultConnection();
         try {
-            $conn->transaction(function () use ($conn) {
+            $conn->transaction(function () {
                 throw new AbortedException('abort');
             });
         } catch (AbortedException $ex) {}
