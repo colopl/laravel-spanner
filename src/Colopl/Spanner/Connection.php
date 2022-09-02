@@ -106,18 +106,18 @@ class Connection extends BaseConnection
 
     /**
      * @param string $instanceId instance ID
-     * @param string $databaseName
+     * @param string $database
      * @param string $tablePrefix
      * @param array $config
      * @param CacheItemPoolInterface|null $authCache
      * @param SessionPoolInterface|null $sessionPool
      */
-    public function __construct(string $instanceId, string $databaseName, $tablePrefix = '', array $config = [], CacheItemPoolInterface $authCache = null, SessionPoolInterface $sessionPool = null)
+    public function __construct(string $instanceId, string $database, $tablePrefix = '', array $config = [], CacheItemPoolInterface $authCache = null, SessionPoolInterface $sessionPool = null)
     {
         $this->instanceId = $instanceId;
         $this->authCache = $authCache;
         $this->sessionPool = $sessionPool;
-        parent::__construct(null, $databaseName, $tablePrefix, $config);
+        parent::__construct(null, $database, $tablePrefix, $config);
     }
 
     /**
