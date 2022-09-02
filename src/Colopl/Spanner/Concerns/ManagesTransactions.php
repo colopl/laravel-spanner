@@ -72,7 +72,7 @@ trait ManagesTransactions
                     $exceptionToCheck = $e instanceof QueryException ? $e->getPrevious() : $e;
                     $this->ignoreSessionNotFoundErrorOnRollback =
                         $exceptionToCheck instanceOf NotFoundException
-                        && $this->getSessionNotFoundMode() != self::THROW_EXCEPTION
+                        && $this->getSessionNotFoundMode() !== self::THROW_EXCEPTION
                         && $this->causedBySessionNotFound($exceptionToCheck);
 
                     try {
