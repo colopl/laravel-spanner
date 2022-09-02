@@ -166,6 +166,50 @@ class TransactionTest extends TestCase
         $this->assertDatabaseHas($tableName, $insertRow);
     }
 
+    public function test_afterCommit(): void
+    {
+        $conn = $this->getDefaultConnection();
+
+        $tableName = self::TABLE_NAME_USER;
+        $qb = $conn->table($tableName);
+
+        $count = 0;
+        $conn->transaction(function (Connection $conn) use ($qb, &$count) {
+            $qb->insert(['userId' => $this->generateUuid(), 'name' => 't']);
+            $conn->afterCommit(static function() use (&$count) { $count++; });
+        });
+
+        // Should not be called on second try.
+        $conn->transaction(function (Connection $conn) use ($qb) {
+            $qb->insert(['userId' => $this->generateUuid(), 'name' => 't']);
+        });
+
+        $this->assertSame(1, $count);
+    }
+
+    public function test_afterCommit_not_called_on_rollback(): void
+    {
+        $conn = $this->getDefaultConnection();
+
+        $tableName = self::TABLE_NAME_USER;
+        $qb = $conn->table($tableName);
+
+        $count = 0;
+        try {
+            $conn->transaction(function (Connection $conn) use ($qb, &$count) {
+                $qb->insert(['userId' => $this->generateUuid(), 'name' => 't']);
+                $conn->afterCommit(static function() use (&$count) {
+                    $count++;
+                });
+                throw new RuntimeException('fail');
+            });
+        } catch (RuntimeException) {
+            // do nothing
+        }
+
+        $this->assertSame(0, $count);
+    }
+
     public function testRetrySuccess(): void
     {
         $conn = $this->getDefaultConnection();
