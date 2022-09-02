@@ -227,8 +227,9 @@ class TransactionTest extends TestCase
         } catch (\Exception $ex) {
             $caughtException = $ex;
         }
+
         $this->assertInstanceOf(AbortedException::class, $caughtException);
-        $this->assertStringContainsString($caughtException?->getMessage() ?? '', 'ABORTED');
+        $this->assertStringContainsString('ABORTED', $caughtException?->getMessage() ?? '');
     }
 
     public function testAbortedException(): void
