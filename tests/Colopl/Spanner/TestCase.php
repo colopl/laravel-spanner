@@ -35,7 +35,7 @@ class TestCase extends \Orchestra\Testbench\TestCase
     /**
      * @var bool
      */
-    protected static $databasePrepared = false;
+    protected static bool $databasePrepared = false;
 
     protected const TABLE_NAME_TEST = 'Test';
     protected const TABLE_NAME_USER = 'User';
@@ -91,6 +91,7 @@ class TestCase extends \Orchestra\Testbench\TestCase
      */
     protected function getDefaultConnection(): Connection
     {
+        /** @var Connection $conn */
         $conn = $this->getConnection();
         if (static::TEST_DB_REQUIRED) {
             $this->setUpDatabaseOnce($conn);
@@ -103,6 +104,7 @@ class TestCase extends \Orchestra\Testbench\TestCase
      */
     protected function getAlternativeConnection(): Connection
     {
+        /** @var Connection $conn */
         $conn = $this->getConnection('alternative');
         if (static::TEST_DB_REQUIRED) {
             $this->setUpDatabaseOnce($conn);
@@ -110,7 +112,7 @@ class TestCase extends \Orchestra\Testbench\TestCase
         return $conn;
     }
 
-    protected function setUpDatabaseOnce(Connection $conn)
+    protected function setUpDatabaseOnce(Connection $conn): void
     {
         if (!self::$databasePrepared) {
             self::$databasePrepared = true;
@@ -126,18 +128,18 @@ class TestCase extends \Orchestra\Testbench\TestCase
         }
     }
 
-    protected function createEmulatorInstance(Connection $conn)
+    protected function createEmulatorInstance(Connection $conn): void
     {
-        $spanner = new SpannerClient($conn->getConfig('client'));
-        $name = $conn->getConfig('instance');
+        $spanner = new SpannerClient((array)$conn->getConfig('client'));
+        $name = (string)$conn->getConfig('instance');
         if (! $spanner->instance($name)->exists()) {
             $config = $spanner->instanceConfiguration('emulator-config');
             $spanner->createInstance($config, $name)->pollUntilComplete();
-            logger()->debug('Created Spanner Emulator Instance: ' . $name);
+            logger()?->debug('Created Spanner Emulator Instance: ' . $name);
         }
     }
 
-    protected function cleanupDatabaseRecords()
+    protected function cleanupDatabaseRecords(): void
     {
         /** @var Connection $conn */
         foreach ($this->app['db']->getConnections() as $conn) {
@@ -154,18 +156,18 @@ class TestCase extends \Orchestra\Testbench\TestCase
     protected function getTestDatabaseDDLs(): array
     {
         $ddlFile = __DIR__.'/test.ddl';
-        return collect(explode(';', file_get_contents($ddlFile)))
+        return collect(explode(';', file_get_contents($ddlFile) ?: ''))
             ->map(function($ddl) { return trim($ddl); })
             ->filter()
             ->all();
     }
 
-    protected function getPackageProviders($app)
+    protected function getPackageProviders($app): array
     {
         return [SpannerServiceProvider::class];
     }
 
-    protected function getEnvironmentSetUp($app)
+    protected function getEnvironmentSetUp($app): void
     {
         $dbConfig = require __DIR__.'/config.php';
         $app['config']->set('database', $dbConfig);

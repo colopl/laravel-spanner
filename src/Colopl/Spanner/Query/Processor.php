@@ -17,7 +17,6 @@
 
 namespace Colopl\Spanner\Query;
 
-use Exception;
 use Google\Cloud\Spanner\Timestamp;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Database\Query\Processors\Processor as BaseProcessor;
