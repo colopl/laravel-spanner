@@ -36,7 +36,7 @@ trait ManagesTransactions
     /**
      * @var Transaction|null
      */
-    protected $currentTransaction;
+    protected ?Transaction $currentTransaction = null;
 
     protected bool $ignoreSessionNotFoundErrorOnRollback = false;
 
@@ -59,10 +59,19 @@ trait ManagesTransactions
             $return = $this->getSpannerDatabase()->runTransaction(function (Transaction $tx) use ($callback) {
                 try {
                     $this->currentTransaction = $tx;
+
                     $this->transactions++;
+
+                    $this->transactionsManager?->begin(
+                        $this->getName(), $this->transactions
+                    );
+
                     $this->fireConnectionEvent('beganTransaction');
+
                     $result = $callback($this);
+
                     $this->performSpannerCommit();
+
                     return $result;
                 } catch (Throwable $e) {
                     // if session is lost, there is no way to rollback transaction at all,
@@ -70,6 +79,7 @@ trait ManagesTransactions
                     // and then abort current transaction and rerun everything again
                     $savedIgnoreError = $this->ignoreSessionNotFoundErrorOnRollback;
                     $exceptionToCheck = $e instanceof QueryException ? $e->getPrevious() : $e;
+
                     $this->ignoreSessionNotFoundErrorOnRollback =
                         $exceptionToCheck instanceOf NotFoundException
                         && $this->getSessionNotFoundMode() !== self::THROW_EXCEPTION
@@ -147,7 +157,7 @@ trait ManagesTransactions
      * @return void
      * @throws AbortedException
      */
-    protected function performSpannerCommit()
+    protected function performSpannerCommit(): void
     {
         if ($this->transactions === 1 && $this->currentTransaction !== null) {
             $this->currentTransaction->commit();
@@ -156,6 +166,10 @@ trait ManagesTransactions
         $this->transactions = max(0, $this->transactions - 1);
         if ($this->isTransactionFinished()) {
             $this->currentTransaction = null;
+        }
+
+        if ($this->afterCommitCallbacksShouldBeExecuted()) {
+            $this->transactionsManager?->commit($this->getName());
         }
     }
 
