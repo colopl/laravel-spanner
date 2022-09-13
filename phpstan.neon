@@ -22,3 +22,7 @@ parameters:
           path: src/Colopl/Spanner/Schema/Builder.php
         - message: '#^Parameter \#1 \$value of method Illuminate\\Database\\Schema\\Grammars\\Grammar::wrap\(\) expects Illuminate\\Database\\Query\\Expression\|string, Illuminate\\Database\\Schema\\ColumnDefinition given.$#'
           path: src/Colopl/Spanner/Schema/Grammar.php
+        - message: '#^Using nullsafe method call on non-nullable type Illuminate\\Database\\DatabaseTransactionsManager\. Use -> instead.$#'
+          path: src/Colopl/Spanner/Concerns/ManagesTransactions.php
+        - message: '#^Parameter \#1 \$connection of method Illuminate\\Database\\DatabaseTransactionsManager::.+\(\) expects string, string\|null given\.$#'
+          path: src/Colopl/Spanner/Concerns/ManagesTransactions.php
