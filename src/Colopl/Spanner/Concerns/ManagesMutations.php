@@ -61,7 +61,7 @@ trait ManagesMutations
 
     /**
      * @param string $table
-     * @param array|KeySet $keySet
+     * @param scalar|array<mixed>|KeySet $keySet
      * @return void
      */
     public function deleteUsingMutation(string $table, $keySet)
