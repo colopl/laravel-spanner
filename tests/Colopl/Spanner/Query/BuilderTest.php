@@ -289,7 +289,7 @@ class BuilderTest extends TestCase
         }
         $qb->insert($insertValues);
 
-        $this->assertEquals(49.5, $qb->average('intTest'));
+        $this->assertEqualsWithDelta(49.5, $qb->average('intTest'), 0.0001);
         $this->assertEquals(4950, $qb->sum('intTest'));
         $this->assertEquals(0, $qb->min('intTest'));
         $this->assertEquals(99, $qb->max('intTest'));
