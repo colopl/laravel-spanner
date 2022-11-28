@@ -51,6 +51,7 @@ class TestCase extends \Orchestra\Testbench\TestCase
         if (static::TEST_DB_REQUIRED) {
             $this->cleanupDatabaseRecords();
         }
+        parent::tearDown();
     }
 
     /**
@@ -116,16 +117,21 @@ class TestCase extends \Orchestra\Testbench\TestCase
     {
         if (!self::$databasePrepared) {
             self::$databasePrepared = true;
-            if (!empty(getenv('SPANNER_EMULATOR_HOST'))) {
-                $this->createEmulatorInstance($conn);
-            }
-
-            if ($conn->databaseExists()) {
-                $conn->dropDatabase();
-            }
-            $conn->createDatabase($this->getTestDatabaseDDLs());
-            $conn->clearSessionPool();
+            $this->setUpDatabase($conn);
         }
+    }
+
+    protected function setUpDatabase(Connection $conn): void
+    {
+        if (!empty(getenv('SPANNER_EMULATOR_HOST'))) {
+            $this->createEmulatorInstance($conn);
+        }
+
+        if ($conn->databaseExists()) {
+            $conn->dropDatabase();
+        }
+        $conn->createDatabase($this->getTestDatabaseDDLs());
+        $conn->clearSessionPool();
     }
 
     protected function createEmulatorInstance(Connection $conn): void

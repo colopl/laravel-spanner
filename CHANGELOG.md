@@ -1,3 +1,11 @@
+# v4.3.0
+
+Fixed
+- `SessionPool` for all connections were pointing to the same cache. This has been fixed to create cache instances for each connection.  
+  The following method's arguments were changed to accommodate this change
+  - `Colopl\Spanner\SpannerServiceProvider::createSessionPool`
+  - `Colopl\Spanner\SpannerServiceProvider::createAuthCache`
+
 # v4.2.0
 
 Added

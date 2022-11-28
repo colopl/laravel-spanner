@@ -31,20 +31,27 @@ class SpannerServiceProvider extends ServiceProvider
     {
         $this->app->resolving('db', function (DatabaseManager $db) {
             $db->extend('spanner', function ($config, $name) {
-                return $this->createSpannerConnection($this->parseConfig($config, $name));
+                $config = $this->parseConfig($config, $name);
+                return $this->createSpannerConnection($name, $config);
             });
         });
     }
 
     /**
+     * @param string $name
      * @param array $config
      * @return Connection
      */
-    protected function createSpannerConnection(array $config)
+    protected function createSpannerConnection(string $name, array $config)
     {
-        $authCache = $this->createAuthCache();
-        $sessionPool = $this->createSessionPool($config['session_pool'] ?? []);
-        return new Connection($config['instance'], $config['database'], $config['prefix'], $config, $authCache, $sessionPool);
+        return new Connection(
+            $config['instance'],
+            $config['database'],
+            $config['prefix'],
+            $config,
+            $this->createAuthCache($name),
+            $this->createSessionPool($name, $config['session_pool'] ?? [])
+        );
     }
 
     /**
@@ -62,19 +69,22 @@ class SpannerServiceProvider extends ServiceProvider
     }
 
     /**
-     * @param array $sessionPoolConfig
+     * @param string $name
+     * @param array|null $config
      * @return SessionPoolInterface
      */
-    protected function createSessionPool(array $sessionPoolConfig): SessionPoolInterface
+    protected function createSessionPool(string $name, ?array $config): SessionPoolInterface
     {
         $cachePath = storage_path(implode(DIRECTORY_SEPARATOR, ['framework', 'cache', 'spanner']));
-        return new CacheSessionPool(new FileCacheAdapter('session', $cachePath), $sessionPoolConfig);
+        $cacheAdapter = new FileCacheAdapter("{$name}-session", $cachePath);
+        return new CacheSessionPool($cacheAdapter, $config ?? []);
     }
 
     /**
+     * @param string $name
      * @return CacheItemPoolInterface
      */
-    protected function createAuthCache(): CacheItemPoolInterface
+    protected function createAuthCache(string $name): CacheItemPoolInterface
     {
         $cachePath = storage_path(implode(DIRECTORY_SEPARATOR, ['framework', 'cache', 'spanner']));
         return new FileCacheAdapter('auth', $cachePath);

@@ -57,6 +57,38 @@ class ConnectionTest extends TestCase
         $this->assertEquals(12345, $conn->selectOne('SELECT 12345')[0]);
     }
 
+    public function test_warmupSessionPool(): void
+    {
+        /** @var array{ 0: Connection, 1: Connection } $connPair */
+        $connPair = [];
+        foreach (['warmup1', 'warmup2'] as $name) {
+            config()->set('database.connections.' . $name, [
+                'driver' => 'spanner',
+                'instance' => getenv('DB_SPANNER_INSTANCE_ID'),
+                'database' => getenv('DB_SPANNER_DATABASE_ID'),
+                'session_pool' => [
+                    'minSessions' => 2,
+                    'maxSessions' => 100,
+                ],
+            ]);
+            $conn = $this->getConnection($name);
+            assert($conn instanceof Connection);
+            $this->setUpDatabase($conn);
+            $connPair[] = $conn;
+        }
+
+        [$defConn, $altConn] = $connPair;
+
+        // Warms up 2 as defined in config.php
+        self::assertSame(2, $defConn->warmupSessionPool());
+        // Should be warmed up already
+        self::assertSame(0, $defConn->warmupSessionPool());
+
+        // Make sure different connection has different session.
+        // Unfortunately, emulator cannot distinguish between connections so nothing gets warmed up.
+        self::assertSame(2, $altConn->warmupSessionPool());
+    }
+
     public function testQueryLog(): void
     {
         $conn = $this->getDefaultConnection();
