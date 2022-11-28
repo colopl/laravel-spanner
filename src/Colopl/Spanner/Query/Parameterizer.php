@@ -38,7 +38,6 @@ class Parameterizer
      * @param string $query
      * @param array $bindings
      * @return array [0]: converted SQL, [1]: spanner execute options
-     * @throws Exception
      */
     public function parameterizeQuery(string $query, array $bindings): array
     {

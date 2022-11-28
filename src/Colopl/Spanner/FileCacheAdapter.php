@@ -18,6 +18,7 @@
 namespace Colopl\Spanner;
 
 use Exception;
+use Generator;
 use Symfony\Component\Cache\Adapter\AbstractAdapter;
 use Symfony\Component\Cache\Marshaller\DefaultMarshaller;
 use Symfony\Component\Cache\Marshaller\MarshallerInterface;
@@ -43,7 +44,6 @@ class FileCacheAdapter extends AbstractAdapter implements PruneableInterface
      * @param string $namespace
      * @param string $directory
      * @param MarshallerInterface|null $marshaller
-     * @throws Exception
      */
     public function __construct(string $namespace, string $directory, MarshallerInterface $marshaller = null)
     {
@@ -56,7 +56,6 @@ class FileCacheAdapter extends AbstractAdapter implements PruneableInterface
 
     /**
      * @return void
-     * @throws Exception
      */
     protected function ensureDirectory()
     {
@@ -74,7 +73,6 @@ class FileCacheAdapter extends AbstractAdapter implements PruneableInterface
      * @param string $id
      * @param bool $mkdir
      * @return string
-     * @throws Exception
      */
     protected function getFile($id, $mkdir = false)
     {
@@ -89,9 +87,9 @@ class FileCacheAdapter extends AbstractAdapter implements PruneableInterface
      * @see FilesystemCommonTrait::scanHashDir()
      *
      * @param string $directory
-     * @return \Generator
+     * @return Generator
      */
-    protected function scanHashDir(string $directory): \Generator
+    protected function scanHashDir(string $directory): Generator
     {
         if (!file_exists($directory)) {
             return;

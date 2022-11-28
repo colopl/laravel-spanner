@@ -100,7 +100,6 @@ class Grammar extends BaseGrammar
      * @param  Fluent<string, mixed> $command
      * @param  Connection $connection
      * @return string[]
-     * @throws RuntimeException
      */
     public function compileChange(Blueprint $blueprint, Fluent $command, Connection $connection)
     {

@@ -34,7 +34,6 @@ trait ManagesLongRunningOperations
     /**
      * @param LongRunningOperation $operation
      * @return mixed
-     * @throws Exception
      */
     public function waitForOperation(LongRunningOperation $operation)
     {
@@ -48,7 +47,6 @@ trait ManagesLongRunningOperations
     /**
      * @param LongRunningOperation $operation
      * @return bool
-     * @throws Exception
      */
     public function isDoneOperation(LongRunningOperation $operation): bool
     {

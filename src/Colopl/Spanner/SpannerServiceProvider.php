@@ -17,11 +17,10 @@
 
 namespace Colopl\Spanner;
 
-use Exception;
+use Colopl\Spanner\Console\WarmupCommand;
 use Google\Cloud\Spanner\Session\CacheSessionPool;
 use Google\Cloud\Spanner\Session\SessionPoolInterface;
 use Illuminate\Database\DatabaseManager;
-use Illuminate\Support\Arr;
 use Illuminate\Support\ServiceProvider;
 use Psr\Cache\CacheItemPoolInterface;
 
@@ -67,7 +66,6 @@ class SpannerServiceProvider extends ServiceProvider
     /**
      * @param array $sessionPoolConfig
      * @return SessionPoolInterface
-     * @throws Exception
      */
     protected function createSessionPool(array $sessionPoolConfig): SessionPoolInterface
     {
@@ -77,7 +75,6 @@ class SpannerServiceProvider extends ServiceProvider
 
     /**
      * @return CacheItemPoolInterface
-     * @throws Exception
      */
     protected function createAuthCache(): CacheItemPoolInterface
     {
