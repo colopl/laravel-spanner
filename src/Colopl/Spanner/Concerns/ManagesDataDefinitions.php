@@ -47,7 +47,6 @@ trait ManagesDataDefinitions
     /**
      * @param string[] $statements Additional DDL statements
      * @return void
-     * @throws Exception
      */
     public function createDatabase(array $statements = [])
     {

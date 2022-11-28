@@ -54,7 +54,6 @@ trait ManagesStaleReads
      * @param  array  $bindings
      * @param  TimestampBoundInterface|null $timestampBound
      * @return array
-     * @throws Throwable
      */
     public function selectWithTimestampBound($query, $bindings = [], TimestampBoundInterface $timestampBound = null): array
     {
