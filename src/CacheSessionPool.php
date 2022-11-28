@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace Google\Cloud\Spanner\Session;
+namespace Colopl\Spanner;
 
 use Google\Cloud\Core\Exception\NotFoundException;
 use Google\Cloud\Core\Lock\FlockLock;
@@ -26,10 +26,25 @@ use Google\Cloud\Spanner\Database;
 use Grpc\UnaryCall;
 use GuzzleHttp\Promise;
 use GuzzleHttp\Promise\PromiseInterface;
+use Google\Cloud\Spanner\Session\SessionPoolInterface;
+use Google\Cloud\Spanner\Session\Session;
 use Psr\Cache\CacheItemInterface;
 use Psr\Cache\CacheItemPoolInterface;
 
 /**
+ * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ * This class was copied from Google Cloud's repo to fix problems in their code.
+ * @see \Google\Cloud\Spanner\Session\CacheSessionPool
+ *
+ * Issued were raised on Github to fix it directly but Google does not seem to care
+ * about it so here we are with this hacky alternative.
+ *
+ * @see https://github.com/googleapis/google-cloud-php/issues/5567
+ * @see https://github.com/googleapis/google-cloud-php/issues/5595
+ * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ *
  * This session pool implementation accepts a PSR-6 compatible cache
  * implementation and utilizes it to store sessions between requests.
  *
@@ -824,6 +839,8 @@ class CacheSessionPool implements SessionPoolInterface
                     'database' => $this->database->name()
                 ]);
         }
+
+        \GuzzleHttp\Promise\Utils::all($this->deleteCalls)->wait();
     }
 
     /**

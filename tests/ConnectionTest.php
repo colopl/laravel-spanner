@@ -17,9 +17,10 @@
 
 namespace Colopl\Spanner\Tests;
 
+use Colopl\Spanner\CacheSessionPool;
 use Colopl\Spanner\Connection;
 use Colopl\Spanner\Events\MutatingData;
-use Colopl\Spanner\Session;
+use Colopl\Spanner\SessionInfo;
 use Colopl\Spanner\TimestampBound\ExactStaleness;
 use Colopl\Spanner\TimestampBound\MaxStaleness;
 use Colopl\Spanner\TimestampBound\MinReadTimestamp;
@@ -27,7 +28,6 @@ use Colopl\Spanner\TimestampBound\ReadTimestamp;
 use Colopl\Spanner\TimestampBound\StrongRead;
 use Google\Auth\FetchAuthTokenInterface;
 use Google\Cloud\Spanner\KeySet;
-use Google\Cloud\Spanner\Session\CacheSessionPool;
 use Google\Cloud\Spanner\SpannerClient;
 use Google\Cloud\Spanner\Timestamp;
 use Google\Cloud\Spanner\Transaction;
@@ -280,7 +280,7 @@ class ConnectionTest extends TestCase
 
         $sessions = $conn->listSessions();
         $this->assertNotEmpty($sessions);
-        $this->assertInstanceOf(Session::class, $sessions[0]);
+        $this->assertInstanceOf(SessionInfo::class, $sessions[0]);
     }
 
     public function testStaleReads(): void

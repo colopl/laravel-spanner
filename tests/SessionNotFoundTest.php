@@ -17,9 +17,9 @@
 
 namespace Colopl\Spanner\Tests;
 
+use Colopl\Spanner\CacheSessionPool;
 use Colopl\Spanner\Connection;
 use Google\Cloud\Core\Exception\NotFoundException;
-use Google\Cloud\Spanner\Session\CacheSessionPool;
 use Illuminate\Database\QueryException;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
 
