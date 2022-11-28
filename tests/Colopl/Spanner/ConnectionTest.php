@@ -25,7 +25,7 @@ use Colopl\Spanner\TimestampBound\MaxStaleness;
 use Colopl\Spanner\TimestampBound\MinReadTimestamp;
 use Colopl\Spanner\TimestampBound\ReadTimestamp;
 use Colopl\Spanner\TimestampBound\StrongRead;
-use Google\Cloud\Spanner\Duration;
+use Google\Auth\FetchAuthTokenInterface;
 use Google\Cloud\Spanner\KeySet;
 use Google\Cloud\Spanner\Session\CacheSessionPool;
 use Google\Cloud\Spanner\SpannerClient;
@@ -41,7 +41,7 @@ class ConnectionTest extends TestCase
 {
     protected const TEST_DB_REQUIRED = true;
 
-    public function testConnect()
+    public function testConnect(): void
     {
         $conn = $this->getDefaultConnection();
         $this->assertInstanceOf(Connection::class, $conn);
@@ -49,7 +49,7 @@ class ConnectionTest extends TestCase
         $conn->disconnect();
     }
 
-    public function testReconnect()
+    public function testReconnect(): void
     {
         $conn = $this->getDefaultConnection();
         $this->assertInstanceOf(Connection::class, $conn);
@@ -57,7 +57,7 @@ class ConnectionTest extends TestCase
         $this->assertEquals(12345, $conn->selectOne('SELECT 12345')[0]);
     }
 
-    public function testQueryLog()
+    public function testQueryLog(): void
     {
         $conn = $this->getDefaultConnection();
         $conn->enableQueryLog();
@@ -69,7 +69,7 @@ class ConnectionTest extends TestCase
         $this->assertCount(2, $conn->getQueryLog());
     }
 
-    public function testInsertUsingMutationWithTransaction()
+    public function testInsertUsingMutationWithTransaction(): void
     {
         $userId = $this->generateUuid();
         $transactionBeginCount = 0;
@@ -90,7 +90,7 @@ class ConnectionTest extends TestCase
         $this->assertEquals(1, $transactionCommitCount);
     }
 
-    public function testInsertUsingMutationWithoutTransaction()
+    public function testInsertUsingMutationWithoutTransaction(): void
     {
         $userId = $this->generateUuid();
         $transactionBeginCount = 0;
@@ -109,7 +109,7 @@ class ConnectionTest extends TestCase
         $this->assertEquals(1, $transactionCommitCount);
     }
 
-    public function testUpdateUsingMutationWithTransaction()
+    public function testUpdateUsingMutationWithTransaction(): void
     {
         $userId = $this->generateUuid();
         $transactionBeginCount = 0;
@@ -131,7 +131,7 @@ class ConnectionTest extends TestCase
         $this->assertEquals(2, $transactionCommitCount);
     }
 
-    public function testUpdateUsingMutationWithoutTransaction()
+    public function testUpdateUsingMutationWithoutTransaction(): void
     {
         $userId = $this->generateUuid();
         $transactionBeginCount = 0;
@@ -151,7 +151,7 @@ class ConnectionTest extends TestCase
         $this->assertEquals(2, $mutatingDataCount);
     }
 
-    public function testDeleteUsingMutationWithTransaction()
+    public function testDeleteUsingMutationWithTransaction(): void
     {
         $userId = $this->generateUuid();
         $transactionBeginCount = 0;
@@ -174,7 +174,7 @@ class ConnectionTest extends TestCase
         $this->assertEquals(2, $mutatingDataCount);
     }
 
-    public function testDeleteUsingMutationWithoutTransaction()
+    public function testDeleteUsingMutationWithoutTransaction(): void
     {
         $userId = $this->generateUuid();
         $transactionBeginCount = 0;
@@ -195,7 +195,7 @@ class ConnectionTest extends TestCase
         $this->assertEquals(2, $mutatingDataCount);
     }
 
-    public function testDeleteUsingMutationWithDifferentArgs()
+    public function testDeleteUsingMutationWithDifferentArgs(): void
     {
         $conn = $this->getDefaultConnection();
         $userIds = collect(range(0, 4))->map(function() { return $this->generateUuid(); });
@@ -217,12 +217,12 @@ class ConnectionTest extends TestCase
         $this->assertEmpty($conn->table(self::TABLE_NAME_USER)->whereIn('userId', $targetUserIds)->get());
     }
 
-    public function testQueryExecutedEvent()
+    public function testQueryExecutedEvent(): void
     {
         $conn = $this->getDefaultConnection();
 
         $executedCount = 0;
-        $this->app['events']->listen(QueryExecuted::class, function (QueryExecuted $ev) use (&$executedCount) {
+        $this->app['events']->listen(QueryExecuted::class, function () use (&$executedCount) {
             $executedCount++;
         });
 
@@ -239,7 +239,7 @@ class ConnectionTest extends TestCase
         $this->assertEquals(5, $executedCount);
     }
 
-    public function testSession()
+    public function testSession(): void
     {
         $conn = $this->getDefaultConnection();
         $conn->disconnect();
@@ -251,21 +251,21 @@ class ConnectionTest extends TestCase
         $this->assertNotEmpty($conn->__debugInfo()['session'], 'After executing some query, session is created.');
     }
 
-    public function testCredentialFetcher()
+    public function testCredentialFetcher(): void
     {
         if (getenv('SPANNER_EMULATOR_HOST')) {
             $this->markTestSkipped('Cannot test credential fetcher on emulator');
         }
 
         $conn = $this->getDefaultConnection();
-        /** @var \Google\Auth\FetchAuthTokenInterface|null $credentialFetcher */
+        /** @var FetchAuthTokenInterface|null $credentialFetcher */
         $credentialFetcher = $conn->__debugInfo()['credentialFetcher'];
 
-        $this->assertInstanceOf(\Google\Auth\FetchAuthTokenInterface::class, $credentialFetcher);
+        $this->assertInstanceOf(FetchAuthTokenInterface::class, $credentialFetcher);
         $this->assertNotEmpty($credentialFetcher->getCacheKey());
     }
 
-    public function testAuthCache()
+    public function testAuthCache(): void
     {
         if (getenv('SPANNER_EMULATOR_HOST')) {
             $this->markTestSkipped('Cannot test AuthCache on emulator');
@@ -281,7 +281,7 @@ class ConnectionTest extends TestCase
         $this->assertNotEmpty($authCache->getValues(), 'After executing some query, session cache is created.');
     }
 
-    public function testSessionPool()
+    public function testSessionPool(): void
     {
         $config = $this->app['config']->get('database.connections.main');
 
@@ -297,7 +297,7 @@ class ConnectionTest extends TestCase
         $this->assertEmpty($cacheItemPool->getValues(), 'After clearing the session pool, cache is removed.');
     }
 
-    public function testListSessions()
+    public function testListSessions(): void
     {
         if (getenv('SPANNER_EMULATOR_HOST')) {
             $this->markTestSkipped('Cannot list sessions on emulator');
@@ -310,7 +310,7 @@ class ConnectionTest extends TestCase
         $this->assertInstanceOf(Session::class, $sessions[0]);
     }
 
-    public function testStaleReads()
+    public function testStaleReads(): void
     {
         $conn = $this->getDefaultConnection();
         $tableName = self::TABLE_NAME_USER;
@@ -319,7 +319,7 @@ class ConnectionTest extends TestCase
         $db = (new SpannerClient())->connect(config('database.connections.main.instance'), config('database.connections.main.database'));
         /** @var Timestamp|null $timestamp */
         $timestamp = null;
-        $db->runTransaction(function(Transaction $tx) use ($conn, $tableName, $uuid, &$timestamp) {
+        $db->runTransaction(function(Transaction $tx) use ($tableName, $uuid, &$timestamp) {
             $name = 'first';
             $tx->executeUpdate("INSERT INTO ${tableName} (`userId`, `name`) VALUES ('${uuid}', '${name}')");
             $timestamp = $tx->commit();
@@ -332,7 +332,7 @@ class ConnectionTest extends TestCase
         $this->assertEquals($uuid, $row['userId']);
         $this->assertEquals('first', $row['name']);
 
-        $oldDatetime = Carbon::instance($timestamp->get())->subSeconds(1);
+        $oldDatetime = Carbon::instance($timestamp->get())->subSecond();
 
         $timestampBound = new ReadTimestamp($oldDatetime);
         $row = $conn->selectOneWithTimestampBound("SELECT * FROM ${tableName} WHERE userID = ?", [$uuid], $timestampBound);
@@ -355,7 +355,7 @@ class ConnectionTest extends TestCase
         $this->assertEquals('first', $row['name']);
     }
 
-    public function testEventListenOrder()
+    public function testEventListenOrder(): void
     {
         $receivedEventClasses = [];
         $this->app['events']->listen(TransactionBeginning::class, function () use (&$receivedEventClasses) { $receivedEventClasses[] = TransactionBeginning::class; });

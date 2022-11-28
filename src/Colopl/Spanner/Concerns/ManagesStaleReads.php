@@ -65,7 +65,7 @@ trait ManagesStaleReads
 
     /**
      * @param string $query
-     * @param array<string, mixed> $bindings
+     * @param array<mixed> $bindings
      * @param TimestampBoundInterface|null $timestampBound
      * @return array<mixed>|null
      */
