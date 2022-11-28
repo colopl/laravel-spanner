@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace Google\Cloud\Spanner\Session;
+namespace Colopl\Spanner;
 
 use Google\Cloud\Core\Exception\NotFoundException;
 use Google\Cloud\Core\Lock\FlockLock;
@@ -23,87 +23,24 @@ use Google\Cloud\Core\Lock\LockInterface;
 use Google\Cloud\Core\Lock\SemaphoreLock;
 use Google\Cloud\Core\SysvTrait;
 use Google\Cloud\Spanner\Database;
+use GuzzleHttp\Promise\Utils;
 use Grpc\UnaryCall;
 use GuzzleHttp\Promise;
 use GuzzleHttp\Promise\PromiseInterface;
+use Google\Cloud\Spanner\Session\SessionPoolInterface;
+use Google\Cloud\Spanner\Session\Session as SpannerSession;
 use Psr\Cache\CacheItemInterface;
 use Psr\Cache\CacheItemPoolInterface;
 
 /**
- * This session pool implementation accepts a PSR-6 compatible cache
- * implementation and utilizes it to store sessions between requests.
+ * This class was copied from Google Cloud's repo to fix problems in their code.
+ * @see \Google\Cloud\Spanner\Session\CacheSessionPool
  *
- * We provide `Google\Auth\Cache\SysVCacheItemPool`, which is a fast PSR-6
- * implementation in `google/auth` library. If your PHP has `sysvshm`
- * extension enabled (most binary distributions have it compiled in), consider
- * using it. Please note the SysVCacheItemPool implementation defaults to a
- * memory allotment that may not meet your requirements. We recommend setting
- * the memsize setting to 250000 (250kb) as it should safely contain the default
- * 500 maximum sessions the pool can handle. Please modify this value
- * accordingly depending on the number of maximum sessions you would like
- * for the pool to handle.
+ * Issued were raised on Github to fix it directly but Google does not seem to care
+ * about it so here we are with this hacky alternative.
  *
- * Please note that when
- * {@see Google\Cloud\Spanner\Session\CacheSessionPool::acquire()} is called at
- * most only a single session is created. Due to this, it is possible to sit
- * under the minimum session value declared when constructing this instance. In
- * order to have the pool match the minimum session value please use the
- * {@see Google\Cloud\Spanner\Session\CacheSessionPool::warmup()} method. This
- * will create as many sessions as needed to match the minimum value, and is the
- * recommended way to bootstrap the session pool.
- *
- * Sessions are created on demand up to the maximum session value set during
- * instantiation of the pool. To help ensure the minimum number of sessions
- * required are managed by the pool, attempts will be made to automatically
- * downsize after every 10 minute window. This feature is configurable and one
- * may also downsize at their own choosing via
- * {@see Google\Cloud\Spanner\Session\CacheSessionPool::downsize()}. Downsizing
- * will help ensure you never run into issues where the Spanner backend is
- * locked up after having met the maximum number of sessions assigned per node.
- * For reference, the current maximum sessions per database per node is 10k. For
- * more information on limits please see
- * [here](https://cloud.google.com/spanner/docs/limits).
- *
- * When expecting a long period of inactivity (such as a
- * maintenance window), please make sure to call
- * {@see Google\Cloud\Spanner\Session\CacheSessionPool::clear()} in order to
- * delete any active sessions.
- *
- * If you're on Windows, or your PHP doesn't have `sysvshm` extension,
- * unfortunately you can not use `Google\Auth\Cache\SysVCacheItemPool`. In such
- * cases, it will be necessary to include a separate dependency to fulfill
- * this requirement. The below example makes use of
- * [Symfony's Cache Component](https://github.com/symfony/cache). For more
- * implementations please see the [Packagist PHP Package
- * Repository](https://packagist.org/providers/psr/cache-implementation).
- *
- * Example:
- * ```
- * use Google\Cloud\Spanner\SpannerClient;
- * use Google\Cloud\Spanner\Session\CacheSessionPool;
- * use Symfony\Component\Cache\Adapter\FilesystemAdapter;
- *
- * $spanner = new SpannerClient();
- * $cache = new FilesystemAdapter();
- * $sessionPool = new CacheSessionPool($cache);
- *
- * $database = $spanner->connect('my-instance', 'my-database', [
- *     'sessionPool' => $sessionPool
- * ]);
- * ```
- *
- * ```
- * // Labels configured on the pool will be applied to each session created by the pool.
- * use Google\Cloud\Spanner\Session\CacheSessionPool;
- * use Symfony\Component\Cache\Adapter\FilesystemAdapter;
- *
- * $cache = new FilesystemAdapter();
- * $sessionPool = new CacheSessionPool($cache, [
- *     'labels' => [
- *         'environment' => getenv('APPLICATION_ENV')
- *     ]
- * ]);
- * ```
+ * @see https://github.com/googleapis/google-cloud-php/issues/5567
+ * @see https://github.com/googleapis/google-cloud-php/issues/5595
  */
 class CacheSessionPool implements SessionPoolInterface
 {
@@ -146,11 +83,6 @@ class CacheSessionPool implements SessionPoolInterface
      * @var Database|null
      */
     private $database;
-
-    /**
-     * @var PromiseInterface[]
-     */
-    private $deleteCalls = [];
 
     /**
      * @var array
@@ -313,10 +245,10 @@ class CacheSessionPool implements SessionPoolInterface
     /**
      * Release a session back to the pool.
      *
-     * @param Session $session The session.
+     * @param SpannerSession $session The session.
      * @throws \RuntimeException
      */
-    public function release(Session $session)
+    public function release(SpannerSession $session)
     {
         $this->config['lock']->synchronize(function () use ($session) {
             $item = $this->cacheItemPool->getItem($this->cacheKey);
@@ -345,10 +277,10 @@ class CacheSessionPool implements SessionPoolInterface
      * sure to call this method roughly every 15 minutes between reading rows
      * to keep your session active.
      *
-     * @param Session $session The session to keep alive.
+     * @param SpannerSession $session The session to keep alive.
      * @throws \RuntimeException
      */
-    public function keepAlive(Session $session)
+    public function keepAlive(SpannerSession $session)
     {
         $this->config['lock']->synchronize(function () use ($session) {
             $item = $this->cacheItemPool->getItem($this->cacheKey);
@@ -815,15 +747,17 @@ class CacheSessionPool implements SessionPoolInterface
         // gRPC calls appear to cancel when the corresponding UnaryCall object
         // goes out of scope. Keeping the calls in scope allows time for the
         // calls to complete at the expense of a small memory footprint.
-        $this->deleteCalls = [];
+        $deleteCalls = [];
 
         foreach ($sessions as $session) {
-            $this->deleteCalls[] = $this->database->connection()
-                ->deleteSessionAsync([
+            $deleteCalls[] = $this->database?->connection()
+                ?->deleteSessionAsync([
                     'name' => $session['name'],
-                    'database' => $this->database->name()
+                    'database' => $this->database?->name()
                 ]);
         }
+
+        Utils::all($deleteCalls)->wait();
     }
 
     /**
@@ -987,7 +921,7 @@ class CacheSessionPool implements SessionPoolInterface
     }
 
     /**
-     * @param Session $session
+     * @param SpannerSession $session
      * @return bool `true`: session was refreshed, `false`: session does not exist
      */
     private function refreshSession($session)
