@@ -297,6 +297,14 @@ class ConnectionTest extends TestCase
         $this->assertEmpty($cacheItemPool->getValues(), 'After clearing the session pool, cache is removed.');
     }
 
+    public function test_clearSessionPool(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $conn->warmupSessionPool();
+        $conn->clearSessionPool();
+        self::assertSame(1, $conn->warmupSessionPool());
+    }
+
     public function testListSessions(): void
     {
         if (getenv('SPANNER_EMULATOR_HOST')) {
