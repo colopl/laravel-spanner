@@ -32,8 +32,6 @@ use Illuminate\Support\Collection;
 
 class BuilderTest extends TestCase
 {
-    protected const TEST_DB_REQUIRED = true;
-
     public function testSimpleSelect(): void
     {
         $conn = $this->getDefaultConnection();

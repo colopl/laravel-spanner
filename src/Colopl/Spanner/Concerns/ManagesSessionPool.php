@@ -41,9 +41,7 @@ trait ManagesSessionPool
     public function clearSessionPool(): void
     {
         $sessionPool = $this->getSpannerDatabase()->sessionPool();
-        if ($sessionPool !== null) {
-            $sessionPool->clear();
-        }
+        $sessionPool?->clear();
     }
 
     /**

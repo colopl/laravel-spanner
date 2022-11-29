@@ -24,14 +24,8 @@ use Google\Cloud\Spanner\Date;
 use Google\Cloud\Spanner\SpannerClient;
 use Ramsey\Uuid\Uuid;
 
-class TestCase extends \Orchestra\Testbench\TestCase
+abstract class TestCase extends \Orchestra\Testbench\TestCase
 {
-    /**
-     * Override me if you need to prepare test tables.
-     * @var bool
-     */
-    protected const TEST_DB_REQUIRED = false;
-
     /**
      * @var bool
      */
@@ -48,9 +42,8 @@ class TestCase extends \Orchestra\Testbench\TestCase
 
     protected function tearDown(): void
     {
-        if (static::TEST_DB_REQUIRED) {
-            $this->cleanupDatabaseRecords();
-        }
+        $this->cleanupDatabase();
+        parent::tearDown();
     }
 
     /**
@@ -93,9 +86,7 @@ class TestCase extends \Orchestra\Testbench\TestCase
     {
         /** @var Connection $conn */
         $conn = $this->getConnection();
-        if (static::TEST_DB_REQUIRED) {
-            $this->setUpDatabaseOnce($conn);
-        }
+        $this->setUpDatabaseOnce($conn);
         return $conn;
     }
 
@@ -106,9 +97,7 @@ class TestCase extends \Orchestra\Testbench\TestCase
     {
         /** @var Connection $conn */
         $conn = $this->getConnection('alternative');
-        if (static::TEST_DB_REQUIRED) {
-            $this->setUpDatabaseOnce($conn);
-        }
+        $this->setUpDatabaseOnce($conn);
         return $conn;
     }
 
@@ -124,7 +113,6 @@ class TestCase extends \Orchestra\Testbench\TestCase
                 $conn->dropDatabase();
             }
             $conn->createDatabase($this->getTestDatabaseDDLs());
-            $conn->clearSessionPool();
         }
     }
 
@@ -139,13 +127,14 @@ class TestCase extends \Orchestra\Testbench\TestCase
         }
     }
 
-    protected function cleanupDatabaseRecords(): void
+    protected function cleanupDatabase(): void
     {
-        /** @var Connection $conn */
         foreach ($this->app['db']->getConnections() as $conn) {
-            foreach ($conn->select("SELECT t.table_name FROM information_schema.tables as t WHERE t.table_schema = ''") as $row) {
-                $tableName = $row['table_name'];
-                $conn->runPartitionedDml("DELETE FROM `${tableName}` WHERE TRUE");
+            if ($conn instanceof Connection) {
+                foreach ($conn->select("SELECT t.table_name FROM information_schema.tables as t WHERE t.table_schema = ''") as $row) {
+                    $conn->table($row['table_name'])->truncate();
+                }
+                $conn->clearSessionPool();
             }
         }
     }

@@ -23,7 +23,7 @@ use Colopl\Spanner\Tests\TestCase;
 
 class BlueprintTest extends TestCase
 {
-    public function testCreateTable()
+    public function testCreateTable(): void
     {
         $conn = $this->getDefaultConnection();
 
@@ -47,7 +47,7 @@ class BlueprintTest extends TestCase
         );
     }
 
-    public function testDropTable()
+    public function testDropTable(): void
     {
         $conn = $this->getDefaultConnection();
 
@@ -62,7 +62,7 @@ class BlueprintTest extends TestCase
         );
     }
 
-    public function testAddColumn()
+    public function testAddColumn(): void
     {
         $conn = $this->getDefaultConnection();
 
@@ -77,7 +77,7 @@ class BlueprintTest extends TestCase
         );
     }
 
-    public function testChangeColumn()
+    public function testChangeColumn(): void
     {
         $conn = $this->getDefaultConnection();
 
@@ -92,7 +92,7 @@ class BlueprintTest extends TestCase
         );
     }
 
-    public function testDropColumn()
+    public function testDropColumn(): void
     {
         $conn = $this->getDefaultConnection();
 
@@ -107,7 +107,7 @@ class BlueprintTest extends TestCase
         );
     }
 
-    public function testCreateIndex()
+    public function testCreateIndex(): void
     {
         $conn = $this->getDefaultConnection();
 
@@ -126,7 +126,7 @@ class BlueprintTest extends TestCase
         );
     }
 
-    public function testDropIndex()
+    public function testDropIndex(): void
     {
         $conn = $this->getDefaultConnection();
 
@@ -145,7 +145,7 @@ class BlueprintTest extends TestCase
         );
     }
 
-    public function testCompositePrimaryKey()
+    public function testCompositePrimaryKey(): void
     {
         $conn = $this->getDefaultConnection();
 
@@ -165,7 +165,7 @@ class BlueprintTest extends TestCase
         );
     }
 
-    public function testArrayType()
+    public function testArrayType(): void
     {
         $conn = $this->getDefaultConnection();
 
@@ -186,7 +186,7 @@ class BlueprintTest extends TestCase
         );
     }
 
-    public function testInterleaveTable()
+    public function testInterleaveTable(): void
     {
         $conn = $this->getDefaultConnection();
 
@@ -224,7 +224,7 @@ class BlueprintTest extends TestCase
         );
     }
 
-    public function testInterleaveIndex()
+    public function testInterleaveIndex(): void
     {
         $conn = $this->getDefaultConnection();
 
@@ -239,7 +239,7 @@ class BlueprintTest extends TestCase
         );
     }
 
-    public function testStoringIndex()
+    public function testStoringIndex(): void
     {
         $conn = $this->getDefaultConnection();
 

@@ -131,7 +131,7 @@ class Blueprint extends BaseBlueprint
 
     /**
      * @param string $column
-     * @param int $length
+     * @param int|string $length
      * @return Fluent<string, mixed>
      */
     public function stringArray($column, $length)

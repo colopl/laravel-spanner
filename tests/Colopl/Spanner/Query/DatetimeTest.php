@@ -24,7 +24,7 @@ use Google\Cloud\Spanner\Timestamp;
 
 class DatetimeTest extends TestCase
 {
-    public function testTimezone()
+    public function testTimezone(): void
     {
         $db = (new SpannerClient())->connect(config('database.connections.main.instance'), config('database.connections.main.database'));
 
@@ -50,7 +50,7 @@ class DatetimeTest extends TestCase
         $this->assertEquals('2018-01-01 00:00:00.000000+00:00', $ts3->get()->format('Y-m-d H:i:s.uP'));
     }
 
-    public function testTimezoneWithQueryBuilder()
+    public function testTimezoneWithQueryBuilder(): void
     {
         $conn = $this->getDefaultConnection();
 
@@ -65,7 +65,7 @@ class DatetimeTest extends TestCase
         $this->assertEquals('Asia/Tokyo', $datetime->getTimezone()->getName());
     }
 
-    public function testTimestampCreateWithNanoseconds()
+    public function testTimestampCreateWithNanoseconds(): void
     {
         $datetime = \DateTime::createFromFormat(Timestamp::FORMAT, '2018-03-13T16:40:12.345678Z');
         $ts = new Timestamp($datetime);
@@ -74,7 +74,7 @@ class DatetimeTest extends TestCase
         $this->assertEquals(345678000, $ts->nanoSeconds());
     }
 
-    public function testFormatTimestamp()
+    public function testFormatTimestamp(): void
     {
         $conn = $this->getDefaultConnection();
         $row = $conn->query()->selectRaw('TIMESTAMP("2018-03-13T16:40:12.300000Z")')->get()->first();
@@ -83,7 +83,7 @@ class DatetimeTest extends TestCase
         $this->assertEquals('2018-03-13T16:40:12.300000Z', $datetime->format('Y-m-d\TH:i:s.u\Z'));
     }
 
-    public function testDateType()
+    public function testDateType(): void
     {
         $conn = $this->getDefaultConnection();
         $row = $conn->query()->selectRaw('DATE("2018-06-07")')->get()->first();
@@ -98,7 +98,7 @@ class DatetimeTest extends TestCase
         $this->assertEquals(7, $dateCarbon->day);
     }
 
-    public function testTimestampWithConnection()
+    public function testTimestampWithConnection(): void
     {
         $conn = $this->getDefaultConnection();
         $row = $conn->selectOne('SELECT TIMESTAMP("2019-12-12T14:45:00+09:00") as ts');
