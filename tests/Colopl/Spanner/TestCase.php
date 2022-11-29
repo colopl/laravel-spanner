@@ -24,7 +24,7 @@ use Google\Cloud\Spanner\Date;
 use Google\Cloud\Spanner\SpannerClient;
 use Ramsey\Uuid\Uuid;
 
-class TestCase extends \Orchestra\Testbench\TestCase
+abstract class TestCase extends \Orchestra\Testbench\TestCase
 {
     /**
      * Override me if you need to prepare test tables.
@@ -117,11 +117,14 @@ class TestCase extends \Orchestra\Testbench\TestCase
     {
         if (!self::$databasePrepared) {
             self::$databasePrepared = true;
-            $this->setUpDatabase($conn);
+            $this->setUpDatabase($conn, false);
+            register_shutdown_function(
+                static fn() => $conn->clearSessionPool()
+            );
         }
     }
 
-    protected function setUpDatabase(Connection $conn): void
+    protected function setUpDatabase(Connection $conn, bool $clearSession = true): void
     {
         if (!empty(getenv('SPANNER_EMULATOR_HOST'))) {
             $this->createEmulatorInstance($conn);
@@ -132,6 +135,12 @@ class TestCase extends \Orchestra\Testbench\TestCase
         }
         $conn->createDatabase($this->getTestDatabaseDDLs());
         $conn->clearSessionPool();
+
+        if ($clearSession) {
+            $this->beforeApplicationDestroyed(
+                static fn() => $conn->clearSessionPool()
+            );
+        }
     }
 
     protected function createEmulatorInstance(Connection $conn): void

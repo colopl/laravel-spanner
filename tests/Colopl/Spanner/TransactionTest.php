@@ -261,7 +261,7 @@ class TransactionTest extends TestCase
         try {
             $conn->transaction(function () use ($conn2, $qb, $qb2, $mutation) {
                 // SELECTing within a read-write transaction causes row to aquire shared lock
-                $findRow = $qb->where('userId', $mutation['userId'])->first();
+                $qb->where('userId', $mutation['userId'])->first();
 
                 $conn2->transaction(function () use ($qb2, $mutation) {
                     // will timeout and result in AbortedException since row is locked
