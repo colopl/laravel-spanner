@@ -34,7 +34,7 @@ use Illuminate\Support\Carbon;
  * @property string $userId
  * @property string $name
  * @property UserInfo $info
- * @property Collection<UserItem> $items
+ * @property Collection<int, UserItem> $items
  */
 class User extends Model
 {
