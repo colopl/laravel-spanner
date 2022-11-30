@@ -280,6 +280,6 @@ class TransactionTest extends TestCase
         }
 
         Event::assertDispatchedTimes(TransactionCommitted::class, 0);
-        Event::assertDispatchedTimes(TransactionRolledBack::class, 10);
+        Event::assertDispatchedTimes(TransactionRolledBack::class, Database::MAX_RETRIES));
     }
 }
