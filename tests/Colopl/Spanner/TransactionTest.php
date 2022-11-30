@@ -138,7 +138,7 @@ class TransactionTest extends TestCase
             });
         });
         $this->assertEquals(2, $cnt);
-        Event::assertDispatchedTimes(TransactionCommitted::class);
+        Event::assertDispatchedTimes(TransactionCommitted::class, 5);
     }
 
     public function testReadOnTransaction(): void
