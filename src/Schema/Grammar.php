@@ -18,6 +18,7 @@
 namespace Colopl\Spanner\Schema;
 
 use Colopl\Spanner\Concerns\SharedGrammarCalls;
+use DateTimeInterface;
 use Illuminate\Database\Connection;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Schema\Grammars\Grammar as BaseGrammar;
@@ -33,7 +34,7 @@ class Grammar extends BaseGrammar
      *
      * @var array
      */
-    protected $modifiers = ['Nullable'];
+    protected $modifiers = ['Nullable', 'Default'];
 
     /**
      * @return string
@@ -439,6 +440,36 @@ class Grammar extends BaseGrammar
     protected function getArrayInnerType(Fluent $column): string
     {
         return $this->{'type'.ucfirst($column->arrayType)}($column);
+    }
+
+    /**
+     * Get the SQL for a default column modifier.
+     *
+     * @param Blueprint $blueprint
+     * @param Fluent<string, mixed> $column
+     * @return string|null
+     */
+    protected function modifyDefault(Blueprint $blueprint, Fluent $column)
+    {
+        $value = $column->default;
+
+        if ($column->useCurrent) {
+            return ' default (CURRENT_TIMESTAMP())';
+        }
+
+        if (is_null($value)) {
+            return null;
+        }
+
+        if ($value instanceof DateTimeInterface) {
+            $value = $value->format($this->getDateFormat());
+        }
+
+        if (is_string($value)) {
+            $value = $this->wrapValue($value);
+        }
+
+        return ' default (' . $value . ')';
     }
 
     /**
