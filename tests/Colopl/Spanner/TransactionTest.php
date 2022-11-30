@@ -19,6 +19,7 @@ namespace Colopl\Spanner\Tests;
 
 use Exception;
 use Google\Cloud\Core\Exception\AbortedException;
+use Google\Cloud\Spanner\Database;
 use Google\Cloud\Spanner\Transaction;
 use Colopl\Spanner\Connection;
 use Google\Cloud\Spanner\TransactionalReadInterface;
@@ -272,14 +273,15 @@ class TransactionTest extends TestCase
     {
         Event::fake();
 
+        $retries = 3;
         $conn = $this->getDefaultConnection();
         try {
-            $conn->transaction(fn() => throw new AbortedException('abort'));
+            $conn->transaction(fn() => throw new AbortedException('abort'), $retries);
         } catch (AbortedException) {
 
         }
 
         Event::assertDispatchedTimes(TransactionCommitted::class, 0);
-        Event::assertDispatchedTimes(TransactionRolledBack::class, Database::MAX_RETRIES));
+        Event::assertDispatchedTimes(TransactionRolledBack::class, $retries);
     }
 }
