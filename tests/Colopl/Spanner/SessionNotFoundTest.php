@@ -25,15 +25,13 @@ use Symfony\Component\Cache\Adapter\ArrayAdapter;
 
 class SessionNotFoundTest extends TestCase
 {
-    protected const TEST_DB_REQUIRED = true;
-
-    private function deleteSession(Connection $connection)
+    private function deleteSession(Connection $connection): void
     {
         // delete session on spanner side
         $connection->getSpannerDatabase()->__debugInfo()['session']->delete();
     }
 
-    private function getSessionNotFoundConnection($sessionNotFoundErrorMode): Connection
+    private function getSessionNotFoundConnection(string $sessionNotFoundErrorMode): Connection
     {
         $config = $this->app['config']->get('database.connections.main');
 
@@ -44,13 +42,11 @@ class SessionNotFoundTest extends TestCase
         $cacheSessionPool = new CacheSessionPool($cacheItemPool);
         $conn = new Connection($config['instance'], $config['database'], '', $config, null, $cacheSessionPool);
 
-        if (static::TEST_DB_REQUIRED) {
-            $this->setUpDatabaseOnce($conn);
-        }
+        $this->setUpDatabaseOnce($conn);
         return $conn;
     }
 
-    public function testSessionNotFoundHandledError()
+    public function testSessionNotFoundHandledError(): void
     {
         $conn = $this->getSessionNotFoundConnection(Connection::CLEAR_SESSION_POOL);
 
@@ -58,10 +54,10 @@ class SessionNotFoundTest extends TestCase
 
         $this->deleteSession($conn);
 
-        $this->assertEquals(12345, $conn->selectOne('SELECT 12345')[0]);
+        $this->assertEquals([12345], $conn->selectOne('SELECT 12345'));
     }
 
-    public function testInTransactionSessionNotFoundHandledError()
+    public function testInTransactionSessionNotFoundHandledError(): void
     {
         $conn = $this->getSessionNotFoundConnection(Connection::CLEAR_SESSION_POOL);
 
@@ -74,14 +70,14 @@ class SessionNotFoundTest extends TestCase
                 $passes++;
             }
 
-            $this->assertEquals(12345, $conn->selectOne('SELECT 12345')[0]);
+            $this->assertEquals([12345], $conn->selectOne('SELECT 12345'));
 
             $passes++;
         });
         $this->assertEquals(2, $passes, 'Transaction should be called twice');
     }
 
-    public function testInTransactionCommitSessionNotFoundHandledError()
+    public function testInTransactionCommitSessionNotFoundHandledError(): void
     {
         $conn = $this->getSessionNotFoundConnection(Connection::CLEAR_SESSION_POOL);
 
@@ -89,7 +85,7 @@ class SessionNotFoundTest extends TestCase
 
         $conn->transaction(function () use ($conn, &$passes) {
 
-            $this->assertEquals(12345, $conn->selectOne('SELECT 12345')[0]);
+            $this->assertEquals([12345], $conn->selectOne('SELECT 12345'));
 
             if ($passes === 0) {
                 $this->deleteSession($conn);
@@ -99,7 +95,7 @@ class SessionNotFoundTest extends TestCase
         $this->assertEquals(2, $passes, 'Transaction should be called twice');
     }
 
-    public function testInTransactionRollbackSessionNotFoundHandledError()
+    public function testInTransactionRollbackSessionNotFoundHandledError(): void
     {
         $conn = $this->getSessionNotFoundConnection(Connection::CLEAR_SESSION_POOL);
 
@@ -107,7 +103,7 @@ class SessionNotFoundTest extends TestCase
 
         $conn->transaction(function () use ($conn, &$passes) {
 
-            $this->assertEquals(12345, $conn->selectOne('SELECT 12345')[0]);
+            $this->assertEquals([12345], $conn->selectOne('SELECT 12345'));
 
             if ($passes === 0) {
                 $this->deleteSession($conn);
@@ -119,7 +115,7 @@ class SessionNotFoundTest extends TestCase
         $this->assertEquals(2, $passes, 'Transaction should be called twice');
     }
 
-    public function testNestedTransactionsSessionNotFoundHandledError()
+    public function testNestedTransactionsSessionNotFoundHandledError(): void
     {
         $conn = $this->getSessionNotFoundConnection(Connection::CLEAR_SESSION_POOL);
 
@@ -127,7 +123,7 @@ class SessionNotFoundTest extends TestCase
 
         $conn->transaction(function () use ($conn, &$passes) {
             $conn->transaction(function () use ($conn, &$passes) {
-                $this->assertEquals(12345, $conn->selectOne('SELECT 12345')[0]);
+                $this->assertEquals([12345], $conn->selectOne('SELECT 12345'));
 
                 if ($passes === 0) {
                     $this->deleteSession($conn);
@@ -138,7 +134,7 @@ class SessionNotFoundTest extends TestCase
         $this->assertEquals(2, $passes, 'Transaction should be called twice');
     }
 
-    public function testCusrorSessionNotFoundHandledError()
+    public function testCursorSessionNotFoundHandledError(): void
     {
         $conn = $this->getSessionNotFoundConnection(Connection::CLEAR_SESSION_POOL);
 
@@ -152,17 +148,16 @@ class SessionNotFoundTest extends TestCase
                 $passes++;
             }
 
-            $this->assertEquals(12345, $cursor->current()[0]);
+            $this->assertEquals([12345], $cursor->current());
 
             $passes++;
         });
         $this->assertEquals(2, $passes, 'Transaction should be called twice');
     }
 
-    public function testSessionNotFoundUnhandledError()
+    public function testSessionNotFoundUnhandledError(): void
     {
         $conn = $this->getSessionNotFoundConnection(Connection::THROW_EXCEPTION);
-        $this->assertInstanceOf(Connection::class, $conn);
 
         $conn->selectOne('SELECT 1');
 
@@ -178,10 +173,9 @@ class SessionNotFoundTest extends TestCase
         $conn->selectOne('SELECT 1');
     }
 
-    public function testCursorSessionNotFoundUnhandledError()
+    public function testCursorSessionNotFoundUnhandledError(): void
     {
         $conn = $this->getSessionNotFoundConnection(Connection::THROW_EXCEPTION);
-        $this->assertInstanceOf(Connection::class, $conn);
 
         $cursor = $conn->cursor('SELECT 1');
 
@@ -197,10 +191,9 @@ class SessionNotFoundTest extends TestCase
         iterator_to_array($cursor);
     }
 
-    public function testInTransactionSessionNotFoundUnhandledError()
+    public function testInTransactionSessionNotFoundUnhandledError(): void
     {
         $conn = $this->getSessionNotFoundConnection(Connection::THROW_EXCEPTION);
-        $this->assertInstanceOf(Connection::class, $conn);
 
         $this->expectException(NotFoundException::class);
 

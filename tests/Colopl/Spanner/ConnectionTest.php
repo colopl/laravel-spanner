@@ -35,16 +35,14 @@ use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Database\Events\TransactionBeginning;
 use Illuminate\Database\Events\TransactionCommitted;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Event;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
 
 class ConnectionTest extends TestCase
 {
-    protected const TEST_DB_REQUIRED = true;
-
     public function testConnect(): void
     {
         $conn = $this->getDefaultConnection();
-        $this->assertInstanceOf(Connection::class, $conn);
         $this->assertNotEmpty($conn->getName());
         $conn->disconnect();
     }
@@ -52,9 +50,8 @@ class ConnectionTest extends TestCase
     public function testReconnect(): void
     {
         $conn = $this->getDefaultConnection();
-        $this->assertInstanceOf(Connection::class, $conn);
         $conn->reconnect();
-        $this->assertEquals(12345, $conn->selectOne('SELECT 12345')[0]);
+        $this->assertEquals([12345], $conn->selectOne('SELECT 12345'));
     }
 
     public function testQueryLog(): void
@@ -71,54 +68,39 @@ class ConnectionTest extends TestCase
 
     public function testInsertUsingMutationWithTransaction(): void
     {
-        $userId = $this->generateUuid();
-        $transactionBeginCount = 0;
-        $transactionCommitCount = 0;
-        $mutatingDataCount = 0;
-        $this->app['events']->listen(TransactionBeginning::class, function () use (&$transactionBeginCount) { $transactionBeginCount++; });
-        $this->app['events']->listen(MutatingData::class, function () use (&$transactionCommitCount) { $transactionCommitCount++; });
-        $this->app['events']->listen(TransactionCommitted::class, function () use (&$mutatingDataCount) { $mutatingDataCount++; });
+        Event::fake();
 
+        $userId = $this->generateUuid();
         $conn = $this->getDefaultConnection();
         $conn->transaction(function () use ($conn, $userId) {
             $conn->insertUsingMutation(self::TABLE_NAME_USER, ['userId' => $userId, 'name' => 'test']);
         });
 
         $this->assertCount(1, $conn->table(self::TABLE_NAME_USER)->where('userId', $userId)->get());
-        $this->assertEquals(1, $transactionBeginCount);
-        $this->assertEquals(1, $mutatingDataCount);
-        $this->assertEquals(1, $transactionCommitCount);
+        Event::assertDispatchedTimes(TransactionBeginning::class);
+        Event::assertDispatchedTimes(MutatingData::class);
+        Event::assertDispatchedTimes(TransactionCommitted::class);
     }
 
     public function testInsertUsingMutationWithoutTransaction(): void
     {
-        $userId = $this->generateUuid();
-        $transactionBeginCount = 0;
-        $transactionCommitCount = 0;
-        $mutatingDataCount = 0;
-        $this->app['events']->listen(TransactionBeginning::class, function () use (&$transactionBeginCount) { $transactionBeginCount++; });
-        $this->app['events']->listen(MutatingData::class, function () use (&$transactionCommitCount) { $transactionCommitCount++; });
-        $this->app['events']->listen(TransactionCommitted::class, function () use (&$mutatingDataCount) { $mutatingDataCount++; });
+        Event::fake();
 
+        $userId = $this->generateUuid();
         $conn = $this->getDefaultConnection();
         $conn->insertUsingMutation(self::TABLE_NAME_USER, ['userId' => $userId, 'name' => 'test']);
 
         $this->assertCount(1, $conn->table(self::TABLE_NAME_USER)->where('userId', $userId)->get());
-        $this->assertEquals(1, $transactionBeginCount);
-        $this->assertEquals(1, $mutatingDataCount);
-        $this->assertEquals(1, $transactionCommitCount);
+        Event::assertDispatchedTimes(TransactionBeginning::class);
+        Event::assertDispatchedTimes(MutatingData::class);
+        Event::assertDispatchedTimes(TransactionCommitted::class);
     }
 
     public function testUpdateUsingMutationWithTransaction(): void
     {
-        $userId = $this->generateUuid();
-        $transactionBeginCount = 0;
-        $transactionCommitCount = 0;
-        $mutatingDataCount = 0;
-        $this->app['events']->listen(TransactionBeginning::class, function () use (&$transactionBeginCount) { $transactionBeginCount++; });
-        $this->app['events']->listen(MutatingData::class, function () use (&$transactionCommitCount) { $transactionCommitCount++; });
-        $this->app['events']->listen(TransactionCommitted::class, function () use (&$mutatingDataCount) { $mutatingDataCount++; });
+        Event::fake();
 
+        $userId = $this->generateUuid();
         $conn = $this->getDefaultConnection();
         $conn->insertUsingMutation(self::TABLE_NAME_USER, ['userId' => $userId, 'name' => 'test']);
         $conn->transaction(function () use ($conn, $userId) {
@@ -126,73 +108,56 @@ class ConnectionTest extends TestCase
         });
 
         $this->assertEquals(['userId' => $userId, 'name' => 'tester'], $conn->table(self::TABLE_NAME_USER)->where('userId', $userId)->first());
-        $this->assertEquals(2, $transactionBeginCount);
-        $this->assertEquals(2, $mutatingDataCount);
-        $this->assertEquals(2, $transactionCommitCount);
+        Event::assertDispatchedTimes(TransactionBeginning::class, 2);
+        Event::assertDispatchedTimes(MutatingData::class, 2);
+        Event::assertDispatchedTimes(TransactionCommitted::class, 2);
     }
 
     public function testUpdateUsingMutationWithoutTransaction(): void
     {
-        $userId = $this->generateUuid();
-        $transactionBeginCount = 0;
-        $transactionCommitCount = 0;
-        $mutatingDataCount = 0;
-        $this->app['events']->listen(TransactionBeginning::class, function () use (&$transactionBeginCount) { $transactionBeginCount++; });
-        $this->app['events']->listen(MutatingData::class, function () use (&$transactionCommitCount) { $transactionCommitCount++; });
-        $this->app['events']->listen(TransactionCommitted::class, function () use (&$mutatingDataCount) { $mutatingDataCount++; });
+        Event::fake();
 
+        $userId = $this->generateUuid();
         $conn = $this->getDefaultConnection();
         $conn->insertUsingMutation(self::TABLE_NAME_USER, ['userId' => $userId, 'name' => 'test']);
         $conn->updateUsingMutation(self::TABLE_NAME_USER, ['userId' => $userId, 'name' => 'tester']);
 
         $this->assertEquals(['userId' => $userId, 'name' => 'tester'], $conn->table(self::TABLE_NAME_USER)->where('userId', $userId)->first());
-        $this->assertEquals(2, $transactionBeginCount);
-        $this->assertEquals(2, $transactionCommitCount);
-        $this->assertEquals(2, $mutatingDataCount);
+        Event::assertDispatchedTimes(TransactionBeginning::class, 2);
+        Event::assertDispatchedTimes(MutatingData::class, 2);
+        Event::assertDispatchedTimes(TransactionCommitted::class, 2);
     }
 
     public function testDeleteUsingMutationWithTransaction(): void
     {
+        Event::fake();
+
         $userId = $this->generateUuid();
-        $transactionBeginCount = 0;
-        $transactionCommitCount = 0;
-        $mutatingDataCount = 0;
-        $this->app['events']->listen(TransactionBeginning::class, function () use (&$transactionBeginCount) { $transactionBeginCount++; });
-        $this->app['events']->listen(MutatingData::class, function () use (&$transactionCommitCount) { $transactionCommitCount++; });
-        $this->app['events']->listen(TransactionCommitted::class, function () use (&$mutatingDataCount) { $mutatingDataCount++; });
-
         $conn = $this->getDefaultConnection();
-
         $conn->insertUsingMutation(self::TABLE_NAME_USER, ['userId' => $userId, 'name' => 'test']);
         $conn->transaction(function () use ($conn, $userId) {
             $conn->deleteUsingMutation(self::TABLE_NAME_USER, $userId);
         });
 
         $this->assertNull($conn->table(self::TABLE_NAME_USER)->where('userId', $userId)->first());
-        $this->assertEquals(2, $transactionBeginCount);
-        $this->assertEquals(2, $transactionCommitCount);
-        $this->assertEquals(2, $mutatingDataCount);
+        Event::assertDispatchedTimes(TransactionBeginning::class, 2);
+        Event::assertDispatchedTimes(MutatingData::class, 2);
+        Event::assertDispatchedTimes(TransactionCommitted::class, 2);
     }
 
     public function testDeleteUsingMutationWithoutTransaction(): void
     {
+        Event::fake();
+
         $userId = $this->generateUuid();
-        $transactionBeginCount = 0;
-        $transactionCommitCount = 0;
-        $mutatingDataCount = 0;
-        $this->app['events']->listen(TransactionBeginning::class, function () use (&$transactionBeginCount) { $transactionBeginCount++; });
-        $this->app['events']->listen(MutatingData::class, function () use (&$transactionCommitCount) { $transactionCommitCount++; });
-        $this->app['events']->listen(TransactionCommitted::class, function () use (&$mutatingDataCount) { $mutatingDataCount++; });
-
         $conn = $this->getDefaultConnection();
-
         $conn->insertUsingMutation(self::TABLE_NAME_USER, ['userId' => $userId, 'name' => 'test']);
         $conn->deleteUsingMutation(self::TABLE_NAME_USER, $userId);
 
         $this->assertNull($conn->table(self::TABLE_NAME_USER)->where('userId', $userId)->first());
-        $this->assertEquals(2, $transactionBeginCount);
-        $this->assertEquals(2, $transactionCommitCount);
-        $this->assertEquals(2, $mutatingDataCount);
+        Event::assertDispatchedTimes(TransactionBeginning::class, 2);
+        Event::assertDispatchedTimes(MutatingData::class, 2);
+        Event::assertDispatchedTimes(TransactionCommitted::class, 2);
     }
 
     public function testDeleteUsingMutationWithDifferentArgs(): void
@@ -295,6 +260,14 @@ class ConnectionTest extends TestCase
 
         $conn->clearSessionPool();
         $this->assertEmpty($cacheItemPool->getValues(), 'After clearing the session pool, cache is removed.');
+    }
+
+    public function test_clearSessionPool(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $conn->warmupSessionPool();
+        $conn->clearSessionPool();
+        self::assertSame(1, $conn->warmupSessionPool());
     }
 
     public function testListSessions(): void

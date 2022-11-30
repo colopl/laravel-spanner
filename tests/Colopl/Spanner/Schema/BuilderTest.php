@@ -19,6 +19,7 @@ namespace Colopl\Spanner\Tests\Schema;
 
 use Colopl\Spanner\Schema\Blueprint;
 use Colopl\Spanner\Tests\TestCase;
+use Exception;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 
@@ -27,8 +28,6 @@ use Illuminate\Support\Str;
  */
 class BuilderTest extends TestCase
 {
-    protected const TEST_DB_REQUIRED = true;
-
     private const TABLE_NAME_CREATED = 'schema_builder_test_table';
     private const TABLE_NAME_RELATION_PARENT = 'users';
     private const TABLE_NAME_RELATION_CHILD = 'user_items';
@@ -39,9 +38,7 @@ class BuilderTest extends TestCase
 
     private const RUN_TEST_TRIGGER_ENV_VARIABLE_NAME = 'LARAVEL_SPANNER_RUN_SCHEMA_BUILDER_TESTS';
 
-    /**
-     */
-    private function skipUnlessEnvVarSet()
+    private function skipUnlessEnvVarSet(): void
     {
         if (getenv(self::RUN_TEST_TRIGGER_ENV_VARIABLE_NAME) === false) {
             $this->markTestSkipped('Skipping since this takes a long time。Please add the environment variable: '.self::RUN_TEST_TRIGGER_ENV_VARIABLE_NAME.' to enable this test');
@@ -54,7 +51,7 @@ class BuilderTest extends TestCase
         $this->skipUnlessEnvVarSet();
     }
 
-    public function testSchemaCreate()
+    public function testSchemaCreate(): void
     {
         $conn = $this->getDefaultConnection();
         $sb = $conn->getSchemaBuilder();
@@ -73,7 +70,7 @@ class BuilderTest extends TestCase
         $this->assertCount(0, collect(['id', 'name', 'age', 'created_at'])->diff($columnNames));
     }
 
-    public function testSchemaDrop()
+    public function testSchemaDrop(): void
     {
         $conn = $this->getDefaultConnection();
         $sb = $conn->getSchemaBuilder();
@@ -83,7 +80,7 @@ class BuilderTest extends TestCase
         $this->assertNotTrue($sb->hasTable(self::TABLE_NAME_CREATED));
     }
 
-    public function testSchemaAlter()
+    public function testSchemaAlter(): void
     {
         $conn = $this->getDefaultConnection();
         $sb = $conn->getSchemaBuilder();
@@ -98,7 +95,7 @@ class BuilderTest extends TestCase
                 $table->dateTime('created_at');
                 $table->primary('id');
             });
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             if (!Str::contains($e->getMessage(), 'Duplicate name')) {
                 throw $e;
             }
@@ -109,13 +106,13 @@ class BuilderTest extends TestCase
             // NOTE: spanner only allows nullable columns to be added
             $table->string('description')->nullable();
         });
-        $this->assertTrue(in_array('description', $sb->getColumnListing($tableName), true));
+        $this->assertContains('description', $sb->getColumnListing($tableName));
 
         $sb->drop($tableName);
         $this->assertNotTrue($sb->hasTable($tableName));
     }
 
-    public function testCreateRelation()
+    public function testCreateRelation(): void
     {
         $conn = $this->getDefaultConnection();
         $sb = $conn->getSchemaBuilder();
@@ -145,7 +142,7 @@ class BuilderTest extends TestCase
         $this->assertTrue($sb->hasTable(self::TABLE_NAME_RELATION_CHILD));
     }
 
-    public function testCreateCompositePrimaryKeyTable()
+    public function testCreateCompositePrimaryKeyTable(): void
     {
         $conn = $this->getDefaultConnection();
         $sb = $conn->getSchemaBuilder();
@@ -163,7 +160,7 @@ class BuilderTest extends TestCase
         $this->assertTrue($sb->hasTable($tableName));
     }
 
-    public function testCreateArrayColumnTable()
+    public function testCreateArrayColumnTable(): void
     {
         $tableName = self::TABLE_NAME_CONTAINS_ARRAY_TYPE_COLUMN;
 
@@ -180,7 +177,7 @@ class BuilderTest extends TestCase
         $this->assertTrue($sb->hasTable($tableName));
     }
 
-    public function testCreateInterleavedTable()
+    public function testCreateInterleavedTable(): void
     {
         $conn = $this->getDefaultConnection();
         $sb = $conn->getSchemaBuilder();

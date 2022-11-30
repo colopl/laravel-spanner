@@ -17,18 +17,20 @@
 
 namespace Colopl\Spanner\Tests;
 
+use Exception;
 use Google\Cloud\Core\Exception\AbortedException;
+use Google\Cloud\Spanner\Database;
 use Google\Cloud\Spanner\Transaction;
 use Colopl\Spanner\Connection;
+use Google\Cloud\Spanner\TransactionalReadInterface;
 use Illuminate\Database\Events\TransactionCommitted;
 use Illuminate\Database\Events\TransactionRolledBack;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
 use RuntimeException;
 
 class TransactionTest extends TestCase
 {
-    protected const TEST_DB_REQUIRED = true;
-
     public function testBegin(): void
     {
         $conn = $this->getDefaultConnection();
@@ -36,17 +38,17 @@ class TransactionTest extends TestCase
         $conn->beginTransaction();
         $t = $conn->getCurrentTransaction();
         $this->assertInstanceOf(Transaction::class, $t);
-        $this->assertEquals(Transaction::STATE_ACTIVE, $t?->state());
+        $this->assertEquals(TransactionalReadInterface::STATE_ACTIVE, $t->state());
 
         $conn->commit();
-        $this->assertEquals(Transaction::STATE_COMMITTED, $t?->state());
+        $this->assertEquals(TransactionalReadInterface::STATE_COMMITTED, $t->state());
     }
 
     public function testCallback(): void
     {
         $conn = $this->getDefaultConnection();
         $result = $conn->transaction(function (Connection $conn) {
-            $this->assertEquals(Transaction::STATE_ACTIVE, $conn->getCurrentTransaction()?->state());
+            $this->assertEquals(TransactionalReadInterface::STATE_ACTIVE, $conn->getCurrentTransaction()?->state());
             return 1;
         });
         $this->assertSame(1, $result);
@@ -65,7 +67,7 @@ class TransactionTest extends TestCase
         ];
 
         $conn->transaction(function (Connection $conn) use($qb, $insertRow) {
-            $this->assertEquals(Transaction::STATE_ACTIVE, $conn->getCurrentTransaction()?->state());
+            $this->assertEquals(TransactionalReadInterface::STATE_ACTIVE, $conn->getCurrentTransaction()?->state());
             $qb->insert($insertRow);
         });
 
@@ -85,10 +87,10 @@ class TransactionTest extends TestCase
 
         try {
             $conn->transaction(function (Connection $conn) {
-                $this->assertEquals(Transaction::STATE_ACTIVE, $conn->getCurrentTransaction()?->state());
-                throw new \RuntimeException('abort test');
+                $this->assertEquals(TransactionalReadInterface::STATE_ACTIVE, $conn->getCurrentTransaction()?->state());
+                throw new RuntimeException('abort test');
             });
-        } catch (\RuntimeException $ex) {
+        } catch (RuntimeException $ex) {
             if (!Str::contains($ex->getMessage(), 'abort test')) {
                 throw $ex;
             }
@@ -99,12 +101,9 @@ class TransactionTest extends TestCase
 
     public function testNestedTransaction(): void
     {
-        $conn = $this->getDefaultConnection();
+        Event::fake();
 
-        $committedCount = 0;
-        $this->app['events']->listen(TransactionCommitted::class, function ($ev) use(&$committedCount) {
-            $committedCount++;
-        });
+        $conn = $this->getDefaultConnection();
 
         $tableName = self::TABLE_NAME_USER;
         $qb = $conn->table($tableName);
@@ -127,12 +126,7 @@ class TransactionTest extends TestCase
             $this->assertEquals(1, $conn->transactionLevel());
         });
         $this->assertDatabaseHas($tableName, $insertRow);
-        $this->assertEquals(3, $committedCount);
-
-        $rolledBackCount = 0;
-        $this->app['events']->listen(TransactionRolledBack::class, function ($ev) use(&$rolledBackCount) {
-            $rolledBackCount++;
-        });
+        Event::assertDispatchedTimes(TransactionCommitted::class, 3);
 
         $cnt = 0;
         $conn->transaction(function () use ($conn, &$cnt) {
@@ -144,7 +138,7 @@ class TransactionTest extends TestCase
             });
         });
         $this->assertEquals(2, $cnt);
-        $this->assertEquals(1, $rolledBackCount);
+        Event::assertDispatchedTimes(TransactionCommitted::class, 5);
     }
 
     public function testReadOnTransaction(): void
@@ -180,7 +174,7 @@ class TransactionTest extends TestCase
         });
 
         // Should not be called on second try.
-        $conn->transaction(function (Connection $conn) use ($qb) {
+        $conn->transaction(function () use ($qb) {
             $qb->insert(['userId' => $this->generateUuid(), 'name' => 't']);
         });
 
@@ -227,11 +221,10 @@ class TransactionTest extends TestCase
         $conn->transaction(function () use ($qb, $insertRow, &$cnt) {
             $cnt++;
             if ($cnt < 4) {
-                throw new \Google\Cloud\Core\Exception\AbortedException('mock aborted exception');
-            } else {
-                // will success on the 4th try
-                $qb->insert($insertRow);
+                throw new AbortedException('mock aborted exception');
             }
+            // will success on the 4th try
+            $qb->insert($insertRow);
         }, $maxAttempts);
 
         $this->assertDatabaseHas($tableName, $insertRow);
@@ -260,42 +253,35 @@ class TransactionTest extends TestCase
         $caughtException = null;
         try {
             $conn->transaction(function () use ($conn2, $qb, $qb2, $mutation) {
-                // SELECTing within a read-write transaction causes row to aquire shared lock
-                $findRow = $qb->where('userId', $mutation['userId'])->first();
+                // SELECTing within a read-write transaction causes row to acquire shared lock
+                 $qb->where('userId', $mutation['userId'])->first();
 
                 $conn2->transaction(function () use ($qb2, $mutation) {
-                    // will timeout and result in AbortedException since row is locked
+                    // This will time out and result in AbortedException since row is locked
                     $qb2->where('userId', $mutation['userId'])->update(['name' => $mutation['name']]);
                 }, 1);
             }, 1);
-        } catch (\Exception $ex) {
+        } catch (Exception $ex) {
             $caughtException = $ex;
         }
 
         $this->assertInstanceOf(AbortedException::class, $caughtException);
-        $this->assertStringContainsString('ABORTED', $caughtException?->getMessage() ?? '');
+        $this->assertStringContainsString('ABORTED', $caughtException->getMessage());
     }
 
     public function testAbortedException(): void
     {
-        $committedCount = 0;
-        $this->app['events']->listen(TransactionCommitted::class, function ($ev) use(&$committedCount) {
-            $committedCount++;
-        });
+        Event::fake();
 
-        $rolledBackCount = 0;
-        $this->app['events']->listen(TransactionRolledBack::class, function ($ev) use (&$rolledBackCount) {
-            $rolledBackCount++;
-        });
-
+        $retries = 3;
         $conn = $this->getDefaultConnection();
         try {
-            $conn->transaction(function () {
-                throw new AbortedException('abort');
-            });
-        } catch (AbortedException $ex) {}
+            $conn->transaction(fn() => throw new AbortedException('abort'), $retries);
+        } catch (AbortedException) {
 
-        $this->assertEquals(0, $committedCount);
-        $this->assertEquals(10, $rolledBackCount);
+        }
+
+        Event::assertDispatchedTimes(TransactionCommitted::class, 0);
+        Event::assertDispatchedTimes(TransactionRolledBack::class, $retries);
     }
 }

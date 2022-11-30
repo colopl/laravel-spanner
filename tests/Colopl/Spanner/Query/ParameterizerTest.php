@@ -22,7 +22,7 @@ use Colopl\Spanner\Tests\TestCase;
 
 class ParameterizerTest extends TestCase
 {
-    public function testParameterizeQuery()
+    public function testParameterizeQuery(): void
     {
         $parameterizer = new Parameterizer();
         $bindings = [$this->generateUuid(), 'test-name', null, 0, [1, 2, 3], []];
@@ -37,7 +37,7 @@ class ParameterizerTest extends TestCase
     /**
      * @see https://cloud.google.com/spanner/docs/functions-and-operators#comparison-operators
      */
-    public function testParameterizeLikeClause()
+    public function testParameterizeLikeClause(): void
     {
         $parameterizer = new Parameterizer();
 
@@ -63,7 +63,7 @@ class ParameterizerTest extends TestCase
      * strings that include new lines should be triple-quoted
      * @see https://cloud.google.com/spanner/docs/lexical?hl=en#string-and-bytes-literals
      */
-    public function testParameterContainsNewLine()
+    public function testParameterContainsNewLine(): void
     {
         $parameterizer = new Parameterizer();
 

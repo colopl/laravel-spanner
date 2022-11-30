@@ -21,6 +21,11 @@ use Colopl\Spanner\Eloquent\Model;
 use Colopl\Spanner\Tests\TestCase;
 use Google\Cloud\Spanner\Bytes;
 use Google\Cloud\Spanner\Date;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Carbon;
@@ -28,6 +33,8 @@ use Illuminate\Support\Carbon;
 /**
  * @property string $userId
  * @property string $name
+ * @property UserInfo $info
+ * @property Collection<int, UserItem> $items
  */
 class User extends Model
 {
@@ -36,12 +43,12 @@ class User extends Model
     protected $keyType = 'string';
     public $timestamps = false;
 
-    public function info()
+    public function info(): HasOne
     {
         return $this->hasOne(UserInfo::class, 'userId');
     }
 
-    public function items()
+    public function items(): HasMany
     {
         return $this->hasMany(UserItem::class, 'userId');
     }
@@ -51,6 +58,7 @@ class User extends Model
  * @property string $userId
  * @property string $userInfoId
  * @property int $rank
+ * @property User $user
  */
 class UserInfo extends Model
 {
@@ -60,7 +68,7 @@ class UserInfo extends Model
     protected $interleaveKeys = ['userId', 'userInfoId'];
     public $timestamps = false;
 
-    public function user()
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'userId');
     }
@@ -71,6 +79,7 @@ class UserInfo extends Model
  * @property string $userItemId
  * @property string $itemId
  * @property int $count
+ * @property User $user
  */
 class UserItem extends Model
 {
@@ -80,7 +89,7 @@ class UserItem extends Model
     protected $interleaveKeys = ['userId', 'userItemId'];
     public $timestamps = false;
 
-    public function user()
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'userId');
     }
@@ -89,6 +98,7 @@ class UserItem extends Model
 /**
  * @property string $itemId
  * @property string $name
+ * @property Collection<int, Tag> $tags
  */
 class Item extends Model
 {
@@ -97,7 +107,7 @@ class Item extends Model
     protected $keyType = 'string';
     public $timestamps = false;
 
-    public function tags()
+    public function tags(): BelongsToMany
     {
         return $this->belongsToMany(Tag::class, 'ItemTag', 'itemId', 'tagId');
     }
@@ -166,18 +176,13 @@ class BindingChild extends Model
 
 class ModelTest extends TestCase
 {
-    protected const TEST_DB_REQUIRED = true;
-
     protected function setUp(): void
     {
         parent::setUp();
         $this->getDefaultConnection();
     }
 
-    /**
-     * @return User
-     */
-    protected function createTestUser()
+    protected function createTestUser(): User
     {
         $user = new User();
         $user->userId = $this->generateUuid();
@@ -189,9 +194,8 @@ class ModelTest extends TestCase
      * @param string $userId
      * @param int $rank
      * @return UserInfo
-     * @throws \Exception
      */
-    protected function createTestUserInfo(string $userId, int $rank)
+    protected function createTestUserInfo(string $userId, int $rank): UserInfo
     {
         $userInfo = new UserInfo();
         $userInfo->userId = $userId;
@@ -206,7 +210,7 @@ class ModelTest extends TestCase
      * @param int $count
      * @return UserItem
      */
-    protected function createTestUserItem(string $userId, string $itemId, int $count)
+    protected function createTestUserItem(string $userId, string $itemId, int $count): UserItem
     {
         $userItem = new UserItem();
         $userItem->userId = $userId;
@@ -219,9 +223,8 @@ class ModelTest extends TestCase
     /**
      * @param string $stringTestValue
      * @return Test
-     * @throws \Exception
      */
-    protected function createTestTest(string $stringTestValue)
+    protected function createTestTest(string $stringTestValue): Test
     {
         $test = new Test();
         $test->setRawAttributes($this->generateTestRow());
@@ -229,7 +232,7 @@ class ModelTest extends TestCase
         return $test;
     }
 
-    public function testCRUD()
+    public function testCRUD(): void
     {
         // create
         /** @var User $user */
@@ -248,7 +251,7 @@ class ModelTest extends TestCase
         $this->assertDatabaseMissing($user->getTable(), ['userId' => $user->userId]);
     }
 
-    public function testBelongsTo()
+    public function testBelongsTo(): void
     {
         /** @var User $user */
         $user = $this->createTestUser();
@@ -267,7 +270,7 @@ class ModelTest extends TestCase
         $this->assertEquals($user->userId, $ownerUser->userId);
     }
 
-    public function testHasOne()
+    public function testHasOne(): void
     {
         $user = $this->createTestUser();
         $user->save();
@@ -284,11 +287,12 @@ class ModelTest extends TestCase
         $this->assertEquals($rank, $fetchedUserInfo->rank);
     }
 
-    public function testHasMany()
+    public function testHasMany(): void
     {
         $user = $this->createTestUser();
         $user->save();
 
+        /** @var User $user */
         $user = User::find($user->userId);
 
         $userItemA = $this->createTestUserItem($user->userId, 'itemA', 12);
@@ -327,7 +331,7 @@ class ModelTest extends TestCase
         self::assertEquals($tag->getKey(), $tagFromQuery->getKey());
     }
 
-    public function testFind()
+    public function testFind(): void
     {
         $user = $this->createTestUser();
         $user->save();
@@ -338,7 +342,7 @@ class ModelTest extends TestCase
         $this->assertCount(2, User::find([$user->userId, $user2->userId]));
     }
 
-    public function testPreloadRelation()
+    public function testPreloadRelation(): void
     {
         /** @var User $user */
         $user = $this->createTestUser();
@@ -354,17 +358,17 @@ class ModelTest extends TestCase
 
         $user->getConnection()->enableQueryLog();
         UserItem::all()
-            ->map(function (UserItem $item) { return $item->user; });
+            ->map(fn(UserItem $item): User => $item->user);
         $this->assertTrue(\count($user->getConnection()->getQueryLog()) > 5, 'preload をしていない場合、所持 User を取る SELECT 文が全部分かれるので 5個以上のクエリが発行されるはず');
         $user->getConnection()->flushQueryLog();
 
         UserItem::with('user')
             ->get()
-            ->map(function (UserItem $item) { return $item->user; });
+            ->map(fn(UserItem $item): User => $item->user);
         $this->assertCount(2, $user->getConnection()->getQueryLog(), 'with() による preload をしていると、所持 User を取る SELECT 文が1つにまとめられるのでクエリログの個数は2になるはず');
     }
 
-    public function testTestTableCRUD()
+    public function testTestTableCRUD(): void
     {
         // create
         $test = $this->createTestTest('test1');
@@ -382,7 +386,7 @@ class ModelTest extends TestCase
         $this->assertDatabaseMissing($test->getTable(), [$test->getKeyName() => $test->getKey()]);
     }
 
-    public function testInterleavedTableCRUD()
+    public function testInterleavedTableCRUD(): void
     {
         $user = $this->createTestUser();
         $user->save();
@@ -410,7 +414,7 @@ class ModelTest extends TestCase
     public function testRouteBinding(): void
     {
         /** @var Router $router */
-        $router = $this->app->make('router');
+        $router = $this->app?->make('router');
 
         $record = new Binding();
         $record->id = 1;
@@ -431,7 +435,7 @@ class ModelTest extends TestCase
     public function testChildRouteBinding(): void
     {
         /** @var Router $router */
-        $router = $this->app->make('router');
+        $router = $this->app?->make('router');
 
         $parentRecord = new Binding();
         $parentRecord->id = 1;

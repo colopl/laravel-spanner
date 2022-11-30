@@ -22,12 +22,7 @@ use Colopl\Spanner\Tests\TestCase;
 
 class UnnestTest extends TestCase
 {
-    protected const TEST_DB_REQUIRED = true;
-
-    /**
-     * @return User
-     */
-    protected function createTestUser()
+    protected function createTestUser(): User
     {
         $user = new User();
         $user->userId = $this->generateUuid();
@@ -35,7 +30,7 @@ class UnnestTest extends TestCase
         return $user;
     }
 
-    public function testUnnesting()
+    public function testUnnesting(): void
     {
         $conn = $this->getDefaultConnection();
         $tableName = self::TABLE_NAME_TEST;
@@ -59,7 +54,7 @@ class UnnestTest extends TestCase
         self::assertEquals($ids->all(), $results->all());
     }
 
-    public function testUnnestingEmpty()
+    public function testUnnestingEmpty(): void
     {
         $conn = $this->getDefaultConnection();
         $tableName = self::TABLE_NAME_TEST;

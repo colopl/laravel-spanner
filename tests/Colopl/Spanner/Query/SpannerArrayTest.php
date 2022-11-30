@@ -21,8 +21,6 @@ use Colopl\Spanner\Tests\TestCase;
 
 class SpannerArrayTest extends TestCase
 {
-    protected const TEST_DB_REQUIRED = true;
-
     protected function generateArrayTestRow(): array
     {
         return [
@@ -36,7 +34,7 @@ class SpannerArrayTest extends TestCase
         ];
     }
 
-    public function testSelectArray()
+    public function testSelectArray(): void
     {
         $conn = $this->getDefaultConnection();
         $row = $conn->selectOne('SELECT [1, 2, 3] as numbers');
@@ -44,7 +42,7 @@ class SpannerArrayTest extends TestCase
         $this->assertEquals([1, 2, 3], $row['numbers']);
     }
 
-    public function testSearchInArray()
+    public function testSearchInArray(): void
     {
         $conn = $this->getDefaultConnection();
         $tableName = self::TABLE_NAME_ARRAY_TEST;
@@ -76,7 +74,7 @@ class SpannerArrayTest extends TestCase
         $this->assertCount(0, $result);
     }
 
-    public function testInsertArray()
+    public function testInsertArray(): void
     {
         $conn = $this->getDefaultConnection();
         $tableName = self::TABLE_NAME_ARRAY_TEST;
@@ -95,7 +93,7 @@ class SpannerArrayTest extends TestCase
         $conn->table($tableName)->insert($row);
     }
 
-    public function testInsertArrayArray()
+    public function testInsertArrayArray(): void
     {
         $conn = $this->getDefaultConnection();
         $tableName = self::TABLE_NAME_ARRAY_TEST;
@@ -117,7 +115,7 @@ class SpannerArrayTest extends TestCase
         }
     }
 
-    public function testUpdateArray()
+    public function testUpdateArray(): void
     {
         $conn = $this->getDefaultConnection();
         $tableName = self::TABLE_NAME_ARRAY_TEST;
