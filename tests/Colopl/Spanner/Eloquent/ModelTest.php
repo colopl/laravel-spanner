@@ -98,7 +98,7 @@ class UserItem extends Model
 /**
  * @property string $itemId
  * @property string $name
- * @property Collection<Tag> $tags
+ * @property Collection<int, Tag> $tags
  */
 class Item extends Model
 {
