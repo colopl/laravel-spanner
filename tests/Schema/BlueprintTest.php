@@ -21,6 +21,7 @@ use Colopl\Spanner\Schema\Blueprint;
 use Colopl\Spanner\Schema\Grammar;
 use Colopl\Spanner\Tests\TestCase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class BlueprintTest extends TestCase
 {
@@ -248,6 +249,7 @@ class BlueprintTest extends TestCase
             $table->integer('int')->default(1);
             $table->float('float')->default(0.1);
             $table->string('name')->default('abc');
+            $table->integer('func')->default(DB::raw('POW(2, 2)'));
             $table->dateTime('started_at')->default(new Carbon('2022-01-01'));
             $table->dateTime('end_at')->useCurrent();
             $table->primary('id');
@@ -261,6 +263,7 @@ class BlueprintTest extends TestCase
             '`int` int64 not null default (1), ' .
             '`float` float64 not null default (0.1), ' .
             '`name` string(255) not null default (`abc`), ' .
+            '`func` int64 not null default (POW(2, 2)), ' .
             '`started_at` timestamp not null default (`2022-01-01T00:00:00.000000+00:00`), ' .
             '`end_at` timestamp not null default (CURRENT_TIMESTAMP())' .
             ') primary key (`id`)',
