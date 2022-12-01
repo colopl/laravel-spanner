@@ -160,6 +160,7 @@ trait ManagesTransactions
     protected function performSpannerCommit(): void
     {
         if ($this->transactions === 1 && $this->currentTransaction !== null) {
+            $this->fireConnectionEvent('committing');
             $this->currentTransaction->commit();
         }
 

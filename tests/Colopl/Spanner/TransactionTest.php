@@ -23,7 +23,9 @@ use Google\Cloud\Spanner\Database;
 use Google\Cloud\Spanner\Transaction;
 use Colopl\Spanner\Connection;
 use Google\Cloud\Spanner\TransactionalReadInterface;
+use Illuminate\Database\Events\TransactionBeginning;
 use Illuminate\Database\Events\TransactionCommitted;
+use Illuminate\Database\Events\TransactionCommitting;
 use Illuminate\Database\Events\TransactionRolledBack;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
@@ -33,6 +35,7 @@ class TransactionTest extends TestCase
 {
     public function testBegin(): void
     {
+        Event::fake();
         $conn = $this->getDefaultConnection();
 
         $conn->beginTransaction();
@@ -42,25 +45,33 @@ class TransactionTest extends TestCase
 
         $conn->commit();
         $this->assertEquals(TransactionalReadInterface::STATE_COMMITTED, $t->state());
+        Event::assertDispatchedTimes(TransactionBeginning::class);
+        Event::assertDispatchedTimes(TransactionCommitting::class);
+        Event::assertDispatchedTimes(TransactionCommitted::class);
+        Event::assertDispatchedTimes(TransactionRolledBack::class, 0);
     }
 
     public function testCallback(): void
     {
+        Event::fake();
         $conn = $this->getDefaultConnection();
         $result = $conn->transaction(function (Connection $conn) {
             $this->assertEquals(TransactionalReadInterface::STATE_ACTIVE, $conn->getCurrentTransaction()?->state());
             return 1;
         });
         $this->assertSame(1, $result);
+        Event::assertDispatchedTimes(TransactionBeginning::class);
+        Event::assertDispatchedTimes(TransactionCommitting::class);
+        Event::assertDispatchedTimes(TransactionCommitted::class);
+        Event::assertDispatchedTimes(TransactionRolledBack::class, 0);
     }
 
     public function testCommit(): void
     {
+        Event::fake();
         $conn = $this->getDefaultConnection();
-
         $tableName = self::TABLE_NAME_USER;
         $qb = $conn->table($tableName);
-
         $insertRow = [
             'userId' => $this->generateUuid(),
             'name' => 'test',
@@ -72,14 +83,18 @@ class TransactionTest extends TestCase
         });
 
         $this->assertDatabaseHas($tableName, $insertRow);
+
+        Event::assertDispatchedTimes(TransactionBeginning::class);
+        Event::assertDispatchedTimes(TransactionCommitting::class);
+        Event::assertDispatchedTimes(TransactionCommitted::class);
+        Event::assertDispatchedTimes(TransactionRolledBack::class, 0);
     }
 
     public function testRollbackBeforeCommit(): void
     {
+        Event::fake();
         $conn = $this->getDefaultConnection();
-
         $tableName = self::TABLE_NAME_USER;
-
         $insertRow = [
             'userId' => $this->generateUuid(),
             'name' => 'test',
@@ -97,14 +112,17 @@ class TransactionTest extends TestCase
         }
 
         $this->assertDatabaseMissing($tableName, $insertRow);
+
+        Event::assertDispatchedTimes(TransactionBeginning::class);
+        Event::assertDispatchedTimes(TransactionCommitting::class, 0);
+        Event::assertDispatchedTimes(TransactionCommitted::class, 0);
+        Event::assertDispatchedTimes(TransactionRolledBack::class);
     }
 
     public function testNestedTransaction(): void
     {
         Event::fake();
-
         $conn = $this->getDefaultConnection();
-
         $tableName = self::TABLE_NAME_USER;
         $qb = $conn->table($tableName);
 
@@ -126,6 +144,7 @@ class TransactionTest extends TestCase
             $this->assertEquals(1, $conn->transactionLevel());
         });
         $this->assertDatabaseHas($tableName, $insertRow);
+        Event::assertDispatchedTimes(TransactionCommitting::class);
         Event::assertDispatchedTimes(TransactionCommitted::class, 3);
 
         $cnt = 0;
@@ -138,6 +157,7 @@ class TransactionTest extends TestCase
             });
         });
         $this->assertEquals(2, $cnt);
+        Event::assertDispatchedTimes(TransactionCommitting::class, 2);
         Event::assertDispatchedTimes(TransactionCommitted::class, 5);
     }
 
@@ -206,6 +226,7 @@ class TransactionTest extends TestCase
 
     public function testRetrySuccess(): void
     {
+        Event::fake();
         $conn = $this->getDefaultConnection();
 
         $tableName = self::TABLE_NAME_USER;
@@ -216,7 +237,7 @@ class TransactionTest extends TestCase
             'name' => 'test',
         ];
 
-        $maxAttempts = 5;
+        $maxAttempts = 4;
         $cnt = 0;
         $conn->transaction(function () use ($qb, $insertRow, &$cnt) {
             $cnt++;
@@ -228,6 +249,10 @@ class TransactionTest extends TestCase
         }, $maxAttempts);
 
         $this->assertDatabaseHas($tableName, $insertRow);
+        Event::assertDispatchedTimes(TransactionBeginning::class, $maxAttempts);
+        Event::assertDispatchedTimes(TransactionCommitting::class, 1);
+        Event::assertDispatchedTimes(TransactionCommitted::class, 1);
+        Event::assertDispatchedTimes(TransactionRolledBack::class, $maxAttempts - 1);
     }
 
     /**
@@ -235,6 +260,8 @@ class TransactionTest extends TestCase
      */
     public function testLockTimeout(): void
     {
+        Event::fake();
+
         $conn = $this->getDefaultConnection();
         $conn2 = $this->getAlternativeConnection();
 
@@ -267,12 +294,15 @@ class TransactionTest extends TestCase
 
         $this->assertInstanceOf(AbortedException::class, $caughtException);
         $this->assertStringContainsString('ABORTED', $caughtException->getMessage());
+        Event::assertDispatchedTimes(TransactionBeginning::class, 3);
+        Event::assertDispatchedTimes(TransactionCommitting::class);
+        Event::assertDispatchedTimes(TransactionCommitted::class);
+        Event::assertDispatchedTimes(TransactionRolledBack::class, 2);
     }
 
     public function testAbortedException(): void
     {
         Event::fake();
-
         $retries = 3;
         $conn = $this->getDefaultConnection();
         try {
@@ -281,6 +311,8 @@ class TransactionTest extends TestCase
 
         }
 
+        Event::assertDispatchedTimes(TransactionBeginning::class, $retries);
+        Event::assertDispatchedTimes(TransactionCommitting::class, 0);
         Event::assertDispatchedTimes(TransactionCommitted::class, 0);
         Event::assertDispatchedTimes(TransactionRolledBack::class, $retries);
     }

@@ -11,7 +11,7 @@
     "php": ">=8",
     "ext-grpc": "*",
     "ext-json": "*",
-    "laravel/framework": "~9",
+    "laravel/framework": "~9.42",
     "google/cloud-spanner": "^1.47",
     "grpc/grpc": "^1.42",
     "ramsey/uuid": "~4",
