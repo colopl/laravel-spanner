@@ -25,12 +25,12 @@
   },
   "autoload": {
     "psr-4": {
-      "Colopl\\Spanner\\": "src/Colopl/Spanner"
+      "Colopl\\Spanner\\": "src"
     }
   },
   "autoload-dev": {
     "psr-4": {
-      "Colopl\\Spanner\\Tests\\": "tests/Colopl/Spanner"
+      "Colopl\\Spanner\\Tests\\": "tests/src"
     }
   },
   "extra": {
