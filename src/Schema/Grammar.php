@@ -23,7 +23,9 @@ use Illuminate\Database\Connection;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Schema\Grammars\Grammar as BaseGrammar;
 use Illuminate\Support\Fluent;
+use LogicException;
 use RuntimeException;
+use Stringable;
 
 class Grammar extends BaseGrammar
 {
@@ -461,15 +463,43 @@ class Grammar extends BaseGrammar
             return null;
         }
 
+        return ' default (' . $this->formatDefaultValue($column, $value) . ')';
+    }
+
+    /**
+     * @param Fluent<string, mixed> $column
+     * @param mixed $value
+     * @return string
+     */
+    protected function formatDefaultValue(Fluent $column, mixed $value): string
+    {
         if ($value instanceof DateTimeInterface) {
-            $value = $value->format($this->getDateFormat());
+            return 'TIMESTAMP "' . $value->format($this->getDateFormat()) . '"';
+        }
+
+        if ($value instanceof Stringable) {
+            return (string)$value;
+        }
+
+        if (is_int($value) || is_float($value)) {
+            return (string)$value;
+        }
+
+        if (is_bool($value)) {
+            return $value ? 'true' : 'false';
         }
 
         if (is_string($value)) {
-            $value = $this->wrapValue($value);
+            return '"' . $value . '"';
         }
 
-        return ' default (' . $value . ')';
+        if (is_array($value)) {
+            return '[' .
+                implode(', ', array_map(fn(mixed $v) => $this->formatDefaultValue($column, $v), $value)) .
+                ']';
+        }
+
+        throw new LogicException('Unknown value for column: ' . $column->toJson());
     }
 
     /**

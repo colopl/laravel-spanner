@@ -22,6 +22,7 @@ use Colopl\Spanner\Schema\Grammar;
 use Colopl\Spanner\Tests\TestCase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Ramsey\Uuid\Uuid;
 
 class BlueprintTest extends TestCase
 {
@@ -243,36 +244,61 @@ class BlueprintTest extends TestCase
     public function test_default_values(): void
     {
         $conn = $this->getDefaultConnection();
+        $conn->useDefaultSchemaGrammar();
+        $grammar = $conn->getSchemaGrammar();
 
         $blueprint = new Blueprint('Test3', function (Blueprint $table) {
             $table->uuid('id');
             $table->integer('int')->default(1);
             $table->float('float')->default(0.1);
+            $table->boolean('bool')->default(true);
             $table->string('name')->default('abc');
-            $table->integer('func')->default(DB::raw('POW(2, 2)'));
+            $table->integerArray('int_array')->default([1, 2]);
+            $table->booleanArray('bool_array')->default([false, true]);
+            $table->float('raw')->default(DB::raw('1.1'));
             $table->dateTime('started_at')->default(new Carbon('2022-01-01'));
             $table->dateTime('end_at')->useCurrent();
             $table->primary('id');
         });
+
         $blueprint->create();
 
-        $queries = $blueprint->toSql($conn, new Grammar());
+        $queries = $blueprint->toSql($conn, $grammar);
+
         $this->assertEquals(
-            'create table `Test3` (' .
-            '`id` string(36) not null, ' .
-            '`int` int64 not null default (1), ' .
-            '`float` float64 not null default (0.1), ' .
-            '`name` string(255) not null default (`abc`), ' .
-            '`func` int64 not null default (POW(2, 2)), ' .
-            '`started_at` timestamp not null default (`2022-01-01T00:00:00.000000+00:00`), ' .
-            '`end_at` timestamp not null default (CURRENT_TIMESTAMP())' .
-            ') primary key (`id`)',
+            'create table `Test3` (' . implode(', ', [
+                '`id` string(36) not null',
+                '`int` int64 not null default (1)',
+                '`float` float64 not null default (0.1)',
+                '`bool` bool not null default (true)',
+                '`name` string(255) not null default ("abc")',
+                '`int_array` array<int64> not null default ([1, 2])',
+                '`bool_array` array<bool> not null default ([false, true])',
+                '`raw` float64 not null default (1.1)',
+                '`started_at` timestamp not null default (TIMESTAMP "2022-01-01T00:00:00.000000+00:00")',
+                '`end_at` timestamp not null default (CURRENT_TIMESTAMP())',
+            ]) . ') primary key (`id`)',
             $queries[0]
         );
 
+        $blueprint->build($conn, $grammar);
+
         $query = $conn->table('Test3');
 
-        $query->insert([]);
+        $query->insert(['id' => Uuid::uuid4()->toString()]);
+
+        /** @var array<string, mixed> $result */
+        $result = $query->sole();
+
+        self::assertSame(1, $result['int']);
+        self::assertSame(0.1, $result['float']);
+        self::assertSame(true, $result['bool']);
+        self::assertSame('abc', $result['name']);
+        self::assertSame([1, 2], $result['int_array']);
+        self::assertSame([false, true], $result['bool_array']);
+        self::assertSame(1.1, $result['raw']);
+        self::assertSame('2022-01-01T00:00:00.000000+00:00', $result['started_at']->format($grammar->getDateFormat()));
+        self::assertInstanceOf(Carbon::class, $result['end_at']);
     }
 
     public function testInterleaveIndex(): void
