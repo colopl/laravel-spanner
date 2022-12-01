@@ -249,12 +249,15 @@ class BlueprintTest extends TestCase
 
         $blueprint = new Blueprint('Test3', function (Blueprint $table) {
             $table->uuid('id');
+            $table->integer('null')->default(null)->nullable();
             $table->integer('int')->default(1);
             $table->float('float')->default(0.1);
             $table->boolean('bool')->default(true);
-            $table->string('name')->default('abc');
+            $table->string('string')->default('a');
             $table->integerArray('int_array')->default([1, 2]);
             $table->booleanArray('bool_array')->default([false, true]);
+            $table->floatArray('float_array')->default([2.2, 3.3]);
+            $table->stringArray('string_array', 1)->default(['a', 'b']);
             $table->float('raw')->default(DB::raw('1.1'));
             $table->dateTime('started_at')->default(new Carbon('2022-01-01'));
             $table->dateTime('end_at')->useCurrent();
@@ -268,12 +271,15 @@ class BlueprintTest extends TestCase
         $this->assertEquals(
             'create table `Test3` (' . implode(', ', [
                 '`id` string(36) not null',
+                '`null` int64',
                 '`int` int64 not null default (1)',
                 '`float` float64 not null default (0.1)',
                 '`bool` bool not null default (true)',
-                '`name` string(255) not null default ("abc")',
+                '`string` string(255) not null default ("a")',
                 '`int_array` array<int64> not null default ([1, 2])',
                 '`bool_array` array<bool> not null default ([false, true])',
+                '`float_array` array<float64> not null default ([2.2, 3.3])',
+                '`string_array` array<string(1)> not null default (["a", "b"])',
                 '`raw` float64 not null default (1.1)',
                 '`started_at` timestamp not null default (TIMESTAMP "2022-01-01T00:00:00.000000+00:00")',
                 '`end_at` timestamp not null default (CURRENT_TIMESTAMP())',
@@ -290,12 +296,15 @@ class BlueprintTest extends TestCase
         /** @var array<string, mixed> $result */
         $result = $query->sole();
 
+        self::assertSame(null, $result['null']);
         self::assertSame(1, $result['int']);
         self::assertSame(0.1, $result['float']);
         self::assertSame(true, $result['bool']);
-        self::assertSame('abc', $result['name']);
+        self::assertSame('a', $result['string']);
         self::assertSame([1, 2], $result['int_array']);
         self::assertSame([false, true], $result['bool_array']);
+        self::assertSame([2.2, 3.3], $result['float_array']);
+        self::assertSame(['a', 'b'], $result['string_array']);
         self::assertSame(1.1, $result['raw']);
         self::assertSame('2022-01-01T00:00:00.000000+00:00', $result['started_at']->format($grammar->getDateFormat()));
         self::assertInstanceOf(Carbon::class, $result['end_at']);
