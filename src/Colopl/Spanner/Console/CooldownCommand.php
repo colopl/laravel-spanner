@@ -20,11 +20,10 @@ namespace Colopl\Spanner\Console;
 use Colopl\Spanner\Connection as SpannerConnection;
 use Illuminate\Console\Command;
 use Illuminate\Database\DatabaseManager;
-use Illuminate\Support\Facades\DB;
 
 class CooldownCommand extends Command
 {
-    protected $signature = 'spanner:cooldown {connections?*}';
+    protected $signature = 'spanner:cooldown {connections?* : The database connections to be cleared}';
 
     protected $description = 'Deletes all sessions from Spanner\'s Session Pool.';
 
