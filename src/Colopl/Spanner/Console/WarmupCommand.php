@@ -44,7 +44,7 @@ class WarmupCommand extends Command
             $connection = $db->connection($name);
             if ($connection instanceof SpannerConnection) {
                 $count = $connection->warmupSessionPool();
-                $this->info("Warmed up $count sessions for {$name}");
+                $this->info("Warmed up {$count} sessions for {$name}");
             }
         }
     }
