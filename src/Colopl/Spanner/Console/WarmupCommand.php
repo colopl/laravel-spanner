@@ -24,7 +24,7 @@ use Illuminate\Support\Facades\DB;
 
 class WarmupCommand extends Command
 {
-    protected $signature = 'spanner:warmup {connections?*}';
+    protected $signature = 'spanner:warmup {connections?* : The database connections to be warmed up}';
 
     protected $description = 'Warmup Spanner\'s Session Pool.';
 
