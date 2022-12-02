@@ -17,6 +17,7 @@
 
 namespace Colopl\Spanner;
 
+use Colopl\Spanner\Console\CooldownCommand;
 use Colopl\Spanner\Console\WarmupCommand;
 use Google\Cloud\Spanner\Session\CacheSessionPool;
 use Google\Cloud\Spanner\Session\SessionPoolInterface;
@@ -38,6 +39,7 @@ class SpannerServiceProvider extends ServiceProvider
         });
 
         $this->commands([
+            CooldownCommand::class,
             WarmupCommand::class,
         ]);
     }
