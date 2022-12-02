@@ -23,8 +23,8 @@ use Illuminate\Testing\PendingCommand;
 class TestCase extends BaseTestCase
 {
     /**
-     * @param $command
-     * @param $parameters
+     * @param string $command
+     * @param array<string, mixed> $parameters
      * @return PendingCommand
      */
     public function artisan($command, $parameters = [])

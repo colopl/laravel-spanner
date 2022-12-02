@@ -20,7 +20,6 @@ namespace Colopl\Spanner\Console;
 use Colopl\Spanner\Connection as SpannerConnection;
 use Illuminate\Console\Command;
 use Illuminate\Database\DatabaseManager;
-use Illuminate\Support\Facades\DB;
 
 class WarmupCommand extends Command
 {

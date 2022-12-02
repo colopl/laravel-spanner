@@ -101,22 +101,7 @@ abstract class TestCase extends \Orchestra\Testbench\TestCase
         return $conn;
     }
 
-    protected function setUpDatabaseOnce(Connection $conn): void
-    {
-        if (!self::$databasePrepared) {
-            self::$databasePrepared = true;
-            if (!empty(getenv('SPANNER_EMULATOR_HOST'))) {
-                $this->createEmulatorInstance($conn);
-            }
-
-            if ($conn->databaseExists()) {
-                $conn->dropDatabase();
-            }
-            $conn->createDatabase($this->getTestDatabaseDDLs());
-        }
-    }
-
-    protected function createEmulatorInstance(Connection $conn): void
+    protected function setUpEmulatorInstance(Connection $conn): void
     {
         $spanner = new SpannerClient((array)$conn->getConfig('client'));
         $name = (string)$conn->getConfig('instance');
@@ -124,6 +109,16 @@ abstract class TestCase extends \Orchestra\Testbench\TestCase
             $config = $spanner->instanceConfiguration('emulator-config');
             $spanner->createInstance($config, $name)->pollUntilComplete();
             logger()?->debug('Created Spanner Emulator Instance: ' . $name);
+        }
+    }
+
+    protected function setUpDatabaseOnce(Connection $conn): void
+    {
+        if (!empty(getenv('SPANNER_EMULATOR_HOST'))) {
+            $this->setUpEmulatorInstance($conn);
+        }
+        if (!$conn->databaseExists()) {
+            $conn->createDatabase($this->getTestDatabaseDDLs());
         }
     }
 
