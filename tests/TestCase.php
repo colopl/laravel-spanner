@@ -144,7 +144,7 @@ abstract class TestCase extends \Orchestra\Testbench\TestCase
      */
     protected function getTestDatabaseDDLs(): array
     {
-        $ddlFile = __DIR__.'/test.ddl';
+        $ddlFile = __DIR__ . '/test.ddl';
         return collect(explode(';', file_get_contents($ddlFile) ?: ''))
             ->map(function($ddl) { return trim($ddl); })
             ->filter()
@@ -158,7 +158,7 @@ abstract class TestCase extends \Orchestra\Testbench\TestCase
 
     protected function getEnvironmentSetUp($app): void
     {
-        $dbConfig = require __DIR__.'/config.php';
+        $dbConfig = require __DIR__ . '/config.php';
         $app['config']->set('database', $dbConfig);
     }
 }

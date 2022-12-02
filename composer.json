@@ -30,7 +30,7 @@
   },
   "autoload-dev": {
     "psr-4": {
-      "Colopl\\Spanner\\Tests\\": "tests/src"
+      "Colopl\\Spanner\\Tests\\": "tests"
     }
   },
   "extra": {
