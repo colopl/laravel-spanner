@@ -27,11 +27,6 @@ use Ramsey\Uuid\Uuid;
 
 abstract class TestCase extends \Orchestra\Testbench\TestCase
 {
-    /**
-     * @var bool
-     */
-    protected static bool $databasePrepared = false;
-
     protected const TABLE_NAME_TEST = 'Test';
     protected const TABLE_NAME_USER = 'User';
     protected const TABLE_NAME_USER_INFO = 'UserInfo';
