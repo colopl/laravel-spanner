@@ -27,9 +27,8 @@ class CooldownCommandTest extends TestCase
             $conn = $this->getConnection($name);
             assert($conn instanceof Connection);
             $this->setUpDatabaseOnce($conn);
+            $conn->warmupSessionPool();
         }
-
-        $this->artisan('spanner:warmup')->run();
 
         $this->artisan('spanner:cooldown')
             ->expectsOutputToContain("All sessions cleared for main")
@@ -44,9 +43,8 @@ class CooldownCommandTest extends TestCase
             $conn = $this->getConnection($name);
             assert($conn instanceof Connection);
             $this->setUpDatabaseOnce($conn);
+            $conn->warmupSessionPool();
         }
-
-        $this->artisan('spanner:warmup')->run();
 
         $this->artisan('spanner:cooldown', ['connections' => 'main'])
             ->expectsOutputToContain("All sessions cleared for main")
