@@ -165,23 +165,37 @@ class BlueprintTest extends TestCase
         );
     }
 
-    public function testArrayType(): void
+    public function test_array_types(): void
     {
         $conn = $this->getDefaultConnection();
 
         $blueprint = new Blueprint('ArrayTypeTest', function (Blueprint $table) {
             $table->uuid('id');
-            $table->integerArray('int_array');
-            $table->floatArray('float_array');
-            $table->stringArray('string_array', 'max');
-
+            $table->integerArray('int_array')->nullable();
+            $table->booleanArray('bool_array')->nullable();
+            $table->floatArray('float_array')->nullable();
+            $table->stringArray('string_array_undef')->nullable();
+            $table->stringArray('string_array_1', 1)->nullable();
+            $table->stringArray('string_array_max', 'max')->nullable();
+            $table->timestampArray('timestamp_array')->nullable();
             $table->primary('id');
         });
         $blueprint->create();
 
         $queries = $blueprint->toSql($conn, new Grammar());
         $this->assertEquals(
-            'create table `ArrayTypeTest` (`id` string(36) not null, `int_array` array<int64> not null, `float_array` array<float64> not null, `string_array` array<string(max)> not null) primary key (`id`)',
+            'create table `ArrayTypeTest` (' .
+            implode(', ', [
+                '`id` string(36) not null',
+                '`int_array` array<int64>',
+                '`bool_array` array<bool>',
+                '`float_array` array<float64>',
+                '`string_array_undef` array<string(255)>',
+                '`string_array_1` array<string(1)>',
+                '`string_array_max` array<string(max)>',
+                '`timestamp_array` array<timestamp>',
+            ]) .
+            ') primary key (`id`)',
             $queries[0]
         );
     }

@@ -19,6 +19,7 @@ namespace Colopl\Spanner\Schema;
 
 use Colopl\Spanner\Concerns\MarksAsNotSupported;
 use Illuminate\Database\Schema\Blueprint as BaseBlueprint;
+use Illuminate\Database\Schema\ColumnDefinition;
 use Illuminate\Support\Fluent;
 
 class Blueprint extends BaseBlueprint
@@ -93,7 +94,7 @@ class Blueprint extends BaseBlueprint
     /**
      * @param  string  $column
      * @param int|null $length
-     * @return Fluent<string, mixed>
+     * @return ColumnDefinition
      */
     public function binary($column, $length = null)
     {
@@ -104,57 +105,72 @@ class Blueprint extends BaseBlueprint
 
     /**
      * @param string $column
-     * @return Fluent<string, mixed>
+     * @return ColumnDefinition
      */
     public function booleanArray($column)
     {
-        return $this->addColumn('array', $column, ['arrayType' => 'bool']);
+        return $this->addColumn('array', $column, [
+            'arrayType' => 'boolean'
+        ]);
     }
 
     /**
      * @param string $column
-     * @return Fluent<string, mixed>
+     * @return ColumnDefinition
      */
     public function integerArray($column)
     {
-        return $this->addColumn('array', $column, ['arrayType' => 'int64']);
+        return $this->addColumn('array', $column, [
+            'arrayType' => 'integer'
+        ]);
     }
 
     /**
      * @param string $column
-     * @return Fluent<string, mixed>
+     * @return ColumnDefinition
      */
     public function floatArray($column)
     {
-        return $this->addColumn('array', $column, ['arrayType' => 'float64']);
+        return $this->addColumn('array', $column, [
+            'arrayType' => 'float',
+        ]);
     }
 
     /**
      * @param string $column
-     * @param int|string $length
-     * @return Fluent<string, mixed>
+     * @param int|string|null $length
+     * @return ColumnDefinition
      */
-    public function stringArray($column, $length)
+    public function stringArray($column, $length = null)
     {
-        return $this->addColumn('array', $column, ['arrayType' => "string($length)"]);
+        $length = $length ?: Builder::$defaultStringLength;
+
+        return $this->addColumn('array', $column, [
+            'arrayType' => 'string',
+            'length' => $length,
+        ]);
     }
 
     /**
      * @param string $column
-     * @return Fluent<string, mixed>
+     * @return ColumnDefinition
      */
     public function dateArray($column)
     {
-        return $this->addColumn('array', $column, ['arrayType' => 'date']);
+        return $this->addColumn('array', $column, [
+            'arrayType' => 'date',
+        ]);
     }
 
     /**
      * @param string $column
-     * @return Fluent<string, mixed>
+     * @return ColumnDefinition
      */
     public function timestampArray($column)
     {
-        return $this->addColumn('array', $column, ['arrayType' => 'timestamp']);
+        return $this->addColumn('array', $column, [
+            'arrayType' => 'timestamp',
+        ]);
     }
 
     /**

@@ -403,7 +403,7 @@ class Grammar extends BaseGrammar
      */
     protected function typeArray(Fluent $column)
     {
-        return "array<{$column->arrayType}>";
+        return 'array<' . $this->getArrayInnerType($column) . '>';
     }
 
     /**
@@ -430,6 +430,15 @@ class Grammar extends BaseGrammar
             return $column->nullable ? '' : ' not null';
         }
         return null;
+    }
+
+    /**
+     * @param Fluent<string, mixed> $column
+     * @return string
+     */
+    protected function getArrayInnerType(Fluent $column): string
+    {
+        return $this->{'type'.ucfirst($column->arrayType)}($column);
     }
 
     /**
