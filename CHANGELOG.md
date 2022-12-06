@@ -2,6 +2,7 @@
 
 Added
 - Support Schema\Builder::getAllTables()
+- Command `spanner:cooldown` which clears all connections in the session pool.
 
 Changed
 - Default SessionPool was changed from `Google\Cloud\Spanner\Session\CacheSessionPool` to `Colopl\Spanner\Session\CacheSessionPool` to patch an [unresolved issue on Google's end](https://github.com/googleapis/google-cloud-php/issues/5567).

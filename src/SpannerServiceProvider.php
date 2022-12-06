@@ -17,6 +17,7 @@
 
 namespace Colopl\Spanner;
 
+use Colopl\Spanner\Console\CooldownCommand;
 use Colopl\Spanner\Console\SessionsCommand;
 use Colopl\Spanner\Console\WarmupCommand;
 use Colopl\Spanner\Session\CacheSessionPool;
@@ -39,6 +40,7 @@ class SpannerServiceProvider extends ServiceProvider
         });
 
         $this->commands([
+            CooldownCommand::class,
             SessionsCommand::class,
             WarmupCommand::class,
         ]);
