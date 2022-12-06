@@ -258,9 +258,11 @@ class BlueprintTest extends TestCase
             $table->booleanArray('bool_array')->default([false, true]);
             $table->floatArray('float_array')->default([2.2, 3.3]);
             $table->stringArray('string_array', 1)->default(['a', 'b']);
+            $table->timestampArray('timestamp_array')->default(['2022-01-01']);
             $table->float('raw')->default(DB::raw('1.1'));
-            $table->dateTime('started_at')->default(new Carbon('2022-01-01'));
-            $table->dateTime('end_at')->useCurrent();
+            $table->dateTime('time_as_string')->default('2022-01-01');
+            $table->dateTime('time_as_carbon')->default(new Carbon('2022-01-01'));
+            $table->dateTime('current_time')->useCurrent();
             $table->primary('id');
         });
 
@@ -280,9 +282,11 @@ class BlueprintTest extends TestCase
                 '`bool_array` array<bool> not null default ([false, true])',
                 '`float_array` array<float64> not null default ([2.2, 3.3])',
                 '`string_array` array<string(1)> not null default (["a", "b"])',
+                '`timestamp_array` array<timestamp> not null default ([TIMESTAMP "2022-01-01T00:00:00.000000+00:00"])',
                 '`raw` float64 not null default (1.1)',
-                '`started_at` timestamp not null default (TIMESTAMP "2022-01-01T00:00:00.000000+00:00")',
-                '`end_at` timestamp not null default (CURRENT_TIMESTAMP())',
+                '`time_as_string` timestamp not null default (TIMESTAMP "2022-01-01T00:00:00.000000+00:00")',
+                '`time_as_carbon` timestamp not null default (TIMESTAMP "2022-01-01T00:00:00.000000+00:00")',
+                '`current_time` timestamp not null default (CURRENT_TIMESTAMP())',
             ]) . ') primary key (`id`)',
             $queries[0]
         );
@@ -306,8 +310,9 @@ class BlueprintTest extends TestCase
         self::assertSame([2.2, 3.3], $result['float_array']);
         self::assertSame(['a', 'b'], $result['string_array']);
         self::assertSame(1.1, $result['raw']);
-        self::assertSame('2022-01-01T00:00:00.000000+00:00', $result['started_at']->format($grammar->getDateFormat()));
-        self::assertInstanceOf(Carbon::class, $result['end_at']);
+        self::assertSame('2022-01-01T00:00:00.000000+00:00', $result['time_as_string']->format($grammar->getDateFormat()));
+        self::assertSame('2022-01-01T00:00:00.000000+00:00', $result['time_as_carbon']->format($grammar->getDateFormat()));
+        self::assertInstanceOf(Carbon::class, $result['current_time']);
     }
 
     public function testInterleaveIndex(): void

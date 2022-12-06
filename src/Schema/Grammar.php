@@ -20,9 +20,12 @@ namespace Colopl\Spanner\Schema;
 use Colopl\Spanner\Concerns\SharedGrammarCalls;
 use DateTimeInterface;
 use Illuminate\Database\Connection;
+use Illuminate\Database\Query\Expression;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Schema\Grammars\Grammar as BaseGrammar;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Fluent;
+use Illuminate\Support\Str;
 use LogicException;
 use RuntimeException;
 use Stringable;
@@ -463,7 +466,30 @@ class Grammar extends BaseGrammar
             return null;
         }
 
-        return ' default (' . $this->formatDefaultValue($column, $value) . ')';
+        return ' default (' . $this->formatDefaultValue($column, $this->getType($column), $value) . ')';
+    }
+
+    /**
+     * @param Fluent<string, mixed> $column
+     * @param string $type
+     * @param mixed $value
+     * @return string
+     */
+    protected function formatDefaultValue(Fluent $column, string $type, mixed $value): string
+    {
+        if ($value instanceof Expression) {
+            return (string)$value;
+        }
+
+        // Match type without length or subtype.
+        return match (Str::match('/^\w+/', $type)) {
+            'array' => $this->formatArrayValue($column, $value),
+            'bool' => $this->formatBoolValue($column, $value),
+            'int64', 'float64' => $this->formatNumericValue($column, $value),
+            'string' => $this->formatStringValue($column, $value),
+            'timestamp' => $this->formatTimestampValue($column, $value),
+            default => throw new LogicException('Unknown type: ' . $type . ' for column: ' . $column->toJson()),
+        };
     }
 
     /**
@@ -471,35 +497,61 @@ class Grammar extends BaseGrammar
      * @param mixed $value
      * @return string
      */
-    protected function formatDefaultValue(Fluent $column, mixed $value): string
+    protected function formatArrayValue(Fluent $column, mixed $value): string
     {
-        if ($value instanceof DateTimeInterface) {
-            return 'TIMESTAMP "' . $value->format($this->getDateFormat()) . '"';
+        assert(is_array($value));
+        $list = [];
+        foreach ($value as $each) {
+            $list[] = $this->formatDefaultValue($column, $this->getArrayInnerType($column), $each);
         }
+        return '[' . implode(', ', $list) . ']';
+    }
 
-        if ($value instanceof Stringable) {
-            return (string)$value;
-        }
+    /**
+     * @param Fluent<string, mixed> $column
+     * @param mixed $value
+     * @return string
+     */
+    protected function formatBoolValue(Fluent $column, mixed $value): string
+    {
+        assert(is_bool($value));
+        return $value ? 'true' : 'false';
+    }
 
-        if (is_int($value) || is_float($value)) {
-            return (string)$value;
-        }
+    /**
+     * @param Fluent<string, mixed> $column
+     * @param mixed $value
+     * @return string
+     */
+    protected function formatNumericValue(Fluent $column, mixed $value): string
+    {
+        assert(is_int($value) || is_float($value));
+        return (string)$value;
+    }
 
-        if (is_bool($value)) {
-            return $value ? 'true' : 'false';
-        }
+    /**
+     * @param Fluent<string, mixed> $column
+     * @param mixed $value
+     * @return string
+     */
+    protected function formatStringValue(Fluent $column, mixed $value): string
+    {
+        assert(is_string($value));
+        return '"' . $value . '"';
+    }
 
+    /**
+     * @param Fluent<string, mixed> $column
+     * @param mixed $value
+     * @return string
+     */
+    protected function formatTimestampValue(Fluent $column, mixed $value): string
+    {
+        assert(is_string($value) || $value instanceof DateTimeInterface);
         if (is_string($value)) {
-            return '"' . $value . '"';
+            $value = Carbon::parse($value);
         }
-
-        if (is_array($value)) {
-            return '[' .
-                implode(', ', array_map(fn(mixed $v) => $this->formatDefaultValue($column, $v), $value)) .
-                ']';
-        }
-
-        throw new LogicException('Unknown value for column: ' . $column->toJson());
+        return 'TIMESTAMP "' . $value->format($this->getDateFormat()) . '"';
     }
 
     /**
