@@ -22,15 +22,11 @@ use Colopl\Spanner\SpannerServiceProvider;
 use Google\Cloud\Spanner\Bytes;
 use Google\Cloud\Spanner\Date;
 use Google\Cloud\Spanner\SpannerClient;
+use Illuminate\Foundation\Application;
 use Ramsey\Uuid\Uuid;
 
 abstract class TestCase extends \Orchestra\Testbench\TestCase
 {
-    /**
-     * @var bool
-     */
-    protected static bool $databasePrepared = false;
-
     protected const TABLE_NAME_TEST = 'Test';
     protected const TABLE_NAME_USER = 'User';
     protected const TABLE_NAME_USER_INFO = 'UserInfo';
@@ -40,6 +36,9 @@ abstract class TestCase extends \Orchestra\Testbench\TestCase
     protected const TABLE_NAME_ITEM_TAG = 'ItemTag';
     protected const TABLE_NAME_ARRAY_TEST = 'ArrayTest';
 
+    /**
+     * @return void
+     */
     protected function tearDown(): void
     {
         $this->cleanupDatabase();
@@ -48,7 +47,6 @@ abstract class TestCase extends \Orchestra\Testbench\TestCase
 
     /**
      * @return string
-     * @throws \Exception
      */
     protected function generateUuid(): string
     {
@@ -56,8 +54,7 @@ abstract class TestCase extends \Orchestra\Testbench\TestCase
     }
 
     /**
-     * @return array
-     * @throws \Exception
+     * @return array<string, mixed>
      */
     protected function generateTestRow(): array
     {
@@ -101,22 +98,11 @@ abstract class TestCase extends \Orchestra\Testbench\TestCase
         return $conn;
     }
 
-    protected function setUpDatabaseOnce(Connection $conn): void
-    {
-        if (!self::$databasePrepared) {
-            self::$databasePrepared = true;
-            if (!empty(getenv('SPANNER_EMULATOR_HOST'))) {
-                $this->createEmulatorInstance($conn);
-            }
-
-            if ($conn->databaseExists()) {
-                $conn->dropDatabase();
-            }
-            $conn->createDatabase($this->getTestDatabaseDDLs());
-        }
-    }
-
-    protected function createEmulatorInstance(Connection $conn): void
+    /**
+     * @param Connection $conn
+     * @return void
+     */
+    protected function setUpEmulatorInstance(Connection $conn): void
     {
         $spanner = new SpannerClient((array)$conn->getConfig('client'));
         $name = (string)$conn->getConfig('instance');
@@ -127,6 +113,23 @@ abstract class TestCase extends \Orchestra\Testbench\TestCase
         }
     }
 
+    /**
+     * @param Connection $conn
+     * @return void
+     */
+    protected function setUpDatabaseOnce(Connection $conn): void
+    {
+        if (!empty(getenv('SPANNER_EMULATOR_HOST'))) {
+            $this->setUpEmulatorInstance($conn);
+        }
+        if (!$conn->databaseExists()) {
+            $conn->createDatabase($this->getTestDatabaseDDLs());
+        }
+    }
+
+    /**
+     * @return void
+     */
     protected function cleanupDatabase(): void
     {
         foreach ($this->app['db']->getConnections() as $conn) {
@@ -140,7 +143,7 @@ abstract class TestCase extends \Orchestra\Testbench\TestCase
     }
 
     /**
-     * @return string[]
+     * @return list<string>
      */
     protected function getTestDatabaseDDLs(): array
     {
@@ -151,11 +154,19 @@ abstract class TestCase extends \Orchestra\Testbench\TestCase
             ->all();
     }
 
+    /**
+     * @param Application $app
+     * @return list<class-string>
+     */
     protected function getPackageProviders($app): array
     {
         return [SpannerServiceProvider::class];
     }
 
+    /**
+     * @param Application $app
+     * @return void
+     */
     protected function getEnvironmentSetUp($app): void
     {
         $dbConfig = require __DIR__ . '/config.php';
