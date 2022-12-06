@@ -7,22 +7,22 @@ parameters:
         - '#^Access to an undefined property Illuminate\\Support\\Fluent.*$#'
         - '#^Return type \(void\) of method .*? should be compatible with return type \(.*?\) of method .*?$#'
         - message: '#^Method Colopl\\Spanner\\Connection::runPartitionedDml\(\) should return int but returns mixed\.$#'
-          path: src/Colopl/Spanner/Concerns/ManagesPartitionedDml.php
+          path: src/Concerns/ManagesPartitionedDml.php
         - message: '#^Unable to resolve the template type TKey in call to function collect$#'
-          path: src/Colopl/Spanner/Concerns/ManagesSessionPool.php
+          path: src/Concerns/ManagesSessionPool.php
         - message: '#^Parameter \#1 \$pdo of method Illuminate\\Database\\Connection::__construct\(\) expects Closure|PDO, null given.$#'
-          path: src/Colopl/Spanner/Connection.php
+          path: src/Connection.php
         - message: '#^Method Colopl\\Spanner\\Connection::select\(\) should return array but returns mixed\.$#'
-          path: src/Colopl/Spanner/Connection.php
+          path: src/Connection.php
         - message: '#^Cannot cast mixed to int\.$#'
-          path: src/Colopl/Spanner/Eloquent/Model.php
+          path: src/Eloquent/Model.php
         - message: '#^Method Colopl\\Spanner\\Schema\\Builder::createBlueprint\(\) should return Illuminate\\Database\\Schema\\Blueprint but returns mixed\.$#'
-          path: src/Colopl/Spanner/Schema/Builder.php
+          path: src/Schema/Builder.php
         - message: '#^Property Illuminate\\Database\\Schema\\Builder::\$resolver \(Closure\) in isset\(\) is not nullable.$#'
-          path: src/Colopl/Spanner/Schema/Builder.php
+          path: src/Schema/Builder.php
         - message: '#^Parameter \#1 \$value of method Illuminate\\Database\\Schema\\Grammars\\Grammar::wrap\(\) expects Illuminate\\Database\\Query\\Expression\|string, Illuminate\\Database\\Schema\\ColumnDefinition given.$#'
-          path: src/Colopl/Spanner/Schema/Grammar.php
+          path: src/Schema/Grammar.php
         - message: '#^Using nullsafe method call on non-nullable type Illuminate\\Database\\DatabaseTransactionsManager\. Use -> instead.$#'
-          path: src/Colopl/Spanner/Concerns/ManagesTransactions.php
+          path: src/Concerns/ManagesTransactions.php
         - message: '#^Parameter \#1 \$connection of method Illuminate\\Database\\DatabaseTransactionsManager::.+\(\) expects string, string\|null given\.$#'
-          path: src/Colopl/Spanner/Concerns/ManagesTransactions.php
+          path: src/Concerns/ManagesTransactions.php
