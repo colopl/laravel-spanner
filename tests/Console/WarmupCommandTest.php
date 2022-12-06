@@ -19,7 +19,8 @@ namespace Colopl\Spanner\Tests\Console;
 
 use Colopl\Spanner\Connection;
 
-class WarmupCommandTest extends TestCase
+class
+WarmupCommandTest extends TestCase
 {
     public function test_no_args(): void
     {
