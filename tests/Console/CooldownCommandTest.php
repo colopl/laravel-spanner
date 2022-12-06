@@ -15,9 +15,10 @@
  * limitations under the License.
  */
 
-namespace Colopl\Spanner\Tests\Console;
+namespace Console;
 
 use Colopl\Spanner\Connection;
+use Colopl\Spanner\Tests\Console\TestCase;
 
 class CooldownCommandTest extends TestCase
 {
