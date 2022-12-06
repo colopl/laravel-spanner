@@ -20,7 +20,7 @@ namespace Colopl\Spanner;
 use Illuminate\Support\Carbon;
 use Google\Cloud\Spanner\V1\Session as ProtoBufSession;
 
-class Session
+class SessionInfo
 {
     /**
      * @var string

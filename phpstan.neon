@@ -26,3 +26,5 @@ parameters:
           path: src/Concerns/ManagesTransactions.php
         - message: '#^Parameter \#1 \$connection of method Illuminate\\Database\\DatabaseTransactionsManager::.+\(\) expects string, string\|null given\.$#'
           path: src/Concerns/ManagesTransactions.php
+        - message: "#.*#"
+          path: src/CacheSessionPool.php
