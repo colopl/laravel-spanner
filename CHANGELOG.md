@@ -2,7 +2,7 @@
 
 Changed
 - `Colopl\Spanner\Session` has been renamed to `Colopl\Spanner\SessionInfo`.
-- Default SessionPool was changed from `Google\Cloud\Spanner\Session\CacheSessionPool` to `Colopl\Spanner\CacheSessionPool`.
+- Default SessionPool was changed from `Google\Cloud\Spanner\Session\CacheSessionPool` to `Colopl\Spanner\CacheSessionPool` to address an [unresolved issue on google's end](https://github.com/googleapis/google-cloud-php/issues/5567).
 
 Fixed
 - SessionPool was not cleared if php terminated immediately after calling `CacheSessionPool::clear`.
