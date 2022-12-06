@@ -256,6 +256,7 @@ class BlueprintTest extends TestCase
             $table->string('string')->default('a');
             $table->float('raw')->default(DB::raw('1.1'));
             $table->date('date_as_string')->default('2022-01-01');
+            $table->date('date_as_carbon')->default(new Carbon('2022-01-01'));
             $table->dateTime('time_as_string')->default('2022-01-01');
             $table->dateTime('time_as_carbon')->default(new Carbon('2022-01-01'));
             $table->dateTime('current_time')->useCurrent();
@@ -282,6 +283,7 @@ class BlueprintTest extends TestCase
                 '`string` string(255) not null default ("a")',
                 '`raw` float64 not null default (1.1)',
                 '`date_as_string` date not null default (DATE "2022-01-01")',
+                '`date_as_carbon` date not null default (DATE "2022-01-01")',
                 '`time_as_string` timestamp not null default (TIMESTAMP "2022-01-01T00:00:00.000000+00:00")',
                 '`time_as_carbon` timestamp not null default (TIMESTAMP "2022-01-01T00:00:00.000000+00:00")',
                 '`current_time` timestamp not null default (CURRENT_TIMESTAMP())',
