@@ -485,10 +485,12 @@ class Grammar extends BaseGrammar
         return match (Str::match('/^\w+/', $type)) {
             'array' => $this->formatArrayValue($column, $value),
             'bool' => $this->formatBoolValue($column, $value),
-            'int64', 'float64' => $this->formatNumericValue($column, $value),
+            'date' => $this->formatDateValue($column, $value),
+            'float64' => $this->formatFloatValue($column, $value),
+            'int64' => $this->formatIntValue($column, $value),
             'string' => $this->formatStringValue($column, $value),
             'timestamp' => $this->formatTimestampValue($column, $value),
-            default => throw new LogicException('Unknown type: ' . $type . ' for column: ' . $column->toJson()),
+            default => throw new LogicException('Unsupported default for ' . $type . ' column: ' . $column->toJson()),
         };
     }
 
@@ -523,9 +525,34 @@ class Grammar extends BaseGrammar
      * @param mixed $value
      * @return string
      */
-    protected function formatNumericValue(Fluent $column, mixed $value): string
+    protected function formatDateValue(Fluent $column, mixed $value): string
     {
-        assert(is_int($value) || is_float($value));
+        assert(is_string($value) || $value instanceof DateTimeInterface);
+        if (is_string($value)) {
+            $value = Carbon::parse($value);
+        }
+        return 'DATE "' . $value->format('Y-m-d') . '"';
+    }
+
+    /**
+     * @param Fluent<string, mixed> $column
+     * @param mixed $value
+     * @return string
+     */
+    protected function formatFloatValue(Fluent $column, mixed $value): string
+    {
+        assert(is_float($value));
+        return (string)$value;
+    }
+
+    /**
+     * @param Fluent<string, mixed> $column
+     * @param mixed $value
+     * @return string
+     */
+    protected function formatIntValue(Fluent $column, mixed $value): string
+    {
+        assert(is_int($value));
         return (string)$value;
     }
 
