@@ -1,11 +1,21 @@
 # v5.0.0
 
+Added
+- Command `spanner:warmup` which warms up sessions upto minimum number set in config.
+- Command `spanner:cooldown` which clears all connections in the session pool.
+- `TransactionCommitting` support has been added (NOTE: this is triggered only once at root on nested transactions).
+
 Changed
 - `Colopl\Spanner\Session` has been renamed to `Colopl\Spanner\SessionInfo`.
 - Default SessionPool was changed from `Google\Cloud\Spanner\Session\CacheSessionPool` to `Colopl\Spanner\CacheSessionPool` to patch an [unresolved issue on google's end](https://github.com/googleapis/google-cloud-php/issues/5567).
+- `Blueprint::stringArray`'s `$length` parameter is now optional and defaults to `255`.
 
 Fixed
 - SessionPool was not cleared if php terminated immediately after calling `CacheSessionPool::clear`.
+- Array Column's type now gets parsed in `Schema/Grammar` instead of at blueprint.
+
+Chore
+- Unnecessary folder depth has been flattened.
 
 # v4.2.0
 
