@@ -28,7 +28,6 @@ use Illuminate\Support\Fluent;
 use Illuminate\Support\Str;
 use LogicException;
 use RuntimeException;
-use Stringable;
 
 class Grammar extends BaseGrammar
 {
