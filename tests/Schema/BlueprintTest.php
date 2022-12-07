@@ -312,6 +312,8 @@ class BlueprintTest extends TestCase
         self::assertSame(true, $result['bool']);
         self::assertSame('a', $result['string']);
         self::assertSame(1.1, $result['raw']);
+        self::assertSame('2022-01-01T00:00:00.000000+00:00', $result['date_as_string']->get()->format($grammar->getDateFormat()));
+        self::assertSame('2022-01-01T00:00:00.000000+00:00', $result['date_as_carbon']->get()->format($grammar->getDateFormat()));
         self::assertSame('2022-01-01T00:00:00.000000+00:00', $result['time_as_string']->format($grammar->getDateFormat()));
         self::assertSame('2022-01-01T00:00:00.000000+00:00', $result['time_as_carbon']->format($grammar->getDateFormat()));
         self::assertInstanceOf(Carbon::class, $result['current_time']);
