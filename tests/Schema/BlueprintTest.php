@@ -20,6 +20,9 @@ namespace Colopl\Spanner\Tests\Schema;
 use Colopl\Spanner\Schema\Blueprint;
 use Colopl\Spanner\Schema\Grammar;
 use Colopl\Spanner\Tests\TestCase;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
+use Ramsey\Uuid\Uuid;
 
 class BlueprintTest extends TestCase
 {
@@ -236,6 +239,88 @@ class BlueprintTest extends TestCase
             'create table `UserItem` (`id` string(36) not null, `userId` string(36) not null, `name` string(255) not null) primary key (`userId`), interleave in parent `User` on delete cascade',
             $queries[0]
         );
+    }
+
+    public function test_default_values(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $conn->useDefaultSchemaGrammar();
+        $grammar = $conn->getSchemaGrammar();
+
+        $blueprint = new Blueprint('Test3', function (Blueprint $table) {
+            $table->uuid('id');
+            $table->integer('null')->default(null)->nullable();
+            $table->integer('int')->default(1);
+            $table->float('float')->default(0.1);
+            $table->boolean('bool')->default(true);
+            $table->string('string')->default('a');
+            $table->float('raw')->default(DB::raw('1.1'));
+            $table->date('date_as_string')->default('2022-01-01');
+            $table->date('date_as_carbon')->default(new Carbon('2022-01-01'));
+            $table->dateTime('time_as_string')->default('2022-01-01');
+            $table->dateTime('time_as_carbon')->default(new Carbon('2022-01-01'));
+            $table->dateTime('current_time')->useCurrent();
+            $table->integerArray('int_array')->default([1, 2]);
+            $table->booleanArray('bool_array')->default([false, true]);
+            $table->floatArray('float_array')->default([2.2, 3.3]);
+            $table->stringArray('string_array', 1)->default(['a', 'b']);
+            $table->dateArray('date_array')->default(['2022-01-01']);
+            $table->timestampArray('timestamp_array')->default(['2022-01-01']);
+            $table->primary('id');
+        });
+
+        $blueprint->create();
+
+        $queries = $blueprint->toSql($conn, $grammar);
+
+        $this->assertEquals(
+            'create table `Test3` (' . implode(', ', [
+                '`id` string(36) not null',
+                '`null` int64',
+                '`int` int64 not null default (1)',
+                '`float` float64 not null default (0.1)',
+                '`bool` bool not null default (true)',
+                '`string` string(255) not null default ("a")',
+                '`raw` float64 not null default (1.1)',
+                '`date_as_string` date not null default (DATE "2022-01-01")',
+                '`date_as_carbon` date not null default (DATE "2022-01-01")',
+                '`time_as_string` timestamp not null default (TIMESTAMP "2022-01-01T00:00:00.000000+00:00")',
+                '`time_as_carbon` timestamp not null default (TIMESTAMP "2022-01-01T00:00:00.000000+00:00")',
+                '`current_time` timestamp not null default (CURRENT_TIMESTAMP())',
+                '`int_array` array<int64> not null default ([1, 2])',
+                '`bool_array` array<bool> not null default ([false, true])',
+                '`float_array` array<float64> not null default ([2.2, 3.3])',
+                '`string_array` array<string(1)> not null default (["a", "b"])',
+                '`date_array` array<date> not null default ([DATE "2022-01-01"])',
+                '`timestamp_array` array<timestamp> not null default ([TIMESTAMP "2022-01-01T00:00:00.000000+00:00"])',
+            ]) . ') primary key (`id`)',
+            $queries[0]
+        );
+
+        $blueprint->build($conn, $grammar);
+
+        $query = $conn->table('Test3');
+
+        $query->insert(['id' => Uuid::uuid4()->toString()]);
+
+        /** @var array<string, mixed> $result */
+        $result = $query->sole();
+
+        self::assertSame(null, $result['null']);
+        self::assertSame(1, $result['int']);
+        self::assertSame(0.1, $result['float']);
+        self::assertSame(true, $result['bool']);
+        self::assertSame('a', $result['string']);
+        self::assertSame(1.1, $result['raw']);
+        self::assertSame('2022-01-01T00:00:00.000000+00:00', $result['date_as_string']->get()->format($grammar->getDateFormat()));
+        self::assertSame('2022-01-01T00:00:00.000000+00:00', $result['date_as_carbon']->get()->format($grammar->getDateFormat()));
+        self::assertSame('2022-01-01T00:00:00.000000+00:00', $result['time_as_string']->format($grammar->getDateFormat()));
+        self::assertSame('2022-01-01T00:00:00.000000+00:00', $result['time_as_carbon']->format($grammar->getDateFormat()));
+        self::assertInstanceOf(Carbon::class, $result['current_time']);
+        self::assertSame([1, 2], $result['int_array']);
+        self::assertSame([false, true], $result['bool_array']);
+        self::assertSame([2.2, 3.3], $result['float_array']);
+        self::assertSame(['a', 'b'], $result['string_array']);
     }
 
     public function testInterleaveIndex(): void

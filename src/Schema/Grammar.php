@@ -18,10 +18,15 @@
 namespace Colopl\Spanner\Schema;
 
 use Colopl\Spanner\Concerns\SharedGrammarCalls;
+use DateTimeInterface;
 use Illuminate\Database\Connection;
+use Illuminate\Database\Query\Expression;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Schema\Grammars\Grammar as BaseGrammar;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Fluent;
+use Illuminate\Support\Str;
+use LogicException;
 use RuntimeException;
 
 class Grammar extends BaseGrammar
@@ -33,7 +38,7 @@ class Grammar extends BaseGrammar
      *
      * @var array
      */
-    protected $modifiers = ['Nullable'];
+    protected $modifiers = ['Nullable', 'Default'];
 
     /**
      * @return string
@@ -439,6 +444,140 @@ class Grammar extends BaseGrammar
     protected function getArrayInnerType(Fluent $column): string
     {
         return $this->{'type'.ucfirst($column->arrayType)}($column);
+    }
+
+    /**
+     * Get the SQL for a default column modifier.
+     *
+     * @param Blueprint $blueprint
+     * @param Fluent<string, mixed> $column
+     * @return string|null
+     */
+    protected function modifyDefault(Blueprint $blueprint, Fluent $column)
+    {
+        $value = $column->default;
+
+        if ($column->useCurrent) {
+            return ' default (CURRENT_TIMESTAMP())';
+        }
+
+        if (is_null($value)) {
+            return null;
+        }
+
+        return ' default (' . $this->formatDefaultValue($column, $this->getType($column), $value) . ')';
+    }
+
+    /**
+     * @param Fluent<string, mixed> $column
+     * @param string $type
+     * @param mixed $value
+     * @return string
+     */
+    protected function formatDefaultValue(Fluent $column, string $type, mixed $value): string
+    {
+        if ($value instanceof Expression) {
+            return (string)$value;
+        }
+
+        // Match type without length or subtype.
+        return match (Str::match('/^\w+/', $type)) {
+            'array' => $this->formatArrayValue($column, $value),
+            'bool' => $this->formatBoolValue($column, $value),
+            'date' => $this->formatDateValue($column, $value),
+            'float64' => $this->formatFloatValue($column, $value),
+            'int64' => $this->formatIntValue($column, $value),
+            'string' => $this->formatStringValue($column, $value),
+            'timestamp' => $this->formatTimestampValue($column, $value),
+            default => throw new LogicException('Unsupported default for ' . $type . ' column: ' . $column->toJson()),
+        };
+    }
+
+    /**
+     * @param Fluent<string, mixed> $column
+     * @param mixed $value
+     * @return string
+     */
+    protected function formatArrayValue(Fluent $column, mixed $value): string
+    {
+        assert(is_array($value));
+        $list = [];
+        foreach ($value as $each) {
+            $list[] = $this->formatDefaultValue($column, $this->getArrayInnerType($column), $each);
+        }
+        return '[' . implode(', ', $list) . ']';
+    }
+
+    /**
+     * @param Fluent<string, mixed> $column
+     * @param mixed $value
+     * @return string
+     */
+    protected function formatBoolValue(Fluent $column, mixed $value): string
+    {
+        assert(is_bool($value));
+        return $value ? 'true' : 'false';
+    }
+
+    /**
+     * @param Fluent<string, mixed> $column
+     * @param mixed $value
+     * @return string
+     */
+    protected function formatDateValue(Fluent $column, mixed $value): string
+    {
+        assert(is_string($value) || $value instanceof DateTimeInterface);
+        if (is_string($value)) {
+            $value = Carbon::parse($value);
+        }
+        return 'DATE "' . $value->format('Y-m-d') . '"';
+    }
+
+    /**
+     * @param Fluent<string, mixed> $column
+     * @param mixed $value
+     * @return string
+     */
+    protected function formatFloatValue(Fluent $column, mixed $value): string
+    {
+        assert(is_float($value));
+        return (string)$value;
+    }
+
+    /**
+     * @param Fluent<string, mixed> $column
+     * @param mixed $value
+     * @return string
+     */
+    protected function formatIntValue(Fluent $column, mixed $value): string
+    {
+        assert(is_int($value));
+        return (string)$value;
+    }
+
+    /**
+     * @param Fluent<string, mixed> $column
+     * @param mixed $value
+     * @return string
+     */
+    protected function formatStringValue(Fluent $column, mixed $value): string
+    {
+        assert(is_string($value));
+        return '"' . $value . '"';
+    }
+
+    /**
+     * @param Fluent<string, mixed> $column
+     * @param mixed $value
+     * @return string
+     */
+    protected function formatTimestampValue(Fluent $column, mixed $value): string
+    {
+        assert(is_string($value) || $value instanceof DateTimeInterface);
+        if (is_string($value)) {
+            $value = Carbon::parse($value);
+        }
+        return 'TIMESTAMP "' . $value->format($this->getDateFormat()) . '"';
     }
 
     /**

@@ -1,6 +1,7 @@
 # v5.0.0
 
 Added
+- Support for default values in table columns.
 - Command `spanner:warmup` which warms up sessions upto minimum number set in config.
 - Command `spanner:cooldown` which clears all connections in the session pool.
 - `TransactionCommitting` support has been added (NOTE: this is triggered only once at root on nested transactions).
