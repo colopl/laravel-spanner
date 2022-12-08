@@ -29,8 +29,11 @@ class SessionsCommand extends Command
         foreach ($spannerConnectionNames as $name) {
             $connection = $db->connection($name);
             if ($connection instanceof SpannerConnection) {
+                $sessions = $connection->listSessions();
+                $count = count($sessions);
                 $data = [];
-                foreach ($connection->listSessions() as $session) {
+                $this->info("{$connection->getName()} contains {$count} session(s).");
+                foreach ($sessions as $session) {
                     $data[] = [
                         $session->getName(),
                         $session->getCreatedAt(),
