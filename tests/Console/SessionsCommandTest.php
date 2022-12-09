@@ -18,7 +18,6 @@
 namespace Colopl\Spanner\Tests\Console;
 
 use Colopl\Spanner\Connection;
-use Illuminate\Support\Facades\Artisan;
 
 class SessionsCommandTest extends TestCase
 {
