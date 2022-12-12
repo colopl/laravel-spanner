@@ -60,4 +60,21 @@ WarmupCommandTest extends TestCase
             ->assertSuccessful()
             ->run();
     }
+
+    public function test_with_fresh(): void
+    {
+        foreach (['main', 'alternative'] as $name) {
+            $conn = $this->getConnection($name);
+            assert($conn instanceof Connection);
+            $this->setUpDatabaseOnce($conn);
+        }
+
+        $this->artisan('spanner:warmup', ['--fresh' => true])
+            ->expectsOutputToContain('Cleared all existing sessions for main')
+            ->expectsOutputToContain('Cleared all existing sessions for alternative')
+            ->expectsOutputToContain("Warmed up 1 sessions for main")
+            ->expectsOutputToContain("Warmed up 1 sessions for alternative")
+            ->assertSuccessful()
+            ->run();
+    }
 }

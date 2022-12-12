@@ -23,7 +23,8 @@ use Illuminate\Database\DatabaseManager;
 
 class WarmupCommand extends Command
 {
-    protected $signature = 'spanner:warmup {connections?* : The database connections to be warmed up}';
+    protected $signature = 'spanner:warmup {connections?* : The database connections to be warmed up}
+               {--refresh : Will clear all existing sessions first.}';
 
     protected $description = 'Warmup Spanner\'s Session Pool.';
 
@@ -39,9 +40,16 @@ class WarmupCommand extends Command
             static fn(string $name): bool => config("database.connections.{$name}.driver") === 'spanner',
         );
 
+        $refresh = (bool)($this->option('refresh') ?? false);
+
         foreach ($spannerConnectionNames as $name) {
             $connection = $db->connection($name);
             if ($connection instanceof SpannerConnection) {
+                if ($refresh) {
+                    $this->info("Cleared all existing sessions for {$name}");
+                    $connection->clearSessionPool();
+                }
+
                 $count = $connection->warmupSessionPool();
                 $this->info("Warmed up {$count} sessions for {$name}");
             }
