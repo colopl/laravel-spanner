@@ -56,9 +56,27 @@ class SessionsCommandTest extends TestCase
             $this->setUpDatabaseOnce($conn);
         }
 
+        $this->artisan('spanner:warmup', ['connections' => 'main'])
+            ->assertSuccessful()
+            ->run();
+
         $this->artisan('spanner:sessions', ['connections' => 'main'])
             ->expectsOutputToContain('main contains 1 session(s).')
+            ->expectsOutputToContain('Name')
             ->doesntExpectOutputToContain('alternative')
+            ->assertSuccessful()
+            ->run();
+    }
+
+    public function test_no_sessions_shows_no_table(): void
+    {
+        if (getenv('SPANNER_EMULATOR_HOST')) {
+            $this->markTestSkipped('Cannot list sessions on emulator');
+        }
+
+        $this->artisan('spanner:sessions', ['connections' => 'main'])
+            ->expectsOutputToContain('main contains 0 session(s).')
+            ->doesntExpectOutputToContain('Name')
             ->assertSuccessful()
             ->run();
     }

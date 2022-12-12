@@ -40,7 +40,9 @@ class SessionsCommand extends Command
                         $session->getLastUsedAt(),
                     ];
                 }
-                $this->table($headers, $data);
+                if (count($data) > 0) {
+                    $this->table($headers, $data);
+                }
             }
         }
     }
