@@ -61,7 +61,7 @@ WarmupCommandTest extends TestCase
             ->run();
     }
 
-    public function test_with_fresh(): void
+    public function test_with_refresh(): void
     {
         foreach (['main', 'alternative'] as $name) {
             $conn = $this->getConnection($name);
@@ -69,7 +69,7 @@ WarmupCommandTest extends TestCase
             $this->setUpDatabaseOnce($conn);
         }
 
-        $this->artisan('spanner:warmup', ['--fresh' => true])
+        $this->artisan('spanner:warmup', ['--refresh' => true])
             ->expectsOutputToContain('Cleared all existing sessions for main')
             ->expectsOutputToContain('Cleared all existing sessions for alternative')
             ->expectsOutputToContain("Warmed up 1 sessions for main")
