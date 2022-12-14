@@ -243,7 +243,7 @@ class BlueprintTest extends TestCase
             $table->string('name');
 
             $table->primary('userId');
-            $table->interleave('User')->onDelete('cascade');
+            $table->interleave('User')->cascadeOnDelete();
         });
         $blueprint->create();
 
