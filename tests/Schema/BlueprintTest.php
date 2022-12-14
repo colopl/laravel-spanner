@@ -22,6 +22,7 @@ use Colopl\Spanner\Schema\Grammar;
 use Colopl\Spanner\Tests\TestCase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use LogicException;
 use Ramsey\Uuid\Uuid;
 
 class BlueprintTest extends TestCase
@@ -146,6 +147,18 @@ class BlueprintTest extends TestCase
             ],
             $queries
         );
+    }
+
+    public function test_no_primaryKey(): void
+    {
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('Cloud Spanner require a primary key!');
+
+        $blueprint = new Blueprint('test', function (Blueprint $table) {
+            $table->create();
+            $table->uuid('id');
+        });
+        $blueprint->toSql($this->getDefaultConnection(), new Grammar());
     }
 
     public function testCompositePrimaryKey(): void
