@@ -1,3 +1,8 @@
+# v5.0.0 (Not Released Yet)
+
+Changed
+- Checks that primary key is defined in schema and throws an exception if not defined.
+
 # v4.7.0
 
 Added

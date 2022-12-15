@@ -160,6 +160,18 @@ class BlueprintTest extends TestCase
         );
     }
 
+    public function test_no_primaryKey(): void
+    {
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('Cloud Spanner require a primary key!');
+
+        $blueprint = new Blueprint('test', function (Blueprint $table) {
+            $table->create();
+            $table->uuid('id');
+        });
+        $blueprint->toSql($this->getDefaultConnection(), new Grammar());
+    }
+
     public function testCompositePrimaryKey(): void
     {
         $conn = $this->getDefaultConnection();
