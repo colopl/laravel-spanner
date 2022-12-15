@@ -157,8 +157,8 @@ class Grammar extends BaseGrammar
      */
     protected function addInterleaveToTable(Blueprint $blueprint)
     {
-        if (! is_null($command = $this->getCommandByName($blueprint, 'interleave'))) {
-            $schema = ", interleave in parent {$this->wrap($command->parentTableName)}";
+        if (! is_null($command = $this->getCommandByName($blueprint, 'interleaveInParent'))) {
+            $schema = ", interleave in parent {$this->wrap($command->table)}";
             if (! is_null($command->onDelete)) {
                 $schema .= " on delete {$command->onDelete}";
             }
@@ -239,7 +239,7 @@ class Grammar extends BaseGrammar
      */
     protected function addInterleaveToIndex(Fluent $indexCommand): string
     {
-        return empty($indexCommand->interleave) ? '' : ", interleave in {$this->wrap($indexCommand->interleave)}";
+        return empty($indexCommand->interleaveIn) ? '' : ", interleave in {$this->wrap($indexCommand->interleaveIn)}";
     }
 
     /**

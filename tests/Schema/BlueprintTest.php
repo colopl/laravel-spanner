@@ -227,7 +227,7 @@ class BlueprintTest extends TestCase
             $table->string('name');
 
             $table->primary('userId');
-            $table->interleave('User');
+            $table->interleaveInParent('User');
         });
         $blueprint->create();
 
@@ -243,7 +243,7 @@ class BlueprintTest extends TestCase
             $table->string('name');
 
             $table->primary('userId');
-            $table->interleave('User')->cascadeOnDelete();
+            $table->interleaveInParent('User')->cascadeOnDelete();
         });
         $blueprint->create();
 
@@ -424,7 +424,7 @@ class BlueprintTest extends TestCase
         $conn = $this->getDefaultConnection();
 
         $blueprint = new Blueprint('UserItem', function (Blueprint $table) {
-            $table->index(['userId', 'createdAt'])->interleave('User');
+            $table->index(['userId', 'createdAt'])->interleaveIn('User');
         });
 
         $queries = $blueprint->toSql($conn, new Grammar());

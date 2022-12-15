@@ -177,13 +177,23 @@ class Blueprint extends BaseBlueprint
     }
 
     /**
+     * @deprecated use interleaveInParent instead.
      * @param string $parentTableName
      * @return InterleaveDefinition
      */
     public function interleave(string $parentTableName)
     {
+        return $this->interleaveInParent($parentTableName);
+    }
+
+    /**
+     * @param string $table
+     * @return InterleaveDefinition
+     */
+    public function interleaveInParent(string $table): InterleaveDefinition
+    {
         $command = new InterleaveDefinition(
-            $this->addCommand('interleave', compact('parentTableName'))->getAttributes()
+            $this->addCommand('interleaveInParent', compact('table'))->getAttributes()
         );
 
         $this->commands[count($this->commands) - 1] = $command;
