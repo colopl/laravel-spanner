@@ -22,6 +22,9 @@ use Illuminate\Database\Schema\Blueprint as BaseBlueprint;
 use Illuminate\Database\Schema\ColumnDefinition;
 use Illuminate\Support\Fluent;
 
+/**
+ * @method IndexDefinition index(string|string[] $columns, string|null $name = null)
+ */
 class Blueprint extends BaseBlueprint
 {
     use MarksAsNotSupported;

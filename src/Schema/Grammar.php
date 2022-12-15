@@ -199,8 +199,8 @@ class Grammar extends BaseGrammar
     /**
      * Compile a plain index key command.
      *
-     * @param  Blueprint  $blueprint
-     * @param  Fluent<string, mixed> $command
+     * @param Blueprint  $blueprint
+     * @param IndexDefinition $command
      * @return string
      * @see https://cloud.google.com/spanner/docs/data-definition-language?hl=en#create_index
      */
@@ -233,7 +233,7 @@ class Grammar extends BaseGrammar
     }
 
     /**
-     * @param Fluent<string, mixed> $indexCommand
+     * @param IndexDefinition $indexCommand
      * @return string
      * @see https://cloud.google.com/spanner/docs/data-definition-language?hl=en#create_index
      */
