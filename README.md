@@ -213,6 +213,27 @@ $schemaBuilder->create('user_items', function (Blueprint $table) {
 });
 ```
 
+### Row Deletion Policy
+
+You can define [row deletion policy](https://cloud.google.com/spanner/docs/ttl/working-with-ttl) as below.
+
+```php
+$schemaBuilder->create('user', function (Blueprint $table) {
+    $table->uuid('user_id');
+    $table->timestamps();
+    
+    // create a policy
+    $table->deleteRowsOlderThan(['updated_at'], 365);
+});
+
+$schemaBuilder->table('user', function (Blueprint $table) {
+    // replace policy
+    $table->replaceRowDeletionPolicy('udpated_at', 100);
+
+    // drop policy
+    $table->dropRowDeletionPolicy();
+});
+```
 
 ### Mutations
 
