@@ -187,7 +187,7 @@ class Grammar extends BaseGrammar
      * Compile a unique key command.
      *
      * @param  Blueprint  $blueprint
-     * @param  Fluent<string, mixed> $command
+     * @param  IndexDefinition $command
      * @return string
      */
     public function compileUnique(Blueprint $blueprint, Fluent $command)

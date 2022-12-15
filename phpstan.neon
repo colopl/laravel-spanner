@@ -5,6 +5,7 @@ parameters:
         - src
     ignoreErrors:
         - '#^Access to an undefined property Illuminate\\Support\\Fluent.*$#'
+        - '#^Access to an undefined property Colopl\\Spanner\\Schema\\IndexDefinition.*$#'
         - '#^Return type \(void\) of method .*? should be compatible with return type \(.*?\) of method .*?$#'
         - message: '#^Method Colopl\\Spanner\\Connection::runPartitionedDml\(\) should return int but returns mixed\.$#'
           path: src/Concerns/ManagesPartitionedDml.php
