@@ -206,7 +206,7 @@ $schemaBuilder->create('user_items', function (Blueprint $table) {
     $table->primary(['user_id', 'id']);
     
     // interleaved table
-    $table->interleave('users')->onDelete('cascade');
+    $table->interleave('users')->cascadeOnDelete();
     
     // interleaved index
     $table->index(['userId', 'created_at'])->interleave('users');
