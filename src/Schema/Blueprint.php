@@ -22,6 +22,9 @@ use Illuminate\Database\Schema\Blueprint as BaseBlueprint;
 use Illuminate\Database\Schema\ColumnDefinition;
 use Illuminate\Support\Fluent;
 
+/**
+ * @method IndexDefinition index(string|string[] $columns, string|null $name = null)
+ */
 class Blueprint extends BaseBlueprint
 {
     use MarksAsNotSupported;
@@ -173,11 +176,17 @@ class Blueprint extends BaseBlueprint
 
     /**
      * @param string $parentTableName
-     * @return Fluent<string, mixed>
+     * @return InterleaveDefinition
      */
     public function interleave(string $parentTableName)
     {
-        return $this->addCommand('interleave', compact('parentTableName'));
+        $command = new InterleaveDefinition(
+            $this->addCommand('interleave', compact('parentTableName'))->getAttributes()
+        );
+
+        $this->commands[count($this->commands) - 1] = $command;
+
+        return $command;
     }
 
     /**
