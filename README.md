@@ -235,6 +235,22 @@ $schemaBuilder->table('user', function (Blueprint $table) {
 });
 ```
 
+### Secondary Index Options
+
+You can define Spanner specific index options like [null filtering](https://cloud.google.com/spanner/docs/secondary-indexes#null-indexing-disable) and [storing](https://cloud.google.com/spanner/docs/secondary-indexes#storing-clause) as below.
+
+```php
+$schemaBuilder->table('user_items', function (Blueprint $table) {
+    $table->index('userId')
+        // Interleave in parent table
+        ->interleave('user')
+        // Add null filtering
+        ->nullFiltered()
+        // Add storing
+        ->storing(['itemId', 'count']);
+});
+```
+
 ### Mutations
 
 You can [insert, update, and delete data using mutations](https://cloud.google.com/spanner/docs/modify-mutation-api) to modify data instead of using DML to improve performance.
