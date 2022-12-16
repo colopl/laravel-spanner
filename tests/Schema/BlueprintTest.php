@@ -243,7 +243,7 @@ class BlueprintTest extends TestCase
             $table->string('name');
 
             $table->primary('userId');
-            $table->interleave('User')->onDelete('cascade');
+            $table->interleave('User')->cascadeOnDelete();
         });
         $blueprint->create();
 
@@ -419,7 +419,7 @@ class BlueprintTest extends TestCase
         self::assertSame(['a', 'b'], $result['string_array']);
     }
 
-    public function testInterleaveIndex(): void
+    public function test_index_with_interleave(): void
     {
         $conn = $this->getDefaultConnection();
 
@@ -434,7 +434,7 @@ class BlueprintTest extends TestCase
         );
     }
 
-    public function testStoringIndex(): void
+    public function test_index_with_storing(): void
     {
         $conn = $this->getDefaultConnection();
 
@@ -445,6 +445,21 @@ class BlueprintTest extends TestCase
         $queries = $blueprint->toSql($conn, new Grammar());
         $this->assertEquals(
             'create index `useritem_userid_createdat_index` on `UserItem` (`userId`, `createdAt`) storing (`itemId`, `count`)',
+            $queries[0]
+        );
+    }
+
+    public function test_null_filtered_index(): void
+    {
+        $conn = $this->getDefaultConnection();
+
+        $blueprint = new Blueprint('UserItem', function (Blueprint $table) {
+            $table->index(['userId'])->nullFiltered();
+        });
+
+        $queries = $blueprint->toSql($conn, new Grammar());
+        $this->assertEquals(
+            'create null_filtered index `useritem_userid_index` on `UserItem` (`userId`)',
             $queries[0]
         );
     }

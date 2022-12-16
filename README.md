@@ -206,7 +206,7 @@ $schemaBuilder->create('user_items', function (Blueprint $table) {
     $table->primary(['user_id', 'id']);
     
     // interleaved table
-    $table->interleave('users')->onDelete('cascade');
+    $table->interleave('users')->cascadeOnDelete();
     
     // interleaved index
     $table->index(['userId', 'created_at'])->interleave('users');
@@ -232,6 +232,22 @@ $schemaBuilder->table('user', function (Blueprint $table) {
 
     // drop policy
     $table->dropRowDeletionPolicy();
+});
+```
+
+### Secondary Index Options
+
+You can define Spanner specific index options like [null filtering](https://cloud.google.com/spanner/docs/secondary-indexes#null-indexing-disable) and [storing](https://cloud.google.com/spanner/docs/secondary-indexes#storing-clause) as below.
+
+```php
+$schemaBuilder->table('user_items', function (Blueprint $table) {
+    $table->index('userId')
+        // Interleave in parent table
+        ->interleave('user')
+        // Add null filtering
+        ->nullFiltered()
+        // Add storing
+        ->storing(['itemId', 'count']);
 });
 ```
 
