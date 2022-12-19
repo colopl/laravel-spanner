@@ -198,7 +198,7 @@ class BuilderTest extends TestCase
             $table->timestamps();
 
             $table->primary(['user_id', 'id']);
-            $table->interleave(self::TABLE_NAME_RELATION_PARENT_INTERLEAVED)->cascadeOnDelete();
+            $table->interleaveInParent(self::TABLE_NAME_RELATION_PARENT_INTERLEAVED)->cascadeOnDelete();
         });
 
         $this->assertTrue($sb->hasTable(self::TABLE_NAME_RELATION_PARENT_INTERLEAVED));
