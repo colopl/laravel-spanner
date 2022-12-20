@@ -24,6 +24,7 @@ use Illuminate\Support\Fluent;
 
 /**
  * @method IndexDefinition index(string|string[] $columns, string|null $name = null)
+ * @method IndexDefinition unique(string|string[] $columns, string|null $name = null)
  */
 class Blueprint extends BaseBlueprint
 {
@@ -234,5 +235,31 @@ class Blueprint extends BaseBlueprint
     public function dropRowDeletionPolicy(): Fluent
     {
         return $this->addCommand('dropRowDeletionPolicy');
+    }
+
+    /**
+     * @param string $type
+     * @param string|list<string> $columns
+     * @param string $index
+     * @param string|null $algorithm
+     * @return IndexDefinition
+     */
+    protected function indexCommand($type, $columns, $index, $algorithm = null)
+    {
+        $columns = (array) $columns;
+
+        // If no name was specified for this index, we will create one using a basic
+        // convention of the table name, followed by the columns, followed by an
+        // index type, such as primary or index, which makes the index unique.
+        $index = $index ?: $this->createIndexName($type, $columns);
+
+        $this->commands[] = $command = new IndexDefinition([
+            'name' => $type,
+            'index' => $index,
+            'columns' => $columns,
+            'algorithm' => $algorithm,
+        ]);
+
+        return $command;
     }
 }

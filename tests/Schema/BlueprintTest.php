@@ -411,12 +411,15 @@ class BlueprintTest extends TestCase
 
         $blueprint = new Blueprint('UserItem', function (Blueprint $table) {
             $table->index(['userId', 'createdAt'])->interleaveIn('User');
+            $table->index(['userId', 'updatedAt'])->interleave('User');
         });
 
         $queries = $blueprint->toSql($conn, new Grammar());
-        $this->assertEquals(
-            'create index `useritem_userid_createdat_index` on `UserItem` (`userId`, `createdAt`), interleave in `User`',
-            $queries[0]
+        $this->assertEquals([
+                'create index `useritem_userid_createdat_index` on `UserItem` (`userId`, `createdAt`), interleave in `User`',
+                'create index `useritem_userid_updatedat_index` on `UserItem` (`userId`, `updatedAt`), interleave in `User`',
+            ],
+            $queries
         );
     }
 
