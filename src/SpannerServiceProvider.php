@@ -25,13 +25,14 @@ use Google\Cloud\Spanner\Session\SessionPoolInterface;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Support\ServiceProvider;
 use Psr\Cache\CacheItemPoolInterface;
+use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 
 class SpannerServiceProvider extends ServiceProvider
 {
     /**
      * @return void
      */
-    public function register()
+    public function register(): void
     {
         $this->app->resolving('db', function (DatabaseManager $db) {
             $db->extend('spanner', function ($config, $name) {
@@ -47,14 +48,19 @@ class SpannerServiceProvider extends ServiceProvider
     }
 
     /**
-     * @param array $config
+     * @param array<string, mixed> $config
      * @return Connection
      */
-    protected function createSpannerConnection(array $config)
+    protected function createSpannerConnection(array $config): Connection
     {
-        $authCache = $this->createAuthCache();
-        $sessionPool = $this->createSessionPool($config['session_pool'] ?? []);
-        return new Connection($config['instance'], $config['database'], $config['prefix'], $config, $authCache, $sessionPool);
+        return new Connection(
+            $config['instance'],
+            $config['database'],
+            $config['prefix'],
+            $config,
+            $this->createAuthCache(),
+            $this->createSessionPool($config['session_pool'] ?? [])
+        );
     }
 
     /**
@@ -62,7 +68,7 @@ class SpannerServiceProvider extends ServiceProvider
      * @param string $name
      * @return array<string, mixed>
      */
-    protected function parseConfig(array $config, $name)
+    protected function parseConfig(array $config, string $name): array
     {
         return $config + [
             'prefix' => '',
@@ -72,13 +78,14 @@ class SpannerServiceProvider extends ServiceProvider
     }
 
     /**
-     * @param array $sessionPoolConfig
+     * @param array<string, mixed> $sessionPoolConfig
      * @return SessionPoolInterface
      */
     protected function createSessionPool(array $sessionPoolConfig): SessionPoolInterface
     {
-        $cachePath = storage_path(implode(DIRECTORY_SEPARATOR, ['framework', 'cache', 'spanner']));
-        return new CacheSessionPool(new FileCacheAdapter('session', $cachePath), $sessionPoolConfig);
+        $cachePath = storage_path(implode(DIRECTORY_SEPARATOR, ['framework', 'spanner']));
+        $adapter = new FilesystemAdapter('session', 0, $cachePath);
+        return new CacheSessionPool($adapter, $sessionPoolConfig);
     }
 
     /**
@@ -86,8 +93,7 @@ class SpannerServiceProvider extends ServiceProvider
      */
     protected function createAuthCache(): CacheItemPoolInterface
     {
-        $cachePath = storage_path(implode(DIRECTORY_SEPARATOR, ['framework', 'cache', 'spanner']));
-        return new FileCacheAdapter('auth', $cachePath);
+        $cachePath = storage_path(implode(DIRECTORY_SEPARATOR, ['framework', 'spanner']));
+        return new FilesystemAdapter('auth', 0, $cachePath);
     }
-
 }
