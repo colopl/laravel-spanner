@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-namespace Colopl\Spanner;
+namespace Colopl\Spanner\Session;
 
-use Illuminate\Support\Carbon;
 use Google\Cloud\Spanner\V1\Session as ProtoBufSession;
+use Illuminate\Support\Carbon;
 
-class Session
+class SessionInfo
 {
     /**
      * @var string
