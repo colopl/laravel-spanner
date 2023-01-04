@@ -174,7 +174,6 @@ class BlueprintTest extends TestCase
             $table->integerArray('int_array')->nullable();
             $table->booleanArray('bool_array')->nullable();
             $table->floatArray('float_array')->nullable();
-            $table->stringArray('string_array_undef')->nullable();
             $table->stringArray('string_array_1', 1)->nullable();
             $table->stringArray('string_array_max', 'max')->nullable();
             $table->timestampArray('timestamp_array')->nullable();
@@ -190,7 +189,6 @@ class BlueprintTest extends TestCase
                 '`int_array` array<int64>',
                 '`bool_array` array<bool>',
                 '`float_array` array<float64>',
-                '`string_array_undef` array<string(255)>',
                 '`string_array_1` array<string(1)>',
                 '`string_array_max` array<string(max)>',
                 '`timestamp_array` array<timestamp>',

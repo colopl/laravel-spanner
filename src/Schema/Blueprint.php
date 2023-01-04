@@ -138,13 +138,11 @@ class Blueprint extends BaseBlueprint
 
     /**
      * @param string $column
-     * @param int|string|null $length
+     * @param int|string $length
      * @return ColumnDefinition
      */
-    public function stringArray($column, $length = null)
+    public function stringArray($column, $length)
     {
-        $length = $length ?: Builder::$defaultStringLength;
-
         return $this->addColumn('array', $column, [
             'arrayType' => 'string',
             'length' => $length,
