@@ -20,7 +20,7 @@ namespace Colopl\Spanner\Tests;
 use Colopl\Spanner\Connection;
 use Colopl\Spanner\Events\MutatingData;
 use Colopl\Spanner\Session\CacheSessionPool;
-use Colopl\Spanner\Session;
+use Colopl\Spanner\Session\SessionInfo;
 use Colopl\Spanner\TimestampBound\ExactStaleness;
 use Colopl\Spanner\TimestampBound\MaxStaleness;
 use Colopl\Spanner\TimestampBound\MinReadTimestamp;
@@ -282,7 +282,7 @@ class ConnectionTest extends TestCase
 
         $sessions = $conn->listSessions();
         $this->assertNotEmpty($sessions);
-        $this->assertInstanceOf(Session::class, $sessions[0]);
+        $this->assertInstanceOf(SessionInfo::class, $sessions[0]);
     }
 
     public function testStaleReads(): void

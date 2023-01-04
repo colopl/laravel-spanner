@@ -18,7 +18,7 @@
 namespace Colopl\Spanner\Tests\Console;
 
 use Colopl\Spanner\Connection;
-use Colopl\Spanner\Session as SessionInfo;
+use Colopl\Spanner\Session\SessionInfo;
 use Google\Cloud\Spanner\Session\Session;
 use Google\Cloud\Spanner\Session\SessionPoolInterface;
 use RuntimeException;

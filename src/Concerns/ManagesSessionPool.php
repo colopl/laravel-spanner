@@ -17,8 +17,8 @@
 
 namespace Colopl\Spanner\Concerns;
 
-use Colopl\Spanner\Session;
 use Colopl\Spanner\Session\DeleteOperation;
+use Colopl\Spanner\Session\SessionInfo;
 use Google\Auth\FetchAuthTokenInterface;
 use Google\Cloud\Spanner\Connection\ConnectionInterface;
 use Google\Cloud\Spanner\Connection\Grpc;
@@ -77,7 +77,7 @@ trait ManagesSessionPool
     }
 
     /**
-     * @return Collection<int, Session>
+     * @return Collection<int, SessionInfo>
      */
     public function listSessions(): Collection
     {
@@ -85,7 +85,7 @@ trait ManagesSessionPool
         $response = (new ProtobufSpannerClient())->listSessions($databaseName);
         return collect($response->iterateAllElements())->map(function ($session) {
             assert($session instanceof ProtobufSpannerSession);
-            return new Session($session);
+            return new SessionInfo($session);
         });
     }
 
