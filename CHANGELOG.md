@@ -1,3 +1,16 @@
+# v4.3.0
+
+Added
+- Command `spanner:warmup` which warms up sessions upto minimum number set in config.
+- `TransactionCommitting` support has been added (NOTE: this is triggered only once at root on nested transactions).
+- `Blueprint::stringArray`'s `$length` parameter is now optional and defaults to `255`.
+
+Fixed
+- Array Column's type now gets parsed in `Schema/Grammar` instead of at blueprint.
+
+Chore
+- Unnecessary folder depth has been flattened.
+
 # v4.2.0
 
 Added
