@@ -19,6 +19,7 @@ namespace Colopl\Spanner\Tests;
 
 use Colopl\Spanner\Connection;
 use Colopl\Spanner\Events\MutatingData;
+use Colopl\Spanner\Session\CacheSessionPool;
 use Colopl\Spanner\Session;
 use Colopl\Spanner\TimestampBound\ExactStaleness;
 use Colopl\Spanner\TimestampBound\MaxStaleness;
@@ -27,7 +28,6 @@ use Colopl\Spanner\TimestampBound\ReadTimestamp;
 use Colopl\Spanner\TimestampBound\StrongRead;
 use Google\Auth\FetchAuthTokenInterface;
 use Google\Cloud\Spanner\KeySet;
-use Google\Cloud\Spanner\Session\CacheSessionPool;
 use Google\Cloud\Spanner\SpannerClient;
 use Google\Cloud\Spanner\Timestamp;
 use Google\Cloud\Spanner\Transaction;

@@ -18,6 +18,7 @@
 namespace Colopl\Spanner\Concerns;
 
 use Colopl\Spanner\Session;
+use Colopl\Spanner\Session\DeleteOperation;
 use Google\Auth\FetchAuthTokenInterface;
 use Google\Cloud\Spanner\Connection\ConnectionInterface;
 use Google\Cloud\Spanner\Connection\Grpc;
@@ -41,7 +42,11 @@ trait ManagesSessionPool
     public function clearSessionPool(): void
     {
         $sessionPool = $this->getSpannerDatabase()->sessionPool();
-        $sessionPool?->clear();
+        $operation = $sessionPool?->clear();
+
+        if ($operation instanceof DeleteOperation) {
+            $operation->waitUntilComplete();
+        }
     }
 
     /**

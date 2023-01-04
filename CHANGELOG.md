@@ -3,6 +3,12 @@
 Added
 - Support Schema\Builder::getAllTables()
 
+Changed
+- Default SessionPool was changed from `Google\Cloud\Spanner\Session\CacheSessionPool` to `Colopl\Spanner\Session\CacheSessionPool` to patch an [unresolved issue on google's end](https://github.com/
+
+Fixed
+- SessionPool was not cleared if php terminated immediately after calling `CacheSessionPool::clear`.
+
 # v4.3.0
 
 Added

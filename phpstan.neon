@@ -3,6 +3,9 @@ parameters:
     checkMissingIterableValueType: false
     paths:
         - src
+    excludePaths:
+      analyse:
+        - src/Session/CacheSessionPool.php
     ignoreErrors:
         - '#^Access to an undefined property Illuminate\\Support\\Fluent.*$#'
         - '#^Access to an undefined property Colopl\\Spanner\\Schema\\IndexDefinition.*$#'
