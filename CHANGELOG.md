@@ -2,8 +2,13 @@
 
 Added
 - Support for default values in table columns.
+- Command `spanner:sessions` which will list the sessions on the server side.
 - Command `spanner:warmup` which warms up sessions upto minimum number set in config.
 - `TransactionCommitting` support has been added (NOTE: this is triggered only once at root on nested transactions).
+- Replace and drop row deletion policy methods for Schema Builder.
+- Action classes for interleave and index for IDE auto-completion.
+- `Blueprint::interleaveInParent()` was added and `Blueprint::interleave()` has been deprecated.
+- `IndexDefinition::interleaveIn()` was added and `IndexDefinition::interleave()` has been deprecated.
 
 Fixed
 - Array Column's type now gets parsed in `Schema/Grammar` instead of at blueprint.
