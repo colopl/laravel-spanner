@@ -2,6 +2,7 @@
 
 Changed
 - Checks that primary key is defined in schema and throws an exception if not defined.
+- `Colopl\Spanner\Session` has been renamed to `Colopl\Spanner\SessionInfo`.
 
 # v4.7.0 (Not released yet)
 
