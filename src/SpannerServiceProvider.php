@@ -35,7 +35,7 @@ class SpannerServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->resolving('db', function (DatabaseManager $db) {
-            $db->extend('spanner', function ($config, $name) {
+            $db->extend('spanner', function (array $config, string $name): Connection {
                 return $this->createSpannerConnection($this->parseConfig($config, $name));
             });
         });
