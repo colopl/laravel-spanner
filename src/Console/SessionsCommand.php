@@ -19,7 +19,7 @@ namespace Colopl\Spanner\Console;
 
 use Colopl\Spanner\Connection;
 use Colopl\Spanner\Connection as SpannerConnection;
-use Colopl\Spanner\Session;
+use Colopl\Spanner\Session\SessionInfo;
 use Illuminate\Console\Command;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Support\Collection;
@@ -68,8 +68,8 @@ class SessionsCommand extends Command
         $descending = $this->getOrder() === 'desc';
 
         return $connection->listSessions()
-            ->sortBy(fn(Session $s) => $this->getSortValue($s), descending: $descending)
-            ->map(static fn(Session $s) => [
+            ->sortBy(fn(SessionInfo $s) => $this->getSortValue($s), descending: $descending)
+            ->map(static fn(SessionInfo $s) => [
                 'Name' => $s->getName(),
                 'Created' => (string) $s->getCreatedAt(),
                 'LastUsed' => (string) $s->getLastUsedAt(),
@@ -77,10 +77,10 @@ class SessionsCommand extends Command
     }
 
     /**
-     * @param Session $session
+     * @param SessionInfo $session
      * @return string
      */
-    protected function getSortValue(Session $session): string
+    protected function getSortValue(SessionInfo $session): string
     {
         $sort = $this->option('sort');
         assert(is_string($sort));
