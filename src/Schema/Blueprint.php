@@ -194,4 +194,26 @@ class Blueprint extends BaseBlueprint
             'days' => $days,
         ]);
     }
+
+    /**
+     * @param string $column
+     * @param int $days
+     * @return Fluent<string, mixed>
+     */
+    public function replaceRowDeletionPolicy(string $column, int $days): Fluent
+    {
+        return $this->addCommand('replaceRowDeletionPolicy', [
+            'policy' => 'olderThan',
+            'column' => $column,
+            'days' => $days,
+        ]);
+    }
+
+    /**
+     * @return Fluent<string, mixed>
+     */
+    public function dropRowDeletionPolicy(): Fluent
+    {
+        return $this->addCommand('dropRowDeletionPolicy');
+    }
 }

@@ -128,6 +128,29 @@ class Grammar extends BaseGrammar
     }
 
     /**
+     * @param Blueprint $blueprint
+     * @param Fluent<string, mixed> $command
+     * @return string
+     */
+    public function compileReplaceRowDeletionPolicy(Blueprint $blueprint, Fluent $command)
+    {
+        if ($command->policy !== 'olderThan') {
+            throw new RuntimeException('Unknown deletion policy:'.$command->policy);
+        }
+        return "alter table {$this->wrapTable($blueprint)} replace row deletion policy (older_than({$command->column}, interval {$command->days} day))";
+    }
+
+    /**
+     * @param Blueprint $blueprint
+     * @param Fluent<string, mixed> $command
+     * @return string
+     */
+    public function compileDropRowDeletionPolicy(Blueprint $blueprint, Fluent $command)
+    {
+        return 'alter table '.$this->wrapTable($blueprint).' drop row deletion policy';
+    }
+
+    /**
      * @see https://cloud.google.com/spanner/docs/data-definition-language?hl=ja#create_table
      * @param Blueprint $blueprint
      * @return string

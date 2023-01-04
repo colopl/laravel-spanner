@@ -22,6 +22,8 @@ use Colopl\Spanner\Schema\Grammar;
 use Colopl\Spanner\Tests\TestCase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use LogicException;
 use Ramsey\Uuid\Uuid;
 
 class BlueprintTest extends TestCase
@@ -221,7 +223,6 @@ class BlueprintTest extends TestCase
             $queries[0]
         );
 
-
         $blueprint = new Blueprint('UserItem', function (Blueprint $table) {
             $table->uuid('id');
             $table->uuid('userId');
@@ -236,6 +237,89 @@ class BlueprintTest extends TestCase
         $this->assertEquals(
             'create table `UserItem` (`id` string(36) not null, `userId` string(36) not null, `name` string(255) not null) primary key (`userId`), interleave in parent `User` on delete cascade',
             $queries[0]
+        );
+    }
+
+    public function test_create_with_row_deletion_policy(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $conn->useDefaultSchemaGrammar();
+        $grammar = $conn->getSchemaGrammar();
+        $table = 'Test_' . Str::random();
+
+        $blueprint = new Blueprint($table, function (Blueprint $table) {
+            $table->uuid('id');
+            $table->primary('id');
+            $table->dateTime('t')->nullable();
+            $table->deleteRowsOlderThan('t', 100);
+        });
+
+        $blueprint->create();
+        $blueprint->build($conn, $grammar);
+
+        $statement = $blueprint->toSql($conn, $grammar)[0];
+
+        self::assertEquals(
+            "create table `{$table}` (`id` string(36) not null, `t` timestamp) primary key (`id`), row deletion policy (older_than(t, interval 100 day))",
+            $statement,
+        );
+    }
+
+    public function test_replace_row_deletion_policy(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $conn->useDefaultSchemaGrammar();
+        $grammar = $conn->getSchemaGrammar();
+        $table = 'Test_' . Str::random();
+
+        $blueprint1 = new Blueprint($table, function (Blueprint $table) {
+            $table->create();
+            $table->uuid('id');
+            $table->primary('id');
+            $table->dateTime('t')->nullable();
+            $table->deleteRowsOlderThan('t', 100);
+        });
+        $blueprint1->build($conn, $grammar);
+
+        $blueprint2 = new Blueprint($table, function (Blueprint $table) {
+            $table->replaceRowDeletionPolicy('t', 200);
+        });
+        $blueprint2->build($conn, $grammar);
+
+        $statement = $blueprint2->toSql($conn, $grammar)[0];
+
+        self::assertEquals(
+            "alter table `{$table}` replace row deletion policy (older_than(t, interval 200 day))",
+            $statement,
+        );
+    }
+
+    public function test_drop_row_deletion_policy(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $conn->useDefaultSchemaGrammar();
+        $grammar = $conn->getSchemaGrammar();
+        $table = 'Test_' . Str::random();
+
+        $blueprint1 = new Blueprint($table, function (Blueprint $table) {
+            $table->create();
+            $table->uuid('id');
+            $table->primary('id');
+            $table->dateTime('created_at')->nullable();
+            $table->deleteRowsOlderThan('created_at', 100);
+        });
+        $blueprint1->build($conn, $grammar);
+
+        $blueprint2 = new Blueprint($table, function (Blueprint $table) {
+            $table->dropRowDeletionPolicy();
+        });
+        $blueprint2->build($conn, $grammar);
+
+        $statement = $blueprint2->toSql($conn, $grammar)[0];
+
+        self::assertEquals(
+            "alter table `{$table}` drop row deletion policy",
+            $statement,
         );
     }
 
