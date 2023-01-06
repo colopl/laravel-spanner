@@ -49,7 +49,7 @@ class Processor extends BaseProcessor
     public function processGetAllTables(array $results): array
     {
         return array_map(
-            static fn(array $result) => $result['TABLE_NAME'],
+            static fn(array $result): string => $result['TABLE_NAME'],
             $results,
         );
     }
