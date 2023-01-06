@@ -32,21 +32,6 @@ class BuilderTest extends TestCase
     private const TABLE_NAME_COMPOSITE_PRIMARY_KEY = 'composite_primary_key_test_table';
     private const TABLE_NAME_CONTAINS_ARRAY_TYPE_COLUMN = 'array_type_column_test_table';
 
-    private const RUN_TEST_TRIGGER_ENV_VARIABLE_NAME = 'LARAVEL_SPANNER_RUN_SCHEMA_BUILDER_TESTS';
-
-    private function skipUnlessEnvVarSet(): void
-    {
-        if (getenv(self::RUN_TEST_TRIGGER_ENV_VARIABLE_NAME) === false) {
-            $this->markTestSkipped('Skipping since this takes a long time。Please add the environment variable: '.self::RUN_TEST_TRIGGER_ENV_VARIABLE_NAME.' to enable this test');
-        }
-    }
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->skipUnlessEnvVarSet();
-    }
-
     public function testSchemaCreate(): void
     {
         $conn = $this->getDefaultConnection();
