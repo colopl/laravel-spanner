@@ -18,6 +18,7 @@
 namespace Colopl\Spanner\Tests\Schema;
 
 use Colopl\Spanner\Schema\Blueprint;
+use Colopl\Spanner\Schema\Builder;
 use Colopl\Spanner\Tests\TestCase;
 use Exception;
 use Illuminate\Support\Str;
@@ -199,5 +200,18 @@ class BuilderTest extends TestCase
 
         $this->assertTrue($sb->hasTable(self::TABLE_NAME_RELATION_PARENT_INTERLEAVED));
         $this->assertTrue($sb->hasTable(self::TABLE_NAME_RELATION_CHILD_INTERLEAVED));
+    }
+
+    public function test_getAllTables(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $sb = $conn->getSchemaBuilder();
+
+        $sb->create(self::TABLE_NAME_CREATED, function (Blueprint $table) {
+            $table->uuid('id');
+            $table->primary('id');
+        });
+
+        $this->assertContains(self::TABLE_NAME_CREATED, $sb->getAllTables());
     }
 }
