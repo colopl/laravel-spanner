@@ -39,7 +39,7 @@ class Builder extends BaseBuilder
      */
     public function getAllTables()
     {
-        /** @var array{ TABLE_NAME: string } $results */
+        /** @var list<array{ TABLE_NAME: string }> $results */
         $results = $this->connection->select(
             $this->grammar->compileGetAllTables()
         );
