@@ -1,3 +1,8 @@
+# v4.4.0
+
+Added
+- Support Schema\Builder::getAllTables()
+
 # v4.3.0
 
 Added
