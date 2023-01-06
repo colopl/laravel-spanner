@@ -32,6 +32,5 @@
         <env name="SPANNER_EMULATOR_HOST" value="emulator:9010" />
         <env name="DB_SPANNER_INSTANCE_ID" value="test-instance" />
         <env name="DB_SPANNER_DATABASE_ID" value="test-database" />
-        <env name="LARAVEL_SPANNER_RUN_SCHEMA_BUILDER_TESTS" value="true" />
     </php>
 </phpunit>
