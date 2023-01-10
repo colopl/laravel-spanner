@@ -51,6 +51,14 @@ class Grammar extends BaseGrammar
     /**
      * @return string
      */
+    public function compileGetAllTables()
+    {
+        return 'select * from information_schema.tables where table_schema = \'\' and table_type = \'BASE TABLE\'';
+    }
+
+    /**
+     * @return string
+     */
     public function compileColumnListing()
     {
         return 'select column_name as `column_name` from information_schema.columns where table_schema = \'\' and table_name = ?';

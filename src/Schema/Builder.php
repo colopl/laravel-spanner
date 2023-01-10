@@ -33,6 +33,23 @@ class Builder extends BaseBuilder
      */
     public static $defaultBinaryLength = 255;
 
+
+    /**
+     * @return list<string>
+     */
+    public function getAllTables()
+    {
+        /** @var list<array{ TABLE_NAME: string }> $results */
+        $results = $this->connection->select(
+            $this->grammar->compileGetAllTables()
+        );
+
+        /** @var Processor $processor */
+        $processor = $this->connection->getPostProcessor();
+
+        return $processor->processGetAllTables($results);
+    }
+
     /**
      * @inheritDoc
      */
