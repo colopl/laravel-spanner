@@ -84,8 +84,8 @@ class SessionsCommand extends Command
     {
         $sort = $this->option('sort');
         assert(is_string($sort));
-        return match (Str::camel($sort)) {
-            'name' => $session->getName(),
+        return match (Str::studly($sort)) {
+            'Name' => $session->getName(),
             'Created' => (string) $session->getCreatedAt(),
             'LastUsed' => (string) $session->getLastUsedAt(),
             default => throw new RuntimeException("Unknown column: {$sort}"),
