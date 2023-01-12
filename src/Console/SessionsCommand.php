@@ -46,14 +46,13 @@ class SessionsCommand extends Command
             static fn(string $name): bool => config("database.connections.{$name}.driver") === 'spanner',
         );
 
-        $headers = ['Name', 'CreatedAt', 'LastUsedAt'];
-
         foreach ($spannerConnectionNames as $name) {
             $connection = $db->connection($name);
             if ($connection instanceof SpannerConnection) {
                 $sessions = $this->makeSessionData($connection);
                 $this->info("{$connection->getName()} contains {$sessions->count()} session(s).");
                 if ($sessions->isNotEmpty()) {
+                    $headers = array_keys($sessions[0]);
                     $this->table($headers, $sessions);
                 }
             }
@@ -62,7 +61,7 @@ class SessionsCommand extends Command
 
     /**
      * @param Connection $connection
-     * @return Collection<int, array{ string, string, string }>
+     * @return Collection<int, array{ Name: string, CreatedAt: string, LastUsedAt: string }>
      */
     protected function makeSessionData(Connection $connection): Collection
     {
@@ -71,9 +70,9 @@ class SessionsCommand extends Command
         return $connection->listSessions()
             ->sortBy(fn(Session $s) => $this->getSortValue($s), descending: $descending)
             ->map(static fn(Session $s) => [
-                $s->getName(),
-                $s->getCreatedAt()->format('Y-m-d H:i:s'),
-                $s->getLastUsedAt()->format('Y-m-d H:i:s'),
+                'Name' => $s->getName(),
+                'CreatedAt' => $s->getCreatedAt()->format('Y-m-d H:i:s'),
+                'LastUsedAt' => $s->getLastUsedAt()->format('Y-m-d H:i:s'),
             ]);
     }
 
