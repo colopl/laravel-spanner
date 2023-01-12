@@ -61,7 +61,7 @@ class SessionsCommand extends Command
 
     /**
      * @param Connection $connection
-     * @return Collection<int, array{ Name: string, CreatedAt: string, LastUsedAt: string }>
+     * @return Collection<int, array{ Name: string, Created: string, LastUsed: string }>
      */
     protected function makeSessionData(Connection $connection): Collection
     {
