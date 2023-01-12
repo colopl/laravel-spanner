@@ -30,7 +30,7 @@ class SessionsCommand extends Command
 {
     protected $signature = 'spanner:sessions {connections?* : The database connections to query}
                {--sort=LastUsedAt : Name of column to be sorted}
-               {--order=desc : sort order as "asc" or "desc"}';
+               {--order=desc : Sort order as "asc" or "desc"}';
 
     protected $description = 'List sessions on the server';
 
