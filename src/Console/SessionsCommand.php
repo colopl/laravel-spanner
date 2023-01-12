@@ -29,7 +29,7 @@ use RuntimeException;
 class SessionsCommand extends Command
 {
     protected $signature = 'spanner:sessions {connections?* : The database connections to query}
-               {--sort=LastUsedAt : Name of column to be sorted}
+               {--sort=LastUsed : Name of column to be sorted [Name, Created, LastUsed]}
                {--order=desc : Sort order as "asc" or "desc"}';
 
     protected $description = 'List sessions on the server';
@@ -71,8 +71,8 @@ class SessionsCommand extends Command
             ->sortBy(fn(Session $s) => $this->getSortValue($s), descending: $descending)
             ->map(static fn(Session $s) => [
                 'Name' => $s->getName(),
-                'CreatedAt' => $s->getCreatedAt()->format('Y-m-d H:i:s'),
-                'LastUsedAt' => $s->getLastUsedAt()->format('Y-m-d H:i:s'),
+                'Created' => $s->getCreatedAt()->format('Y-m-d H:i:s'),
+                'LastUsed' => $s->getLastUsedAt()->format('Y-m-d H:i:s'),
             ]);
     }
 
@@ -84,8 +84,12 @@ class SessionsCommand extends Command
     {
         $sort = $this->option('sort');
         assert(is_string($sort));
-        $method = 'get' . Str::studly($sort);
-        return (string) $session->$method();
+        return match (Str::camel($sort)) {
+            'name' => $session->getName(),
+            'Created' => (string) $session->getCreatedAt(),
+            'LastUsed' => (string) $session->getLastUsedAt(),
+            default => throw new RuntimeException("Unknown column: {$sort}"),
+        };
     }
 
     /**

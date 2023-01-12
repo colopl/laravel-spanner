@@ -120,7 +120,7 @@ class SessionsCommandTest extends TestCase
 
         $this->artisan('spanner:sessions', ['connections' => 'main', '--sort' => 'name'])
             ->expectsOutput('main contains 2 session(s).')
-            ->expectsTable(['Name', 'CreatedAt', 'LastUsedAt'], $list)
+            ->expectsTable(['Name', 'Created', 'LastUsed'], $list)
             ->assertSuccessful()
             ->run();
     }
@@ -145,7 +145,7 @@ class SessionsCommandTest extends TestCase
 
         $this->artisan('spanner:sessions', ['connections' => 'main', '--sort' => 'name', '--order' => 'asc'])
             ->expectsOutput('main contains 2 session(s).')
-            ->expectsTable(['Name', 'CreatedAt', 'LastUsedAt'], $list)
+            ->expectsTable(['Name', 'Created', 'LastUsed'], $list)
             ->assertSuccessful()
             ->run();
     }
