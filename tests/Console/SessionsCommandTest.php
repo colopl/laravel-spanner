@@ -30,7 +30,7 @@ class SessionsCommandTest extends TestCase
      * @param int $amount
      * @return list<Session>
      */
-    protected function createSessions(Connection $connection, int $amount)
+    protected function createSessions(Connection $connection, int $amount): array
     {
         $pool = $connection->getSpannerDatabase()->sessionPool() ?? throw new Exception('unreachable');
         $sessions = [];
