@@ -19,7 +19,7 @@ namespace Colopl\Spanner;
 
 use Colopl\Spanner\Console\SessionsCommand;
 use Colopl\Spanner\Console\WarmupCommand;
-use Google\Cloud\Spanner\Session\CacheSessionPool;
+use Colopl\Spanner\Session\CacheSessionPool;
 use Google\Cloud\Spanner\Session\SessionPoolInterface;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Support\ServiceProvider;
