@@ -29,8 +29,8 @@ use RuntimeException;
 class SessionsCommand extends Command
 {
     protected $signature = 'spanner:sessions {connections?* : The database connections to query}
-               {--sort= : Name of column to be sorted (default: LastUsedAt)}
-               {--order= : sort order as "ASC" or "DESC" (default: DESC)}';
+               {--sort=LastUsedAt : Name of column to be sorted}
+               {--order=desc : sort order as "asc" or "desc"}';
 
     protected $description = 'List sessions on the server';
 
@@ -82,7 +82,7 @@ class SessionsCommand extends Command
      */
     protected function getSortValue(Session $session): string
     {
-        $sort = $this->option('sort') ?? 'lastUsedAt';
+        $sort = $this->option('sort');
         assert(is_string($sort));
         $method = 'get' . Str::studly($sort);
         return (string) $session->$method();
@@ -93,12 +93,12 @@ class SessionsCommand extends Command
      */
     protected function getOrder(): string
     {
-        $order = $this->option('order') ?? 'desc';
+        $order = $this->option('order');
         assert(is_string($order));
 
         $order = strtolower($order);
 
-        if (!in_array($order, ['asc', 'desc'])) {
+        if (!in_array($order, ['asc', 'desc'], true)) {
             throw new RuntimeException("Unknown order: {$order}. Must be [ASC, DESC]");
         }
 
