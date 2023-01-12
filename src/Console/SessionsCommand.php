@@ -17,13 +17,20 @@
 
 namespace Colopl\Spanner\Console;
 
+use Colopl\Spanner\Connection;
 use Colopl\Spanner\Connection as SpannerConnection;
+use Colopl\Spanner\Session;
 use Illuminate\Console\Command;
 use Illuminate\Database\DatabaseManager;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
+use RuntimeException;
 
 class SessionsCommand extends Command
 {
-    protected $signature = 'spanner:sessions {connections?* : The database connections to query}';
+    protected $signature = 'spanner:sessions {connections?* : The database connections to query}
+               {--sort= : Name of column to be sorted (default: LastUsedAt)}
+               {--order= : sort order as "ASC" or "DESC" (default: DESC)}';
 
     protected $description = 'List sessions on the server';
 
@@ -44,21 +51,59 @@ class SessionsCommand extends Command
         foreach ($spannerConnectionNames as $name) {
             $connection = $db->connection($name);
             if ($connection instanceof SpannerConnection) {
-                $sessions = $connection->listSessions();
-                $count = count($sessions);
-                $data = [];
-                $this->info("{$connection->getName()} contains {$count} session(s).");
-                foreach ($sessions as $session) {
-                    $data[] = [
-                        $session->getName(),
-                        $session->getCreatedAt(),
-                        $session->getLastUsedAt(),
-                    ];
-                }
-                if (count($data) > 0) {
-                    $this->table($headers, $data);
+                $sessions = $this->makeSessionData($connection);
+                $this->info("{$connection->getName()} contains {$sessions->count()} session(s).");
+                if ($sessions->isNotEmpty()) {
+                    $this->table($headers, $sessions);
                 }
             }
         }
     }
+
+    /**
+     * @param Connection $connection
+     * @return Collection<int, array{ string, string, string }>
+     */
+    protected function makeSessionData(Connection $connection): Collection
+    {
+        $descending = $this->getOrder() === 'desc';
+
+        return $connection->listSessions()
+            ->sortBy(fn(Session $s) => $this->getSortValue($s), descending: $descending)
+            ->map(static fn(Session $s) => [
+                $s->getName(),
+                $s->getCreatedAt()->format('Y-m-d H:i:s'),
+                $s->getLastUsedAt()->format('Y-m-d H:i:s'),
+            ]);
+    }
+
+    /**
+     * @param Session $session
+     * @return string
+     */
+    protected function getSortValue(Session $session): string
+    {
+        $sort = $this->option('sort') ?? 'lastUsedAt';
+        assert(is_string($sort));
+        $method = 'get' . Str::studly($sort);
+        return (string) $session->$method();
+    }
+
+    /**
+     * @return string
+     */
+    protected function getOrder(): string
+    {
+        $order = $this->option('order') ?? 'desc';
+        assert(is_string($order));
+
+        $order = strtolower($order);
+
+        if (!in_array($order, ['asc', 'desc'])) {
+            throw new RuntimeException("Unknown order: {$order}. Must be [ASC, DESC]");
+        }
+
+        return $order;
+    }
+
 }

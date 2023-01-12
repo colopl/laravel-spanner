@@ -18,9 +18,28 @@
 namespace Colopl\Spanner\Tests\Console;
 
 use Colopl\Spanner\Connection;
+use Colopl\Spanner\Session as SessionInfo;
+use Exception;
+use Google\Cloud\Spanner\Session\Session;
+use Google\Cloud\Spanner\Session\SessionPoolInterface;
 
 class SessionsCommandTest extends TestCase
 {
+    /**
+     * @param Connection $connection
+     * @param int $amount
+     * @return list<Session>
+     */
+    protected function createSessions(Connection $connection, int $amount)
+    {
+        $pool = $connection->getSpannerDatabase()->sessionPool() ?? throw new Exception('unreachable');
+        $sessions = [];
+        for ($i = 0; $i < $amount; $i++) {
+            $sessions[] = $pool->acquire(SessionPoolInterface::CONTEXT_READ);
+        }
+        return $sessions;
+    }
+
     public function test_no_args(): void
     {
         if (getenv('SPANNER_EMULATOR_HOST')) {
@@ -77,6 +96,56 @@ class SessionsCommandTest extends TestCase
         $this->artisan('spanner:sessions', ['connections' => 'main'])
             ->expectsOutputToContain('main contains 0 session(s).')
             ->doesntExpectOutputToContain('Name')
+            ->assertSuccessful()
+            ->run();
+    }
+
+    public function test_sort(): void
+    {
+        if (getenv('SPANNER_EMULATOR_HOST')) {
+            $this->markTestSkipped('Cannot list sessions on emulator');
+        }
+
+        $conn = $this->getDefaultConnection();
+        $this->setUpDatabaseOnce($conn);
+        $this->createSessions($conn, 2);
+
+        $list = $conn->listSessions()
+            ->sortByDesc(fn(SessionInfo $s) => $s->getName())
+            ->map(static fn(SessionInfo $s) => [
+                $s->getName(),
+                $s->getCreatedAt()->format('Y-m-d H:i:s'),
+                $s->getLastUsedAt()->format('Y-m-d H:i:s'),
+            ]);
+
+        $this->artisan('spanner:sessions', ['connections' => 'main', '--sort' => 'name'])
+            ->expectsOutput('main contains 2 session(s).')
+            ->expectsTable(['Name', 'CreatedAt', 'LastUsedAt'], $list)
+            ->assertSuccessful()
+            ->run();
+    }
+
+    public function test_sort_order(): void
+    {
+        if (getenv('SPANNER_EMULATOR_HOST')) {
+            $this->markTestSkipped('Cannot list sessions on emulator');
+        }
+
+        $conn = $this->getDefaultConnection();
+        $this->setUpDatabaseOnce($conn);
+        $this->createSessions($conn, 2);
+
+        $list = $conn->listSessions()
+            ->sortBy(fn(SessionInfo $s) => $s->getName())
+            ->map(static fn(SessionInfo $s) => [
+                $s->getName(),
+                $s->getCreatedAt()->format('Y-m-d H:i:s'),
+                $s->getLastUsedAt()->format('Y-m-d H:i:s'),
+            ]);
+
+        $this->artisan('spanner:sessions', ['connections' => 'main', '--sort' => 'name', '--order' => 'asc'])
+            ->expectsOutput('main contains 2 session(s).')
+            ->expectsTable(['Name', 'CreatedAt', 'LastUsedAt'], $list)
             ->assertSuccessful()
             ->run();
     }
