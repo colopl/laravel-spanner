@@ -149,4 +149,23 @@ class SessionsCommandTest extends TestCase
             ->assertSuccessful()
             ->run();
     }
+
+    public function test_sort_patterns(): void
+    {
+        if (getenv('SPANNER_EMULATOR_HOST')) {
+            $this->markTestSkipped('Cannot list sessions on emulator');
+        }
+
+        $conn = $this->getDefaultConnection();
+        $this->setUpDatabaseOnce($conn);
+        $this->createSessions($conn, 1);
+
+        foreach (['Name', 'Created', 'LastUsed'] as $column) {
+            foreach (['desc', 'asc'] as $order) {
+                $this->artisan('spanner:sessions', ['connections' => 'main', '--sort' => $column, '--order' => $order])
+                    ->assertSuccessful()
+                    ->run();
+            }
+        }
+    }
 }
