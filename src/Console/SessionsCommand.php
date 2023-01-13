@@ -71,8 +71,8 @@ class SessionsCommand extends Command
             ->sortBy(fn(Session $s) => $this->getSortValue($s), descending: $descending)
             ->map(static fn(Session $s) => [
                 'Name' => $s->getName(),
-                'Created' => $s->getCreatedAt()->format('Y-m-d H:i:s'),
-                'LastUsed' => $s->getLastUsedAt()->format('Y-m-d H:i:s'),
+                'Created' => (string) $s->getCreatedAt(),
+                'LastUsed' => (string) $s->getLastUsedAt(),
             ]);
     }
 

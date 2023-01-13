@@ -19,9 +19,9 @@ namespace Colopl\Spanner\Tests\Console;
 
 use Colopl\Spanner\Connection;
 use Colopl\Spanner\Session as SessionInfo;
-use Exception;
 use Google\Cloud\Spanner\Session\Session;
 use Google\Cloud\Spanner\Session\SessionPoolInterface;
+use RuntimeException;
 
 class SessionsCommandTest extends TestCase
 {
@@ -32,7 +32,7 @@ class SessionsCommandTest extends TestCase
      */
     protected function createSessions(Connection $connection, int $amount): array
     {
-        $pool = $connection->getSpannerDatabase()->sessionPool() ?? throw new Exception('unreachable');
+        $pool = $connection->getSpannerDatabase()->sessionPool() ?? throw new RuntimeException('unreachable');
         $sessions = [];
         for ($i = 0; $i < $amount; $i++) {
             $sessions[] = $pool->acquire(SessionPoolInterface::CONTEXT_READ);
