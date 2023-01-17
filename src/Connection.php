@@ -450,7 +450,7 @@ class Connection extends BaseConnection
      */
     protected function getSessionNotFoundMode(): string
     {
-        return $this->config['sessionNotFoundErrorMode'] ?? self::MAINTAIN_SESSION_POOL;
+        return $this->config['sessionNotFoundErrorMode'] ?? self::CLEAR_SESSION_POOL;
     }
 
     /**
