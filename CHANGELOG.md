@@ -4,6 +4,8 @@ Changed
 - Checks that primary key is defined in schema and throws an exception if not defined.
 - `Colopl\Spanner\Session` has been renamed to `Colopl\Spanner\SessionInfo`.
 - `Blueprint::stringArray`'s `$length` parameter is now optional and defaults to `255`.
+- Auth and session pool no longer use the custom FileCacheAdapter and uses Symfony's FilesystemAdapter instead.
+- Path for auth and session pool files have moved from `storage/framework/cache/spanner` to `storage/framework/spanner/{auth|session}`.
 
 # v4.7.0
 

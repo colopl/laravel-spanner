@@ -248,6 +248,13 @@ class ConnectionTest extends TestCase
         $this->assertNotEmpty($authCache->getValues(), 'After executing some query, session cache is created.');
     }
 
+    public function test_AuthCache_with_FileSystemAdapter(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $conn->select('SELECT 1');
+        self::assertDirectoryExists(storage_path('framework/spanner/auth'));
+    }
+
     public function testSessionPool(): void
     {
         $config = $this->app['config']->get('database.connections.main');
@@ -262,6 +269,13 @@ class ConnectionTest extends TestCase
 
         $conn->clearSessionPool();
         $this->assertEmpty($cacheItemPool->getValues(), 'After clearing the session pool, cache is removed.');
+    }
+
+    public function test_session_pool_with_FileSystemAdapter(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $conn->select('SELECT 1');
+        self::assertDirectoryExists(storage_path('framework/spanner/session'));
     }
 
     public function test_clearSessionPool(): void
