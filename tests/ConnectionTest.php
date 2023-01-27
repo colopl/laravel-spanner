@@ -27,6 +27,7 @@ use Colopl\Spanner\TimestampBound\MinReadTimestamp;
 use Colopl\Spanner\TimestampBound\ReadTimestamp;
 use Colopl\Spanner\TimestampBound\StrongRead;
 use Google\Auth\FetchAuthTokenInterface;
+use Google\Cloud\Core\Exception\NotFoundException;
 use Google\Cloud\Spanner\KeySet;
 use Google\Cloud\Spanner\SpannerClient;
 use Google\Cloud\Spanner\Timestamp;
@@ -36,6 +37,7 @@ use Illuminate\Database\Events\TransactionBeginning;
 use Illuminate\Database\Events\TransactionCommitted;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Event;
+use RuntimeException;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
 
 class ConnectionTest extends TestCase
@@ -346,5 +348,22 @@ class ConnectionTest extends TestCase
         $this->assertEquals(TransactionBeginning::class, $receivedEventClasses[0]);
         $this->assertEquals(QueryExecuted::class, $receivedEventClasses[1]);
         $this->assertEquals(TransactionCommitted::class, $receivedEventClasses[2]);
+    }
+
+    public function test_Connection_transaction_reset_on_exceptions(): void
+    {
+        $conn = $this->getDefaultConnection();
+
+        try {
+            $conn->transaction(function () {
+                throw new NotFoundException('NG');
+            });
+        } catch(NotFoundException) {
+            // do nothing.
+        }
+
+        self::assertfalse($conn->inTransaction());
+        self::assertNull($conn->getCurrentTransaction());
+        self::assertSame(0, $conn->transactionLevel());
     }
 }

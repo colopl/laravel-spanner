@@ -184,16 +184,17 @@ trait ManagesTransactions
         }
 
         if ($this->currentTransaction !== null) {
-            if ($this->currentTransaction->state() === Transaction::STATE_ACTIVE) {
-                try {
+            try {
+                if ($this->currentTransaction->state() === Transaction::STATE_ACTIVE) {
                     $this->currentTransaction->rollBack();
-                } catch (NotFoundException $e) {
-                    if (!$this->ignoreSessionNotFoundErrorOnRollback) {
-                        throw $e;
-                    }
                 }
+            } catch (NotFoundException $e) {
+                if (!$this->ignoreSessionNotFoundErrorOnRollback) {
+                    throw $e;
+                }
+            } finally {
+                $this->currentTransaction = null;
             }
-            $this->currentTransaction = null;
         }
     }
 
