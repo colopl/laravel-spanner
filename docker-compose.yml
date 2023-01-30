@@ -9,4 +9,4 @@ services:
     depends_on:
       - emulator
   emulator:
-    image: gcr.io/cloud-spanner-emulator/emulator
+    image: gcr.io/cloud-spanner-emulator/emulator:1.4.9
