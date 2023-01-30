@@ -30,6 +30,9 @@ class WarmupCommand extends Command
 
     protected $description = "Warmup Spanner's Session Pool.";
 
+    /**
+     * @throws ServiceException
+     */
     public function handle(DatabaseManager $db): void
     {
         $connectionNames = (array)$this->argument('connections');
