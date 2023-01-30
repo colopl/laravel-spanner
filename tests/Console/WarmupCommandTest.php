@@ -18,6 +18,8 @@
 namespace Colopl\Spanner\Tests\Console;
 
 use Colopl\Spanner\Connection;
+use Google\Cloud\Core\Exception\NotFoundException;
+use Illuminate\Support\Facades\DB;
 
 class
 WarmupCommandTest extends TestCase
@@ -76,5 +78,43 @@ WarmupCommandTest extends TestCase
             ->expectsOutputToContain("Warmed up 1 sessions for alternative")
             ->assertSuccessful()
             ->run();
+    }
+
+    public function test_with_missing_instance(): void
+    {
+        $this->expectException(NotFoundException::class);
+        $this->expectExceptionMessageMatches('/Instance not found:/');
+
+        config()->set('database.connections.none', [
+            'driver' => 'spanner',
+            'instance' => 'nil',
+            'database' => 'nil',
+        ]);
+
+        try {
+            $this->artisan('spanner:warmup', ['connections' => 'none'])
+                ->assertFailed()
+                ->run();
+        } finally {
+            // teardown で truncate が実行されないようにする
+            DB::purge('none');
+        }
+    }
+
+    public function test_with_skip_on_error(): void
+    {
+        config()->set('database.connections.none', [
+            'driver' => 'spanner',
+            'instance' => 'nil',
+            'database' => 'nil',
+        ]);
+
+        $this->artisan('spanner:warmup', ['connections' => 'none', '--skip-on-error' => true])
+            ->expectsOutputToContain('Skipping warmup for none')
+            ->assertSuccessful()
+            ->run();
+
+        // teardown で truncate が実行されないようにする
+        DB::purge('none');
     }
 }

@@ -18,15 +18,17 @@
 namespace Colopl\Spanner\Console;
 
 use Colopl\Spanner\Connection as SpannerConnection;
+use Google\Cloud\Core\Exception\ServiceException;
 use Illuminate\Console\Command;
 use Illuminate\Database\DatabaseManager;
 
 class WarmupCommand extends Command
 {
     protected $signature = 'spanner:warmup {connections?* : The database connections to be warmed up}
-               {--refresh : Will clear all existing sessions first.}';
+               {--refresh : Will clear all existing sessions first.}
+               {--skip-on-error : Will skip the connection if error is thrown.}';
 
-    protected $description = 'Warmup Spanner\'s Session Pool.';
+    protected $description = "Warmup Spanner's Session Pool.";
 
     public function handle(DatabaseManager $db): void
     {
@@ -41,10 +43,16 @@ class WarmupCommand extends Command
         );
 
         $refresh = (bool)($this->option('refresh') ?? false);
+        $skipOnError = (bool)($this->option('skip-on-error') ?? false);
 
         foreach ($spannerConnectionNames as $name) {
             $connection = $db->connection($name);
-            if ($connection instanceof SpannerConnection) {
+
+            if (!$connection instanceof SpannerConnection) {
+                continue;
+            }
+
+            try {
                 if ($refresh) {
                     $this->info("Cleared all existing sessions for {$name}");
                     $connection->clearSessionPool();
@@ -52,6 +60,10 @@ class WarmupCommand extends Command
 
                 $count = $connection->warmupSessionPool();
                 $this->info("Warmed up {$count} sessions for {$name}");
+            } catch (ServiceException $e) {
+                $skipOnError
+                    ? $this->warn("Skipping warmup for {$name} due to " . $e::class . ": {$e->getMessage()}")
+                    : throw $e;
             }
         }
     }
