@@ -355,7 +355,10 @@ class ConnectionTest extends TestCase
         $conn = $this->getDefaultConnection();
 
         try {
-            $conn->transaction(function () {
+            $conn->transaction(function (Connection $conn) {
+                self::assertTrue($conn->inTransaction());
+                self::assertNotNull($conn->getCurrentTransaction());
+                self::assertSame(1, $conn->transactionLevel());
                 throw new NotFoundException('NG');
             });
         } catch(NotFoundException) {
