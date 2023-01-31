@@ -3,6 +3,9 @@
 Added
 - Command `spanner:warmup` now has a new option `--skip-on-error` which will skip any connections which throws an exception.
 
+Fixed
+- Transaction state was not cleared if a NotFoundException was raised during rollback.
+
 # v4.4.0
 
 Added
