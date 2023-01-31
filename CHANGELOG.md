@@ -1,4 +1,4 @@
-# v4.5.0 (Not released yet)
+# v4.5.0
 
 Added
 - Command `spanner:warmup` now has a new option `--skip-on-error` which will skip any connections which throws an exception.
