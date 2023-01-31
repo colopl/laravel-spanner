@@ -96,7 +96,7 @@ WarmupCommandTest extends TestCase
                 ->assertFailed()
                 ->run();
         } finally {
-            // teardown で truncate が実行されないようにする
+            // prevents truncate from running on connection during teardown.
             DB::purge('none');
         }
     }
@@ -114,7 +114,7 @@ WarmupCommandTest extends TestCase
             ->assertSuccessful()
             ->run();
 
-        // teardown で truncate が実行されないようにする
+        // prevents truncate from running on connection during teardown.
         DB::purge('none');
     }
 }
