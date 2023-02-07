@@ -469,6 +469,19 @@ class ModelTest extends TestCase
         $userInfo->save();
 
         DB::enableQueryLog();
+        $userInfo->fresh();
+
+        $queryLogs = DB::getQueryLog();
+
+        self::assertCount(1, $queryLogs);
+        self::assertStringContainsString('`userId`', $queryLogs[0]['query']);
+        self::assertSame(
+            [$user->getKey(), $userInfo->getKey()],
+            $queryLogs[0]['bindings']
+        );
+
+        DB::flushQueryLog();
+
         $userInfo->refresh();
 
         $queryLogs = DB::getQueryLog();
