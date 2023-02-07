@@ -37,6 +37,24 @@ trait InterleaveKeySupport
     /**
      * @inheritDoc
      */
+    protected function setKeysForSelectQuery($query)
+    {
+        $interleaveKeys = $this->getInterleaveKeys();
+
+        if (empty($interleaveKeys)) {
+            return parent::setKeysForSaveQuery($query);
+        }
+
+        foreach ($interleaveKeys as $keyName) {
+            $query->where($keyName, '=', $this->getAttribute($keyName));
+        }
+
+        return $query;
+    }
+
+    /**
+     * @inheritDoc
+     */
     protected function setKeysForSaveQuery($query)
     {
         $interleaveKeys = $this->getInterleaveKeys();

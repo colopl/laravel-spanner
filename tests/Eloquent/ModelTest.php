@@ -29,6 +29,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 /**
  * @property string $userId
@@ -458,5 +459,25 @@ class ModelTest extends TestCase
 
         self::assertEquals($parentRecord->id, $results[0]->id);
         self::assertEquals($childRecord->childId, $results[1]->childId);
+    }
+
+    public function test_refresh_uses_interleaved_keys(): void
+    {
+        $user = $this->createTestUser();
+        $user->save();
+        $userInfo = $this->createTestUserInfo($user->getKey(), 1);
+        $userInfo->save();
+
+        DB::enableQueryLog();
+        $userInfo->refresh();
+
+        $queryLogs = DB::getQueryLog();
+
+        self::assertCount(1, $queryLogs);
+        self::assertStringContainsString('`userId`', $queryLogs[0]['query']);
+        self::assertSame(
+            [$user->getKey(), $userInfo->getKey()],
+            $queryLogs[0]['bindings']
+        );
     }
 }
