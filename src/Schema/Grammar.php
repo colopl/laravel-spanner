@@ -53,7 +53,7 @@ class Grammar extends BaseGrammar
      */
     public function compileGetAllTables()
     {
-        return 'select * from information_schema.tables where table_schema = \'\' and table_type = \'BASE TABLE\'';
+        return 'select `table_name` as name, `table_type` as type from information_schema.tables where table_schema = \'\' and table_type = \'BASE TABLE\'';
     }
 
     /**

@@ -197,6 +197,11 @@ class BuilderTest extends TestCase
             $table->primary('id');
         });
 
-        $this->assertContains(self::TABLE_NAME_CREATED, $sb->getAllTables());
+        $tables = array_map(
+            static fn (array $row): string => $row['name'],
+            $sb->getAllTables(),
+        );
+
+        $this->assertContains(self::TABLE_NAME_CREATED, $tables);
     }
 }
