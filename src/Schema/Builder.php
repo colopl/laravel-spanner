@@ -35,19 +35,13 @@ class Builder extends BaseBuilder
 
 
     /**
-     * @return list<string>
+     * @return list<array{ name: string, type: string }>
      */
     public function getAllTables()
     {
-        /** @var list<array{ TABLE_NAME: string }> $results */
-        $results = $this->connection->select(
+        return $this->connection->select(
             $this->grammar->compileGetAllTables()
         );
-
-        /** @var Processor $processor */
-        $processor = $this->connection->getPostProcessor();
-
-        return $processor->processGetAllTables($results);
     }
 
     /**
