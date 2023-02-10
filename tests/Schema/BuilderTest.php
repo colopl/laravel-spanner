@@ -21,6 +21,7 @@ use Colopl\Spanner\Schema\Blueprint;
 use Colopl\Spanner\Schema\Builder;
 use Colopl\Spanner\Tests\TestCase;
 use Exception;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 
 class BuilderTest extends TestCase
@@ -197,6 +198,9 @@ class BuilderTest extends TestCase
             $table->primary('id');
         });
 
-        $this->assertContains(self::TABLE_NAME_CREATED, $sb->getAllTables());
+        $row = Arr::last($sb->getAllTables());
+
+        $this->assertSame(self::TABLE_NAME_CREATED, $row['name']);
+        $this->assertSame('BASE TABLE', $row['type']);
     }
 }

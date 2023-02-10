@@ -7,6 +7,7 @@ Changed
 - Auth and session pool no longer use the custom FileCacheAdapter and uses Symfony's FilesystemAdapter instead.
 - Path for auth and session pool files have moved from `storage/framework/cache/spanner` to `storage/framework/spanner/{auth|session}`.
 - Default Session Not Found Error Mode was changed from `MAINTAIN_SESSION_POOL` to `CLEAR_SESSION_POOL` (wasn't fully confident at the time, but I think it should be safe to assume it's working now).
+- Schema\Builder::getAllTables() now returns rows with `name` and `type` fields instead of list of strings (was implemented incorrectly).
 
 # v4.7.0
 
