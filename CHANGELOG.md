@@ -16,6 +16,8 @@ Chore
 
 Fixed
 - Expressions given as $value in `Schema\Grammar::formatDefaultValue` will now go through `getValue` to match upstream (No behavioral change).
+- Exception previously thrown in `Query/Builder` for `sharedLock`, `lockForUpdate`, `insertGetId` was moved to `Query/Grammar`.
+- Query/Builder::lock will now throw `BadMethodCallException` if called. Was ignored in previous versions.
 
 # v4.6.0
 
