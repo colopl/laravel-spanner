@@ -34,9 +34,7 @@ class Grammar extends BaseGrammar
     use SharedGrammarCalls;
 
     /**
-     * The possible column modifiers.
-     *
-     * @var array
+     * @inheritdoc
      */
     protected $modifiers = ['Nullable', 'Default'];
 
@@ -503,9 +501,9 @@ class Grammar extends BaseGrammar
      * @param Fluent<string, mixed> $column
      * @param string $type
      * @param mixed $value
-     * @return string
+     * @return int|float|string
      */
-    protected function formatDefaultValue(Fluent $column, string $type, mixed $value): string
+    protected function formatDefaultValue(Fluent $column, string $type, mixed $value): int|float|string
     {
         if ($value instanceof Expression) {
             return $value->getValue($this);
