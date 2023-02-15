@@ -1,4 +1,4 @@
-# v4.6.0 Unreleased
+# v4.6.0
 
 Fixed
 - `Model::fresh` and `Model::refresh` now adds interleaved keys to the query.
