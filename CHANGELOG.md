@@ -1,7 +1,8 @@
-# v4.5.1 Unreleased
+# v4.6.0 Unreleased
 
 Fixed
 - `Model::fresh` and `Model::refresh` now adds interleaved keys to the query.
+- Remove Type declaration from `Query/Builder::forceIndex()` to match the one added to laravel/framework in `v9.52.0`.
 
 # v4.5.0
 
