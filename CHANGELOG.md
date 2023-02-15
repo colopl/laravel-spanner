@@ -1,3 +1,8 @@
+# v4.6.1 (Not released yet)
+
+Chore
+- Removed `ramsey/uuid` from composer.json since laravel already includes it.
+
 # v4.6.0
 
 Fixed
