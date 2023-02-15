@@ -28,7 +28,7 @@ trait AppliesForceIndex
      * @param string|null $indexName
      * @return $this
      */
-    public function forceIndex(?string $indexName)
+    public function forceIndex($indexName)
     {
         $this->forceIndex = $indexName;
         return $this;
