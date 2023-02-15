@@ -43,18 +43,6 @@ class Processor extends BaseProcessor
     }
 
     /**
-     * @param list<array{ TABLE_NAME: string }> $results
-     * @return list<string>
-     */
-    public function processGetAllTables(array $results): array
-    {
-        return array_map(
-            static fn(array $result): string => $result['TABLE_NAME'],
-            $results,
-        );
-    }
-
-    /**
      * @inheritDoc
      */
     public function processColumnListing($results)
