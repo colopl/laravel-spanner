@@ -18,7 +18,6 @@
 namespace Colopl\Spanner\Tests\Schema;
 
 use Colopl\Spanner\Schema\Blueprint;
-use Colopl\Spanner\Schema\Builder;
 use Colopl\Spanner\Tests\TestCase;
 use Exception;
 use Illuminate\Support\Arr;
