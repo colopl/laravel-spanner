@@ -14,7 +14,6 @@
     "laravel/framework": "~9.42",
     "google/cloud-spanner": "^1.47",
     "grpc/grpc": "^1.42",
-    "ramsey/uuid": "~4",
     "symfony/cache": "~6",
     "symfony/lock": "~6"
   },
