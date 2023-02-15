@@ -1,5 +1,12 @@
 # v5.0.0 (Not Released Yet)
 
+updated composer.json to only support laravel 10
+
+Fixed
+- `Connection::reconnectIfMissingConnection` was changed from `protected` to `public` to match laravel 10.
+- [Query/Expression](https://laravel.com/docs/10.x/upgrade#database-expressions) changed from `(string)$expr`to `$expr->toValue($grammar)`.
+- Applied [QueryException constructor change](https://laravel.com/docs/10.x/upgrade#query-exception-constructor) to `Schema/Grammar`.
+
 Changed
 - Checks that primary key is defined in schema and throws an exception if not defined.
 - `Colopl\Spanner\Session` has been renamed to `Colopl\Spanner\SessionInfo`.
