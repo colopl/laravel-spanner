@@ -40,6 +40,10 @@
       ]
     }
   },
+  "scripts": {
+    "analyze": "phpstan analyse --configuration phpstan.neon --memory-limit=-1",
+    "test": "phpunit"
+  },
   "suggest": {
     "ext-sysvmsg": "Can use SemaphoreLock for session handling. Will use FileLock if not present.",
     "ext-sysvsem": "Can use SemaphoreLock for session handling. Will use FileLock if not present.",
