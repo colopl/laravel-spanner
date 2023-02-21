@@ -1,7 +1,10 @@
-# v4.6.1 (Not released yet)
+# v4.7.0 (Not released yet)
 
 Chore
 - Removed `ramsey/uuid` from composer.json since laravel already includes it.
+
+Fixed
+- Expressions given as $value in `Schema\Grammar::formatDefaultValue` will now go through `getValue` to match upstream (No behavioral change).
 
 # v4.6.0
 
