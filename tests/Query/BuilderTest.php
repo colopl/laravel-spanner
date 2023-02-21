@@ -841,7 +841,7 @@ class BuilderTest extends TestCase
     public function test_lock(): void
     {
         $this->expectException(BadMethodCallException::class);
-        $this->expectExceptionMessage('Cloud Spanner does not support insertGetId');
+        $this->expectExceptionMessage('Cloud Spanner does not support explicit locking');
 
         $conn = $this->getDefaultConnection();
         $qb = $conn->table(self::TABLE_NAME_USER);
