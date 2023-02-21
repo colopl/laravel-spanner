@@ -508,7 +508,7 @@ class Grammar extends BaseGrammar
     protected function formatDefaultValue(Fluent $column, string $type, mixed $value): string
     {
         if ($value instanceof Expression) {
-            return (string)$value;
+            return (string) $this->getValue($value);
         }
 
         // Match type without length or subtype.
