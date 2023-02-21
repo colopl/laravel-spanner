@@ -51,7 +51,7 @@ class Grammar extends BaseGrammar
      */
     protected function compileLock(Builder $query, $value)
     {
-        $this->markAsNotSupported('explicit locking.');
+        $this->markAsNotSupported('explicit locking');
     }
 
     /**
