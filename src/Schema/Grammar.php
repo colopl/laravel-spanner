@@ -20,7 +20,7 @@ namespace Colopl\Spanner\Schema;
 use Colopl\Spanner\Concerns\SharedGrammarCalls;
 use DateTimeInterface;
 use Illuminate\Database\Connection;
-use Illuminate\Database\Query\Expression;
+use Illuminate\Contracts\Database\Query\Expression;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Schema\Grammars\Grammar as BaseGrammar;
 use Illuminate\Support\Carbon;
