@@ -4,7 +4,7 @@ updated composer.json to only support laravel 10
 
 Fixed
 - `Connection::reconnectIfMissingConnection` was changed from `protected` to `public` to match laravel 10.
-- [Query/Expression](https://laravel.com/docs/10.x/upgrade#database-expressions) changed from `(string)$expr`to `$expr->toValue($grammar)`.
+- [Query/Expression](https://laravel.com/docs/10.x/upgrade#database-expressions) changed from `(string)$expr` to `$expr->getValue($grammar)`.
 - Applied [QueryException constructor change](https://laravel.com/docs/10.x/upgrade#query-exception-constructor) to `Schema/Grammar`.
 
 Changed
