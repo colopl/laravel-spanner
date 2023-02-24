@@ -17,6 +17,7 @@
 
 namespace Colopl\Spanner\Query;
 
+use Colopl\Spanner\Concerns\MarksAsNotSupported;
 use Colopl\Spanner\Concerns\SharedGrammarCalls;
 use Colopl\Spanner\Query\Builder as SpannerBuilder;
 use Illuminate\Database\Query\Builder;
@@ -26,6 +27,7 @@ use RuntimeException;
 
 class Grammar extends BaseGrammar
 {
+    use MarksAsNotSupported;
     use SharedGrammarCalls;
 
     /**
@@ -34,6 +36,22 @@ class Grammar extends BaseGrammar
     protected function compileFrom(Builder $query, $table)
     {
         return parent::compileFrom($query, $table).$this->compileForceIndex($query);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function compileInsertGetId(Builder $query, $values, $sequence)
+    {
+        $this->markAsNotSupported('insertGetId');
+    }
+
+    /**
+     * @inheritDoc
+     */
+    protected function compileLock(Builder $query, $value)
+    {
+        $this->markAsNotSupported('explicit locking');
     }
 
     /**

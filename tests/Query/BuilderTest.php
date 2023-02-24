@@ -17,6 +17,7 @@
 
 namespace Colopl\Spanner\Tests\Query;
 
+use BadMethodCallException;
 use Colopl\Spanner\Connection;
 use Colopl\Spanner\Query\Builder;
 use Colopl\Spanner\Tests\TestCase;
@@ -825,5 +826,45 @@ class BuilderTest extends TestCase
         $query->truncate();
 
         $this->assertDatabaseCount($tableName, 0);
+    }
+
+    public function test_insertGetId(): void
+    {
+        $this->expectException(BadMethodCallException::class);
+        $this->expectExceptionMessage('Cloud Spanner does not support insertGetId');
+
+        $conn = $this->getDefaultConnection();
+        $qb = $conn->table(self::TABLE_NAME_USER);
+        $qb->insertGetId(['userId' => $this->generateUuid(), 'name' => 'first']);
+    }
+
+    public function test_lock(): void
+    {
+        $this->expectException(BadMethodCallException::class);
+        $this->expectExceptionMessage('Cloud Spanner does not support explicit locking');
+
+        $conn = $this->getDefaultConnection();
+        $qb = $conn->table(self::TABLE_NAME_USER);
+        $qb->lock()->get();
+    }
+
+    public function test_lockForUpdate(): void
+    {
+        $this->expectException(BadMethodCallException::class);
+        $this->expectExceptionMessage('Cloud Spanner does not support explicit locking');
+
+        $conn = $this->getDefaultConnection();
+        $qb = $conn->table(self::TABLE_NAME_USER);
+        $qb->lockForUpdate()->get();
+    }
+
+    public function test_sharedLock(): void
+    {
+        $this->expectException(BadMethodCallException::class);
+        $this->expectExceptionMessage('Cloud Spanner does not support explicit locking');
+
+        $conn = $this->getDefaultConnection();
+        $qb = $conn->table(self::TABLE_NAME_USER);
+        $qb->sharedLock()->get();
     }
 }
