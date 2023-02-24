@@ -17,7 +17,6 @@
 
 namespace Colopl\Spanner\Query;
 
-use Colopl\Spanner\Concerns\MarksAsNotSupported;
 use Colopl\Spanner\Connection;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Query\Builder as BaseBuilder;
@@ -28,8 +27,7 @@ class Builder extends BaseBuilder
     use Concerns\AppliesForceIndex,
         Concerns\UsesMutations,
         Concerns\UsesPartitionedDml,
-        Concerns\UsesStaleReads,
-        MarksAsNotSupported;
+        Concerns\UsesStaleReads;
 
     /**
      * @var Connection
@@ -42,14 +40,6 @@ class Builder extends BaseBuilder
     public function insert(array $values)
     {
         return parent::insert($this->prepareInsertForDml($values));
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function insertGetId(array $values, $sequence = null)
-    {
-        $this->markAsNotSupported('insertGetId');
     }
 
     /**
@@ -74,22 +64,6 @@ class Builder extends BaseBuilder
         foreach ($this->grammar->compileTruncate($this) as $sql => $bindings) {
             $this->connection->runPartitionedDml($sql, $bindings);
         }
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function sharedLock()
-    {
-        $this->markAsNotSupported('shared lock');
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function lockForUpdate()
-    {
-        $this->markAsNotSupported('lock for update');
     }
 
     /**
