@@ -147,7 +147,7 @@ class Blueprint extends BaseBlueprint
      */
     public function stringArray($column, $length = null)
     {
-        $length = $length ?: Builder::$defaultStringLength;
+        $length ??= Builder::$defaultStringLength;
 
         return $this->addColumn('array', $column, [
             'arrayType' => 'string',
