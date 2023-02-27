@@ -11,6 +11,10 @@ Changed
 - Exception previously thrown in `Query/Builder` for `sharedLock`, `lockForUpdate`, `insertGetId` was moved to `Query/Grammar`.
 - Query/Builder::lock will now throw `BadMethodCallException` if called. Was ignored in previous versions.
 
+Refactored
+- Rollback handling has been refactored to better readability.
+
+
 # v4.7.0 (Not released yet)
 
 Chore
