@@ -334,6 +334,10 @@ $conn->transaction(function () use ($conn) {
 });
 ```
 
+### Queue Worker
+
+After every job is processed, the connection will be disconnected so the session can be released into the session pool. 
+This allows the session to be renewed (through `maintainSessionPool()`) or expire.
 
 
 ### Laravel Tinker
