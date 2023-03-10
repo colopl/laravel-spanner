@@ -1,5 +1,3 @@
-includes:
-  - phpstan-baseline.neon
 parameters:
     level: max
     checkMissingIterableValueType: false
@@ -26,8 +24,6 @@ parameters:
           path: src/Schema/Builder.php
         - message: '#^Property Illuminate\\Database\\Schema\\Builder::\$resolver \(Closure\) in isset\(\) is not nullable.$#'
           path: src/Schema/Builder.php
-        - message: '#^Parameter \#1 \$value of method Illuminate\\Database\\Schema\\Grammars\\Grammar::wrap\(\) expects Illuminate\\Database\\Query\\Expression\|string, Illuminate\\Database\\Schema\\ColumnDefinition given.$#'
-          path: src/Schema/Grammar.php
         - message: '#^Using nullsafe method call on non-nullable type Illuminate\\Database\\DatabaseTransactionsManager\. Use -> instead.$#'
           path: src/Concerns/ManagesTransactions.php
         - message: '#^Parameter \#1 \$connection of method Illuminate\\Database\\DatabaseTransactionsManager::.+\(\) expects string, string\|null given\.$#'

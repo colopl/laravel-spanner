@@ -21,7 +21,7 @@ use Colopl\Spanner\Concerns\MarksAsNotSupported;
 use Colopl\Spanner\Concerns\SharedGrammarCalls;
 use Colopl\Spanner\Query\Builder as SpannerBuilder;
 use Illuminate\Database\Query\Builder;
-use Illuminate\Database\Query\Expression;
+use Illuminate\Contracts\Database\Query\Expression;
 use Illuminate\Database\Query\Grammars\Grammar as BaseGrammar;
 use RuntimeException;
 
