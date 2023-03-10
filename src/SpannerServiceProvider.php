@@ -40,11 +40,13 @@ class SpannerServiceProvider extends ServiceProvider
             });
         });
 
-        $this->commands([
-            CooldownCommand::class,
-            SessionsCommand::class,
-            WarmupCommand::class,
-        ]);
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                CooldownCommand::class,
+                SessionsCommand::class,
+                WarmupCommand::class,
+            ]);
+        }
     }
 
     /**
