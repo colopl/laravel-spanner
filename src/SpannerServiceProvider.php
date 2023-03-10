@@ -108,8 +108,8 @@ class SpannerServiceProvider extends ServiceProvider
 
     protected function closeSessionAfterEachQueueJob(): void
     {
-        $this->app->resolving('queue', function (QueueManager $queue) {
-            $queue->after(static function () {
+        $this->app->resolving('queue', function (QueueManager $queue): void {
+            $queue->after(static function (): void {
                 foreach (DB::getConnections() as $connection) {
                     if ($connection instanceof Connection) {
                         $connection->disconnect();
