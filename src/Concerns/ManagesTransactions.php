@@ -23,7 +23,6 @@ use Google\Cloud\Core\Exception\AbortedException;
 use Google\Cloud\Core\Exception\NotFoundException;
 use Google\Cloud\Spanner\Database;
 use Google\Cloud\Spanner\Transaction;
-use Illuminate\Database\QueryException;
 use Throwable;
 
 /**
@@ -37,8 +36,6 @@ trait ManagesTransactions
      * @var Transaction|null
      */
     protected ?Transaction $currentTransaction = null;
-
-    protected bool $ignoreSessionNotFoundErrorOnRollback = false;
 
     /**
      * @inheritDoc
@@ -74,27 +71,8 @@ trait ManagesTransactions
 
                     return $result;
                 } catch (Throwable $e) {
-                    // if session is lost, there is no way to rollback transaction at all,
-                    // so quietly ignore 'session not found' error in rollBack()
-                    // and then abort current transaction and rerun everything again
-                    $savedIgnoreError = $this->ignoreSessionNotFoundErrorOnRollback;
-                    $exceptionToCheck = $e instanceof QueryException ? $e->getPrevious() : $e;
-
-                    $this->ignoreSessionNotFoundErrorOnRollback =
-                        $exceptionToCheck instanceOf NotFoundException
-                        && $this->getSessionNotFoundMode() !== self::THROW_EXCEPTION
-                        && $this->causedBySessionNotFound($exceptionToCheck);
-
-                    try {
-                        $this->rollBack();
-                        // rethrow NotFoundException instead of QueryException
-                        $eToThrow = $this->ignoreSessionNotFoundErrorOnRollback ? $exceptionToCheck : $e;
-                        // mute phpstan
-                        assert($eToThrow !== null);
-                        throw $eToThrow;
-                    } finally {
-                        $this->ignoreSessionNotFoundErrorOnRollback = $savedIgnoreError;
-                    }
+                    $this->rollBack();
+                    throw $e;
                 }
             }, ['maxRetries' => $attempts - 1]);
 
@@ -188,10 +166,6 @@ trait ManagesTransactions
                 if ($this->currentTransaction->state() === Transaction::STATE_ACTIVE) {
                     $this->currentTransaction->rollBack();
                 }
-            } catch (NotFoundException $e) {
-                if (!$this->ignoreSessionNotFoundErrorOnRollback) {
-                    throw $e;
-                }
             } finally {
                 $this->currentTransaction = null;
             }
@@ -230,6 +204,21 @@ trait ManagesTransactions
         }
 
         $this->rollBack();
+
+        throw $e;
+    }
+
+    /**
+     * @param Throwable $e
+     * @return void
+     */
+    protected function handleRollbackException(Throwable $e)
+    {
+        if ($e instanceof NotFoundException) {
+            // Must be reset so that transaction can be retried.
+            // otherwise, transactions will remain at 1.
+            $this->transactions = 0;
+        }
 
         throw $e;
     }
