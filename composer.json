@@ -19,7 +19,7 @@
   },
   "require-dev": {
     "orchestra/testbench": "~8",
-    "phpunit/phpunit": "~9.0",
+    "phpunit/phpunit": "~9.0 || ~10.0",
     "phpstan/phpstan": "^1"
   },
   "autoload": {
