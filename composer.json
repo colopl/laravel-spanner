@@ -11,14 +11,14 @@
     "php": ">=8",
     "ext-grpc": "*",
     "ext-json": "*",
-    "laravel/framework": "~9.42",
+    "laravel/framework": "~10.0",
     "google/cloud-spanner": "^1.47",
     "grpc/grpc": "^1.42",
     "symfony/cache": "~6",
     "symfony/lock": "~6"
   },
   "require-dev": {
-    "orchestra/testbench": "~7",
+    "orchestra/testbench": "~8",
     "phpunit/phpunit": "~9.0",
     "phpstan/phpstan": "^1"
   },
