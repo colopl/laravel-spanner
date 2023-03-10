@@ -488,7 +488,7 @@ class Connection extends BaseConnection
 
         try {
             return $callback();
-        } catch (NotFoundException $e) {
+        } catch (Throwable $e) {
             // ensure if this really error with session
             if ($this->causedBySessionNotFound($e)) {
                 $this->disconnect();
@@ -497,7 +497,7 @@ class Connection extends BaseConnection
                 $this->reconnect();
                 try {
                     return $callback();
-                } catch (NotFoundException $e) {
+                } catch (Throwable $e) {
                     if ($handlerMode === self::CLEAR_SESSION_POOL && $this->causedBySessionNotFound($e)) {
                         $this->disconnect();
                         // forcefully clearing sessions, might affect parallel processes
@@ -523,8 +523,12 @@ class Connection extends BaseConnection
      */
     public function causedBySessionNotFound(Throwable $e): bool
     {
+        if ($e instanceof QueryException) {
+            $e = $e->getPrevious();
+        }
+
         return ($e instanceof NotFoundException)
-            && strpos($e->getMessage(), self::SESSION_NOT_FOUND_CONDITION) !== false;
+            && str_contains($e->getMessage(), self::SESSION_NOT_FOUND_CONDITION);
     }
 
 }

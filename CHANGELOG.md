@@ -19,6 +19,10 @@ Changed
 - Query/Builder::lock will now throw `BadMethodCallException` if called. Was ignored in previous versions.
 - [Breaking Change] Commands are now only avaiable in cli mode
 
+Refactored
+- Rollback handling has been refactored to better readability.
+
+
 # v4.7.0 (Not released yet)
 
 Chore
