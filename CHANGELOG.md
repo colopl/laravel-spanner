@@ -10,6 +10,7 @@ Changed
 - Schema\Builder::getAllTables() now returns rows with `name` and `type` fields instead of list of strings (was implemented incorrectly).
 - Exception previously thrown in `Query/Builder` for `sharedLock`, `lockForUpdate`, `insertGetId` was moved to `Query/Grammar`.
 - Query/Builder::lock will now throw `BadMethodCallException` if called. Was ignored in previous versions.
+- [Breaking Change] Commands are now only avaiable in cli mode
 
 # v4.7.0 (Not released yet)
 
