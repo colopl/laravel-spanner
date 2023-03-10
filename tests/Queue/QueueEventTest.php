@@ -18,30 +18,8 @@
 namespace Colopl\Spanner\Tests\Queue;
 
 use Colopl\Spanner\Connection;
-use Colopl\Spanner\Events\MutatingData;
-use Colopl\Spanner\Session\CacheSessionPool;
-use Colopl\Spanner\Session\SessionInfo;
 use Colopl\Spanner\Tests\TestCase;
-use Colopl\Spanner\TimestampBound\ExactStaleness;
-use Colopl\Spanner\TimestampBound\MaxStaleness;
-use Colopl\Spanner\TimestampBound\MinReadTimestamp;
-use Colopl\Spanner\TimestampBound\ReadTimestamp;
-use Colopl\Spanner\TimestampBound\StrongRead;
-use Google\Auth\FetchAuthTokenInterface;
-use Google\Cloud\Core\Exception\NotFoundException;
-use Google\Cloud\Spanner\KeySet;
-use Google\Cloud\Spanner\SpannerClient;
-use Google\Cloud\Spanner\Timestamp;
-use Google\Cloud\Spanner\Transaction;
-use Illuminate\Bus\Dispatcher;
-use Illuminate\Database\Events\QueryExecuted;
-use Illuminate\Database\Events\TransactionBeginning;
-use Illuminate\Database\Events\TransactionCommitted;
-use Illuminate\Queue\QueueManager;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Event;
-use Symfony\Component\Cache\Adapter\ArrayAdapter;
 
 class QueueEventTest extends TestCase
 {
