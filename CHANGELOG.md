@@ -18,6 +18,7 @@ Changed
 - Exception previously thrown in `Query/Builder` for `sharedLock`, `lockForUpdate`, `insertGetId` was moved to `Query/Grammar`.
 - Query/Builder::lock will now throw `BadMethodCallException` if called. Was ignored in previous versions.
 - [Breaking Change] Commands are now only avaiable in cli mode
+- Connections will now be closed after every job has been processed in the queue.
 
 Refactored
 - Rollback handling has been refactored to better readability.
