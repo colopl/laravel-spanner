@@ -343,6 +343,17 @@ class Grammar extends BaseGrammar
     }
 
     /**
+     * Create the column definition for a string type.
+     *
+     * @param  Fluent<string, mixed> $column
+     * @return string
+     */
+    protected function typeText(Fluent $column)
+    {
+        return "string(max)";
+    }
+
+    /**
      * Create the column definition for a binary type.
      *
      * @param  Fluent<string, mixed> $column

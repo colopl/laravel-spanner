@@ -37,6 +37,7 @@ class BlueprintTest extends TestCase
             $table->integer('int');
             $table->float('float');
             $table->string('name');
+            $table->text('text');
             $table->dateTime('started_at');
             $table->binary('blob');
             $table->timestamps();
@@ -47,7 +48,16 @@ class BlueprintTest extends TestCase
 
         $queries = $blueprint->toSql($conn, new Grammar());
         $this->assertEquals(
-            'create table `Test3` (`id` string(36) not null, `int` int64 not null, `float` float64 not null, `name` string(255) not null, `started_at` timestamp not null, `blob` bytes(255) not null, `created_at` timestamp, `updated_at` timestamp) primary key (`id`)',
+            'create table `Test3` (' . implode(', ', [
+                '`id` string(36) not null',
+                '`int` int64 not null',
+                '`float` float64 not null',
+                '`name` string(255) not null',
+                '`text` string(max) not null',
+                '`started_at` timestamp not null',
+                '`blob` bytes(255) not null',
+                '`created_at` timestamp, `updated_at` timestamp',
+            ]) . ') primary key (`id`)',
             $queries[0]
         );
     }
@@ -336,6 +346,7 @@ class BlueprintTest extends TestCase
             $table->float('float')->default(0.1);
             $table->boolean('bool')->default(true);
             $table->string('string')->default('a');
+            $table->text('string_max')->default('a');
             $table->float('raw')->default(DB::raw('1.1'));
             $table->date('date_as_string')->default('2022-01-01');
             $table->date('date_as_carbon')->default(new Carbon('2022-01-01'));
@@ -363,6 +374,7 @@ class BlueprintTest extends TestCase
                 '`float` float64 not null default (0.1)',
                 '`bool` bool not null default (true)',
                 '`string` string(255) not null default ("a")',
+                '`string_max` string(max) not null default ("a")',
                 '`raw` float64 not null default (1.1)',
                 '`date_as_string` date not null default (DATE "2022-01-01")',
                 '`date_as_carbon` date not null default (DATE "2022-01-01")',
