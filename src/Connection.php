@@ -154,6 +154,14 @@ class Connection extends BaseConnection
     }
 
     /**
+     * @return bool
+     */
+    public function isConnected(): bool
+    {
+        return $this->spannerDatabase !== null;
+    }
+
+    /**
      * @inheritDoc
      */
     public function reconnect()

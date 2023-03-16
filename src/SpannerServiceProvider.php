@@ -23,6 +23,8 @@ use Colopl\Spanner\Console\WarmupCommand;
 use Colopl\Spanner\Session\CacheSessionPool;
 use Google\Cloud\Spanner\Session\SessionPoolInterface;
 use Illuminate\Database\DatabaseManager;
+use Illuminate\Queue\QueueManager;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
 use Psr\Cache\CacheItemPoolInterface;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
@@ -47,6 +49,11 @@ class SpannerServiceProvider extends ServiceProvider
                 WarmupCommand::class,
             ]);
         }
+    }
+
+    public function boot(): void
+    {
+        $this->closeSessionAfterEachQueueJob();
     }
 
     /**
@@ -97,5 +104,18 @@ class SpannerServiceProvider extends ServiceProvider
     {
         $cachePath = storage_path(implode(DIRECTORY_SEPARATOR, ['framework', 'spanner']));
         return new FilesystemAdapter('auth', 0, $cachePath);
+    }
+
+    protected function closeSessionAfterEachQueueJob(): void
+    {
+        $this->app->resolving('queue', function (QueueManager $queue): void {
+            $queue->after(static function (): void {
+                foreach (DB::getConnections() as $connection) {
+                    if ($connection instanceof Connection) {
+                        $connection->disconnect();
+                    }
+                }
+            });
+        });
     }
 }
