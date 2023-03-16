@@ -343,7 +343,7 @@ class Grammar extends BaseGrammar
     }
 
     /**
-     * Create the column definition for a string type.
+     * Create the column definition for a text type.
      *
      * @param  Fluent<string, mixed> $column
      * @return string
