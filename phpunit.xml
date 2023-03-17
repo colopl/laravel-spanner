@@ -15,22 +15,22 @@
   ~ limitations under the License.
   -->
 
-<phpunit backupGlobals="false"
-         backupStaticAttributes="false"
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.0/phpunit.xsd"
+         backupGlobals="false"
+         backupStaticProperties="false"
          bootstrap="tests/bootstrap.php"
+         cacheDirectory=".phpunit.cache"
          colors="true"
-         convertErrorsToExceptions="true"
-         convertNoticesToExceptions="true"
-         convertWarningsToExceptions="true"
          processIsolation="false"
          stopOnError="true"
          stopOnFailure="true">
-    <testsuite name="all">
-        <directory suffix="Test.php">./tests</directory>
-    </testsuite>
-    <php>
-        <env name="SPANNER_EMULATOR_HOST" value="emulator:9010" />
-        <env name="DB_SPANNER_INSTANCE_ID" value="test-instance" />
-        <env name="DB_SPANNER_DATABASE_ID" value="test-database" />
-    </php>
+  <testsuite name="all">
+    <directory suffix="Test.php">./tests</directory>
+  </testsuite>
+  <php>
+    <env name="SPANNER_EMULATOR_HOST" value="emulator:9010"/>
+    <env name="DB_SPANNER_INSTANCE_ID" value="test-instance"/>
+    <env name="DB_SPANNER_DATABASE_ID" value="test-database"/>
+  </php>
 </phpunit>
