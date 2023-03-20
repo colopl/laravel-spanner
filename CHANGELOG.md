@@ -1,5 +1,8 @@
 # v4.7.0 (Not released yet)
 
+Added
+- Support `Blueprint::text` (translates to `STRING(MAX)`).
+
 Chore
 - Removed `ramsey/uuid` from composer.json since laravel already includes it.
 
