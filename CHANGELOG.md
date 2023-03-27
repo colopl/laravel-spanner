@@ -1,4 +1,4 @@
-# v4.7.0 (Not released yet)
+# v4.7.0
 
 Added
 - Support `Blueprint::text` (translates to `STRING(MAX)`).
