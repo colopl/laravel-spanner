@@ -3,25 +3,25 @@
 updated composer.json to only support laravel 10
 
 Fixed
-- `Connection::reconnectIfMissingConnection` was changed from `protected` to `public` to match laravel 10.
-- [Query/Expression](https://laravel.com/docs/10.x/upgrade#database-expressions) changed from `(string)$expr` to `$expr->getValue($grammar)`.
-- Applied [QueryException constructor change](https://laravel.com/docs/10.x/upgrade#query-exception-constructor) to `Schema/Grammar`.
+- `Connection::reconnectIfMissingConnection` was changed from `protected` to `public` to match laravel 10. (#77)
+- [Query/Expression](https://laravel.com/docs/10.x/upgrade#database-expressions) changed from `(string)$expr` to `$expr->getValue($grammar)`. (#77)
+- Applied [QueryException constructor change](https://laravel.com/docs/10.x/upgrade#query-exception-constructor) to `Schema/Grammar`. (#77)
 
 Changed
-- Checks that primary key is defined in schema and throws an exception if not defined.
+- Checks that primary key is defined in schema and throws an exception if not defined. (#58)
 - `Colopl\Spanner\Session` has been renamed to `Colopl\Spanner\SessionInfo`.
 - `Blueprint::stringArray`'s `$length` parameter is now optional and defaults to `255`.
-- Auth and session pool no longer use the custom FileCacheAdapter and uses Symfony's FilesystemAdapter instead.
-- Path for auth and session pool files have moved from `storage/framework/cache/spanner` to `storage/framework/spanner/{auth|session}`.
+- Auth and session pool no longer use the custom FileCacheAdapter and uses Symfony's FilesystemAdapter instead. (#63)
+- Path for auth and session pool files have moved from `storage/framework/cache/spanner` to `storage/framework/spanner/{auth|session}`. (#63)
 - Default Session Not Found Error Mode was changed from `MAINTAIN_SESSION_POOL` to `CLEAR_SESSION_POOL` (wasn't fully confident at the time, but I think it should be safe to assume it's working now).
-- Schema\Builder::getAllTables() now returns rows with `name` and `type` fields instead of list of strings (was implemented incorrectly).
-- Exception previously thrown in `Query/Builder` for `sharedLock`, `lockForUpdate`, `insertGetId` was moved to `Query/Grammar`.
-- Query/Builder::lock will now throw `BadMethodCallException` if called. Was ignored in previous versions.
-- [Breaking Change] Commands are now only avaiable in cli mode
-- Connections will now be closed after every job has been processed in the queue.
+- Schema\Builder::getAllTables() now returns rows with `name` and `type` fields instead of list of strings (was implemented incorrectly). (#73)
+- Exception previously thrown in `Query/Builder` for `sharedLock`, `lockForUpdate`, `insertGetId` was moved to `Query/Grammar`. (#76)
+- Query/Builder::lock will now throw `BadMethodCallException` if called. Was ignored in previous versions. (#76)
+- [Breaking Change] Commands are now only avaiable in cli mode (#81)
+- Connections will now be closed after every job has been processed in the queue. (#80)
 
 Refactored
-- Rollback handling has been refactored to better readability.
+- Rollback handling has been refactored to better readability. (#79)
 
 # v4.7.0
 
