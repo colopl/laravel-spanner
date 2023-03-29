@@ -20,7 +20,8 @@ namespace Colopl\Spanner\Schema;
 use Colopl\Spanner\Concerns\SharedGrammarCalls;
 use DateTimeInterface;
 use Illuminate\Database\Connection;
-use Illuminate\Contracts\Database\Query\Expression;
+use Illuminate\Contracts\Database\Query\Expression as ExpressionContract;
+use Illuminate\Database\Query\Expression;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Schema\Grammars\Grammar as BaseGrammar;
 use Illuminate\Support\Carbon;
@@ -425,6 +426,10 @@ class Grammar extends BaseGrammar
      */
     protected function typeTimestamp(Fluent $column)
     {
+        if ($column->useCurrent) {
+            $column->default(new Expression('CURRENT_TIMESTAMP()'));
+        }
+
         return 'timestamp';
     }
 
@@ -497,10 +502,6 @@ class Grammar extends BaseGrammar
     {
         $value = $column->default;
 
-        if ($column->useCurrent) {
-            return ' default (CURRENT_TIMESTAMP())';
-        }
-
         if (is_null($value)) {
             return null;
         }
@@ -516,7 +517,7 @@ class Grammar extends BaseGrammar
      */
     protected function formatDefaultValue(Fluent $column, string $type, mixed $value): int|float|string
     {
-        if ($value instanceof Expression) {
+        if ($value instanceof ExpressionContract) {
             return $value->getValue($this);
         }
 
