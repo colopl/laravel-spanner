@@ -10,7 +10,7 @@ Laravel database driver for Google Cloud Spanner
 ## Requirements
 
 - PHP >= 8.0
-- Laravel >= 9
+- Laravel >= 10
 - [gRPC extension](https://cloud.google.com/php/grpc)
 - [protobuf extension](https://cloud.google.com/php/grpc#install_the_protobuf_runtime_library) (not required, but strongly recommended)
 
