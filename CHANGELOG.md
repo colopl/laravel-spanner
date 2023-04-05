@@ -1,4 +1,4 @@
-# v5.0.0 (Not Released Yet)
+# v5.0.0
 
 updated composer.json to only support laravel 10
 
