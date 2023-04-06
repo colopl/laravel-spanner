@@ -45,7 +45,7 @@ trait ManagesDataDefinitions
     }
 
     /**
-     * @param string[] $statements
+     * @param list<string> $statements
      * @return mixed
      */
     public function runDdlBatch(array $statements): mixed
