@@ -18,13 +18,18 @@
 namespace Colopl\Spanner\Tests\Concerns;
 
 use Colopl\Spanner\Tests\TestCase;
+use Illuminate\Database\Events\QueryExecuted;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
 
 class ManagesDataDefinitionsTest extends TestCase
 {
     public function test_runDdlBatch(): void
     {
+        $events = Event::fake([QueryExecuted::class]);
+
         $conn = $this->getDefaultConnection();
+        $conn->setEventDispatcher($events);
         $conn->enableQueryLog();
 
         $newTable = 'runDdlBatch_' . Str::random(5);
@@ -33,5 +38,7 @@ class ManagesDataDefinitionsTest extends TestCase
         $this->assertSame([], $result);
         $this->assertSame($statement, $conn->getQueryLog()[0]['query']);
         $this->assertCount(1, $conn->getQueryLog());
+
+        Event::assertDispatchedTimes(QueryExecuted::class, 1);
     }
 }
