@@ -1,7 +1,7 @@
 # v5.1.0 (Not released yet)
 
 Added
-- Added Connection::runDdlBatch which runs DDLs in batch synchronously.
+- Added `Connection::runDdlBatch` which runs DDLs in batch synchronously.
 
 Fixed
 - `Connection::statement` with DDLs was not logging and was not triggering events.
