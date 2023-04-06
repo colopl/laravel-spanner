@@ -25,7 +25,7 @@ parameters:
           path: src/Eloquent/Model.php
         - message: '#^Method Colopl\\Spanner\\Schema\\Builder::createBlueprint\(\) should return Illuminate\\Database\\Schema\\Blueprint but returns mixed\.$#'
           path: src/Schema/Builder.php
-        - message: '#^Property Illuminate\\Database\\Schema\\Builder::\$resolver \(Closure\) in isset\(\) is not nullable.\$#'
+        - message: '#^Property Illuminate\\Database\\Schema\\Builder::\$resolver \(Closure\) in isset\(\) is not nullable\.$#'
           path: src/Schema/Builder.php
         - message: '#^Using nullsafe method call on non-nullable type Illuminate\\Database\\DatabaseTransactionsManager\. Use -> instead\.$#'
           path: src/Concerns/ManagesTransactions.php
