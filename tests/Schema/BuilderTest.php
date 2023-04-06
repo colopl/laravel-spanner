@@ -197,7 +197,11 @@ class BuilderTest extends TestCase
             $table->primary('id');
         });
 
-        $row = Arr::last($sb->getAllTables());
+        /** @var array{ name: string, type: string } $row */
+        $row = Arr::first(
+            $sb->getAllTables(),
+            static fn (array $row): bool => $row['name'] === self::TABLE_NAME_CREATED,
+        );
 
         $this->assertSame(self::TABLE_NAME_CREATED, $row['name']);
         $this->assertSame('BASE TABLE', $row['type']);

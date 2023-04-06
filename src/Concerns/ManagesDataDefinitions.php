@@ -45,6 +45,25 @@ trait ManagesDataDefinitions
     }
 
     /**
+     * @param list<string> $statements
+     * @return mixed
+     */
+    public function runDdlBatch(array $statements): mixed
+    {
+        $start = microtime(true);
+
+        $result = $this->waitForOperation(
+            $this->getSpannerDatabase()->updateDdlBatch($statements),
+        );
+
+        foreach ($statements as $statement) {
+            $this->logQuery($statement, [], $this->getElapsedTime($start));
+        }
+
+        return $result;
+    }
+
+    /**
      * @param string[] $statements Additional DDL statements
      * @return void
      */

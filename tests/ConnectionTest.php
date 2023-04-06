@@ -37,7 +37,6 @@ use Illuminate\Database\Events\TransactionBeginning;
 use Illuminate\Database\Events\TransactionCommitted;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Event;
-use RuntimeException;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
 
 class ConnectionTest extends TestCase

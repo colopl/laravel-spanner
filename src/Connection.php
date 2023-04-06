@@ -304,7 +304,7 @@ class Connection extends BaseConnection
         }
 
         // is DDL Query
-        return $this->waitForOperation($this->runDdl($query)) !== null;
+        return $this->runDdlBatch([$query]) !== null;
     }
 
     /**
