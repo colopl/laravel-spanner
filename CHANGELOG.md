@@ -1,3 +1,11 @@
+# v5.1.0 (Not released yet)
+
+Added
+- Added Connection::runDdlBatch which runs DDLs in batch synchronously.
+
+Fixed
+- Fixed a bug where calling `Connection::statement` with DDLs was not logging and was not triggering events.
+
 # v5.0.0
 
 updated composer.json to only support laravel 10
