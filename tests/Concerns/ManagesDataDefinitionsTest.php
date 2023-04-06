@@ -47,7 +47,11 @@ class ManagesDataDefinitionsTest extends TestCase
         $events = Event::fake([QueryExecuted::class]);
 
         $conn = new Connection('test-instance', 'test_' . time(), '', ['instance' => 'test-instance']);
-        $this->setUpDatabaseOnce($conn);
+
+        if (!empty(getenv('SPANNER_EMULATOR_HOST'))) {
+            $this->setUpEmulatorInstance($conn);
+        }
+
         $conn->setEventDispatcher($events);
         $conn->enableQueryLog();
 
