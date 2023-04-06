@@ -17,6 +17,7 @@
 
 namespace Colopl\Spanner\Tests\Concerns;
 
+use Colopl\Spanner\Connection;
 use Colopl\Spanner\Tests\TestCase;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Support\Facades\Event;
@@ -39,5 +40,25 @@ class ManagesDataDefinitionsTest extends TestCase
         $this->assertCount(1, $conn->getQueryLog());
 
         Event::assertDispatchedTimes(QueryExecuted::class, 1);
+    }
+
+    public function test_createDatabase_with_statements(): void
+    {
+        $events = Event::fake([QueryExecuted::class]);
+
+        $conn = new Connection('test-instance', 'test_' . time(), '', ['instance' => 'test-instance']);
+        $conn->setEventDispatcher($events);
+        $conn->enableQueryLog();
+
+        $statements = array_map(
+            static fn () => "create table " . 'createDatabase_' . md5(uniqid('', true)) . " (id int64) primary key (id)",
+            range(0, 1),
+        );
+        $conn->createDatabase($statements);
+        $this->assertSame($statements[0], $conn->getQueryLog()[0]['query']);
+        $this->assertSame($statements[1], $conn->getQueryLog()[1]['query']);
+        $this->assertCount(2, $conn->getQueryLog());
+
+        Event::assertDispatchedTimes(QueryExecuted::class, 2);
     }
 }
