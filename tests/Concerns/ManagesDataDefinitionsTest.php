@@ -47,6 +47,7 @@ class ManagesDataDefinitionsTest extends TestCase
         $events = Event::fake([QueryExecuted::class]);
 
         $conn = new Connection('test-instance', 'test_' . time(), '', ['instance' => 'test-instance']);
+        $this->setUpDatabaseOnce($conn);
         $conn->setEventDispatcher($events);
         $conn->enableQueryLog();
 
