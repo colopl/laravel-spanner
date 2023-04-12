@@ -285,13 +285,14 @@ class ConnectionTest extends TestCase
         self::assertSame(1, $conn->warmupSessionPool());
     }
 
-    public function testListSessions(): void
+    public function test_listSessions(): void
     {
         if (getenv('SPANNER_EMULATOR_HOST')) {
             $this->markTestSkipped('Cannot list sessions on emulator');
         }
 
         $conn = $this->getDefaultConnection();
+        $conn->select('SELECT 1');
 
         $sessions = $conn->listSessions();
         $this->assertNotEmpty($sessions);
