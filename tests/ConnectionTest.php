@@ -231,19 +231,17 @@ class ConnectionTest extends TestCase
         $this->assertNotEmpty($credentialFetcher->getCacheKey());
     }
 
-    public function testAuthCache(): void
+    public function test_AuthCache_works(): void
     {
-        if (getenv('SPANNER_EMULATOR_HOST')) {
-            $this->markTestSkipped('Cannot test AuthCache on emulator');
-        }
-
         $config = $this->app['config']->get('database.connections.main');
 
         $authCache = new ArrayAdapter();
         $conn = new Connection($config['instance'], $config['database'], '', $config, $authCache);
-        $this->assertInstanceOf(Connection::class, $conn);
+        $this->setUpDatabaseOnce($conn);
 
         $conn->selectOne('SELECT 1');
+
+        $this->assertInstanceOf(Connection::class, $conn);
         $this->assertNotEmpty($authCache->getValues(), 'After executing some query, session cache is created.');
     }
 
