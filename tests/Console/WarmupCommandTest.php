@@ -32,12 +32,9 @@ WarmupCommandTest extends TestCase
             $this->setUpDatabaseOnce($conn);
         }
 
-        // Emulator cannot distinguish different connections
-        $altWarmupCount = env('SPANNER_EMULATOR_HOST') ? 0 : 1;
-
         $this->artisan('spanner:warmup')
             ->expectsOutputToContain("Warmed up 1 sessions for main")
-            ->expectsOutputToContain("Warmed up {$altWarmupCount} sessions for alternative")
+            ->expectsOutputToContain("Warmed up 1 sessions for alternative")
             ->assertSuccessful()
             ->run();
 

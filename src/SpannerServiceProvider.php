@@ -67,8 +67,8 @@ class SpannerServiceProvider extends ServiceProvider
             $config['database'],
             $config['prefix'],
             $config,
-            $this->createAuthCache(),
-            $this->createSessionPool($config['session_pool'] ?? [])
+            $this->createAuthCache($config['name']),
+            $this->createSessionPool($config['name'], $config['session_pool'] ?? [])
         );
     }
 
@@ -87,22 +87,24 @@ class SpannerServiceProvider extends ServiceProvider
     }
 
     /**
+     * @param string $name
      * @param array<string, mixed> $sessionPoolConfig
      * @return SessionPoolInterface
      */
-    protected function createSessionPool(array $sessionPoolConfig): SessionPoolInterface
+    protected function createSessionPool(string $name, array $sessionPoolConfig): SessionPoolInterface
     {
-        $cachePath = storage_path(implode(DIRECTORY_SEPARATOR, ['framework', 'spanner']));
+        $cachePath = storage_path(implode(DIRECTORY_SEPARATOR, ['framework', 'spanner', $name]));
         $adapter = new FilesystemAdapter('session', 0, $cachePath);
         return new CacheSessionPool($adapter, $sessionPoolConfig);
     }
 
     /**
+     * @param string $name
      * @return CacheItemPoolInterface
      */
-    protected function createAuthCache(): CacheItemPoolInterface
+    protected function createAuthCache(string $name, ): CacheItemPoolInterface
     {
-        $cachePath = storage_path(implode(DIRECTORY_SEPARATOR, ['framework', 'spanner']));
+        $cachePath = storage_path(implode(DIRECTORY_SEPARATOR, ['framework', 'spanner', $name]));
         return new FilesystemAdapter('auth', 0, $cachePath);
     }
 

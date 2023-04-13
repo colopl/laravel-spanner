@@ -57,8 +57,8 @@ class SessionsCommandTest extends TestCase
             ->run();
 
         $this->artisan('spanner:sessions')
-            ->expectsOutputToContain('main contains 1 session(s).')
-            ->expectsOutputToContain('alternative contains 1 session(s).')
+            ->expectsOutputToContain('main contains 2 session(s).')
+            ->expectsOutputToContain('alternative contains 2 session(s).')
             ->assertSuccessful()
             ->run();
     }
