@@ -729,7 +729,7 @@ class BuilderTest extends TestCase
             ->count());
     }
 
-    public function testWhereLike(): void
+    public function test_whereLike(): void
     {
         $conn = $this->getDefaultConnection();
         $tableName = self::TABLE_NAME_USER;
@@ -769,7 +769,7 @@ class BuilderTest extends TestCase
         if (getenv('SPANNER_EMULATOR_HOST')) {
             $this->assertStringContainsString('INTERNAL', $caughtException?->getMessage());
         } else {
-            $this->assertStringContainsString('Given string is not UTF8 encoded', $caughtException?->getMessage());
+            $this->assertStringContainsString('Invalid request proto: an error was encountered during deserialization of the request proto.', $caughtException?->getMessage());
         }
     }
 
