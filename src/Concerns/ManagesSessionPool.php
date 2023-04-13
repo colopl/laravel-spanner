@@ -31,7 +31,7 @@ use ReflectionException;
 use ReflectionObject;
 
 /**
- * @property Database $spannerDatabase
+ * @property Database|null $spannerDatabase
  * @method Database getSpannerDatabase()
  */
 trait ManagesSessionPool
@@ -99,7 +99,7 @@ trait ManagesSessionPool
         // HACK: Use reflection to extract some information from a private method
         // -------------------------------------------------------------------------
         $session = null;
-        /** @var FetchAuthTokenInterface $credentialFetcher */
+        /** @var FetchAuthTokenInterface|null $credentialFetcher */
         $credentialFetcher = null;
         $internalConnectionProperty = (new ReflectionObject($this->getSpannerClient()))->getProperty('connection');
         if ($internalConnectionProperty !== null) {
@@ -108,9 +108,7 @@ trait ManagesSessionPool
             $internalConnection = $internalConnectionProperty->getValue($this->spannerClient);
             if ($internalConnection instanceof Grpc) {
                 $requestWrapper = $internalConnection->requestWrapper();
-                if ($requestWrapper !== null) {
-                    $credentialFetcher = $requestWrapper->getCredentialsFetcher();
-                }
+                $credentialFetcher = $requestWrapper?->getCredentialsFetcher();
             }
         }
 
