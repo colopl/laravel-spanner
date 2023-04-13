@@ -258,46 +258,51 @@ class TransactionTest extends TestCase
     /**
      * NOTE: This test will take at least 10 seconds to complete
      */
-    public function testLockTimeout(): void
+    public function test_lock_timeout(): void
     {
+        if (getenv('SPANNER_EMULATOR_HOST')) {
+            $this->markTestSkipped('Cannot test lock on emulator since emulator only supports 1 transaction.');
+        }
+
         Event::fake();
 
         $conn = $this->getDefaultConnection();
         $conn2 = $this->getAlternativeConnection();
 
         $tableName = self::TABLE_NAME_USER;
+        $userId = $this->generateUuid();
 
         $insertRow = [
-            'userId' => $this->generateUuid(),
+            'userId' => $userId,
             'name' => 'test',
         ];
         $qb = $conn->table($tableName);
         $qb2 = $conn2->table($tableName);
 
         $qb->insert($insertRow);
-        $mutation = ['userId' => $insertRow['userId'], 'name' => 'updated'];
 
         $caughtException = null;
         try {
-            $conn->transaction(function () use ($conn2, $qb, $qb2, $mutation) {
+            $conn->transaction(function () use ($conn2, $qb, $qb2, $userId) {
                 // SELECTing within a read-write transaction causes row to acquire shared lock
-                 $qb->where('userId', $mutation['userId'])->first();
+                $qb->where('userId', $userId)->first();
 
-                $conn2->transaction(function () use ($qb2, $mutation) {
+                $conn2->transaction(function () use ($qb2, $userId) {
                     // This will time out and result in AbortedException since row is locked
-                    $qb2->where('userId', $mutation['userId'])->update(['name' => $mutation['name']]);
+                    $qb2->where('userId', $userId)->update(['name' => 'updated']);
                 }, 1);
             }, 1);
         } catch (Exception $ex) {
             $caughtException = $ex;
         }
 
+        self::assertSame('updated', $qb->where('userId', $userId)->first()['name']);
         $this->assertInstanceOf(AbortedException::class, $caughtException);
         $this->assertStringContainsString('ABORTED', $caughtException->getMessage());
-        Event::assertDispatchedTimes(TransactionBeginning::class, 3);
-        Event::assertDispatchedTimes(TransactionCommitting::class);
-        Event::assertDispatchedTimes(TransactionCommitted::class);
-        Event::assertDispatchedTimes(TransactionRolledBack::class, 2);
+        Event::assertDispatchedTimes(TransactionBeginning::class, 2);
+        Event::assertDispatchedTimes(TransactionCommitting::class, 2);
+        Event::assertDispatchedTimes(TransactionCommitted::class, 1);
+        Event::assertDispatchedTimes(TransactionRolledBack::class, 1);
     }
 
     public function testAbortedException(): void
