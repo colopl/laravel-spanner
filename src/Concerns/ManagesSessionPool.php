@@ -42,11 +42,7 @@ trait ManagesSessionPool
     public function clearSessionPool(): void
     {
         $sessionPool = $this->getSpannerDatabase()->sessionPool();
-        $operation = $sessionPool?->clear();
-
-        if ($operation instanceof DeleteOperation) {
-            $operation->waitUntilComplete();
-        }
+        $sessionPool?->clear();
     }
 
     /**

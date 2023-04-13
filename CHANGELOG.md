@@ -6,6 +6,9 @@ Added
 Fixed
 - Fixed bug where running `Connection::statement` with DDLs was not logging and was not triggering events. (#86)
 
+Changed
+- Use google-cloud-php's CacheSessionPool since the [concerned bug](https://github.com/googleapis/google-cloud-php/issues/5567) has been fixed in v1.53.
+
 # v5.0.0
 
 updated composer.json to only support laravel 10
