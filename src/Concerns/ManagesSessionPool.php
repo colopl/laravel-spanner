@@ -20,6 +20,7 @@ namespace Colopl\Spanner\Concerns;
 use Colopl\Spanner\Session\DeleteOperation;
 use Colopl\Spanner\Session\SessionInfo;
 use Google\Auth\FetchAuthTokenInterface;
+use Google\Cloud\Core\EmulatorTrait;
 use Google\Cloud\Spanner\Connection\ConnectionInterface;
 use Google\Cloud\Spanner\Connection\Grpc;
 use Google\Cloud\Spanner\Database;
@@ -36,6 +37,8 @@ use ReflectionObject;
  */
 trait ManagesSessionPool
 {
+    use EmulatorTrait;
+
     /**
      * @return void
      */
@@ -82,7 +85,14 @@ trait ManagesSessionPool
     public function listSessions(): Collection
     {
         $databaseName = $this->getSpannerDatabase()->name();
-        $response = (new ProtobufSpannerClient())->listSessions($databaseName);
+
+        $emulatorHost = getenv('SPANNER_EMULATOR_HOST');
+        $config = $emulatorHost
+            ? $this->emulatorGapicConfig($emulatorHost)
+            : [];
+
+        $response = (new ProtobufSpannerClient($config))->listSessions($databaseName);
+
         return collect($response->iterateAllElements())->map(function ($session) {
             assert($session instanceof ProtobufSpannerSession);
             return new SessionInfo($session);
