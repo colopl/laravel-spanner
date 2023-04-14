@@ -102,7 +102,7 @@ class SpannerServiceProvider extends ServiceProvider
      * @param string $name
      * @return CacheItemPoolInterface
      */
-    protected function createAuthCache(string $name, ): CacheItemPoolInterface
+    protected function createAuthCache(string $name): CacheItemPoolInterface
     {
         $cachePath = storage_path(implode(DIRECTORY_SEPARATOR, ['framework', 'spanner', $name]));
         return new FilesystemAdapter('auth', 0, $cachePath);
