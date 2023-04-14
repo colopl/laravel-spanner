@@ -18,7 +18,6 @@
 namespace Colopl\Spanner\Concerns;
 
 use Google\Cloud\Core\LongRunning\LongRunningOperation;
-use Exception;
 use Google\Cloud\Spanner\Database;
 
 /**
@@ -69,11 +68,14 @@ trait ManagesDataDefinitions
      */
     public function createDatabase(array $statements = [])
     {
-        $operation = $this->getSpannerDatabase()->create(['statements' => $statements]);
-        $operation->pollUntilComplete();
-        $error = $operation->error();
-        if ($error !== null) {
-            throw new Exception((string) json_encode($operation->error()));
+        $start = microtime(true);
+
+        $this->waitForOperation(
+            $this->getSpannerDatabase()->create(['statements' => $statements]),
+        );
+
+        foreach ($statements as $statement) {
+            $this->logQuery($statement, [], $this->getElapsedTime($start));
         }
     }
 

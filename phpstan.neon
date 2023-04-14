@@ -16,6 +16,8 @@ parameters:
           path: src/Connection.php
         - message: '#^Parameter \#1 \$start of method Illuminate\\Database\\Connection::getElapsedTime\(\) expects int, float given\.$#'
           path: src/Connection.php
+        - message: '#^Parameter \#1 \$start of method Illuminate\\Database\\Connection::getElapsedTime\(\) expects int, float given\.$#'
+          path: src/Connection.php
         - message: '#^Method Colopl\\Spanner\\Connection::select\(\) should return array but returns mixed\.$#'
           path: src/Connection.php
         - message: '#^Cannot cast mixed to int\.$#'
