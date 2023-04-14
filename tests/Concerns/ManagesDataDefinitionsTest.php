@@ -26,9 +26,8 @@ class ManagesDataDefinitionsTest extends TestCase
 {
     public function test_runDdlBatch(): void
     {
-        $events = Event::fake([QueryExecuted::class]);
-
         $conn = $this->getDefaultConnection();
+        $events = Event::fake([QueryExecuted::class]);
         $conn->setEventDispatcher($events);
         $conn->enableQueryLog();
 
