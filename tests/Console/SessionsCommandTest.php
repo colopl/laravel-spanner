@@ -65,10 +65,6 @@ class SessionsCommandTest extends TestCase
 
     public function test_with_args(): void
     {
-        if (getenv('SPANNER_EMULATOR_HOST')) {
-            $this->markTestSkipped('Cannot list sessions on emulator');
-        }
-
         foreach (['main', 'alternative'] as $name) {
             $conn = $this->getConnection($name);
             assert($conn instanceof Connection);
@@ -89,10 +85,6 @@ class SessionsCommandTest extends TestCase
 
     public function test_no_sessions_shows_no_table(): void
     {
-        if (getenv('SPANNER_EMULATOR_HOST')) {
-            $this->markTestSkipped('Cannot list sessions on emulator');
-        }
-
         $this->artisan('spanner:sessions', ['connections' => 'main'])
             ->expectsOutputToContain('main contains 0 session(s).')
             ->doesntExpectOutputToContain('Name')
@@ -102,10 +94,6 @@ class SessionsCommandTest extends TestCase
 
     public function test_sort(): void
     {
-        if (getenv('SPANNER_EMULATOR_HOST')) {
-            $this->markTestSkipped('Cannot list sessions on emulator');
-        }
-
         $conn = $this->getDefaultConnection();
         $this->setUpDatabaseOnce($conn);
         $this->createSessions($conn, 2);
@@ -127,10 +115,6 @@ class SessionsCommandTest extends TestCase
 
     public function test_sort_order(): void
     {
-        if (getenv('SPANNER_EMULATOR_HOST')) {
-            $this->markTestSkipped('Cannot list sessions on emulator');
-        }
-
         $conn = $this->getDefaultConnection();
         $this->setUpDatabaseOnce($conn);
         $this->createSessions($conn, 2);
@@ -152,10 +136,6 @@ class SessionsCommandTest extends TestCase
 
     public function test_sort_patterns(): void
     {
-        if (getenv('SPANNER_EMULATOR_HOST')) {
-            $this->markTestSkipped('Cannot list sessions on emulator');
-        }
-
         $conn = $this->getDefaultConnection();
         $this->setUpDatabaseOnce($conn);
         $this->createSessions($conn, 1);

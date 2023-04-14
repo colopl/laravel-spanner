@@ -285,10 +285,6 @@ class ConnectionTest extends TestCase
 
     public function test_listSessions(): void
     {
-        if (getenv('SPANNER_EMULATOR_HOST')) {
-            $this->markTestSkipped('Cannot list sessions on emulator');
-        }
-
         $conn = $this->getDefaultConnection();
         $conn->select('SELECT 1');
 
