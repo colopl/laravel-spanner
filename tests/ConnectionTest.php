@@ -249,7 +249,7 @@ class ConnectionTest extends TestCase
     {
         $conn = $this->getDefaultConnection();
         $conn->select('SELECT 1');
-        self::assertDirectoryExists(storage_path('framework/spanner/auth'));
+        self::assertDirectoryExists(storage_path("framework/spanner/{$conn->getName()}/auth"));
     }
 
     public function testSessionPool(): void
@@ -272,7 +272,7 @@ class ConnectionTest extends TestCase
     {
         $conn = $this->getDefaultConnection();
         $conn->select('SELECT 1');
-        self::assertDirectoryExists(storage_path('framework/spanner/session'));
+        self::assertDirectoryExists(storage_path("framework/spanner/{$conn->getName()}/session"));
     }
 
     public function test_clearSessionPool(): void

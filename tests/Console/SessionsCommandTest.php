@@ -42,10 +42,6 @@ class SessionsCommandTest extends TestCase
 
     public function test_no_args(): void
     {
-        if (getenv('SPANNER_EMULATOR_HOST')) {
-            $this->markTestSkipped('Cannot list sessions on emulator');
-        }
-
         foreach (['main', 'alternative'] as $name) {
             $conn = $this->getConnection($name);
             assert($conn instanceof Connection);
@@ -57,8 +53,8 @@ class SessionsCommandTest extends TestCase
             ->run();
 
         $this->artisan('spanner:sessions')
-            ->expectsOutputToContain('main contains 1 session(s).')
-            ->expectsOutputToContain('alternative contains 1 session(s).')
+            ->expectsOutputToContain('main contains 2 session(s).')
+            ->expectsOutputToContain('alternative contains 2 session(s).')
             ->assertSuccessful()
             ->run();
     }
