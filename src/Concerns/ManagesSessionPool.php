@@ -17,7 +17,6 @@
 
 namespace Colopl\Spanner\Concerns;
 
-use Colopl\Spanner\Session\DeleteOperation;
 use Colopl\Spanner\Session\SessionInfo;
 use Google\Auth\FetchAuthTokenInterface;
 use Google\Cloud\Spanner\Connection\ConnectionInterface;
