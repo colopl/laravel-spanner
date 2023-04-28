@@ -38,6 +38,11 @@ use Illuminate\Database\Events\TransactionCommitted;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Event;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
+use function dirname;
+use function fileperms;
+use function mkdir;
+use function sprintf;
+use function substr;
 
 class ConnectionTest extends TestCase
 {
@@ -247,9 +252,15 @@ class ConnectionTest extends TestCase
 
     public function test_AuthCache_with_FileSystemAdapter(): void
     {
+        $this->app->useStoragePath('/tmp/laravel-spanner');
+
         $conn = $this->getDefaultConnection();
         $conn->select('SELECT 1');
-        self::assertFileExists(storage_path("framework/spanner/{$conn->getName()}-auth"));
+
+        $outputPath = $this->app->storagePath("framework/spanner/{$conn->getName()}-auth");
+        self::assertFileExists($outputPath);
+        self::assertSame('0777', substr(sprintf('%o', fileperms(dirname($outputPath))), -4));
+        self::assertSame('0644', substr(sprintf('%o', fileperms($outputPath)), -4));
     }
 
     public function testSessionPool(): void
@@ -270,9 +281,15 @@ class ConnectionTest extends TestCase
 
     public function test_session_pool_with_FileSystemAdapter(): void
     {
+        $this->app->useStoragePath('/tmp/laravel-spanner');
+
         $conn = $this->getDefaultConnection();
         $conn->select('SELECT 1');
-        self::assertFileExists(storage_path("framework/spanner/{$conn->getName()}-session"));
+
+        $outputPath = $this->app->storagePath("framework/spanner/{$conn->getName()}-session");
+        self::assertFileExists($outputPath);
+        self::assertSame('0777', substr(sprintf('%o', fileperms(dirname($outputPath))), -4));
+        self::assertSame('0644', substr(sprintf('%o', fileperms($outputPath)), -4));
     }
 
     public function test_clearSessionPool(): void
