@@ -1,12 +1,11 @@
-version: "3"
 services:
   test:
     build:
       context: .
     command: /bin/sh -c "composer install --no-progress && vendor/bin/phpstan --no-progress --memory-limit=-1 && vendor/bin/phpunit"
     volumes:
-      - .:/project:delegated
+      - .:/project
     depends_on:
       - emulator
   emulator:
-    image: gcr.io/cloud-spanner-emulator/emulator:1.4.9
+    image: gcr.io/cloud-spanner-emulator/emulator

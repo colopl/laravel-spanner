@@ -1,4 +1,4 @@
-BASE_COMMAND=docker-compose -p $(shell basename $(CURDIR))
+BASE_COMMAND=docker compose -p $(shell basename $(CURDIR))
 
 build:
 	$(BASE_COMMAND) build --pull
