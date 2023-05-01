@@ -357,7 +357,9 @@ class BlueprintTest extends TestCase
             $table->uuid('id');
             $table->integer('null')->default(null)->nullable();
             $table->integer('int')->default(1);
+            $table->bigInteger('bigint')->default(1);
             $table->float('float')->default(0.1);
+            $table->double('double')->default(0.1);
             $table->boolean('bool')->default(true);
             $table->string('string')->default('a');
             $table->text('string_max')->default('a');
@@ -367,6 +369,7 @@ class BlueprintTest extends TestCase
             $table->dateTime('time_as_string')->default('2022-01-01');
             $table->dateTime('time_as_carbon')->default(new Carbon('2022-01-01'));
             $table->dateTime('current_time')->useCurrent();
+            $table->timestamp('current_time_as_ts')->useCurrent();
             $table->integerArray('int_array')->default([1, 2]);
             $table->booleanArray('bool_array')->default([false, true]);
             $table->floatArray('float_array')->default([2.2, 3.3]);
@@ -385,7 +388,9 @@ class BlueprintTest extends TestCase
                 '`id` string(36) not null',
                 '`null` int64',
                 '`int` int64 not null default (1)',
+                '`bigint` int64 not null default (1)',
                 '`float` float64 not null default (0.1)',
+                '`double` float64 not null default (0.1)',
                 '`bool` bool not null default (true)',
                 '`string` string(255) not null default ("a")',
                 '`string_max` string(max) not null default ("a")',
@@ -395,6 +400,7 @@ class BlueprintTest extends TestCase
                 '`time_as_string` timestamp not null default (TIMESTAMP "2022-01-01T00:00:00.000000+00:00")',
                 '`time_as_carbon` timestamp not null default (TIMESTAMP "2022-01-01T00:00:00.000000+00:00")',
                 '`current_time` timestamp not null default (CURRENT_TIMESTAMP())',
+                '`current_time_as_ts` timestamp not null default (CURRENT_TIMESTAMP())',
                 '`int_array` array<int64> not null default ([1, 2])',
                 '`bool_array` array<bool> not null default ([false, true])',
                 '`float_array` array<float64> not null default ([2.2, 3.3])',
