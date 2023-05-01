@@ -7,10 +7,12 @@ Added
 
 Fixed
 - Fixed bug where running `Connection::statement` with DDLs was not logging and was not triggering events. (#86)
+- FilesystemAdapter was not creating the directory for the cache file with proper permissions. (#93)
 
 Changed
 - Use google-cloud-php's CacheSessionPool since the [concerned bug](https://github.com/googleapis/google-cloud-php/issues/5567) has been fixed in [v1.53](https://github.com/googleapis/google-cloud-php-spanner/releases/tag/v1.58.2). (#90)
 - Separate session pool and authentication per connection so transaction works properly. (#89)
+- SessionPool and AuthCache now writes to `storage/framework/spanner/{$name}-{auth|session}`. (#93)
 
 # v5.0.0
 

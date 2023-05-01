@@ -27,7 +27,6 @@ use Illuminate\Queue\QueueManager;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
 use Psr\Cache\CacheItemPoolInterface;
-use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 
 class SpannerServiceProvider extends ServiceProvider
 {
@@ -93,9 +92,8 @@ class SpannerServiceProvider extends ServiceProvider
      */
     protected function createSessionPool(string $name, array $sessionPoolConfig): SessionPoolInterface
     {
-        $cachePath = storage_path(implode(DIRECTORY_SEPARATOR, ['framework', 'spanner', $name]));
-        $adapter = new FilesystemAdapter('session', 0, $cachePath);
-        return new CacheSessionPool($adapter, $sessionPoolConfig);
+        $cachePath = $this->app->storagePath(implode(DIRECTORY_SEPARATOR, ['framework', 'spanner']));
+        return new CacheSessionPool(new FileCacheAdapter("{$name}-session", $cachePath), $sessionPoolConfig);
     }
 
     /**
@@ -104,8 +102,8 @@ class SpannerServiceProvider extends ServiceProvider
      */
     protected function createAuthCache(string $name): CacheItemPoolInterface
     {
-        $cachePath = storage_path(implode(DIRECTORY_SEPARATOR, ['framework', 'spanner', $name]));
-        return new FilesystemAdapter('auth', 0, $cachePath);
+        $cachePath = $this->app->storagePath(implode(DIRECTORY_SEPARATOR, ['framework', 'spanner']));
+        return new FileCacheAdapter("{$name}-auth", $cachePath);
     }
 
     protected function closeSessionAfterEachQueueJob(): void

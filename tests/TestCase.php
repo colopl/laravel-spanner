@@ -25,6 +25,9 @@ use Google\Cloud\Spanner\SpannerClient;
 use Illuminate\Foundation\Application;
 use Ramsey\Uuid\Uuid;
 
+/**
+ * @property Application $app
+ */
 abstract class TestCase extends \Orchestra\Testbench\TestCase
 {
     protected const TABLE_NAME_TEST = 'Test';
