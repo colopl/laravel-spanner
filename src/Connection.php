@@ -207,7 +207,7 @@ class Connection extends BaseConnection
     }
 
     /**
-     * {@@inheritDoc}
+     * {@inheritDoc}
      * @return QueryProcessor
      */
     protected function getDefaultPostProcessor(): QueryProcessor
