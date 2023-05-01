@@ -21,6 +21,7 @@ use Google\Cloud\Core\LongRunning\LongRunningOperation;
 use Google\Cloud\Spanner\Database;
 use RuntimeException;
 use function json_encode;
+use function trigger_deprecation;
 
 /**
  * @method Database getSpannerDatabase()
@@ -28,20 +29,24 @@ use function json_encode;
 trait ManagesDataDefinitions
 {
     /**
+     * @deprecated use runDdlBatch() instead
      * @param string $ddl
      * @return LongRunningOperation
      */
     public function runDdl(string $ddl): LongRunningOperation
     {
+        trigger_deprecation('colopl/laravel-spanner', '5.2', 'runDdl() is deprecated. Use runDdlBatch() instead.');
         return $this->getSpannerDatabase()->updateDdl($ddl);
     }
 
     /**
+     * @deprecated use runDdlBatch() instead
      * @param string[] $ddls
      * @return LongRunningOperation
      */
     public function runDdls(array $ddls): LongRunningOperation
     {
+        trigger_deprecation('colopl/laravel-spanner', '5.2', 'runDdls() is deprecated. Use runDdlBatch() instead.');
         return $this->getSpannerDatabase()->updateDdlBatch($ddls);
     }
 
