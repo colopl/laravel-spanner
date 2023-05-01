@@ -396,6 +396,12 @@ class Grammar extends BaseGrammar
         return $this->typeDouble($column);
     }
 
+    /**
+     * Create the column definition for a double type.
+     *
+     * @param  Fluent<string, mixed> $column
+     * @return string
+     */
     protected function typeDouble(Fluent $column)
     {
         return 'float64';
