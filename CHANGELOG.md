@@ -1,3 +1,8 @@
+# v5.2.0 [Not released Yet]
+
+Changed
+- `Connection::waitForOperation` and `Connection::isDoneOperation` has been removed. (#99)
+
 # v5.1.0
 
 Added
