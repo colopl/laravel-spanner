@@ -1,4 +1,4 @@
-# v5.1.0 (Not released yet)
+# v5.1.0
 
 Added
 - Added `Connection::runDdlBatch` which runs DDLs in batch synchronously. (#86)
