@@ -1,3 +1,8 @@
+# v5.1.1
+
+Added
+- Added deprecation warnings to `Connection::runDdl` and `Connection::runDdls` (#98)
+
 # v5.1.0
 
 Added

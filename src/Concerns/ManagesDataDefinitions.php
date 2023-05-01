@@ -19,6 +19,7 @@ namespace Colopl\Spanner\Concerns;
 
 use Google\Cloud\Core\LongRunning\LongRunningOperation;
 use Google\Cloud\Spanner\Database;
+use function trigger_deprecation;
 
 /**
  * @method Database getSpannerDatabase()
@@ -26,20 +27,24 @@ use Google\Cloud\Spanner\Database;
 trait ManagesDataDefinitions
 {
     /**
+     * @deprecated use runDdlBatch() instead
      * @param string $ddl
      * @return LongRunningOperation
      */
     public function runDdl(string $ddl): LongRunningOperation
     {
+        trigger_deprecation('colopl/laravel-spanner', '5.1.1', 'runDdl() is deprecated. Use runDdlBatch() instead.');
         return $this->getSpannerDatabase()->updateDdl($ddl);
     }
 
     /**
+     * @deprecated use runDdlBatch() instead
      * @param string[] $ddls
      * @return LongRunningOperation
      */
     public function runDdls(array $ddls): LongRunningOperation
     {
+        trigger_deprecation('colopl/laravel-spanner', '5.1.1', 'runDdls() is deprecated. Use runDdlBatch() instead.');
         return $this->getSpannerDatabase()->updateDdlBatch($ddls);
     }
 
