@@ -382,7 +382,7 @@ class Grammar extends BaseGrammar
      */
     protected function typeInteger(Fluent $column)
     {
-        return 'int64';
+        return $this->typeBigInteger($column);
     }
 
     /**
@@ -392,6 +392,17 @@ class Grammar extends BaseGrammar
      * @return string
      */
     protected function typeFloat(Fluent $column)
+    {
+        return $this->typeDouble($column);
+    }
+
+    /**
+     * Create the column definition for a double type.
+     *
+     * @param  Fluent<string, mixed> $column
+     * @return string
+     */
+    protected function typeDouble(Fluent $column)
     {
         return 'float64';
     }
