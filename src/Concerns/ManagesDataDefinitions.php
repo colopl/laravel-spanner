@@ -33,7 +33,7 @@ trait ManagesDataDefinitions
      */
     public function runDdl(string $ddl): LongRunningOperation
     {
-        trigger_deprecation('colopl/laravel-spanner', '5.1.1', 'runDdl() is deprecated. Use runDdlBatch() instead.');
+        trigger_deprecation('colopl/laravel-spanner', '5.2', 'runDdl() is deprecated. Use runDdlBatch() instead.');
         return $this->getSpannerDatabase()->updateDdl($ddl);
     }
 
@@ -44,7 +44,7 @@ trait ManagesDataDefinitions
      */
     public function runDdls(array $ddls): LongRunningOperation
     {
-        trigger_deprecation('colopl/laravel-spanner', '5.1.1', 'runDdls() is deprecated. Use runDdlBatch() instead.');
+        trigger_deprecation('colopl/laravel-spanner', '5.2', 'runDdls() is deprecated. Use runDdlBatch() instead.');
         return $this->getSpannerDatabase()->updateDdlBatch($ddls);
     }
 
