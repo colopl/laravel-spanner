@@ -39,36 +39,25 @@ class Grammar extends BaseGrammar
      */
     protected $modifiers = ['Nullable', 'Default'];
 
-    /**
-     * @return string
-     */
-    public function compileTableExists()
+    public function compileTableExists(): string
     {
         return 'select * from information_schema.tables where table_schema = \'\' and table_name = ?';
     }
 
-    /**
-     * @return string
-     */
-    public function compileGetAllTables()
+    public function compileGetAllTables(): string
     {
         return 'select `table_name` as name, `table_type` as type from information_schema.tables where table_schema = \'\' and table_type = \'BASE TABLE\'';
     }
 
-    /**
-     * @return string
-     */
-    public function compileColumnListing()
+    public function compileColumnListing(): string
     {
         return 'select column_name as `column_name` from information_schema.columns where table_schema = \'\' and table_name = ?';
     }
 
     /**
      * Compile the query to determine the list of indexes.
-     *
-     * @return string
      */
-    public function compileIndexListing()
+    public function compileIndexListing(): string
     {
         return 'select index_name as `index_name` from information_schema.indexes where table_schema = \'\' and table_name = ?';
     }
@@ -229,7 +218,7 @@ class Grammar extends BaseGrammar
         }
 
         return sprintf('create %s%sindex %s on %s (%s)%s%s',
-            empty($command->indexType) ? '' : trim($command->indexType).' ',
+            empty($command->indexType) ? '' : trim((string) $command->indexType).' ',
             empty($command->nullFiltered) ? '' :'null_filtered ',
             $this->wrap($command->index),
             $this->wrapTable($blueprint),
@@ -241,7 +230,6 @@ class Grammar extends BaseGrammar
 
     /**
      * @param IndexDefinition $indexCommand
-     * @return string
      * @see https://cloud.google.com/spanner/docs/data-definition-language?hl=en#create_index
      */
     protected function addInterleaveToIndex(Fluent $indexCommand): string
@@ -251,7 +239,6 @@ class Grammar extends BaseGrammar
 
     /**
      * @param Fluent<string, mixed> $indexCommand
-     * @return string
      * @see https://cloud.google.com/spanner/docs/data-definition-language?hl=en#create_index
      */
     protected function addStoringToIndex(Fluent $indexCommand): string
@@ -483,9 +470,8 @@ class Grammar extends BaseGrammar
      *
      * @param  Blueprint  $blueprint
      * @param  Fluent<string, mixed> $column
-     * @return string|null
      */
-    protected function modifyNullable(Blueprint $blueprint, Fluent $column)
+    protected function modifyNullable(Blueprint $blueprint, Fluent $column): ?string
     {
         if (is_null($column->virtualAs) && is_null($column->storedAs)) {
             return $column->nullable ? '' : ' not null';
@@ -495,11 +481,10 @@ class Grammar extends BaseGrammar
 
     /**
      * @param Fluent<string, mixed> $column
-     * @return string
      */
     protected function getArrayInnerType(Fluent $column): string
     {
-        return $this->{'type'.ucfirst($column->arrayType)}($column);
+        return $this->{'type'.ucfirst((string) $column->arrayType)}($column);
     }
 
     /**
@@ -507,9 +492,8 @@ class Grammar extends BaseGrammar
      *
      * @param Blueprint $blueprint
      * @param Fluent<string, mixed> $column
-     * @return string|null
      */
-    protected function modifyDefault(Blueprint $blueprint, Fluent $column)
+    protected function modifyDefault(Blueprint $blueprint, Fluent $column): ?string
     {
         $value = $column->default;
 
@@ -522,9 +506,6 @@ class Grammar extends BaseGrammar
 
     /**
      * @param Fluent<string, mixed> $column
-     * @param string $type
-     * @param mixed $value
-     * @return int|float|string
      */
     protected function formatDefaultValue(Fluent $column, string $type, mixed $value): int|float|string
     {
@@ -547,8 +528,6 @@ class Grammar extends BaseGrammar
 
     /**
      * @param Fluent<string, mixed> $column
-     * @param mixed $value
-     * @return string
      */
     protected function formatArrayValue(Fluent $column, mixed $value): string
     {
@@ -562,8 +541,6 @@ class Grammar extends BaseGrammar
 
     /**
      * @param Fluent<string, mixed> $column
-     * @param mixed $value
-     * @return string
      */
     protected function formatBoolValue(Fluent $column, mixed $value): string
     {
@@ -573,8 +550,6 @@ class Grammar extends BaseGrammar
 
     /**
      * @param Fluent<string, mixed> $column
-     * @param mixed $value
-     * @return string
      */
     protected function formatDateValue(Fluent $column, mixed $value): string
     {
@@ -587,8 +562,6 @@ class Grammar extends BaseGrammar
 
     /**
      * @param Fluent<string, mixed> $column
-     * @param mixed $value
-     * @return string
      */
     protected function formatFloatValue(Fluent $column, mixed $value): string
     {
@@ -598,8 +571,6 @@ class Grammar extends BaseGrammar
 
     /**
      * @param Fluent<string, mixed> $column
-     * @param mixed $value
-     * @return string
      */
     protected function formatIntValue(Fluent $column, mixed $value): string
     {
@@ -609,8 +580,6 @@ class Grammar extends BaseGrammar
 
     /**
      * @param Fluent<string, mixed> $column
-     * @param mixed $value
-     * @return string
      */
     protected function formatStringValue(Fluent $column, mixed $value): string
     {
@@ -620,8 +589,6 @@ class Grammar extends BaseGrammar
 
     /**
      * @param Fluent<string, mixed> $column
-     * @param mixed $value
-     * @return string
      */
     protected function formatTimestampValue(Fluent $column, mixed $value): string
     {

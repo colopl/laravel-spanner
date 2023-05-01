@@ -22,15 +22,9 @@ use Google\Cloud\Spanner\Timestamp;
 
 class ReadTimestamp implements TimestampBoundInterface
 {
-    /**
-     * @var Timestamp
-     */
-    public $timestamp;
+    public Timestamp $timestamp;
 
-    /**
-     * @param Timestamp|DateTimeInterface $timestamp
-     */
-    public function __construct($timestamp)
+    public function __construct(Timestamp|DateTimeInterface $timestamp)
     {
         if ($timestamp instanceof DateTimeInterface) {
             $timestamp = new Timestamp($timestamp);
@@ -42,7 +36,7 @@ class ReadTimestamp implements TimestampBoundInterface
      * transactionOptions is used for $options on read/query or read-only transaction (eg Database::snapshot)
      *
      * @see https://cloud.google.com/spanner/docs/reference/rpc/google.spanner.v1#google.spanner.v1.TransactionOptions
-     * @return array
+     * @return array{readTimestamp: Timestamp}
      */
     public function transactionOptions(): array
     {

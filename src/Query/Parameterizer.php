@@ -67,23 +67,14 @@ class Parameterizer
         return [$newQuery, $newBindings];
     }
 
-    /**
-     * @param string $query
-     * @param string $value
-     * @return bool
-     */
-    private static function hasLikeWildcard(string $query, string $value)
+    private static function hasLikeWildcard(string $query, string $value): bool
     {
         return Str::contains(strtolower($query), 'like')
             && Str::contains($value, ['%', '_'])
             && (Str::startsWith($value, ['%', '_']) || preg_match('/[^\\\\][%_]/', $value));
     }
 
-    /**
-     * @param string $value
-     * @return string
-     */
-    private static function createLikeClause(string $value)
+    private static function createLikeClause(string $value): string
     {
         if (Str::contains($value, "\n")) {
             return "'''".addslashes($value)."'''";

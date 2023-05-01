@@ -22,26 +22,14 @@ use Illuminate\Database\Events\ConnectionEvent;
 
 class MutatingData extends ConnectionEvent
 {
-    /**
-     * @var string
-     */
-    public $tableName;
+    public string $tableName;
 
-    /**
-     * @var string
-     */
-    public $command;
+    public string $command;
 
-    /**
-     * @var array
-     */
-    public $values;
+    public array $values;
 
     /**
      * @param Connection $connection
-     * @param string $tableName
-     * @param string $command
-     * @param array $values
      */
     public function __construct($connection, string $tableName, string $command, array $values)
     {

@@ -169,9 +169,9 @@ class ConnectionTest extends TestCase
     public function testDeleteUsingMutationWithDifferentArgs(): void
     {
         $conn = $this->getDefaultConnection();
-        $userIds = collect(range(0, 4))->map(function() { return $this->generateUuid(); });
+        $userIds = collect(range(0, 4))->map(fn() => $this->generateUuid());
         $conn->transaction(function() use ($conn, $userIds) {
-            $dataSet = $userIds->map(function($userId) { return ['userId' => $userId, 'name' => 'test']; })->all();
+            $dataSet = $userIds->map(fn($userId) => ['userId' => $userId, 'name' => 'test'])->all();
             $conn->insertUsingMutation(self::TABLE_NAME_USER, $dataSet);
         });
 
@@ -380,7 +380,7 @@ class ConnectionTest extends TestCase
         $conn = $this->getDefaultConnection();
 
         try {
-            $conn->transaction(function (Connection $conn) {
+            $conn->transaction(function (Connection $conn): never {
                 self::assertTrue($conn->inTransaction());
                 self::assertNotNull($conn->getCurrentTransaction());
                 self::assertSame(1, $conn->transactionLevel());

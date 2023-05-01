@@ -18,8 +18,11 @@
 namespace Colopl\Spanner\Concerns;
 
 use Colopl\Spanner\Session\SessionInfo;
+use Google\ApiCore\ApiException;
+use Google\ApiCore\ValidationException;
 use Google\Auth\FetchAuthTokenInterface;
 use Google\Cloud\Core\EmulatorTrait;
+use Google\Cloud\Core\Exception\GoogleException;
 use Google\Cloud\Spanner\Connection\ConnectionInterface;
 use Google\Cloud\Spanner\Connection\Grpc;
 use Google\Cloud\Spanner\Database;
@@ -38,18 +41,12 @@ trait ManagesSessionPool
 {
     use EmulatorTrait;
 
-    /**
-     * @return void
-     */
     public function clearSessionPool(): void
     {
         $sessionPool = $this->getSpannerDatabase()->sessionPool();
         $sessionPool?->clear();
     }
 
-    /**
-     * @return bool
-     */
     public function maintainSessionPool(): bool
     {
         $sessionPool = $this->getSpannerDatabase()->sessionPool();
@@ -60,10 +57,8 @@ trait ManagesSessionPool
         return false;
     }
 
-
-
     /**
-     * @return int  Number of warmed up sessions
+     * Number of warmed up sessions
      */
     public function warmupSessionPool(): int
     {
@@ -76,6 +71,7 @@ trait ManagesSessionPool
 
     /**
      * @return Collection<int, SessionInfo>
+     * @throws ApiException|ValidationException
      */
     public function listSessions(): Collection
     {
@@ -96,7 +92,7 @@ trait ManagesSessionPool
 
     /**
      * @return array<string, mixed>
-     * @throws ReflectionException
+     * @throws ReflectionException|GoogleException
      */
     public function __debugInfo()
     {

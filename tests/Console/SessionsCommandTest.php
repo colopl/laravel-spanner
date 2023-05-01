@@ -26,8 +26,6 @@ use RuntimeException;
 class SessionsCommandTest extends TestCase
 {
     /**
-     * @param Connection $connection
-     * @param int $amount
      * @return list<Session>
      */
     protected function createSessions(Connection $connection, int $amount): array

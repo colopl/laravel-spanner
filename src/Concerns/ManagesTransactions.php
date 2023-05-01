@@ -38,7 +38,7 @@ trait ManagesTransactions
     protected ?Transaction $currentTransaction = null;
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      * @template T
      * @param  Closure(static): T $callback
      * @param  int $attempts
@@ -83,10 +83,9 @@ trait ManagesTransactions
     }
 
     /**
-     * @return Transaction|null
      * @internal
      */
-    public function getCurrentTransaction()
+    public function getCurrentTransaction(): ?\Google\Cloud\Spanner\Transaction
     {
         return $this->currentTransaction;
     }
@@ -122,7 +121,7 @@ trait ManagesTransactions
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      * @deprecated Use self::transaction() instead
      */
     public function commit()
@@ -132,7 +131,6 @@ trait ManagesTransactions
     }
 
     /**
-     * @return void
      * @throws AbortedException
      */
     protected function performSpannerCommit(): void
@@ -193,7 +191,7 @@ trait ManagesTransactions
      * Unlike MySQL all error cases including deadlocks are thrown as
      * AbortedException so causedByDeadlock will not be called here.
      *
-     * @inheritDoc
+     * {@inheritDoc}
      */
     protected function handleTransactionException($e, $currentAttempt, $maxAttempts)
     {
@@ -209,10 +207,9 @@ trait ManagesTransactions
     }
 
     /**
-     * @param Throwable $e
-     * @return void
+     * @throws Throwable
      */
-    protected function handleRollbackException(Throwable $e)
+    protected function handleRollbackException(Throwable $e): void
     {
         if ($e instanceof NotFoundException) {
             // Must be reset so that transaction can be retried.

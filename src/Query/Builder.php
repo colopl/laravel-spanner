@@ -75,12 +75,9 @@ class Builder extends BaseBuilder
      * The regular expression was taken from the documentation below
      * @see https://cloud.google.com/spanner/docs/lexical
      *
-     * @param string $column
-     * @param mixed $value
-     * @param string $boolean
      * @return $this
      */
-    public function whereInArray(string $column, $value, string $boolean = 'and')
+    public function whereInArray(string $column, mixed $value, string $boolean = 'and')
     {
         $type = 'InArray';
 
@@ -92,9 +89,7 @@ class Builder extends BaseBuilder
     }
 
     /**
-     * @param string $column
      * @param array<array-key, mixed>|Arrayable<array-key, mixed>|Nested $values
-     * @param string $boolean
      * @return $this
      */
     public function whereInUnnest(string $column, $values, string $boolean = 'and')

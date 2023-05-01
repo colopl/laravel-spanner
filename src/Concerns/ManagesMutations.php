@@ -25,18 +25,15 @@ use Google\Cloud\Spanner\Transaction;
 use Illuminate\Database\Events\TransactionBeginning;
 use Illuminate\Database\Events\TransactionCommitted;
 use Illuminate\Support\Arr;
+use InvalidArgumentException;
 
 /**
+ * @phpstan-type TKeySet scalar|KeySet
  * @method Database|Transaction getDatabaseContext()
  */
 trait ManagesMutations
 {
-    /**
-     * @param string $table
-     * @param array $dataSet
-     * @return void
-     */
-    public function insertUsingMutation(string $table, array $dataSet)
+    public function insertUsingMutation(string $table, array $dataSet): void
     {
         $this->withTransactionEvents(function () use ($table, $dataSet) {
             $dataSet = $this->prepareForMutation($dataSet);
@@ -45,12 +42,7 @@ trait ManagesMutations
         });
     }
 
-    /**
-     * @param string $table
-     * @param array $dataSet
-     * @return void
-     */
-    public function updateUsingMutation(string $table, array $dataSet)
+    public function updateUsingMutation(string $table, array $dataSet): void
     {
         $this->withTransactionEvents(function () use ($table, $dataSet) {
             $dataSet = $this->prepareForMutation($dataSet);
@@ -60,11 +52,9 @@ trait ManagesMutations
     }
 
     /**
-     * @param string $table
-     * @param scalar|array<mixed>|KeySet $keySet
-     * @return void
+     * @param TKeySet|list<TKeySet> $keySet
      */
-    public function deleteUsingMutation(string $table, $keySet)
+    public function deleteUsingMutation(string $table, bool|string|int|float|array|KeySet $keySet): void
     {
         $this->withTransactionEvents(function () use ($table, $keySet) {
             $keySet = $this->createDeleteMutationKeySet($keySet);
@@ -74,11 +64,7 @@ trait ManagesMutations
         });
     }
 
-    /**
-     * @param callable $mutationCall
-     * @return void
-     */
-    private function withTransactionEvents(callable $mutationCall)
+   private function withTransactionEvents(callable $mutationCall): void
     {
         // events not necessary since it is already called
         if ($this->inTransaction()) {
@@ -90,13 +76,9 @@ trait ManagesMutations
         }
     }
 
-    /**
-     * @param array $dataSet
-     * @return array
-     */
     private function prepareForMutation(array $dataSet): array
     {
-        if (empty($dataSet)) {
+        if (0 >= count($dataSet)) {
             return [];
         }
 
@@ -116,17 +98,17 @@ trait ManagesMutations
     }
 
     /**
-     * @param mixed|list<string>|KeySet $keys
+     * @param TKeySet|list<TKeySet> $keys
      * @return KeySet
      */
-    private function createDeleteMutationKeySet($keys)
+    private function createDeleteMutationKeySet($keys): KeySet
     {
         if ($keys instanceof KeySet) {
             return $keys;
         }
 
         if (is_object($keys)) {
-            throw new \InvalidArgumentException('delete should contain array of keys or be instance of KeySet. '.get_class($keys).' given.');
+            throw new InvalidArgumentException('delete should contain array of keys or be instance of KeySet. '.$keys::class.' given.');
         }
 
         if (!is_array($keys)) {

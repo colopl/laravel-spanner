@@ -191,11 +191,6 @@ class ModelTest extends TestCase
         return $user;
     }
 
-    /**
-     * @param string $userId
-     * @param int $rank
-     * @return UserInfo
-     */
     protected function createTestUserInfo(string $userId, int $rank): UserInfo
     {
         $userInfo = new UserInfo();
@@ -205,12 +200,6 @@ class ModelTest extends TestCase
         return $userInfo;
     }
 
-    /**
-     * @param string $userId
-     * @param string $itemId
-     * @param int $count
-     * @return UserItem
-     */
     protected function createTestUserItem(string $userId, string $itemId, int $count): UserItem
     {
         $userItem = new UserItem();
@@ -221,10 +210,6 @@ class ModelTest extends TestCase
         return $userItem;
     }
 
-    /**
-     * @param string $stringTestValue
-     * @return Test
-     */
     protected function createTestTest(string $stringTestValue): Test
     {
         $test = new Test();

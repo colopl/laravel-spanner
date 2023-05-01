@@ -31,7 +31,7 @@ trait ManagesPartitionedDml
      * @param array<mixed> $bindings
      * @return int
      */
-    public function runPartitionedDml($query, $bindings = [])
+    public function runPartitionedDml($query, $bindings = []): int
     {
         return $this->run($query, $bindings, function ($query, $bindings) {
             if ($this->pretending()) {

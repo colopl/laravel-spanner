@@ -60,7 +60,6 @@ class SessionsCommand extends Command
     }
 
     /**
-     * @param Connection $connection
      * @return Collection<int, array{ Name: string, Created: string, LastUsed: string }>
      */
     protected function makeSessionData(Connection $connection): Collection
@@ -76,10 +75,6 @@ class SessionsCommand extends Command
             ]);
     }
 
-    /**
-     * @param SessionInfo $session
-     * @return string
-     */
     protected function getSortValue(SessionInfo $session): string
     {
         $sort = $this->option('sort');
@@ -92,9 +87,6 @@ class SessionsCommand extends Command
         };
     }
 
-    /**
-     * @return string
-     */
     protected function getOrder(): string
     {
         $order = $this->option('order');

@@ -102,7 +102,6 @@ abstract class TestCase extends \Orchestra\Testbench\TestCase
     }
 
     /**
-     * @param Connection $conn
      * @return void
      */
     protected function setUpEmulatorInstance(Connection $conn): void
@@ -117,7 +116,6 @@ abstract class TestCase extends \Orchestra\Testbench\TestCase
     }
 
     /**
-     * @param Connection $conn
      * @return void
      */
     protected function setUpDatabaseOnce(Connection $conn): void
@@ -152,7 +150,7 @@ abstract class TestCase extends \Orchestra\Testbench\TestCase
     {
         $ddlFile = __DIR__ . '/test.ddl';
         return collect(explode(';', file_get_contents($ddlFile) ?: ''))
-            ->map(function($ddl) { return trim($ddl); })
+            ->map(fn($ddl) => trim((string) $ddl))
             ->filter()
             ->all();
     }

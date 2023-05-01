@@ -352,10 +352,10 @@ class BuilderTest extends TestCase
         $qb = $conn->table($tableName);
 
         $insertValues = [
-            array_merge($this->generateTestRow(), ['stringTest' => 'test1', 'intTest' => 20]),
-            array_merge($this->generateTestRow(), ['stringTest' => 'test1', 'intTest' => 20]),
-            array_merge($this->generateTestRow(), ['stringTest' => 'test2', 'intTest' => 20]),
-            array_merge($this->generateTestRow(), ['stringTest' => 'test2', 'intTest' => 40]),
+            [...$this->generateTestRow(), 'stringTest' => 'test1', 'intTest' => 20],
+            [...$this->generateTestRow(), 'stringTest' => 'test1', 'intTest' => 20],
+            [...$this->generateTestRow(), 'stringTest' => 'test2', 'intTest' => 20],
+            [...$this->generateTestRow(), 'stringTest' => 'test2', 'intTest' => 40],
         ];
         $qb->insert($insertValues);
 
@@ -666,11 +666,7 @@ class BuilderTest extends TestCase
 
         $insertValues = [];
         foreach ([10, 20, 30, 40] as $num) {
-            $insertValues[] = array_merge($this->generateTestRow(), [
-                'stringTest' => 'test1',
-                'intTest' => $num,
-                'bytesTest' => new Bytes(chr($num)),
-            ]);
+            $insertValues[] = [...$this->generateTestRow(), 'stringTest' => 'test1', 'intTest' => $num, 'bytesTest' => new Bytes(chr($num))];
         }
         $qb->insert($insertValues);
 

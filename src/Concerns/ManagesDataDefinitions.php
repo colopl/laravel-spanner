@@ -19,6 +19,7 @@ namespace Colopl\Spanner\Concerns;
 
 use Google\Cloud\Core\LongRunning\LongRunningOperation;
 use Google\Cloud\Spanner\Database;
+use JsonException;
 use RuntimeException;
 use function json_encode;
 use function trigger_deprecation;
@@ -30,8 +31,6 @@ trait ManagesDataDefinitions
 {
     /**
      * @deprecated use runDdlBatch() instead
-     * @param string $ddl
-     * @return LongRunningOperation
      */
     public function runDdl(string $ddl): LongRunningOperation
     {
@@ -41,8 +40,7 @@ trait ManagesDataDefinitions
 
     /**
      * @deprecated use runDdlBatch() instead
-     * @param string[] $ddls
-     * @return LongRunningOperation
+     * @param list<string> $ddls
      */
     public function runDdls(array $ddls): LongRunningOperation
     {
@@ -52,7 +50,6 @@ trait ManagesDataDefinitions
 
     /**
      * @param list<string> $statements
-     * @return mixed
      */
     public function runDdlBatch(array $statements): mixed
     {
@@ -70,8 +67,8 @@ trait ManagesDataDefinitions
     }
 
     /**
-     * @param string[] $statements Additional DDL statements
-     * @return void
+     * @param list<string> $statements Additional DDL statements
+     * @throws JsonException
      */
     public function createDatabase(array $statements = [])
     {
@@ -102,15 +99,11 @@ trait ManagesDataDefinitions
         return $this->getSpannerDatabase()->exists();
     }
 
-    /**
-     * @param LongRunningOperation $operation
-     * @return mixed
-     */
     protected function waitForOperation(LongRunningOperation $operation): mixed
     {
         $result = $operation->pollUntilComplete(['maxPollingDurationSeconds' => 0.0]);
         if ($operation->error() !== null) {
-            throw new RuntimeException((string) json_encode($operation->error()));
+            throw new RuntimeException((string) json_encode($operation->error(), JSON_THROW_ON_ERROR));
         }
         return $result;
     }

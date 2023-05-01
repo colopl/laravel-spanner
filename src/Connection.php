@@ -53,10 +53,7 @@ class Connection extends BaseConnection
         Concerns\ManagesStaleReads,
         Concerns\MarksAsNotSupported;
 
-    /**
-     * @var string
-     */
-    protected $instanceId;
+    protected string $instanceId;
 
     /**
      * @var SpannerClient
@@ -73,35 +70,29 @@ class Connection extends BaseConnection
      */
     protected $parameterizer;
 
-    /**
-     * @var CacheItemPoolInterface|null
-     */
-    protected $authCache;
+    protected ?CacheItemPoolInterface $authCache;
 
-    /**
-     * @var SessionPoolInterface|null
-     */
-    protected $sessionPool;
+    protected ?SessionPoolInterface $sessionPool;
 
     /**
      * Try to maintain session pool on 'session not found' error
      */
-    public const MAINTAIN_SESSION_POOL = 'MAINTAIN_SESSION_POOL';
+    final public const MAINTAIN_SESSION_POOL = 'MAINTAIN_SESSION_POOL';
 
     /**
      * Try to maintain and then clear session pool on 'session not found' error
      */
-    public const CLEAR_SESSION_POOL = 'CLEAR_SESSION_POOL';
+    final public const CLEAR_SESSION_POOL = 'CLEAR_SESSION_POOL';
 
     /**
      * The QueryException is raised and the client code is free to handle it by itself
      */
-    public const THROW_EXCEPTION = 'THROW_EXCEPTION';
+    final public const THROW_EXCEPTION = 'THROW_EXCEPTION';
 
     /**
      * Used to detect specific exception
      */
-    public const SESSION_NOT_FOUND_CONDITION = 'Session does not exist';
+    final public const SESSION_NOT_FOUND_CONDITION = 'Session does not exist';
 
     /**
      * @param string $instanceId instance ID
@@ -120,10 +111,9 @@ class Connection extends BaseConnection
     }
 
     /**
-     * @return SpannerClient
      * @throws GoogleException
      */
-    protected function getSpannerClient()
+    protected function getSpannerClient(): SpannerClient
     {
         if ($this->spannerClient === null) {
             $clientConfig = $this->config['client'] ?? [];
@@ -135,26 +125,17 @@ class Connection extends BaseConnection
         return $this->spannerClient;
     }
 
-    /**
-     * @return Database
-     */
     public function getSpannerDatabase(): Database
     {
         $this->reconnectIfMissingConnection();
         return $this->spannerDatabase ?? throw new LogicException('Spanner Database does not exist');
     }
 
-    /**
-     * @return Database|Transaction
-     */
     protected function getDatabaseContext(): Database|Transaction
     {
         return $this->getCurrentTransaction() ?? $this->getSpannerDatabase();
     }
 
-    /**
-     * @return bool
-     */
     public function isConnected(): bool
     {
         return $this->spannerDatabase !== null;
@@ -195,7 +176,7 @@ class Connection extends BaseConnection
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      * @return QueryGrammar
      */
     protected function getDefaultQueryGrammar(): QueryGrammar
@@ -204,7 +185,7 @@ class Connection extends BaseConnection
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      * @return SchemaGrammar
      */
     protected function getDefaultSchemaGrammar(): SchemaGrammar
@@ -213,7 +194,7 @@ class Connection extends BaseConnection
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      * @return SchemaBuilder
      */
     public function getSchemaBuilder()
@@ -226,7 +207,7 @@ class Connection extends BaseConnection
     }
 
     /**
-     * @inheritDoc
+     * {@@inheritDoc}
      * @return QueryProcessor
      */
     protected function getDefaultPostProcessor(): QueryProcessor
@@ -243,7 +224,8 @@ class Connection extends BaseConnection
     }
 
     /**
-     * @inheritDoc OVERRIDDEN for return type change
+     * OVERRIDDEN for return type change
+     * {@inheritDoc}
      * @return QueryBuilder
      */
     public function query(): QueryBuilder
@@ -312,25 +294,23 @@ class Connection extends BaseConnection
     public function affectingStatement($query, $bindings = []): int
     {
         /** @var Closure(): int $runQueryCall */
-        $runQueryCall = function () use ($query, $bindings) {
-            return $this->run($query, $bindings, function ($query, $bindings) {
-                if ($this->pretending()) {
-                    return 0;
-                }
+        $runQueryCall = fn() => $this->run($query, $bindings, function ($query, $bindings) {
+            if ($this->pretending()) {
+                return 0;
+            }
 
-                $transaction = $this->getCurrentTransaction();
+            $transaction = $this->getCurrentTransaction();
 
-                if ($transaction === null) {
-                    throw new RuntimeException('Tried to run update outside of transaction! Affecting statements must be done inside a transaction');
-                }
+            if ($transaction === null) {
+                throw new RuntimeException('Tried to run update outside of transaction! Affecting statements must be done inside a transaction');
+            }
 
-                $rowCount = $transaction->executeUpdate($query, ['parameters' => $this->prepareBindings($bindings)]);
+            $rowCount = $transaction->executeUpdate($query, ['parameters' => $this->prepareBindings($bindings)]);
 
-                $this->recordsHaveBeenModified($rowCount > 0);
+            $this->recordsHaveBeenModified($rowCount > 0);
 
-                return $rowCount;
-            });
-        };
+            return $rowCount;
+        });
 
         if ($this->inTransaction()) {
             return $runQueryCall();
@@ -358,8 +338,7 @@ class Connection extends BaseConnection
 
     /**
      * @internal
-     * @inheritDoc
-     * @return void
+     * {@inheritDoc}
      */
     public function setDatabaseName($database)
     {
@@ -368,9 +347,7 @@ class Connection extends BaseConnection
 
     /**
      * @internal
-     * @inheritDoc
-     * @return void
-     * @internal
+     * {@inheritDoc}
      */
     public function getPdo()
     {
@@ -379,9 +356,7 @@ class Connection extends BaseConnection
 
     /**
      * @internal
-     * @inheritDoc
-     * @return void
-     * @internal
+     * {@inheritDoc}
      */
     public function getReadPdo()
     {
@@ -390,8 +365,7 @@ class Connection extends BaseConnection
 
     /**
      * @internal
-     * @inheritDoc
-     * @return void
+     * {@inheritDoc}
      */
     public function getDoctrineConnection()
     {
@@ -425,13 +399,11 @@ class Connection extends BaseConnection
      */
     protected function runQueryCallback($query, $bindings, Closure $callback)
     {
-        $this->parameterizer = $this->parameterizer ?? new QueryParameterizer();
+        $this->parameterizer ??= new QueryParameterizer();
         [$query, $bindings] = $this->parameterizer->parameterizeQuery($query, $bindings);
 
         try {
-            $result = $this->withSessionNotFoundHandling(function () use ($query, $bindings, $callback) {
-                return $callback($query, $bindings);
-            });
+            $result = $this->withSessionNotFoundHandling(fn() => $callback($query, $bindings));
         }
 
         // AbortedExceptions are expected to be thrown upstream by the Google Client Library upstream,
@@ -457,8 +429,6 @@ class Connection extends BaseConnection
 
     /**
      * Returns current mode
-     *
-     * @return string
      */
     protected function getSessionNotFoundMode(): string
     {
@@ -524,9 +494,6 @@ class Connection extends BaseConnection
 
     /**
      * Check if this is "session not found" error
-     *
-     * @param Throwable $e
-     * @return boolean
      */
     public function causedBySessionNotFound(Throwable $e): bool
     {

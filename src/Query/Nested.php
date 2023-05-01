@@ -32,7 +32,7 @@ class Nested implements Arrayable, IteratorAggregate, Countable
     /**
      * @var array<int, mixed>
      */
-    private array $array;
+    private readonly array $array;
 
     /**
      * @param array<int, mixed>|Arrayable<int, mixed> $array

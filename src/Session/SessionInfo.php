@@ -22,25 +22,13 @@ use Illuminate\Support\Carbon;
 
 class SessionInfo
 {
-    /**
-     * @var string
-     */
-    protected $fullName;
+    protected string $fullName;
 
-    /**
-     * @var string
-     */
-    protected $name;
+    protected string $name;
 
-    /**
-     * @var Carbon
-     */
-    protected $createdAt;
+    protected Carbon $createdAt;
 
-    /**
-     * @var Carbon
-     */
-    protected $lastUsedAt;
+    protected Carbon $lastUsedAt;
 
     public function __construct(ProtoBufSession $protobufSession)
     {
@@ -54,33 +42,21 @@ class SessionInfo
         }
     }
 
-    /**
-     * @return string
-     */
     public function getFullName(): string
     {
         return $this->fullName;
     }
 
-    /**
-     * @return string
-     */
     public function getName(): string
     {
         return $this->name;
     }
 
-    /**
-     * @return Carbon
-     */
     public function getCreatedAt(): Carbon
     {
         return $this->createdAt;
     }
 
-    /**
-     * @return Carbon
-     */
     public function getLastUsedAt(): Carbon
     {
         return $this->lastUsedAt;

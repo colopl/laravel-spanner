@@ -21,19 +21,16 @@ use Google\Cloud\Spanner\Duration;
 
 class MaxStaleness implements TimestampBoundInterface
 {
-    /**
-     * @var Duration
-     */
-    public $duration;
+    public Duration $duration;
 
     /**
      * Stale reads (i.e. using the bounded or exact staleness types) have the maximum performance benefit at
      * longest staleness intervals. Use a minimum staleness of 10 seconds to get a benefit.
      * @see https://cloud.google.com/spanner/docs/timestamp-bounds?hl=en#timestamp_bound_types
      *
-     * @param Duration|int $duration Use a minimum staleness of 10 seconds for best results
+     * Use a minimum staleness of 10 seconds for best results
      */
-    public function __construct($duration)
+    public function __construct(Duration|int $duration)
     {
         if (is_int($duration)) {
             $duration = new Duration($duration);
@@ -45,7 +42,7 @@ class MaxStaleness implements TimestampBoundInterface
      * transactionOptions is used for $options on read/query or read-only transaction (eg Database::snapshot)
      *
      * @see https://cloud.google.com/spanner/docs/reference/rpc/google.spanner.v1#google.spanner.v1.TransactionOptions
-     * @return array
+     * @return array{maxStaleness: Duration}
      */
     public function transactionOptions(): array
     {

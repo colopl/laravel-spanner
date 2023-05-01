@@ -32,63 +32,56 @@ class Blueprint extends BaseBlueprint
 
     /**
      * @inheritDoc
-     * @return never
      */
-    public function temporary()
+    public function temporary(): never
     {
         $this->markAsNotSupported('temporary table');
     }
 
     /**
      * @inheritDoc
-     * @return never
      */
-    public function dropPrimary($index = null)
+    public function dropPrimary($index = null): never
     {
         $this->markAsNotSupported('dropping primary key');
     }
 
     /**
      * @inheritDoc
-     * @return never
      */
-    public function increments($column)
+    public function increments($column): never
     {
         $this->markAsNotSupported('AUTO_INCREMENT');
     }
 
     /**
      * @inheritDoc
-     * @return never
      */
-    public function bigIncrements($column)
+    public function bigIncrements($column): never
     {
         $this->markAsNotSupported('AUTO_INCREMENT');
     }
 
     /**
      * @inheritDoc
-     * @return never
      */
-    public function mediumIncrements($column)
+    public function mediumIncrements($column): never
     {
         $this->markAsNotSupported('AUTO_INCREMENT');
     }
 
     /**
      * @inheritDoc
-     * @return never
      */
-    public function smallIncrements($column)
+    public function smallIncrements($column): never
     {
         $this->markAsNotSupported('AUTO_INCREMENT');
     }
 
     /**
      * @inheritDoc
-     * @return never
      */
-    public function tinyIncrements($column)
+    public function tinyIncrements($column): never
     {
         $this->markAsNotSupported('AUTO_INCREMENT');
     }
@@ -96,7 +89,7 @@ class Blueprint extends BaseBlueprint
     // region Spanner Specific Types
 
     /**
-     * @param  string  $column
+     * @param string  $column
      * @param int|null $length
      * @return ColumnDefinition
      */
@@ -142,10 +135,9 @@ class Blueprint extends BaseBlueprint
 
     /**
      * @param string $column
-     * @param int|string|null $length
      * @return ColumnDefinition
      */
-    public function stringArray($column, $length = null)
+    public function stringArray($column, int|string|null $length = null)
     {
         $length ??= Builder::$defaultStringLength;
 
@@ -179,7 +171,6 @@ class Blueprint extends BaseBlueprint
 
     /**
      * @deprecated use interleaveInParent instead.
-     * @param string $parentTableName
      * @return InterleaveDefinition
      */
     public function interleave(string $parentTableName)
@@ -187,10 +178,6 @@ class Blueprint extends BaseBlueprint
         return $this->interleaveInParent($parentTableName);
     }
 
-    /**
-     * @param string $table
-     * @return InterleaveDefinition
-     */
     public function interleaveInParent(string $table): InterleaveDefinition
     {
         $command = new InterleaveDefinition(
@@ -204,8 +191,6 @@ class Blueprint extends BaseBlueprint
 
     /**
      * @see https://cloud.google.com/spanner/docs/ttl#defining_a_row_deletion_policy
-     * @param string $column
-     * @param int $days
      * @return Fluent<string, mixed>
      */
     public function deleteRowsOlderThan(string $column, int $days)
@@ -218,8 +203,6 @@ class Blueprint extends BaseBlueprint
     }
 
     /**
-     * @param string $column
-     * @param int $days
      * @return Fluent<string, mixed>
      */
     public function replaceRowDeletionPolicy(string $column, int $days): Fluent

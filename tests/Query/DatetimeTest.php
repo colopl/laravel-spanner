@@ -71,7 +71,7 @@ class DatetimeTest extends TestCase
         $ts = new Timestamp($datetime);
 
         $this->assertEquals($datetime->getTimestamp(), $ts->get()->getTimestamp());
-        $this->assertEquals(345678000, $ts->nanoSeconds());
+        $this->assertEquals(345_678_000, $ts->nanoSeconds());
     }
 
     public function testFormatTimestamp(): void

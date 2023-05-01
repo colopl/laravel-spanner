@@ -21,13 +21,9 @@ use Colopl\Spanner\TimestampBound\TimestampBoundInterface;
 
 trait UsesStaleReads
 {
-    /**
-     * @var TimestampBoundInterface|null
-     */
-    protected $timestampBound;
+    protected ?TimestampBoundInterface $timestampBound = null;
 
     /**
-     * @param TimestampBoundInterface $timestampBound
      * @return $this
      */
     public function withStaleness(TimestampBoundInterface $timestampBound)

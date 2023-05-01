@@ -19,7 +19,6 @@ namespace Colopl\Spanner\Concerns;
 
 use Colopl\Spanner\TimestampBound\TimestampBoundInterface;
 use Generator;
-use Throwable;
 
 trait ManagesStaleReads
 {
@@ -33,7 +32,7 @@ trait ManagesStaleReads
     {
         return $this->run($query, $bindings, function ($query, $bindings) use ($timestampBound) {
             if ($this->pretending()) {
-                return call_user_func(function() {
+                return call_user_func(static function(): Generator {
                     yield from [];
                 });
             }
@@ -50,29 +49,24 @@ trait ManagesStaleReads
     }
 
     /**
-     * @param  string  $query
-     * @param  array  $bindings
-     * @param  TimestampBoundInterface|null $timestampBound
-     * @return array
+     * @param string $query
+     * @param array<string, mixed> $bindings
+     * @param TimestampBoundInterface|null $timestampBound
      */
     public function selectWithTimestampBound($query, $bindings = [], TimestampBoundInterface $timestampBound = null): array
     {
-        return $this->withSessionNotFoundHandling(function () use ($query, $bindings, $timestampBound) {
-            return iterator_to_array($this->cursorWithTimestampBound($query, $bindings, $timestampBound));
-        });
+        return $this->withSessionNotFoundHandling(fn() => iterator_to_array($this->cursorWithTimestampBound($query, $bindings, $timestampBound)));
     }
 
     /**
      * @param string $query
-     * @param array<mixed> $bindings
+     * @param array<string, mixed> $bindings
      * @param TimestampBoundInterface|null $timestampBound
      * @return array<mixed>|null
      */
     public function selectOneWithTimestampBound($query, $bindings = [], TimestampBoundInterface $timestampBound = null): ?array
     {
-        return $this->withSessionNotFoundHandling(function () use ($query, $bindings, $timestampBound) {
-            return $this->cursorWithTimestampBound($query, $bindings, $timestampBound)->current();
-        });
+        return $this->withSessionNotFoundHandling(fn() => $this->cursorWithTimestampBound($query, $bindings, $timestampBound)->current());
     }
 }
 

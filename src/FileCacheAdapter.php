@@ -56,9 +56,6 @@ class FileCacheAdapter extends AbstractAdapter implements PruneableInterface
         $this->ensureDirectory();
     }
 
-    /**
-     * @return void
-     */
     protected function ensureDirectory(): void
     {
         if (!is_dir($this->directory)) {
@@ -77,10 +74,6 @@ class FileCacheAdapter extends AbstractAdapter implements PruneableInterface
     /**
      * OVERRIDE implementation from FilesystemCommonTrait since our directory structure differs from one provided
      * @see FilesystemCommonTrait::getFile()
-     *
-     * @param string $id
-     * @param bool $mkdir
-     * @return string
      */
     protected function getFile(string $id, bool $mkdir = false): string
     {
@@ -93,9 +86,6 @@ class FileCacheAdapter extends AbstractAdapter implements PruneableInterface
     /**
      * OVERRIDE implementation from FilesystemCommonTrait since our directory structure differs from one provided
      * @see FilesystemCommonTrait::scanHashDir()
-     *
-     * @param string $directory
-     * @return Generator
      */
     protected function scanHashDir(string $directory): Generator
     {

@@ -101,7 +101,7 @@ class TransactionTest extends TestCase
         ];
 
         try {
-            $conn->transaction(function (Connection $conn) {
+            $conn->transaction(function (Connection $conn): never {
                 $this->assertEquals(TransactionalReadInterface::STATE_ACTIVE, $conn->getCurrentTransaction()?->state());
                 throw new RuntimeException('abort test');
             });
@@ -210,7 +210,7 @@ class TransactionTest extends TestCase
 
         $count = 0;
         try {
-            $conn->transaction(function (Connection $conn) use ($qb, &$count) {
+            $conn->transaction(function (Connection $conn) use ($qb, &$count): never {
                 $qb->insert(['userId' => $this->generateUuid(), 'name' => 't']);
                 $conn->afterCommit(static function() use (&$count) {
                     $count++;

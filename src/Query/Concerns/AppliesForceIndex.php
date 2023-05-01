@@ -19,16 +19,13 @@ namespace Colopl\Spanner\Query\Concerns;
 
 trait AppliesForceIndex
 {
-    /**
-     * @var string|null
-     */
-    public $forceIndex;
+    public ?string $forceIndex = null;
 
     /**
      * @param string|null $indexName
      * @return $this
      */
-    public function forceIndex($indexName)
+    public function forceIndex($indexName): static
     {
         $this->forceIndex = $indexName;
         return $this;

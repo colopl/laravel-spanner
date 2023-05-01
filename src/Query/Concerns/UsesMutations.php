@@ -26,16 +26,14 @@ use Google\Cloud\Spanner\KeySet;
 trait UsesMutations
 {
     /**
-     * @param array $values
      * @return void
      */
-    public function insertUsingMutation(array $values)
+    public function insertUsingMutation(array $values): void
     {
         $this->connection->insertUsingMutation($this->from, $values);
     }
 
     /**
-     * @param array $values
      * @return void
      */
     public function updateUsingMutation(array $values)
@@ -44,10 +42,9 @@ trait UsesMutations
     }
 
     /**
-     * @param array|KeySet $keys
      * @return void
      */
-    public function deleteUsingMutation($keys)
+    public function deleteUsingMutation(array|KeySet $keys)
     {
         $this->connection->deleteUsingMutation($this->from, $keys);
     }

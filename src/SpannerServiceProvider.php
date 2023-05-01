@@ -36,9 +36,7 @@ class SpannerServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->resolving('db', function (DatabaseManager $db) {
-            $db->extend('spanner', function (array $config, string $name): Connection {
-                return $this->createSpannerConnection($this->parseConfig($config, $name));
-            });
+            $db->extend('spanner', fn(array $config, string $name): Connection => $this->createSpannerConnection($this->parseConfig($config, $name)));
         });
 
         if ($this->app->runningInConsole()) {
@@ -55,10 +53,6 @@ class SpannerServiceProvider extends ServiceProvider
         $this->closeSessionAfterEachQueueJob();
     }
 
-    /**
-     * @param array $config
-     * @return Connection
-     */
     protected function createSpannerConnection(array $config): Connection
     {
         return new Connection(
@@ -73,7 +67,6 @@ class SpannerServiceProvider extends ServiceProvider
 
     /**
      * @param array<string, mixed> $config
-     * @param string $name
      * @return array<string, mixed>
      */
     protected function parseConfig(array $config, string $name): array
@@ -86,9 +79,7 @@ class SpannerServiceProvider extends ServiceProvider
     }
 
     /**
-     * @param string $name
      * @param array<string, mixed> $sessionPoolConfig
-     * @return SessionPoolInterface
      */
     protected function createSessionPool(string $name, array $sessionPoolConfig): SessionPoolInterface
     {
@@ -96,10 +87,6 @@ class SpannerServiceProvider extends ServiceProvider
         return new CacheSessionPool(new FileCacheAdapter("{$name}-session", $cachePath), $sessionPoolConfig);
     }
 
-    /**
-     * @param string $name
-     * @return CacheItemPoolInterface
-     */
     protected function createAuthCache(string $name): CacheItemPoolInterface
     {
         $cachePath = $this->app->storagePath(implode(DIRECTORY_SEPARATOR, ['framework', 'spanner']));

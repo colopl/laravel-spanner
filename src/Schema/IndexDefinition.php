@@ -14,10 +14,9 @@ class IndexDefinition extends Fluent
 {
     /**
      * @deprecated use interleaveIn instead.
-     * @param string $table
      * @return $this
      */
-    public function interleave(string $table)
+    public function interleave(string $table): static
     {
         return $this->interleaveIn($table);
     }

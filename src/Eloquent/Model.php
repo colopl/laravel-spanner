@@ -66,12 +66,7 @@ class Model extends BaseModel
         return parent::resolveChildRouteBindingQuery($childType, $this->tryCastAttribute($key, $value), $field);
     }
 
-    /**
-     * @param string $key
-     * @param mixed $value
-     * @return mixed
-     */
-    protected function tryCastAttribute(string $key, $value)
+    protected function tryCastAttribute(string $key, mixed $value): mixed
     {
         if (array_key_exists($key, $this->getCasts())) {
             return $this->castAttribute($key, $value);

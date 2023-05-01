@@ -21,11 +21,7 @@ use BadMethodCallException;
 
 trait MarksAsNotSupported
 {
-    /**
-     * @param string $methodName
-     * @return never
-     */
-    protected function markAsNotSupported(string $methodName)
+    protected function markAsNotSupported(string $methodName): never
     {
         throw new BadMethodCallException('Cloud Spanner does not support '.$methodName);
     }

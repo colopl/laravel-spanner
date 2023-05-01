@@ -47,9 +47,7 @@ class Processor extends BaseProcessor
      */
     public function processColumnListing($results)
     {
-        return array_map(function ($result) {
-            return ((object) $result)->column_name;
-        }, $results);
+        return array_map(fn($result) => ((object) $result)->column_name, $results);
     }
 
     /**
@@ -58,8 +56,6 @@ class Processor extends BaseProcessor
      */
     public function processIndexListing($results)
     {
-        return array_map(function ($result) {
-            return ((object) $result)->index_name;
-        }, $results);
+        return array_map(fn($result) => ((object) $result)->index_name, $results);
     }
 }

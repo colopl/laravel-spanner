@@ -62,40 +62,32 @@ class Grammar extends BaseGrammar
         return ['delete from '.$this->wrapTable($query->from).' where true' => []];
     }
 
-    /**
-     * @param Builder $query
-     * @return string
-     */
-    protected function compileForceIndex(Builder $query)
+    protected function compileForceIndex(Builder $query): string
     {
         if ($query instanceof SpannerBuilder) {
             return $query->forceIndex ? "@{FORCE_INDEX=$query->forceIndex}" : '';
         }
 
-        throw new RuntimeException('Unexpected Builder: '.get_class($query).' Expected: '.SpannerBuilder::class);
+        throw new RuntimeException('Unexpected Builder: '.$query::class.' Expected: '.SpannerBuilder::class);
     }
 
     /**
-     * @param Builder $query
      * @param array<string, Expression|string> $where
-     * @return string
      */
-    protected function whereInArray(Builder $query, $where)
+    protected function whereInArray(Builder $query, $where): string
     {
         return '? in unnest('.$this->wrap($where['column']).')';
     }
 
     /**
-     * @param Builder $query
-     * @param array $where
-     * @return string
+     * @param array<string, Expression|string> $where
      */
-    protected function whereInUnnest(Builder $query, $where)
+    protected function whereInUnnest(Builder $query, $where): string
     {
         $values = $where['values'];
 
         if (!($values instanceof Nested)) {
-            throw new RuntimeException('Invalid Type:'.get_class($values).' given. '.Nested::class.' expected.');
+            throw new RuntimeException('Invalid Type:'.$values::class.' given. '.Nested::class.' expected.');
         }
 
         return (count($values) > 0)
