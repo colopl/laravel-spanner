@@ -5,7 +5,7 @@ Added
 
 Changed
 - `Connection::waitForOperation` and `Connection::isDoneOperation` has been removed. (#99)
-- [BREAKING] Some methods have been made more type-defined. (#)
+- [BREAKING] Some methods have been made more type-defined. (#102)
 
 # v5.1.0
 
