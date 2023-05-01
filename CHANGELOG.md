@@ -3,6 +3,9 @@
 Added
 - Added deprecation warnings to `Connection::runDdl` and `Connection::runDdls` (#98)
 
+Changed
+- `Connection::waitForOperation` and `Connection::isDoneOperation` has been removed. (#99)
+
 # v5.1.0
 
 Added

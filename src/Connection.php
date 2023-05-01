@@ -46,7 +46,6 @@ use Throwable;
 class Connection extends BaseConnection
 {
     use Concerns\ManagesDataDefinitions,
-        Concerns\ManagesLongRunningOperations,
         Concerns\ManagesMutations,
         Concerns\ManagesPartitionedDml,
         Concerns\ManagesSessionPool,

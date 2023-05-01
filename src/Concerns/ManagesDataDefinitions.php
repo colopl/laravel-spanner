@@ -19,6 +19,8 @@ namespace Colopl\Spanner\Concerns;
 
 use Google\Cloud\Core\LongRunning\LongRunningOperation;
 use Google\Cloud\Spanner\Database;
+use RuntimeException;
+use function json_encode;
 use function trigger_deprecation;
 
 /**
@@ -98,5 +100,18 @@ trait ManagesDataDefinitions
     public function databaseExists()
     {
         return $this->getSpannerDatabase()->exists();
+    }
+
+    /**
+     * @param LongRunningOperation $operation
+     * @return mixed
+     */
+    protected function waitForOperation(LongRunningOperation $operation): mixed
+    {
+        $result = $operation->pollUntilComplete(['maxPollingDurationSeconds' => 0.0]);
+        if ($operation->error() !== null) {
+            throw new RuntimeException((string) json_encode($operation->error()));
+        }
+        return $result;
     }
 }
