@@ -3,6 +3,7 @@
 Added
 - Added `Connection::runDdlBatch` which runs DDLs in batch synchronously. (#86)
 - Added emulator support for `Connection::listSessions`. (#88)
+- Schema\Grammar::typeDouble for better compatibility (#94)
 
 Fixed
 - Fixed bug where running `Connection::statement` with DDLs was not logging and was not triggering events. (#86)
