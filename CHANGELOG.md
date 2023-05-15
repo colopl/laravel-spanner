@@ -5,6 +5,7 @@ Added
 
 Changed
 - `Connection::waitForOperation` and `Connection::isDoneOperation` has been removed. (#99)
+- Update `export-ignore` entries in `.gitattributes` (#104)
 
 # v5.1.0
 
