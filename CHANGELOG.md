@@ -8,7 +8,7 @@ Changed
 - Update `export-ignore` entries in `.gitattributes` (#104)
 
 Fixed
-- Transaction state was not being cleared if rolled back failed. (#106)
+- Transaction state was not being cleared if rolled back failed. (#107)
 
 # v5.1.0
 
