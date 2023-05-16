@@ -26,6 +26,7 @@ use Colopl\Spanner\TimestampBound\MinReadTimestamp;
 use Colopl\Spanner\TimestampBound\ReadTimestamp;
 use Colopl\Spanner\TimestampBound\StrongRead;
 use Google\Auth\FetchAuthTokenInterface;
+use Google\Cloud\Core\Exception\AbortedException;
 use Google\Cloud\Core\Exception\NotFoundException;
 use Google\Cloud\Spanner\KeySet;
 use Google\Cloud\Spanner\Session\CacheSessionPool;
@@ -37,6 +38,8 @@ use Illuminate\Database\Events\TransactionBeginning;
 use Illuminate\Database\Events\TransactionCommitted;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Event;
+use LogicException;
+use RuntimeException;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use function dirname;
 use function fileperms;
@@ -387,6 +390,46 @@ class ConnectionTest extends TestCase
                 throw new NotFoundException('NG');
             });
         } catch(NotFoundException) {
+            // do nothing.
+        }
+
+        self::assertfalse($conn->inTransaction());
+        self::assertNull($conn->getCurrentTransaction());
+        self::assertSame(0, $conn->transactionLevel());
+    }
+
+    public function test_connection_transaction_reset_on_rollback_exceptions(): void
+    {
+        $base = $this->getDefaultConnection();
+
+        $conn = new class($base) extends Connection {
+            public function __construct(Connection $base)
+            {
+                parent::__construct(
+                    $base->instanceId,
+                    $base->database,
+                    $base->tablePrefix,
+                    $base->config,
+                    $base->authCache,
+                    $base->sessionPool,
+                );
+            }
+
+            protected function performRollBack($toLevel): void
+            {
+                $this->currentTransaction = null;
+                throw new AbortedException('NG');
+            }
+        };
+
+        try {
+            $conn->transaction(function (Connection $conn): mixed {
+                self::assertTrue($conn->inTransaction());
+                self::assertNotNull($conn->getCurrentTransaction());
+                self::assertSame(1, $conn->transactionLevel());
+                throw new RuntimeException('Trigger rollback');
+            });
+        } catch(AbortedException) {
             // do nothing.
         }
 

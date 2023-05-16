@@ -214,11 +214,9 @@ trait ManagesTransactions
      */
     protected function handleRollbackException(Throwable $e)
     {
-        if ($e instanceof NotFoundException) {
-            // Must be reset so that transaction can be retried.
-            // otherwise, transactions will remain at 1.
-            $this->transactions = 0;
-        }
+        // Must be reset so that transaction can be retried.
+        // otherwise, transactions will remain at 1.
+        $this->transactions = 0;
 
         throw $e;
     }
