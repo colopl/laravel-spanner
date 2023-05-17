@@ -12,7 +12,7 @@
     "ext-grpc": "*",
     "ext-json": "*",
     "laravel/framework": "~10.0",
-    "google/cloud-spanner": "~1.58.2",
+    "google/cloud-spanner": "^1.58.4",
     "grpc/grpc": "^1.42",
     "symfony/cache": "~6",
     "symfony/deprecation-contracts": "~2",
