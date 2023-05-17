@@ -1,3 +1,8 @@
+# v4.7.1
+
+Fixed
+- Transaction state was not being cleared if rolled back failed. (#107)
+
 # v4.7.0
 
 Added

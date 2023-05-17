@@ -233,4 +233,17 @@ trait ManagesTransactions
 
         throw $e;
     }
+
+    /**
+     * @param Throwable $e
+     * @return void
+     */
+    protected function handleRollbackException(Throwable $e)
+    {
+        // Must be reset so that transaction can be retried.
+        // otherwise, transactions will remain at 1.
+        $this->transactions = 0;
+
+        throw $e;
+    }
 }
