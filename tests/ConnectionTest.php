@@ -137,6 +137,51 @@ class ConnectionTest extends TestCase
         Event::assertDispatchedTimes(TransactionCommitted::class, 2);
     }
 
+    public function testInsertOrUpdateUsingMutationWithTransaction(): void
+    {
+        Event::fake();
+
+        $userId1 = $this->generateUuid();
+        $userId2 = $this->generateUuid();
+        $conn = $this->getDefaultConnection();
+
+        $conn->insertUsingMutation(self::TABLE_NAME_USER, ['userId' => $userId1, 'name' => 'test1']);
+
+        $conn->transaction(function () use ($conn, $userId1, $userId2) {
+            $conn->insertOrUpdateUsingMutation(self::TABLE_NAME_USER, [
+                ['userId' => $userId1, 'name' => 'tester1'],
+                ['userId' => $userId2, 'name' => 'tester2'],
+            ]);
+        });
+
+        $this->assertEquals(['userId' => $userId1, 'name' => 'tester1'], $conn->table(self::TABLE_NAME_USER)->where('userId', $userId1)->first());
+        $this->assertEquals(['userId' => $userId2, 'name' => 'tester2'], $conn->table(self::TABLE_NAME_USER)->where('userId', $userId2)->first());
+        Event::assertDispatchedTimes(TransactionBeginning::class, 2);
+        Event::assertDispatchedTimes(MutatingData::class, 2);
+        Event::assertDispatchedTimes(TransactionCommitted::class, 2);
+    }
+
+    public function testInsertOrUpdateUsingMutationWithoutTransaction(): void
+    {
+        Event::fake();
+
+        $userId1 = $this->generateUuid();
+        $userId2 = $this->generateUuid();
+        $conn = $this->getDefaultConnection();
+
+        $conn->insertUsingMutation(self::TABLE_NAME_USER, ['userId' => $userId1, 'name' => 'test1']);
+        $conn->insertOrUpdateUsingMutation(self::TABLE_NAME_USER, [
+            ['userId' => $userId1, 'name' => 'tester1'],
+            ['userId' => $userId2, 'name' => 'tester2'],
+        ]);
+
+        $this->assertEquals(['userId' => $userId1, 'name' => 'tester1'], $conn->table(self::TABLE_NAME_USER)->where('userId', $userId1)->first());
+        $this->assertEquals(['userId' => $userId2, 'name' => 'tester2'], $conn->table(self::TABLE_NAME_USER)->where('userId', $userId2)->first());
+        Event::assertDispatchedTimes(TransactionBeginning::class, 2);
+        Event::assertDispatchedTimes(MutatingData::class, 2);
+        Event::assertDispatchedTimes(TransactionCommitted::class, 2);
+    }
+
     public function testDeleteUsingMutationWithTransaction(): void
     {
         Event::fake();

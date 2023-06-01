@@ -258,6 +258,7 @@ You can [insert, update, and delete data using mutations](https://cloud.google.c
 ```
 $queryBuilder->insertUsingMutation($values);
 $queryBuilder->updateUsingMutation($values);
+$queryBuilder->insertOrUpdateUsingMutation($values);
 $queryBuilder->deleteUsingMutation($values);
 ```
 
