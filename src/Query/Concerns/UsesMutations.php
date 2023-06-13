@@ -44,6 +44,15 @@ trait UsesMutations
     }
 
     /**
+     * @param array<string, mixed> $values
+     * @return void
+     */
+    public function insertOrUpdateUsingMutation(array $values)
+    {
+        $this->connection->insertOrUpdateUsingMutation($this->from, $values);
+    }
+
+    /**
      * @param array|KeySet $keys
      * @return void
      */

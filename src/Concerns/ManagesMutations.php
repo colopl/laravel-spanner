@@ -61,6 +61,20 @@ trait ManagesMutations
 
     /**
      * @param string $table
+     * @param array<string, mixed> $dataSet
+     * @return void
+     */
+    public function insertOrUpdateUsingMutation(string $table, array $dataSet)
+    {
+        $this->withTransactionEvents(function () use ($table, $dataSet) {
+            $dataSet = $this->prepareForMutation($dataSet);
+            $this->event(new MutatingData($this, $table, 'update', $dataSet));
+            $this->getDatabaseContext()->insertOrUpdateBatch($table, $dataSet);
+        });
+    }
+
+    /**
+     * @param string $table
      * @param scalar|array<mixed>|KeySet $keySet
      * @return void
      */
@@ -78,7 +92,7 @@ trait ManagesMutations
      * @param callable $mutationCall
      * @return void
      */
-    private function withTransactionEvents(callable $mutationCall)
+    protected function withTransactionEvents(callable $mutationCall)
     {
         // events not necessary since it is already called
         if ($this->inTransaction()) {
@@ -94,7 +108,7 @@ trait ManagesMutations
      * @param array $dataSet
      * @return array
      */
-    private function prepareForMutation(array $dataSet): array
+    protected function prepareForMutation(array $dataSet): array
     {
         if (empty($dataSet)) {
             return [];
@@ -119,7 +133,7 @@ trait ManagesMutations
      * @param mixed|list<string>|KeySet $keys
      * @return KeySet
      */
-    private function createDeleteMutationKeySet($keys)
+    protected function createDeleteMutationKeySet($keys)
     {
         if ($keys instanceof KeySet) {
             return $keys;
