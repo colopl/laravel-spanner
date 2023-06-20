@@ -1,5 +1,7 @@
 FROM php:8.1-cli-alpine
 
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
 ENV COMPOSER_ALLOW_SUPERUSER 1
 ENV TZ Asia/Tokyo
 ENV PATH="${PATH}:/project/vendor/bin"
@@ -14,7 +16,6 @@ RUN apk add --no-cache bash gmp libxml2 libstdc++ \
   && docker-php-ext-enable grpc opcache protobuf \
   && apk del .build-deps \
   && rm -rf /tmp/* \
-  && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin/ --filename=composer \
   && mkdir -p /project/
 
 WORKDIR /project
