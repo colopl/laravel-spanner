@@ -77,7 +77,7 @@ class BlueprintTest extends TestCase
         );
     }
 
-    public function test_dropTableIfExists(): void
+    public function test_dropIfExists(): void
     {
         $conn = $this->getDefaultConnection();
 
