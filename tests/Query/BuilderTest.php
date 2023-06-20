@@ -460,7 +460,7 @@ class BuilderTest extends TestCase
 
         $this->getDefaultConnection()
             ->table(self::TABLE_NAME_USER)
-            ->useIndex('test_index_name2')
+            ->ignoreIndex('test_index_name2')
             ->toSql();
     }
 
