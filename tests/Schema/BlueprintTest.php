@@ -91,7 +91,7 @@ class BlueprintTest extends TestCase
             $queries[0]
         );
 
-        self::assertTrue($conn->statement($queries[0]));
+        $this->assertTrue($conn->statement($queries[0]));
     }
 
     public function testAddColumn(): void
