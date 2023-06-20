@@ -62,7 +62,7 @@ class BlueprintTest extends TestCase
         );
     }
 
-    public function testDropTable(): void
+    public function test_dropTable(): void
     {
         $conn = $this->getDefaultConnection();
 
@@ -75,6 +75,23 @@ class BlueprintTest extends TestCase
             'drop table `Test3`',
             $queries[0]
         );
+    }
+
+    public function test_dropTableIfExists(): void
+    {
+        $conn = $this->getDefaultConnection();
+
+        $blueprint = new Blueprint('Test3', function (Blueprint $table) {
+            $table->dropIfExists();
+        });
+
+        $queries = $blueprint->toSql($conn, new Grammar());
+        $this->assertEquals(
+            'drop table if exists `Test3`',
+            $queries[0]
+        );
+
+        self::assertTrue($conn->statement($queries[0]));
     }
 
     public function testAddColumn(): void
