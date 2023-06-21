@@ -422,7 +422,7 @@ class BuilderTest extends TestCase
         $this->assertEquals(100, $pagination->total());
     }
 
-    public function testForceIndex(): void
+    public function test_forceIndex(): void
     {
         $conn = $this->getDefaultConnection();
         $tableName = self::TABLE_NAME_USER;
@@ -431,15 +431,37 @@ class BuilderTest extends TestCase
         $this->assertEquals('select * from `User`', $qb->toSql());
 
         $qb->forceIndex('test_index_name');
-        $this->assertEquals('select * from `User`@{FORCE_INDEX=test_index_name}', $qb->toSql());
+        $this->assertEquals('select * from `User` @{FORCE_INDEX=test_index_name}', $qb->toSql());
 
         $qb->forceIndex('test_index_name2');
-        $this->assertEquals('select * from `User`@{FORCE_INDEX=test_index_name2}', $qb->toSql());
+        $this->assertEquals('select * from `User` @{FORCE_INDEX=test_index_name2}', $qb->toSql());
 
         $qb->forceIndex(null);
         $this->assertEquals('select * from `User`', $qb->toSql());
 
         $this->assertInstanceOf(Builder::class, $qb->forceIndex(null));
+    }
+
+    public function test_useIndex(): void
+    {
+        $this->expectExceptionMessage('Cloud Spanner does not support index type: hint');
+        $this->expectException(BadMethodCallException::class);
+
+        $this->getDefaultConnection()
+            ->table(self::TABLE_NAME_USER)
+            ->useIndex('test_index_name2')
+            ->toSql();
+    }
+
+    public function test_ignoreIndex(): void
+    {
+        $this->expectExceptionMessage('Cloud Spanner does not support index type: ignore');
+        $this->expectException(BadMethodCallException::class);
+
+        $this->getDefaultConnection()
+            ->table(self::TABLE_NAME_USER)
+            ->ignoreIndex('test_index_name2')
+            ->toSql();
     }
 
     public function testInterleaveTable(): void
