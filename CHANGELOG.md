@@ -1,3 +1,8 @@
+# v6.0.0 [Not released Yet]
+
+Changed
+- [Breaking] Match `Query\Builder::forceIndex()` behavior with laravel's (`forceIndex` property no longer exists). (#114)
+
 # v5.2.1 (2023-08-16)
 
 Fixed
