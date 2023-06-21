@@ -19,24 +19,16 @@ namespace Colopl\Spanner\Query;
 
 use Colopl\Spanner\Concerns\MarksAsNotSupported;
 use Colopl\Spanner\Concerns\SharedGrammarCalls;
-use Colopl\Spanner\Query\Builder as SpannerBuilder;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Contracts\Database\Query\Expression;
 use Illuminate\Database\Query\Grammars\Grammar as BaseGrammar;
+use Illuminate\Database\Query\IndexHint;
 use RuntimeException;
 
 class Grammar extends BaseGrammar
 {
     use MarksAsNotSupported;
     use SharedGrammarCalls;
-
-    /**
-     * @inheritDoc
-     */
-    protected function compileFrom(Builder $query, $table)
-    {
-        return parent::compileFrom($query, $table).$this->compileForceIndex($query);
-    }
 
     /**
      * @inheritDoc
@@ -64,15 +56,19 @@ class Grammar extends BaseGrammar
 
     /**
      * @param Builder $query
+     * @param IndexHint $indexHint
      * @return string
      */
-    protected function compileForceIndex(Builder $query)
+    protected function compileIndexHint(Builder $query, $indexHint)
     {
-        if ($query instanceof SpannerBuilder) {
-            return $query->forceIndex ? "@{FORCE_INDEX=$query->forceIndex}" : '';
+        if ($indexHint->index === null) {
+            return '';
         }
 
-        throw new RuntimeException('Unexpected Builder: '.get_class($query).' Expected: '.SpannerBuilder::class);
+        return match ($indexHint->type) {
+            'force' => "@{FORCE_INDEX={$indexHint->index}}",
+            default => $this->markAsNotSupported('index type: ' . $indexHint->type),
+        };
     }
 
     /**
