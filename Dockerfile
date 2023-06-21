@@ -6,9 +6,6 @@ ENV COMPOSER_ALLOW_SUPERUSER 1
 ENV TZ Asia/Tokyo
 ENV PATH="${PATH}:/project/vendor/bin"
 
-# Fix for Alpine Linux 3.13 https://github.com/grpc/grpc/issues/25250
-ENV CPPFLAGS="-Wno-maybe-uninitialized"
-
 # pecl_mt_install: `pecl install` does not support multi-threaded compile, so install manually for faster compilation.
 RUN pecl_mt_install() { \
         extension="${1}" \
