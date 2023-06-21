@@ -9,6 +9,7 @@ ENV PATH="${PATH}:/project/vendor/bin"
 # Fix for Alpine Linux 3.13 https://github.com/grpc/grpc/issues/25250
 ENV CPPFLAGS="-Wno-maybe-uninitialized"
 
+# pecl_mt_install: `pecl` does not support multi-threaded compile, so it compiles on manually for speedup.
 RUN pecl_mt_install() { \
         extension="${1}" \
         && extension_name="${extension%-*}" \
