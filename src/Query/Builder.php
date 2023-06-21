@@ -24,8 +24,7 @@ use Illuminate\Support\Arr;
 
 class Builder extends BaseBuilder
 {
-    use Concerns\AppliesForceIndex,
-        Concerns\UsesMutations,
+    use Concerns\UsesMutations,
         Concerns\UsesPartitionedDml,
         Concerns\UsesStaleReads;
 
