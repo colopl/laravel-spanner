@@ -19,16 +19,18 @@ namespace Colopl\Spanner\Concerns;
 
 use Google\Cloud\Spanner\Database;
 
-/**
- * @method Database getSpannerDatabase()
- */
 trait ManagesPartitionedDml
 {
+    /**
+     * @return Database
+     */
+    abstract public function getSpannerDatabase(): Database;
+
     /**
      * Run an SQL statement as partitioned DML and get the number of rows affected.
      *
      * @param string $query
-     * @param array<mixed> $bindings
+     * @param array<array-key, mixed> $bindings
      * @return int
      */
     public function runPartitionedDml($query, $bindings = [])

@@ -26,11 +26,13 @@ use Illuminate\Database\Events\TransactionBeginning;
 use Illuminate\Database\Events\TransactionCommitted;
 use Illuminate\Support\Arr;
 
-/**
- * @method Database|Transaction getDatabaseContext()
- */
 trait ManagesMutations
 {
+    /**
+     * @return Database|Transaction
+     */
+    abstract protected function getDatabaseContext(): Database|Transaction;
+
     /**
      * @param string $table
      * @param array $dataSet
