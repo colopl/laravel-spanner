@@ -12,6 +12,7 @@ Added
 Changed
 - `Connection::waitForOperation` and `Connection::isDoneOperation` has been removed. (#99)
 - Update `export-ignore` entries in `.gitattributes` (#104)
+- Use abstract definitions on traits instead of relying on `@methods` `@property`. (#120)
 
 Fixed
 - Transaction state was not being cleared if rolled back failed. (#107)
