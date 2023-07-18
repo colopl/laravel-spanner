@@ -108,7 +108,7 @@ class Builder extends BaseBuilder
     protected function createBlueprint($table, Closure $callback = null)
     {
         return isset($this->resolver)
-            ? call_user_func($this->resolver, $table, $callback)
+            ? ($this->resolver)($table, $callback)
             : new Blueprint($table, $callback);
     }
 }
