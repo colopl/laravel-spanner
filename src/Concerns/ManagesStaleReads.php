@@ -52,7 +52,7 @@ trait ManagesStaleReads
      * @param  string $query
      * @param  array<array-key, mixed> $bindings
      * @param  TimestampBoundInterface|null $timestampBound
-     * @return list<array<mixed>>
+     * @return array<int, array<array-key, mixed>>
      */
     public function selectWithTimestampBound($query, $bindings = [], TimestampBoundInterface $timestampBound = null): array
     {
