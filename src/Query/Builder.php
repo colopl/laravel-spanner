@@ -24,9 +24,10 @@ use Illuminate\Support\Arr;
 
 class Builder extends BaseBuilder
 {
-    use Concerns\UsesMutations,
-        Concerns\UsesPartitionedDml,
-        Concerns\UsesStaleReads;
+    use Concerns\UsesDataBoost;
+    use Concerns\UsesMutations;
+    use Concerns\UsesPartitionedDml;
+    use Concerns\UsesStaleReads;
 
     /**
      * @var Connection
