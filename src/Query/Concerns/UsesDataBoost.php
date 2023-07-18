@@ -34,7 +34,10 @@ trait UsesDataBoost
         return $this;
     }
 
-    public function dataBoostEnabled(): bool
+    /**
+     * @return bool
+     */
+    public function isDataBoostEnabled(): bool
     {
         return $this->useDataBoost;
     }

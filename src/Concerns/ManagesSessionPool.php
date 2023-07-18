@@ -61,8 +61,6 @@ trait ManagesSessionPool
         return false;
     }
 
-
-
     /**
      * @return int  Number of warmed up sessions
      */

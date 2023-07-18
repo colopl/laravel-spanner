@@ -137,6 +137,10 @@ class Builder extends BaseBuilder
         $bindings = $this->getBindings();
         $options = [];
 
+        if ($this->useDataBoost) {
+            $options += ['dataBoostEnabled' => true];
+        }
+
         if ($this->timestampBound !== null) {
             $options += $this->timestampBound->transactionOptions();
         }
