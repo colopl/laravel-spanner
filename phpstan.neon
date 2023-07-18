@@ -16,17 +16,13 @@ parameters:
           path: src/Connection.php
         - message: '#^Parameter \#1 \$start of method Illuminate\\Database\\Connection::getElapsedTime\(\) expects int, float given\.$#'
           path: src/Connection.php
-        - message: '#^Parameter \#1 \$start of method Illuminate\\Database\\Connection::getElapsedTime\(\) expects int, float given\.$#'
-          path: src/Connection.php
-          count: 1
+          count: 2
         - message: "#^Parameter \\#1 \\$table of method Illuminate\\\\Database\\\\Query\\\\Builder\\:\\:from\\(\\) expects Closure\\|Illuminate\\\\Database\\\\Eloquent\\\\Builder\\|Illuminate\\\\Database\\\\Query\\\\Builder\\|string, Closure\\|Illuminate\\\\Contracts\\\\Database\\\\Query\\\\Expression\\|Illuminate\\\\Database\\\\Query\\\\Builder\\|string given\\.$#"
           path: src/Connection.php
         - message: '#^Method Colopl\\Spanner\\Connection::select\(\) should return array but returns mixed\.$#'
           path: src/Connection.php
         - message: '#^Cannot cast mixed to int\.$#'
           path: src/Eloquent/Model.php
-        - message: '#^Method Colopl\\Spanner\\Schema\\Builder::createBlueprint\(\) should return Illuminate\\Database\\Schema\\Blueprint but returns mixed\.$#'
-          path: src/Schema/Builder.php
         - message: '#^Property Illuminate\\Database\\Schema\\Builder::\$resolver \(Closure\) in isset\(\) is not nullable\.$#'
           path: src/Schema/Builder.php
         - message: '#^Using nullsafe method call on non-nullable type Illuminate\\Database\\DatabaseTransactionsManager\. Use -> instead\.$#'
