@@ -23,11 +23,13 @@ use RuntimeException;
 use function json_encode;
 use function trigger_deprecation;
 
-/**
- * @method Database getSpannerDatabase()
- */
 trait ManagesDataDefinitions
 {
+    /**
+     * @return Database
+     */
+    abstract public function getSpannerDatabase(): Database;
+
     /**
      * @deprecated use runDdlBatch() instead
      * @param string $ddl

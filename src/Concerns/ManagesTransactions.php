@@ -20,7 +20,6 @@ namespace Colopl\Spanner\Concerns;
 use Closure;
 use Exception;
 use Google\Cloud\Core\Exception\AbortedException;
-use Google\Cloud\Core\Exception\NotFoundException;
 use Google\Cloud\Spanner\Database;
 use Google\Cloud\Spanner\Transaction;
 use Throwable;

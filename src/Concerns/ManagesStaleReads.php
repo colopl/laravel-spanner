@@ -19,13 +19,12 @@ namespace Colopl\Spanner\Concerns;
 
 use Colopl\Spanner\TimestampBound\TimestampBoundInterface;
 use Generator;
-use Throwable;
 
 trait ManagesStaleReads
 {
     /**
      * @param string $query
-     * @param array<string, mixed> $bindings
+     * @param array<array-key, mixed> $bindings
      * @param TimestampBoundInterface|null $timestampBound
      * @return Generator<int, list<mixed>|null>
      */
@@ -48,10 +47,10 @@ trait ManagesStaleReads
     }
 
     /**
-     * @param  string  $query
-     * @param  array  $bindings
+     * @param  string $query
+     * @param  array<array-key, mixed> $bindings
      * @param  TimestampBoundInterface|null $timestampBound
-     * @return array
+     * @return list<array<array-key, mixed>|null>
      */
     public function selectWithTimestampBound($query, $bindings = [], TimestampBoundInterface $timestampBound = null): array
     {
@@ -62,9 +61,9 @@ trait ManagesStaleReads
 
     /**
      * @param string $query
-     * @param array<mixed> $bindings
+     * @param array<array-key, mixed> $bindings
      * @param TimestampBoundInterface|null $timestampBound
-     * @return array<mixed>|null
+     * @return array<array-key, mixed>|null
      */
     public function selectOneWithTimestampBound($query, $bindings = [], TimestampBoundInterface $timestampBound = null): ?array
     {

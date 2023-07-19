@@ -8,6 +8,7 @@ Added
 Changed
 - `Connection::waitForOperation` and `Connection::isDoneOperation` has been removed. (#99)
 - Update `export-ignore` entries in `.gitattributes` (#104)
+- Use abstract definitions on traits instead of relying on `@methods` `@property`. (#120)
 - Stop using `call_user_func` (#121)
 
 Fixed

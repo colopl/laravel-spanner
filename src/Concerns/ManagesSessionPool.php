@@ -30,13 +30,14 @@ use Illuminate\Support\Collection;
 use ReflectionException;
 use ReflectionObject;
 
-/**
- * @property Database|null $spannerDatabase
- * @method Database getSpannerDatabase()
- */
 trait ManagesSessionPool
 {
     use EmulatorTrait;
+
+    /**
+     * @return Database
+     */
+    abstract public function getSpannerDatabase(): Database;
 
     /**
      * @return void
