@@ -8,11 +8,13 @@ Changed
 Added
 - Added deprecation warnings to `Connection::runDdl` and `Connection::runDdls` (#98)
 - Added  `ManagesMutations::insertOrUpdateUsingMutation` and `UsesMutations::insertOrUpdateUsingMutation` to do upserts (#109)
+- Added Support for `Schema\Builder::dropIfExists()` (#115)
 
 Changed
 - `Connection::waitForOperation` and `Connection::isDoneOperation` has been removed. (#99)
 - Update `export-ignore` entries in `.gitattributes` (#104)
 - Use abstract definitions on traits instead of relying on `@methods` `@property`. (#120)
+- Stop using `call_user_func` (#121)
 
 Fixed
 - Transaction state was not being cleared if rolled back failed. (#107)

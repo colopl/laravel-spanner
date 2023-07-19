@@ -327,7 +327,7 @@ class Grammar extends BaseGrammar
      */
     public function compileDropIfExists(Blueprint $blueprint, Fluent $command)
     {
-        return $this->compileDrop($blueprint, $command);
+        return 'drop table if exists '.$this->wrapTable($blueprint);
     }
 
     /**
