@@ -420,6 +420,18 @@ class Connection extends BaseConnection
         return $bindings;
     }
 
+    protected function escapeBool($value)
+    {
+        return $value ? 'true' : 'false';
+    }
+
+    protected function escapeString($value)
+    {
+        return str_contains($value, "\n")
+            ? 'r"""' . addcslashes($value, '"') . '"""'
+            : '"' . addcslashes($value, '"') . '"';
+    }
+
     /**
      * @inheritDoc
      */
