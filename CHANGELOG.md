@@ -4,6 +4,7 @@ Added
 - Added deprecation warnings to `Connection::runDdl` and `Connection::runDdls` (#98)
 - Added  `ManagesMutations::insertOrUpdateUsingMutation` and `UsesMutations::insertOrUpdateUsingMutation` to do upserts (#109)
 - Added Support for `Schema\Builder::dropIfExists()` (#115)
+- Added Support for `Query\Builder::toRawSql()` (#123)
 
 Changed
 - `Connection::waitForOperation` and `Connection::isDoneOperation` has been removed. (#99)
