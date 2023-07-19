@@ -276,7 +276,7 @@ class Connection extends BaseConnection
     {
         return $this->run($query, $bindings, function ($query, $bindings) {
             if ($this->pretending()) {
-                return call_user_func(function() { yield from []; });
+                return (static fn() => yield from [])();
             }
 
             return $this->getDatabaseContext()
