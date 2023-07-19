@@ -33,9 +33,7 @@ trait ManagesStaleReads
     {
         return $this->run($query, $bindings, function ($query, $bindings) use ($timestampBound) {
             if ($this->pretending()) {
-                return call_user_func(function() {
-                    yield from [];
-                });
+                return (static fn() => yield from [])();
             }
 
             $options = ['parameters' => $this->prepareBindings($bindings)];
