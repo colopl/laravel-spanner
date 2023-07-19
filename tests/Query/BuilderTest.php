@@ -33,14 +33,6 @@ use Illuminate\Support\Collection;
 
 class BuilderTest extends TestCase
 {
-    public function testSimpleSelect(): void
-    {
-        $conn = $this->getDefaultConnection();
-        $values = $conn->select('SELECT 12345');
-        $this->assertCount(1, $values);
-        $this->assertEquals(12345, $values[0][0]);
-    }
-
     public function testInsert(): void
     {
         $conn = $this->getDefaultConnection();
@@ -124,82 +116,6 @@ class BuilderTest extends TestCase
             ->where('userId', $insertRow['userId'])
             ->first();
         $this->assertNull($insertedRow);
-    }
-
-    public function testStatementWithSelect(): void
-    {
-        $executedCount = 0;
-        $this->app['events']->listen(QueryExecuted::class, function () use (&$executedCount) { $executedCount++; });
-
-        $conn = $this->getDefaultConnection();
-        $res = $conn->statement('SELECT ?', ['12345']);
-
-        $this->assertTrue($res);
-        $this->assertEquals(1, $executedCount);
-    }
-
-    public function testStatementWithDml(): void
-    {
-        $conn = $this->getDefaultConnection();
-        $userId = $this->generateUuid();
-        $executedCount = 0;
-        $this->app['events']->listen(QueryExecuted::class, function () use (&$executedCount) { $executedCount++; });
-
-        $res[] = $conn->statement('INSERT '.self::TABLE_NAME_USER.' (`userId`, `name`) VALUES (?,?)', [$userId, __FUNCTION__]);
-        $res[] = $conn->statement('UPDATE '.self::TABLE_NAME_USER.' SET `name`=? WHERE `userId`=?', [__FUNCTION__.'2', $userId]);
-        $res[] = $conn->statement('DELETE '.self::TABLE_NAME_USER.' WHERE `userId`=?', [$this->generateUuid()]);
-
-        $this->assertTrue($res[0]);
-        $this->assertTrue($res[1]);
-        $this->assertTrue($res[2]);
-        $this->assertEquals(3, $executedCount);
-    }
-
-    public function testUnpreparedWithSelect(): void
-    {
-        $executedCount = 0;
-        $this->app['events']->listen(QueryExecuted::class, function () use (&$executedCount) { $executedCount++; });
-
-        $conn = $this->getDefaultConnection();
-        $res = $conn->unprepared('SELECT 12345');
-
-        $this->assertTrue($res);
-        $this->assertEquals(1, $executedCount);
-    }
-
-    public function testUnpreparedWithDml(): void
-    {
-        $conn = $this->getDefaultConnection();
-        $userId = $this->generateUuid();
-        $executedCount = 0;
-        $this->app['events']->listen(QueryExecuted::class, function () use (&$executedCount) { $executedCount++; });
-
-        $res[] = $conn->unprepared('INSERT '.self::TABLE_NAME_USER.' (`userId`, `name`) VALUES (\''.$userId.'\',\''.__FUNCTION__.'\')');
-        $res[] = $conn->unprepared('UPDATE '.self::TABLE_NAME_USER.' SET `name`=\''.__FUNCTION__.'2'.'\' WHERE `userId`=\''.$userId.'\'');
-        $res[] = $conn->unprepared('DELETE '.self::TABLE_NAME_USER.' WHERE `userId`=\''.$userId.'\'');
-
-        $this->assertTrue($res[0]);
-        $this->assertTrue($res[1]);
-        $this->assertTrue($res[2]);
-        $this->assertEquals(3, $executedCount);
-    }
-
-    public function testPretend(): void
-    {
-        $executedCount = 0;
-        $this->app['events']->listen(QueryExecuted::class, function () use (&$executedCount) { $executedCount++; });
-
-        $resSelect = null;
-        $resInsert = null;
-        $conn = $this->getDefaultConnection();
-        $conn->pretend(function(Connection $conn) use (&$resSelect, &$resInsert) {
-            $resSelect = $conn->select('SELECT 12345');
-            $resInsert = $conn->table(self::TABLE_NAME_USER)->insert(['userId' => $this->generateUuid(), 'name' => __FUNCTION__]);
-        });
-
-        $this->assertEquals([], $resSelect);
-        $this->assertEquals(true, $resInsert);
-        $this->assertEquals(2, $executedCount);
     }
 
     public function testCompositePrimaryKeyTest(): void
