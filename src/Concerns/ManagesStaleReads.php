@@ -30,7 +30,7 @@ trait ManagesStaleReads
      * @param string $query
      * @param array<array-key, mixed> $bindings
      * @param TimestampBoundInterface|null $timestampBound
-     * @return Generator<int, list<mixed>|null>
+     * @return Generator<int, array<array-key, mixed>>
      */
     public function cursorWithTimestampBound($query, $bindings = [], TimestampBoundInterface $timestampBound = null): Generator
     {
