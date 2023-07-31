@@ -144,7 +144,9 @@ class Grammar extends BaseGrammar
         if ($command->policy !== 'olderThan') {
             throw new RuntimeException('Unknown deletion policy:'.$command->policy);
         }
-        return "alter table {$this->wrapTable($blueprint)} replace row deletion policy (older_than({$command->column}, interval {$command->days} day))";
+        $table = $this->wrapTable($blueprint);
+        $column = $this->wrap($command->column);
+        return "alter table {$table} replace row deletion policy (older_than({$column}, interval {$command->days} day))";
     }
 
     /**

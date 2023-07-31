@@ -13,6 +13,7 @@ Changed
 
 Fixed
 - Transaction state was not being cleared if rolled back failed. (#107)
+- Column was not escaped for clause `REPLACE ROW DELETION POLICY` (#125)
 
 # v5.1.0
 
