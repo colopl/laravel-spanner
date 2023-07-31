@@ -58,7 +58,7 @@ trait ManagesStaleReads
      */
     public function selectOneWithTimestampBound($query, $bindings = [], TimestampBoundInterface $timestampBound = null): ?array
     {
-        return $this->cursorWithTimestampBound($query, $bindings, $timestampBound)->current();
+        return $this->selectWithTimestampBound($query, $bindings, $timestampBound)[0] ?? null;
     }
 }
 
