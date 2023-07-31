@@ -222,6 +222,20 @@ class Blueprint extends BaseBlueprint
      * @param int $days
      * @return Fluent<string, mixed>
      */
+    public function addRowDeletionPolicy(string $column, int $days): Fluent
+    {
+        return $this->addCommand('addRowDeletionPolicy', [
+            'policy' => 'olderThan',
+            'column' => $column,
+            'days' => $days,
+        ]);
+    }
+
+    /**
+     * @param string $column
+     * @param int $days
+     * @return Fluent<string, mixed>
+     */
     public function replaceRowDeletionPolicy(string $column, int $days): Fluent
     {
         return $this->addCommand('replaceRowDeletionPolicy', [
