@@ -140,8 +140,6 @@ class Builder extends BaseBuilder
             $options += $this->timestampBound->transactionOptions();
         }
 
-        return count($options) > 0
-            ? $this->connection->selectWithOptions($sql, $bindings, $options)
-            : $this->connection->select($sql, $bindings);
+        return $this->connection->selectWithOptions($sql, $bindings, $options); 
     }
 }
