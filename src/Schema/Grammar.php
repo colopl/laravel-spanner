@@ -139,6 +139,21 @@ class Grammar extends BaseGrammar
      * @param Fluent<string, mixed> $command
      * @return string
      */
+    public function compileAddRowDeletionPolicy(Blueprint $blueprint, Fluent $command)
+    {
+        if ($command->policy !== 'olderThan') {
+            throw new RuntimeException('Unknown deletion policy:'.$command->policy);
+        }
+        $table = $this->wrapTable($blueprint);
+        $column = $this->wrap($command->column);
+        return "alter table {$table} add row deletion policy (older_than({$column}, interval {$command->days} day))";
+    }
+
+    /**
+     * @param Blueprint $blueprint
+     * @param Fluent<string, mixed> $command
+     * @return string
+     */
     public function compileReplaceRowDeletionPolicy(Blueprint $blueprint, Fluent $command)
     {
         if ($command->policy !== 'olderThan') {

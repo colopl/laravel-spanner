@@ -306,6 +306,34 @@ class BlueprintTest extends TestCase
         );
     }
 
+    public function test_add_row_deletion_policy(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $conn->useDefaultSchemaGrammar();
+        $grammar = $conn->getSchemaGrammar();
+        $table = 'Test_' . Str::random();
+
+        $blueprint1 = new Blueprint($table, function (Blueprint $table) {
+            $table->create();
+            $table->uuid('id');
+            $table->primary('id');
+            $table->dateTime('t')->nullable();
+        });
+        $blueprint1->build($conn, $grammar);
+
+        $blueprint2 = new Blueprint($table, function (Blueprint $table) {
+            $table->addRowDeletionPolicy('t', 200);
+        });
+        $blueprint2->build($conn, $grammar);
+
+        $statement = $blueprint2->toSql($conn, $grammar)[0];
+
+        self::assertEquals(
+            "alter table `{$table}` add row deletion policy (older_than(`t`, interval 200 day))",
+            $statement,
+        );
+    }
+
     public function test_replace_row_deletion_policy(): void
     {
         $conn = $this->getDefaultConnection();
