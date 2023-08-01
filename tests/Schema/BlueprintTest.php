@@ -330,7 +330,7 @@ class BlueprintTest extends TestCase
         $statement = $blueprint2->toSql($conn, $grammar)[0];
 
         self::assertEquals(
-            "alter table `{$table}` replace row deletion policy (older_than(t, interval 200 day))",
+            "alter table `{$table}` replace row deletion policy (older_than(`t`, interval 200 day))",
             $statement,
         );
     }
