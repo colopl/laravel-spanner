@@ -886,5 +886,8 @@ class BuilderTest extends TestCase
 
         $sql = $conn->table(self::TABLE_NAME_USER)->where('t', "tes\nt")->toRawSql();
         $this->assertSame($sql, "select * from `User` where `t` = r\"\"\"tes\nt\"\"\"", 'newline');
+
+        $sql = $conn->table(self::TABLE_NAME_USER)->where('t', "t\"e\"s\nt")->toRawSql();
+        $this->assertSame($sql, "select * from `User` where `t` = r\"\"\"t\\\"e\\\"s\nt\"\"\"", 'newline with escaped quote');
     }
 }
