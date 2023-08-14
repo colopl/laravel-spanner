@@ -867,4 +867,27 @@ class BuilderTest extends TestCase
         $qb = $conn->table(self::TABLE_NAME_USER);
         $qb->sharedLock()->get();
     }
+
+    public function test_toRawSql(): void
+    {
+        $conn = $this->getDefaultConnection();
+
+        $sql = $conn->table(self::TABLE_NAME_USER)->where('b', true)->toRawSql();
+        $this->assertSame($sql, 'select * from `User` where `b` = true', 'true');
+
+        $sql = $conn->table(self::TABLE_NAME_USER)->where('b', false)->toRawSql();
+        $this->assertSame($sql, 'select * from `User` where `b` = false', 'false');
+
+        $sql = $conn->table(self::TABLE_NAME_USER)->where('t', 'test')->toRawSql();
+        $this->assertSame($sql, 'select * from `User` where `t` = "test"', 'text');
+
+        $sql = $conn->table(self::TABLE_NAME_USER)->where('t', '"tes\'s"')->toRawSql();
+        $this->assertSame($sql, 'select * from `User` where `t` = "\"tes\'s\""', 'escaped');
+
+        $sql = $conn->table(self::TABLE_NAME_USER)->where('t', "tes\nt")->toRawSql();
+        $this->assertSame($sql, "select * from `User` where `t` = r\"\"\"tes\nt\"\"\"", 'newline');
+
+        $sql = $conn->table(self::TABLE_NAME_USER)->where('t', "t\"e\"s\nt")->toRawSql();
+        $this->assertSame($sql, "select * from `User` where `t` = r\"\"\"t\\\"e\\\"s\nt\"\"\"", 'newline with escaped quote');
+    }
 }

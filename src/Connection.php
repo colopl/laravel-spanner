@@ -200,7 +200,7 @@ class Connection extends BaseConnection
      */
     protected function getDefaultQueryGrammar(): QueryGrammar
     {
-        return new QueryGrammar();
+        return (new QueryGrammar())->setConnection($this);
     }
 
     /**
@@ -418,6 +418,24 @@ class Connection extends BaseConnection
         }
 
         return $bindings;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    protected function escapeBool($value)
+    {
+        return $value ? 'true' : 'false';
+    }
+
+    /**
+     * @inheritDoc
+     */
+    protected function escapeString($value)
+    {
+        return str_contains($value, "\n")
+            ? 'r"""' . addcslashes($value, '"') . '"""'
+            : '"' . addcslashes($value, '"') . '"';
     }
 
     /**

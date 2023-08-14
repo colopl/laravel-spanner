@@ -5,6 +5,7 @@ Added
 - Added  `ManagesMutations::insertOrUpdateUsingMutation` and `UsesMutations::insertOrUpdateUsingMutation` to do upserts (#109)
 - Added Support for `Schema\Builder::dropIfExists()` (#115)
 - Added support for adding row deletion policy when modifying table (#124)
+- Added Support for `Query\Builder::toRawSql()` (#123)
 
 Changed
 - `Connection::waitForOperation` and `Connection::isDoneOperation` has been removed. (#99)
