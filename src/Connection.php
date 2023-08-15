@@ -37,6 +37,8 @@ use Google\Cloud\Spanner\Transaction;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Connection as BaseConnection;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use InvalidArgumentException;
 use LogicException;
 use Psr\Cache\CacheItemPoolInterface;
@@ -418,6 +420,22 @@ class Connection extends BaseConnection
         }
 
         return $bindings;
+    }
+
+    /**
+     * @inheritDoc
+     * @param scalar|list<mixed>|null $value
+     */
+    public function escape($value, $binary = false)
+    {
+        if (is_array($value)) {
+            if (array_is_list($value)) {
+                $escaped = array_map(fn (mixed $v): string => $this->escape($v, $binary), $value);
+                return '[' . implode(', ', $escaped) . ']';
+            }
+            throw new LogicException('Associative arrays are not supported');
+        }
+        return parent::escape($value, $binary);
     }
 
     /**
