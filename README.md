@@ -206,7 +206,7 @@ $schemaBuilder->create('user_items', function (Blueprint $table) {
     $table->primary(['user_id', 'id']);
     
     // interleaved table
-    $table->interleave('users')->cascadeOnDelete();
+    $table->interleaveInParent('users')->cascadeOnDelete();
     
     // interleaved index
     $table->index(['userId', 'created_at'])->interleave('users');
@@ -227,6 +227,9 @@ $schemaBuilder->create('user', function (Blueprint $table) {
 });
 
 $schemaBuilder->table('user', function (Blueprint $table) {
+    // add policy
+    $table->addRowDeletionPolicy('udpated_at', 100);
+
     // replace policy
     $table->replaceRowDeletionPolicy('udpated_at', 100);
 
