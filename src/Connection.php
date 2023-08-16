@@ -37,8 +37,6 @@ use Google\Cloud\Spanner\Transaction;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Connection as BaseConnection;
 use Illuminate\Database\QueryException;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
 use InvalidArgumentException;
 use LogicException;
 use Psr\Cache\CacheItemPoolInterface;
