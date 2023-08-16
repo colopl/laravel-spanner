@@ -132,12 +132,14 @@ class Builder extends BaseBuilder
      */
     protected function runSelect()
     {
+        $sql = $this->toSql();
+        $bindings = $this->getBindings();
+        $options = [];
+
         if ($this->timestampBound !== null) {
-            return $this->connection->selectWithTimestampBound(
-                $this->toSql(), $this->getBindings(), $this->timestampBound
-            );
+            $options += $this->timestampBound->transactionOptions();
         }
 
-        return parent::runSelect();
+        return $this->connection->selectWithOptions($sql, $bindings, $options); 
     }
 }

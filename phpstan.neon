@@ -19,7 +19,7 @@ parameters:
           count: 2
         - message: "#^Parameter \\#1 \\$table of method Illuminate\\\\Database\\\\Query\\\\Builder\\:\\:from\\(\\) expects Closure\\|Illuminate\\\\Database\\\\Eloquent\\\\Builder\\|Illuminate\\\\Database\\\\Query\\\\Builder\\|string, Closure\\|Illuminate\\\\Contracts\\\\Database\\\\Query\\\\Expression\\|Illuminate\\\\Database\\\\Query\\\\Builder\\|string given\\.$#"
           path: src/Connection.php
-        - message: '#^Method Colopl\\Spanner\\Connection::select\(\) should return array but returns mixed\.$#'
+        - message: '#^Method Colopl\\Spanner\\Connection::selectWithOptions\(\) should return array<int, array> but returns mixed\.$#'
           path: src/Connection.php
         - message: '#^Cannot cast mixed to int\.$#'
           path: src/Eloquent/Model.php
