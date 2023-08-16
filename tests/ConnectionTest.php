@@ -26,9 +26,11 @@ use Colopl\Spanner\TimestampBound\MaxStaleness;
 use Colopl\Spanner\TimestampBound\MinReadTimestamp;
 use Colopl\Spanner\TimestampBound\ReadTimestamp;
 use Colopl\Spanner\TimestampBound\StrongRead;
+use Generator;
 use Google\Auth\FetchAuthTokenInterface;
 use Google\Cloud\Core\Exception\AbortedException;
 use Google\Cloud\Core\Exception\NotFoundException;
+use Google\Cloud\Spanner\Duration;
 use Google\Cloud\Spanner\KeySet;
 use Google\Cloud\Spanner\Session\CacheSessionPool;
 use Google\Cloud\Spanner\SpannerClient;
@@ -39,7 +41,6 @@ use Illuminate\Database\Events\TransactionBeginning;
 use Illuminate\Database\Events\TransactionCommitted;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Event;
-use LogicException;
 use RuntimeException;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use function dirname;
@@ -61,7 +62,7 @@ class ConnectionTest extends TestCase
     {
         $conn = $this->getDefaultConnection();
         $conn->reconnect();
-        $this->assertEquals([12345], $conn->selectOne('SELECT 12345'));
+        $this->assertSame([12345], $conn->selectOne('SELECT 12345'));
     }
 
     public function testQueryLog(): void
@@ -74,6 +75,107 @@ class ConnectionTest extends TestCase
 
         $conn->select('SELECT 2');
         $this->assertCount(2, $conn->getQueryLog());
+    }
+
+    public function test_select(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $values = $conn->select('SELECT 12345');
+        $this->assertCount(1, $values);
+        $this->assertSame(12345, $values[0][0]);
+    }
+
+    public function test_selectWithOptions(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $conn->table(self::TABLE_NAME_USER)->insert(['userId' => $this->generateUuid(), 'name' => __FUNCTION__]);
+        $values = $conn->selectWithOptions('SELECT * FROM ' . self::TABLE_NAME_USER, [], ['exactStaleness' => new Duration(10)]);
+        $this->assertEmpty($values);
+    }
+
+    public function test_cursorWithOptions(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $conn->table(self::TABLE_NAME_USER)->insert(['userId' => $this->generateUuid(), 'name' => __FUNCTION__]);
+        $cursor = $conn->cursorWithOptions('SELECT * FROM ' . self::TABLE_NAME_USER, [], ['exactStaleness' => new Duration(10)]);
+        $this->assertInstanceOf(Generator::class, $cursor);
+        $this->assertNull($cursor->current());
+    }
+
+    public function test_statement_with_select(): void
+    {
+        $executedCount = 0;
+        $this->app['events']->listen(QueryExecuted::class, function () use (&$executedCount) { $executedCount++; });
+
+        $conn = $this->getDefaultConnection();
+        $res = $conn->statement('SELECT ?', ['12345']);
+
+        $this->assertTrue($res);
+        $this->assertSame(1, $executedCount);
+    }
+
+    public function test_statement_with_dml(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $userId = $this->generateUuid();
+        $executedCount = 0;
+        $this->app['events']->listen(QueryExecuted::class, function () use (&$executedCount) { $executedCount++; });
+
+        $res[] = $conn->statement('INSERT '.self::TABLE_NAME_USER.' (`userId`, `name`) VALUES (?,?)', [$userId, __FUNCTION__]);
+        $res[] = $conn->statement('UPDATE '.self::TABLE_NAME_USER.' SET `name`=? WHERE `userId`=?', [__FUNCTION__.'2', $userId]);
+        $res[] = $conn->statement('DELETE '.self::TABLE_NAME_USER.' WHERE `userId`=?', [$this->generateUuid()]);
+
+        $this->assertTrue($res[0]);
+        $this->assertTrue($res[1]);
+        $this->assertTrue($res[2]);
+        $this->assertSame(3, $executedCount);
+    }
+
+    public function test_unprepared_with_select(): void
+    {
+        $executedCount = 0;
+        $this->app['events']->listen(QueryExecuted::class, function () use (&$executedCount) { $executedCount++; });
+
+        $conn = $this->getDefaultConnection();
+        $res = $conn->unprepared('SELECT 12345');
+
+        $this->assertTrue($res);
+        $this->assertSame(1, $executedCount);
+    }
+
+    public function test_unprepared_with_dml(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $userId = $this->generateUuid();
+        $executedCount = 0;
+        $this->app['events']->listen(QueryExecuted::class, function () use (&$executedCount) { $executedCount++; });
+
+        $res[] = $conn->unprepared('INSERT '.self::TABLE_NAME_USER.' (`userId`, `name`) VALUES (\''.$userId.'\',\''.__FUNCTION__.'\')');
+        $res[] = $conn->unprepared('UPDATE '.self::TABLE_NAME_USER.' SET `name`=\''.__FUNCTION__.'2'.'\' WHERE `userId`=\''.$userId.'\'');
+        $res[] = $conn->unprepared('DELETE '.self::TABLE_NAME_USER.' WHERE `userId`=\''.$userId.'\'');
+
+        $this->assertTrue($res[0]);
+        $this->assertTrue($res[1]);
+        $this->assertTrue($res[2]);
+        $this->assertSame(3, $executedCount);
+    }
+
+    public function test_pretend(): void
+    {
+        $executedCount = 0;
+        $this->app['events']->listen(QueryExecuted::class, function () use (&$executedCount) { $executedCount++; });
+
+        $resSelect = null;
+        $resInsert = null;
+        $conn = $this->getDefaultConnection();
+        $conn->pretend(function(Connection $conn) use (&$resSelect, &$resInsert) {
+            $resSelect = $conn->select('SELECT 12345');
+            $resInsert = $conn->table(self::TABLE_NAME_USER)->insert(['userId' => $this->generateUuid(), 'name' => __FUNCTION__]);
+        });
+
+        $this->assertSame([], $resSelect);
+        $this->assertTrue($resInsert);
+        $this->assertSame(2, $executedCount);
     }
 
     public function testInsertUsingMutationWithTransaction(): void
