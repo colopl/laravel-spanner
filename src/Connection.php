@@ -428,14 +428,27 @@ class Connection extends BaseConnection
      */
     public function escape($value, $binary = false)
     {
-        if (is_array($value)) {
-            if (array_is_list($value)) {
-                $escaped = array_map(fn (mixed $v): string => $this->escape($v, $binary), $value);
-                return '[' . implode(', ', $escaped) . ']';
-            }
-            throw new LogicException('Associative arrays are not supported');
+        return is_array($value)
+            ? $this->escapeArray($value, $binary)
+            : parent::escape($value, $binary);
+    }
+
+    /**
+     * @param array<array-key, mixed> $value
+     * @param bool $binary
+     * @return string
+     */
+    protected function escapeArray(array $value, bool $binary): string
+    {
+        if (array_is_list($value)) {
+            $escaped = array_map(function (mixed $v) use ($binary): string {
+                return !is_array($v)
+                    ? $this->escape($v, $binary)
+                    : throw new LogicException('Nested arrays are not supported by Cloud Spanner');
+            }, $value);
+            return '[' . implode(', ', $escaped) . ']';
         }
-        return parent::escape($value, $binary);
+        throw new LogicException('Associative arrays are not supported');
     }
 
     /**

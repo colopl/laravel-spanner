@@ -502,4 +502,13 @@ class ConnectionTest extends TestCase
         self::assertSame('[1]', $conn->escape([1]));
         self::assertSame('[1.1]', $conn->escape([1.1]));
     }
+
+    public function test_escape_nested_array(): void
+    {
+        $this->expectExceptionMessage('Nested arrays are not supported by Cloud Spanner');
+        $this->expectException(LogicException::class);
+
+        $conn = $this->getDefaultConnection();
+        self::assertSame('[]', $conn->escape([[]]));
+    }
 }
