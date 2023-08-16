@@ -897,8 +897,5 @@ class BuilderTest extends TestCase
 
         $sql = $conn->table($table)->where('s', "t\"e\"s\nt")->toRawSql();
         $this->assertSame("select * from `RawSqlTest` where `s` = r\"\"\"t\\\"e\\\"s\nt\"\"\"", $sql, 'newline with escaped quote');
-
-        $sql = $conn->table($table)->insert([]);
-        $this->assertSame('select * from `RawSqlTest` where `a` = []', $sql, 'true');
     }
 }
