@@ -256,17 +256,7 @@ class Connection extends BaseConnection
      */
     public function select($query, $bindings = [], $useReadPdo = true): array
     {
-        return $this->run($query, $bindings, function ($query, $bindings) {
-            if ($this->pretending()) {
-                return [];
-            }
-
-            $generator = $this->getDatabaseContext()
-                ->execute($query, ['parameters' => $this->prepareBindings($bindings)])
-                ->rows();
-
-            return iterator_to_array($generator);
-        });
+        return $this->selectWithOptions($query, $bindings, []);
     }
 
     /**
@@ -274,14 +264,36 @@ class Connection extends BaseConnection
      */
     public function cursor($query, $bindings = [], $useReadPdo = true): Generator
     {
-        return $this->run($query, $bindings, function ($query, $bindings) {
-            if ($this->pretending()) {
-                return (static fn() => yield from [])();
-            }
+        return $this->cursorWithOptions($query, $bindings, []);
+    }
 
-            return $this->getDatabaseContext()
-                ->execute($query, ['parameters' => $this->prepareBindings($bindings)])
-                ->rows();
+    /**
+     * @param string $query
+     * @param array<array-key, mixed> $bindings
+     * @param array<string, mixed> $options
+     * @return array<int, array<array-key, mixed>>
+     */
+    public function selectWithOptions(string $query, array $bindings, array $options): array
+    {
+        return $this->run($query, $bindings, function ($query, $bindings) use ($options): array {
+            return !$this->pretending()
+                ? iterator_to_array($this->executeQuery($query, $bindings, $options))
+                : [];
+        });
+    }
+
+    /**
+     * @param string $query
+     * @param array<array-key, mixed> $bindings
+     * @param array<string, mixed> $options
+     * @return Generator<int, array<array-key, mixed>>
+     */
+    public function cursorWithOptions(string $query, array $bindings, array $options): Generator
+    {
+        return $this->run($query, $bindings, function ($query, $bindings) use ($options): Generator {
+            return !$this->pretending()
+                ? $this->executeQuery($query, $bindings, $options)
+                : (static fn() => yield from [])();
         });
     }
 
@@ -564,6 +576,21 @@ class Connection extends BaseConnection
                 throw $e;
             }
         }
+    }
+
+    /**
+     * @param string $query
+     * @param array<array-key, mixed> $bindings
+     * @param array<string, mixed> $options
+     * @return Generator<int, array<array-key, mixed>>
+     */
+    protected function executeQuery(string $query, array $bindings, array $options): Generator
+    {
+        $options += ['parameters' => $this->prepareBindings($bindings)];
+
+        return $this->getDatabaseContext()
+            ->execute($query, $options)
+            ->rows();
     }
 
     /**
