@@ -1,3 +1,8 @@
+# v5.2.1 (Not released yet)
+
+Fixed
+- Escape list for `Query/Builder::toRawSql` (#127)
+
 # v5.2.0
 
 Added
