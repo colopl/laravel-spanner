@@ -19,6 +19,7 @@ namespace Colopl\Spanner\Tests;
 
 use Colopl\Spanner\Connection;
 use Colopl\Spanner\Events\MutatingData;
+use Colopl\Spanner\Schema\Blueprint;
 use Colopl\Spanner\Session\SessionInfo;
 use Colopl\Spanner\TimestampBound\ExactStaleness;
 use Colopl\Spanner\TimestampBound\MaxStaleness;
@@ -423,7 +424,7 @@ class ConnectionTest extends TestCase
         $this->assertEquals(TransactionCommitted::class, $receivedEventClasses[2]);
     }
 
-    public function test_Connection_transaction_reset_on_exceptions(): void
+    public function test_connection_transaction_reset_on_exceptions(): void
     {
         $conn = $this->getDefaultConnection();
 
@@ -481,5 +482,33 @@ class ConnectionTest extends TestCase
         self::assertfalse($conn->inTransaction());
         self::assertNull($conn->getCurrentTransaction());
         self::assertSame(0, $conn->transactionLevel());
+    }
+
+    public function test_escape(): void
+    {
+        $conn = $this->getDefaultConnection();
+
+        self::assertSame('true', $conn->escape(true));
+        self::assertSame('false', $conn->escape(false));
+        self::assertSame('1', $conn->escape(1));
+        self::assertSame('0', $conn->escape(0));
+        self::assertSame('-1', $conn->escape(-1));
+        self::assertSame('1.1', $conn->escape(1.1));
+        self::assertSame('"a"', $conn->escape('a'));
+        self::assertSame('r"""' . "\n" . '"""', $conn->escape("\n"));
+        self::assertSame('[]', $conn->escape([]));
+        self::assertSame('["a"]', $conn->escape(['a']));
+        self::assertSame('[false]', $conn->escape([false]));
+        self::assertSame('[1]', $conn->escape([1]));
+        self::assertSame('[1.1]', $conn->escape([1.1]));
+    }
+
+    public function test_escape_nested_array(): void
+    {
+        $this->expectExceptionMessage('Nested arrays are not supported by Cloud Spanner');
+        $this->expectException(LogicException::class);
+
+        $conn = $this->getDefaultConnection();
+        self::assertSame('[]', $conn->escape([[]]));
     }
 }

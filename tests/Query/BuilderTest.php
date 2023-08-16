@@ -20,6 +20,7 @@ namespace Colopl\Spanner\Tests\Query;
 use BadMethodCallException;
 use Colopl\Spanner\Connection;
 use Colopl\Spanner\Query\Builder;
+use Colopl\Spanner\Schema\Blueprint;
 use Colopl\Spanner\Tests\TestCase;
 use Colopl\Spanner\TimestampBound\ExactStaleness;
 use Google\Cloud\Spanner\Bytes;
@@ -870,24 +871,31 @@ class BuilderTest extends TestCase
 
     public function test_toRawSql(): void
     {
+        $table = 'RawSqlTest';
         $conn = $this->getDefaultConnection();
 
-        $sql = $conn->table(self::TABLE_NAME_USER)->where('b', true)->toRawSql();
-        $this->assertSame($sql, 'select * from `User` where `b` = true', 'true');
+        $sql = $conn->table($table)->where('b', true)->toRawSql();
+        $this->assertSame('select * from `RawSqlTest` where `b` = true', $sql, 'true');
 
-        $sql = $conn->table(self::TABLE_NAME_USER)->where('b', false)->toRawSql();
-        $this->assertSame($sql, 'select * from `User` where `b` = false', 'false');
+        $sql = $conn->table($table)->where('b', false)->toRawSql();
+        $this->assertSame('select * from `RawSqlTest` where `b` = false', $sql, 'false');
 
-        $sql = $conn->table(self::TABLE_NAME_USER)->where('t', 'test')->toRawSql();
-        $this->assertSame($sql, 'select * from `User` where `t` = "test"', 'text');
+        $sql = $conn->table($table)->where('i', 1)->toRawSql();
+        $this->assertSame('select * from `RawSqlTest` where `i` = 1', $sql, 'text');
 
-        $sql = $conn->table(self::TABLE_NAME_USER)->where('t', '"tes\'s"')->toRawSql();
-        $this->assertSame($sql, 'select * from `User` where `t` = "\"tes\'s\""', 'escaped');
+        $sql = $conn->table($table)->where('f', 1.1)->toRawSql();
+        $this->assertSame('select * from `RawSqlTest` where `f` = 1.1', $sql, 'text');
 
-        $sql = $conn->table(self::TABLE_NAME_USER)->where('t', "tes\nt")->toRawSql();
-        $this->assertSame($sql, "select * from `User` where `t` = r\"\"\"tes\nt\"\"\"", 'newline');
+        $sql = $conn->table($table)->where('s', 'test')->toRawSql();
+        $this->assertSame('select * from `RawSqlTest` where `s` = "test"', $sql, 'text');
 
-        $sql = $conn->table(self::TABLE_NAME_USER)->where('t', "t\"e\"s\nt")->toRawSql();
-        $this->assertSame($sql, "select * from `User` where `t` = r\"\"\"t\\\"e\\\"s\nt\"\"\"", 'newline with escaped quote');
+        $sql = $conn->table($table)->where('s', '"tes\'s"')->toRawSql();
+        $this->assertSame('select * from `RawSqlTest` where `s` = "\"tes\'s\""', $sql, 'escaped');
+
+        $sql = $conn->table($table)->where('s', "tes\nt")->toRawSql();
+        $this->assertSame("select * from `RawSqlTest` where `s` = r\"\"\"tes\nt\"\"\"", $sql, 'newline');
+
+        $sql = $conn->table($table)->where('s', "t\"e\"s\nt")->toRawSql();
+        $this->assertSame("select * from `RawSqlTest` where `s` = r\"\"\"t\\\"e\\\"s\nt\"\"\"", $sql, 'newline with escaped quote');
     }
 }
