@@ -19,7 +19,6 @@ namespace Colopl\Spanner\Tests;
 
 use Colopl\Spanner\Connection;
 use Colopl\Spanner\Events\MutatingData;
-use Colopl\Spanner\Schema\Blueprint;
 use Colopl\Spanner\Session\SessionInfo;
 use Colopl\Spanner\TimestampBound\ExactStaleness;
 use Colopl\Spanner\TimestampBound\MaxStaleness;
@@ -41,11 +40,11 @@ use Illuminate\Database\Events\TransactionBeginning;
 use Illuminate\Database\Events\TransactionCommitted;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Event;
+use LogicException;
 use RuntimeException;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use function dirname;
 use function fileperms;
-use function mkdir;
 use function sprintf;
 use function substr;
 
