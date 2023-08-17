@@ -290,7 +290,8 @@ class ConnectionTest extends TestCase
         $config = $this->app['config']->get('database.connections.main');
 
         $authCache = new ArrayAdapter();
-        $conn = new Connection($config['instance'], $config['database'], '', $config, $authCache);
+        $sessionPool = new CacheSessionPool(new ArrayAdapter());
+        $conn = new Connection($config['instance'], $config['database'], '', $config, $authCache, $sessionPool);
         $this->setUpDatabaseOnce($conn);
 
         $conn->selectOne('SELECT 1');
@@ -312,13 +313,14 @@ class ConnectionTest extends TestCase
         self::assertSame('0644', substr(sprintf('%o', fileperms($outputPath)), -4));
     }
 
-    public function testSessionPool(): void
+    public function test_session_pool(): void
     {
         $config = $this->app['config']->get('database.connections.main');
 
         $cacheItemPool = new ArrayAdapter();
         $cacheSessionPool = new CacheSessionPool($cacheItemPool);
         $conn = new Connection($config['instance'], $config['database'], '', $config, null, $cacheSessionPool);
+        $this->setUpDatabaseOnce($conn);
         $this->assertInstanceOf(Connection::class, $conn);
 
         $conn->selectOne('SELECT 1');
@@ -359,7 +361,7 @@ class ConnectionTest extends TestCase
         $this->assertInstanceOf(SessionInfo::class, $sessions[0]);
     }
 
-    public function testStaleReads(): void
+    public function test_stale_reads(): void
     {
         $conn = $this->getDefaultConnection();
         $tableName = self::TABLE_NAME_USER;
@@ -373,6 +375,7 @@ class ConnectionTest extends TestCase
             $tx->executeUpdate("INSERT INTO ${tableName} (`userId`, `name`) VALUES ('${uuid}', '${name}')");
             $timestamp = $tx->commit();
         });
+        $db->close();
         $this->assertNotEmpty($timestamp);
 
         $timestampBound = new StrongRead();

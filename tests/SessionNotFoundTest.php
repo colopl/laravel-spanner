@@ -41,7 +41,6 @@ class SessionNotFoundTest extends TestCase
         $cacheItemPool = new ArrayAdapter();
         $cacheSessionPool = new CacheSessionPool($cacheItemPool);
         $conn = new Connection($config['instance'], $config['database'], '', $config, null, $cacheSessionPool);
-
         $this->setUpDatabaseOnce($conn);
         return $conn;
     }
@@ -170,7 +169,13 @@ class SessionNotFoundTest extends TestCase
         // if google changes it then string should be changed in Connection::SESSION_NOT_FOUND_CONDITION
         $this->expectExceptionMessage($conn::SESSION_NOT_FOUND_CONDITION);
 
-        $conn->selectOne('SELECT 1');
+        try {
+            $conn->selectOne('SELECT 1');
+        } catch (QueryException $e) {
+            $conn->disconnect();
+            $conn->clearSessionPool();
+            throw $e;
+        }
     }
 
     public function testCursorSessionNotFoundUnhandledError(): void
@@ -188,7 +193,13 @@ class SessionNotFoundTest extends TestCase
         // if google changes it then string should be changed in Connection::SESSION_NOT_FOUND_CONDITION
         $this->expectExceptionMessage($conn::SESSION_NOT_FOUND_CONDITION);
 
-        iterator_to_array($cursor);
+        try {
+            iterator_to_array($cursor);
+        } catch (NotFoundException $e) {
+            $conn->disconnect();
+            $conn->clearSessionPool();
+            throw $e;
+        }
     }
 
     public function testInTransactionSessionNotFoundUnhandledError(): void

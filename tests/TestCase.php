@@ -18,6 +18,7 @@
 namespace Colopl\Spanner\Tests;
 
 use Colopl\Spanner\Connection;
+use Colopl\Spanner\Session\SessionInfo;
 use Colopl\Spanner\SpannerServiceProvider;
 use Google\Cloud\Spanner\Bytes;
 use Google\Cloud\Spanner\Date;
@@ -38,15 +39,6 @@ abstract class TestCase extends \Orchestra\Testbench\TestCase
     protected const TABLE_NAME_TAG = 'Tag';
     protected const TABLE_NAME_ITEM_TAG = 'ItemTag';
     protected const TABLE_NAME_ARRAY_TEST = 'ArrayTest';
-
-    /**
-     * @return void
-     */
-    protected function tearDown(): void
-    {
-        $this->cleanupDatabase();
-        parent::tearDown();
-    }
 
     /**
      * @return string
@@ -118,9 +110,10 @@ abstract class TestCase extends \Orchestra\Testbench\TestCase
 
     /**
      * @param Connection $conn
+     * @param bool $clearSessionPool
      * @return void
      */
-    protected function setUpDatabaseOnce(Connection $conn): void
+    protected function setUpDatabaseOnce(Connection $conn, bool $clearSessionPool = true): void
     {
         if (!empty(getenv('SPANNER_EMULATOR_HOST'))) {
             $this->setUpEmulatorInstance($conn);
@@ -128,21 +121,26 @@ abstract class TestCase extends \Orchestra\Testbench\TestCase
         if (!$conn->databaseExists()) {
             $conn->createDatabase($this->getTestDatabaseDDLs());
         }
+        if ($clearSessionPool) {
+            $this->beforeApplicationDestroyed(fn () => $this->cleanupDatabase($conn));
+        }
+        $sessions = $conn->listSessions();
+        if ($sessions->isNotEmpty()) {
+            dump($this->name());
+            dump($sessions);
+        }
     }
 
     /**
+     * @param Connection $conn
      * @return void
      */
-    protected function cleanupDatabase(): void
+    protected function cleanupDatabase(Connection $conn): void
     {
-        foreach ($this->app['db']->getConnections() as $conn) {
-            if ($conn instanceof Connection) {
-                foreach ($conn->select("SELECT t.table_name FROM information_schema.tables as t WHERE t.table_schema = ''") as $row) {
-                    $conn->table($row['table_name'])->truncate();
-                }
-                $conn->clearSessionPool();
-            }
+        foreach ($conn->select("SELECT t.table_name FROM information_schema.tables as t WHERE t.table_schema = ''") as $row) {
+            $conn->table($row['table_name'])->truncate();
         }
+        $conn->clearSessionPool();
     }
 
     /**

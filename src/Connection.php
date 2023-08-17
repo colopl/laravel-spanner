@@ -107,7 +107,7 @@ class Connection extends BaseConnection
      * @param string $instanceId instance ID
      * @param string $database
      * @param string $tablePrefix
-     * @param array $config
+     * @param array<string, mixed> $config
      * @param CacheItemPoolInterface|null $authCache
      * @param SessionPoolInterface|null $sessionPool
      */
