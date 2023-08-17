@@ -309,7 +309,7 @@ There are a few cases when a 'Session not found' error can
 
 The errors can be handled by one of the supported modes:
 
-- **CLEAR_SESSION_POOL** (default) - [session pool is cleared](https://github.com/googleapis/google-cloud-php/blob/077810260b58f5de8a3bbdfd999a5e9a48f71a7f/Spanner/src/Session/CacheSessionPool.php#L465) 
+- **CLEAR_SESSION_POOL** (default) - [Session pool is cleared](https://github.com/googleapis/google-cloud-php/blob/077810260b58f5de8a3bbdfd999a5e9a48f71a7f/Spanner/src/Session/CacheSessionPool.php#L465) 
 and the query is tried once again. As a consequence of session pool clearing, all processes that share the current 
 session pool will be forced to use the new session on the next call.
 ```php

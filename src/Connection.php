@@ -84,7 +84,7 @@ class Connection extends BaseConnection
     protected $sessionPool;
 
     /**
-     * Try to maintain and then clear session pool on 'session not found' error
+     * Clear session pool on 'session not found' error
      */
     public const CLEAR_SESSION_POOL = 'CLEAR_SESSION_POOL';
 
