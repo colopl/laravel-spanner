@@ -84,11 +84,6 @@ class Connection extends BaseConnection
     protected $sessionPool;
 
     /**
-     * Try to maintain session pool on 'session not found' error
-     */
-    public const MAINTAIN_SESSION_POOL = 'MAINTAIN_SESSION_POOL';
-
-    /**
      * Try to maintain and then clear session pool on 'session not found' error
      */
     public const CLEAR_SESSION_POOL = 'CLEAR_SESSION_POOL';
@@ -535,12 +530,8 @@ class Connection extends BaseConnection
     protected function withSessionNotFoundHandling(Closure $callback): mixed
     {
         $handlerMode = $this->getSessionNotFoundMode();
-        if (!in_array($handlerMode, [
-                self::MAINTAIN_SESSION_POOL,
-                self::CLEAR_SESSION_POOL,
-                self::THROW_EXCEPTION,
-            ])
-        ) {
+
+        if (!in_array($handlerMode, [self::CLEAR_SESSION_POOL, self::THROW_EXCEPTION], true)) {
             throw new InvalidArgumentException("Unsupported sessionNotFoundErrorMode [{$handlerMode}].");
         }
 
@@ -553,28 +544,15 @@ class Connection extends BaseConnection
             return $callback();
         } catch (Throwable $e) {
             // ensure if this really error with session
-            if ($this->causedBySessionNotFound($e)) {
+            if ($handlerMode === self::CLEAR_SESSION_POOL && $this->causedBySessionNotFound($e)) {
                 $this->disconnect();
-                // clear expired sessions, manually deleted sessions still raise error
-                $this->maintainSessionPool();
+                // forcefully clearing sessions, might affect parallel processes
+                // also cleared sessions are still accounted toward spanner limit - 10k sessions per node
+                $this->clearSessionPool();
                 $this->reconnect();
-                try {
-                    return $callback();
-                } catch (Throwable $e) {
-                    if ($handlerMode === self::CLEAR_SESSION_POOL && $this->causedBySessionNotFound($e)) {
-                        $this->disconnect();
-                        // forcefully clearing sessions, might affect parallel processes
-                        // also cleared sessions are still accounted toward spanner limit - 10k sessions per node
-                        $this->clearSessionPool();
-                        $this->reconnect();
-                        return $callback();
-                    } else {
-                        throw $e;
-                    }
-                }
-            } else {
-                throw $e;
+                return $callback();
             }
+            throw $e;
         }
     }
 
