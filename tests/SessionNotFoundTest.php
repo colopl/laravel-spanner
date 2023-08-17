@@ -214,14 +214,19 @@ class SessionNotFoundTest extends TestCase
 
         $passes = 0;
 
-        $conn->transaction(function () use ($conn, &$passes) {
+        try {
+            $conn->transaction(function () use ($conn, &$passes) {
+                if ($passes === 0) {
+                    $this->deleteSession($conn);
+                    $passes++;
+                }
 
-            if ($passes === 0) {
-                $this->deleteSession($conn);
-                $passes++;
-            }
-
-            $conn->selectOne('SELECT 12345');
-        });
+                $conn->selectOne('SELECT 12345');
+            });
+        } catch (NotFoundException $e) {
+            $conn->disconnect();
+            $conn->clearSessionPool();
+            throw $e;
+        }
     }
 }

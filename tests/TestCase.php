@@ -110,10 +110,9 @@ abstract class TestCase extends \Orchestra\Testbench\TestCase
 
     /**
      * @param Connection $conn
-     * @param bool $clearSessionPool
      * @return void
      */
-    protected function setUpDatabaseOnce(Connection $conn, bool $clearSessionPool = true): void
+    protected function setUpDatabaseOnce(Connection $conn): void
     {
         if (!empty(getenv('SPANNER_EMULATOR_HOST'))) {
             $this->setUpEmulatorInstance($conn);
@@ -121,14 +120,7 @@ abstract class TestCase extends \Orchestra\Testbench\TestCase
         if (!$conn->databaseExists()) {
             $conn->createDatabase($this->getTestDatabaseDDLs());
         }
-        if ($clearSessionPool) {
-            $this->beforeApplicationDestroyed(fn () => $this->cleanupDatabase($conn));
-        }
-        $sessions = $conn->listSessions();
-        if ($sessions->isNotEmpty()) {
-            dump($this->name());
-            dump($sessions);
-        }
+        $this->beforeApplicationDestroyed(fn () => $this->cleanupDatabase($conn));
     }
 
     /**
