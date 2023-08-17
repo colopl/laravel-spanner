@@ -137,7 +137,7 @@ class Builder extends BaseBuilder
         $bindings = $this->getBindings();
         $options = [];
 
-        if ($this->useDataBoost) {
+        if ($this->isDataBoostEnabled()) {
             $options += ['dataBoostEnabled' => true];
         }
 

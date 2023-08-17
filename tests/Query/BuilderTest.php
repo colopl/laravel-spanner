@@ -836,4 +836,18 @@ class BuilderTest extends TestCase
         $sql = $conn->table($table)->where('s', "t\"e\"s\nt")->toRawSql();
         $this->assertSame("select * from `RawSqlTest` where `s` = r\"\"\"t\\\"e\\\"s\nt\"\"\"", $sql, 'newline with escaped quote');
     }
+
+    public function test_dataBoost_enabled(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $tableName = self::TABLE_NAME_USER;
+
+        $conn->table($tableName)->insert(['userId' => $this->generateUuid(), 'name' => __FUNCTION__]);
+
+        $result = $conn->table($tableName)
+            ->useDataBoost()
+            ->get();
+
+        dump($result);
+    }
 }
