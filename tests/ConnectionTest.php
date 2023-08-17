@@ -19,7 +19,6 @@ namespace Colopl\Spanner\Tests;
 
 use Colopl\Spanner\Connection;
 use Colopl\Spanner\Events\MutatingData;
-use Colopl\Spanner\Schema\Blueprint;
 use Colopl\Spanner\Session\SessionInfo;
 use Colopl\Spanner\TimestampBound\ExactStaleness;
 use Colopl\Spanner\TimestampBound\MaxStaleness;
@@ -44,7 +43,6 @@ use RuntimeException;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use function dirname;
 use function fileperms;
-use function mkdir;
 use function sprintf;
 use function substr;
 
