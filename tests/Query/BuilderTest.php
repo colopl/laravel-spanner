@@ -844,10 +844,11 @@ class BuilderTest extends TestCase
 
         $conn->table($tableName)->insert(['userId' => $this->generateUuid(), 'name' => __FUNCTION__]);
 
-        $result = $conn->table($tableName)
-            ->useDataBoost()
-            ->get();
+        $query = $conn->table($tableName)->useDataBoost();
+        $result = $query->get();
 
-        dump($result);
+        $this->assertTrue($query->dataBoostEnabled());
+        $this->assertSame(1, $result->count());
+        $this->assertSame(__FUNCTION__, $result->first()['name']);
     }
 }

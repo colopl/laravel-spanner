@@ -21,6 +21,9 @@ parameters:
           path: src/Connection.php
         - message: '#^Method Colopl\\Spanner\\Connection::selectWithOptions\(\) should return array<int, array> but returns mixed\.$#'
           path: src/Connection.php
+        - message: '#^Generator expects value type array, mixed given.$#'
+          path: src/Connection.php
+          count: 1
         - message: '#^Cannot cast mixed to int\.$#'
           path: src/Eloquent/Model.php
         - message: '#^Property Illuminate\\Database\\Schema\\Builder::\$resolver \(Closure\) in isset\(\) is not nullable\.$#'

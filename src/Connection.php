@@ -591,21 +591,31 @@ class Connection extends BaseConnection
     {
         $options += ['parameters' => $this->prepareBindings($bindings)];
 
-        if ($options['dataBoostEnabled'] ?? false) {
-            $batchClient = $this->getSpannerClient()->batch($this->instanceId, $this->database);
-            $snapshot = $batchClient->snapshot();
-
-            foreach ($snapshot->partitionQuery($query, $options) as $partition) {
-                foreach ($snapshot->executePartition($partition)->rows() as $row) {
-                    /** @var array<string, mixed> $row */
-                    yield $row;
-                }
-            }
+        if (isset($options['dataBoostEnabled'])) {
+            return $this->executePartitionedQuery($query, $options);
         }
 
         return $this->getDatabaseContext()
             ->execute($query, $options)
             ->rows();
+    }
+
+    /**
+     * @param string $query
+     * @param array<string, mixed> $options
+     * @return Generator<int, array<array-key, mixed>>
+     */
+    protected function executePartitionedQuery(string $query, array $options): Generator
+    {
+        $snapshot = $this->getSpannerClient()
+            ->batch($this->instanceId, $this->database, $options)
+            ->snapshot();
+
+        foreach ($snapshot->partitionQuery($query, $options) as $partition) {
+            foreach ($snapshot->executePartition($partition) as $row) {
+                yield $row;
+            }
+        }
     }
 
     /**
