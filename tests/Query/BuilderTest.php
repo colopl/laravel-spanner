@@ -851,4 +851,10 @@ class BuilderTest extends TestCase
         $this->assertSame(1, $result->count());
         $this->assertSame(__FUNCTION__, $result->first()['name']);
     }
+
+    public function test_dataBoost_disabled(): void
+    {
+        $query = $this->getDefaultConnection()->table('t')->useDataBoost(false);
+        $this->assertFalse($query->dataBoostEnabled());
+    }
 }
