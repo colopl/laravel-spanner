@@ -26,7 +26,7 @@ use Generator;
 trait ManagesStaleReads
 {
     /**
-     * @deprecated use selectWithOptions() instead. This method will be removed in v7.
+     * @deprecated use cursorWithOptions() instead. This method will be removed in v7.
      * @param string $query
      * @param array<array-key, mixed> $bindings
      * @param TimestampBoundInterface|null $timestampBound
