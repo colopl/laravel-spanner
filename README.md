@@ -182,8 +182,7 @@ $queryBuilder
 
 > [!NOTE]
 > This creates a new session in the background which is not shared with the current session pool.
-> This also means that running queries with data boost will not be included in any transactions
-> that may be taking place.
+> This means, queries running with data boost will not be associated with transactions that may be taking place.
 
 ### Data Types
 Some data types of Google Cloud Spanner does not have corresponding built-in type of PHP.
