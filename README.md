@@ -162,6 +162,28 @@ $queryBuilder
 
 Stale reads always runs as read-only transaction with `singleUse` option. So you can not run as read-write transaction.
 
+### Data Boost
+
+Data boost creates snapshot and runs the query in parallel without affecting existing workloads.
+
+You can read more about it [here](https://cloud.google.com/spanner/docs/databoost/databoost-overview).
+
+Below are some examples of how to use it.
+
+```php
+// Using Connection
+$connection->selectWithOptions('SELECT ...', $bindings, ['dataBoostEnabled' => true]);
+
+// Using Query Builder
+$queryBuilder
+    ->useDataBoost()
+    ->get();
+```
+
+> [!NOTE]
+> This creates a new session in the background which is not shared with the current session pool.
+> This means, queries running with data boost will not be associated with transactions that may be taking place.
+
 ### Data Types
 Some data types of Google Cloud Spanner does not have corresponding built-in type of PHP.
 You can use following classes by [Google Cloud PHP Client](https://github.com/googleapis/google-cloud-php)

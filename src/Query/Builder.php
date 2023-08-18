@@ -24,9 +24,10 @@ use Illuminate\Support\Arr;
 
 class Builder extends BaseBuilder
 {
-    use Concerns\UsesMutations,
-        Concerns\UsesPartitionedDml,
-        Concerns\UsesStaleReads;
+    use Concerns\UsesDataBoost;
+    use Concerns\UsesMutations;
+    use Concerns\UsesPartitionedDml;
+    use Concerns\UsesStaleReads;
 
     /**
      * @var Connection
@@ -135,6 +136,10 @@ class Builder extends BaseBuilder
         $sql = $this->toSql();
         $bindings = $this->getBindings();
         $options = [];
+
+        if ($this->dataBoostEnabled()) {
+            $options += ['dataBoostEnabled' => true];
+        }
 
         if ($this->timestampBound !== null) {
             $options += $this->timestampBound->transactionOptions();

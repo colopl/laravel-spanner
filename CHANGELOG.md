@@ -1,6 +1,7 @@
 # v6.0.0 [Not released Yet]
 
 Added
+- Add [Data Boost](https://cloud.google.com/spanner/docs/databoost/databoost-overview) support (#131)
 - Deprecation warnings to `Connection`'s methods `cursorWithTimestampBound` `selectWithTimestampBound` `selectOneWithTimestampBound`. Use `cursorWithOptions` `selectWithOptions` instead. (#122)
 - `Connection` has new methods `selectWithOptions` `cursorWithOptions` which allows spanner specific options to be set for each query. (#122)
 
