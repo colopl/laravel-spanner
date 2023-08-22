@@ -51,7 +51,7 @@ class ManagesDataDefinitionsTest extends TestCase
         if (!empty(getenv('SPANNER_EMULATOR_HOST'))) {
             $this->setUpEmulatorInstance($conn);
         }
-        $this->beforeApplicationDestroyed(fn () => $conn->clearSessionPool());
+        $this->beforeApplicationDestroyed(static fn () => $conn->clearSessionPool());
 
         $conn->setEventDispatcher($events);
         $conn->enableQueryLog();
