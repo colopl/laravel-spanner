@@ -84,12 +84,7 @@ class Connection extends BaseConnection
     protected $sessionPool;
 
     /**
-     * Try to maintain session pool on 'session not found' error
-     */
-    public const MAINTAIN_SESSION_POOL = 'MAINTAIN_SESSION_POOL';
-
-    /**
-     * Try to maintain and then clear session pool on 'session not found' error
+     * Clear session pool on 'session not found' error
      */
     public const CLEAR_SESSION_POOL = 'CLEAR_SESSION_POOL';
 
@@ -525,7 +520,24 @@ class Connection extends BaseConnection
     }
 
     /**
-     * Handle "session not found" errors
+     * Retry on "session not found" errors
+     *
+     * @see https://cloud.google.com/spanner/docs/sessions#handle_deleted_sessions
+     *
+     * > Attempts to use a deleted session result in NOT_FOUND.
+     * > If you encounter this error, create and use a new session, add the new session to the pool,
+     * > and remove the deleted session from the pool.
+     *
+     * Most cases are covered by Google's library except for the following two cases.
+     *
+     * - When a connection is opened, and idles for more than 1 hour.
+     * - If a user manually deletes a session from the console.
+     *
+     * The document states that the library should be handling this, and library for Go and Java
+     * handles this within the library but PHP's does not. So unfortunately, this code has to exist.
+     *
+     * We asked the maintainers of the PHP library to handle it, but they refused.
+     * https://github.com/googleapis/google-cloud-php/issues/6284.
      *
      * @template T
      * @param  Closure(): T $callback
@@ -535,12 +547,8 @@ class Connection extends BaseConnection
     protected function withSessionNotFoundHandling(Closure $callback): mixed
     {
         $handlerMode = $this->getSessionNotFoundMode();
-        if (!in_array($handlerMode, [
-                self::MAINTAIN_SESSION_POOL,
-                self::CLEAR_SESSION_POOL,
-                self::THROW_EXCEPTION,
-            ])
-        ) {
+
+        if (!in_array($handlerMode, [self::CLEAR_SESSION_POOL, self::THROW_EXCEPTION], true)) {
             throw new InvalidArgumentException("Unsupported sessionNotFoundErrorMode [{$handlerMode}].");
         }
 
@@ -552,29 +560,15 @@ class Connection extends BaseConnection
         try {
             return $callback();
         } catch (Throwable $e) {
-            // ensure if this really error with session
-            if ($this->causedBySessionNotFound($e)) {
+            if ($handlerMode === self::CLEAR_SESSION_POOL && $this->causedBySessionNotFound($e)) {
                 $this->disconnect();
-                // clear expired sessions, manually deleted sessions still raise error
-                $this->maintainSessionPool();
+                // Currently, there is no way for us to delete the session, so we have to delete the whole pool.
+                // This might affect parallel processes.
+                $this->clearSessionPool();
                 $this->reconnect();
-                try {
-                    return $callback();
-                } catch (Throwable $e) {
-                    if ($handlerMode === self::CLEAR_SESSION_POOL && $this->causedBySessionNotFound($e)) {
-                        $this->disconnect();
-                        // forcefully clearing sessions, might affect parallel processes
-                        // also cleared sessions are still accounted toward spanner limit - 10k sessions per node
-                        $this->clearSessionPool();
-                        $this->reconnect();
-                        return $callback();
-                    } else {
-                        throw $e;
-                    }
-                }
-            } else {
-                throw $e;
+                return $callback();
             }
+            throw $e;
         }
     }
 

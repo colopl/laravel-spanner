@@ -304,30 +304,14 @@ By default, laravel-spanner uses [Filesystem Cache Adapter](https://symfony.com/
 There are a few cases when a 'Session not found' error can
 [happen](https://cloud.google.com/spanner/docs/sessions#handle_deleted_sessions):
 
- - Scripts that idle too long - for example, a [Laravel queue worker](https://laravel.com/docs/9.x/queues#the-queue-work-command)
-or anything that doesn't call Spanner frequently enough (more than once an hour).
- - The session is more than 28 days old.
+ - Scripts that creates a connection, then idles for more than 1 hour.
  - Some random flukes on Google's side.
 
 The errors can be handled by one of the supported modes:
 
-- **MAINTAIN_SESSION_POOL** - When the 'session not found' error is encountered, the library tries to disconnect,
-[maintain a session pool](https://github.com/googleapis/google-cloud-php/blob/077810260b58f5de8a3bbdfd999a5e9a48f71a7f/Spanner/src/Session/CacheSessionPool.php#L864)
-(to remove outdated sessions), reconnect, and then try querying again.
-The mode is enabled by default, but you can enable it explicitly via congifuration:
-```php
-        'spanner' => [
-            'driver' => 'spanner',
-        ...
-            'sessionNotFoundErrorMode' => 'MAINTAIN_SESSION_POOL',
-        ]
-```
-
-- **CLEAR_SESSION_POOL** (default) - The **MAINTAIN_SESSION_POOL** mode is tried first. If the error still happens, then
-the [clearing of the session pool](https://github.com/googleapis/google-cloud-php/blob/077810260b58f5de8a3bbdfd999a5e9a48f71a7f/Spanner/src/Session/CacheSessionPool.php#L465)
-is enforced and the query is tried once again.
-As a consequence of session pool clearing, all processes that share the current session pool will be forced
-to use the new session on the next call.
+- **CLEAR_SESSION_POOL** (default) - [Session pool is cleared](https://github.com/googleapis/google-cloud-php/blob/077810260b58f5de8a3bbdfd999a5e9a48f71a7f/Spanner/src/Session/CacheSessionPool.php#L465) 
+and the query is tried once again. As a consequence of session pool clearing, all processes that share the current 
+session pool will be forced to use the new session on the next call.
 ```php
         'spanner' => [
             'driver' => 'spanner',
