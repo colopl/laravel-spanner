@@ -1,3 +1,8 @@
+# v5.2.2 (2023-08-22)
+
+Fixed
+- Fixed a case where queries were not being retried on "Session Not Found" errors when session pool is undefined (#129)
+
 # v5.2.1 (2023-08-16)
 
 Fixed

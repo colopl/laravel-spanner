@@ -532,10 +532,7 @@ class Connection extends BaseConnection
             throw new InvalidArgumentException("Unsupported sessionNotFoundErrorMode [{$handlerMode}].");
         }
 
-        if ($handlerMode === self::THROW_EXCEPTION
-            || $this->sessionPool === null
-            || $this->inTransaction()
-        ) {
+        if ($handlerMode === self::THROW_EXCEPTION || $this->inTransaction()) {
             // skip handlers, transaction() will handle error by self
             return $callback();
         }
