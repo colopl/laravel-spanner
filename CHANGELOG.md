@@ -2,6 +2,7 @@
 
 Fixed
 - Escape list for `Query/Builder::toRawSql` (#127)
+- Fixed a case where queries were not being retried on "Session Not Found" errors when session pool is undefined (#129)
 
 # v5.2.0
 
