@@ -7,6 +7,7 @@ Added
 
 Changed
 - [Breaking] Match `Query\Builder::forceIndex()` behavior with laravel's (`forceIndex` property no longer exists). (#114)
+- [Breaking] SessionNotFoundErrorMode's `MAINTAIN_SESSION_POOL` was removed since we're now certain [it doesn't work](https://github.com/googleapis/google-cloud-php/issues/6284#issuecomment-1665394907). (#114)
 
 # v5.3.0 (2023-11-17)
 
