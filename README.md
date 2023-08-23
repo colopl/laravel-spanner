@@ -292,57 +292,11 @@ All mutations calls within a transaction are queued and sent as batch at the tim
 This means that if you make any modifications through the above functions and then try to SELECT the same records before committing, the returned results will not include any of the modifications you've made inside the transaction.
 
 
-
 ### SessionPool and AuthCache
 In order to improve the performance of the first connection per request, we use [AuthCache](https://github.com/googleapis/google-cloud-php#caching-access-tokens) and [CacheSessionPool](https://googleapis.github.io/google-cloud-php/#/docs/google-cloud/latest/spanner/session/cachesessionpool).
 
 By default, laravel-spanner uses [Filesystem Cache Adapter](https://symfony.com/doc/current/components/cache/adapters/filesystem_adapter.html) as the caching pool. If you want to use your own caching pool, you can extend ServiceProvider and inject it into the constructor of `Colopl\Spanner\Connection`.
 
-
-
-### 'Session not found' exception handling
-There are a few cases when a 'Session not found' error can
-[happen](https://cloud.google.com/spanner/docs/sessions#handle_deleted_sessions):
-
- - Scripts that creates a connection, then idles for more than 1 hour.
- - Some random flukes on Google's side.
-
-The errors can be handled by one of the supported modes:
-
-- **CLEAR_SESSION_POOL** (default) - [Session pool is cleared](https://github.com/googleapis/google-cloud-php/blob/077810260b58f5de8a3bbdfd999a5e9a48f71a7f/Spanner/src/Session/CacheSessionPool.php#L465) 
-and the query is tried once again. As a consequence of session pool clearing, all processes that share the current 
-session pool will be forced to use the new session on the next call.
-```php
-        'spanner' => [
-            'driver' => 'spanner',
-        ...
-            'sessionNotFoundErrorMode' => 'CLEAR_SESSION_POOL'
-        ]
-```
-
-- **THROW_EXCEPTION** - The QueryException is raised and the client code is free to handle it by itself.:
-```php
-        'spanner' => [
-            'driver' => 'spanner',
-        ...
-            'sessionNotFoundErrorMode' => 'THROW_EXCEPTION',
-        ]
-```
-
-Please note, that [`getDatabaseContext()->execute(...)->rows()`](https://github.com/googleapis/google-cloud-php/blob/077810260b58f5de8a3bbdfd999a5e9a48f71a7f/Spanner/src/Result.php#L175)
-returns a `/Generator` object, which only accesses Spanner when iterated. That affects `cursor()`
-and `cursorWithTimestampBound()` functions and many low-level calls. So you might still
-get `Google\Cloud\Core\Exception\NotFoundException` when trying to resolve cursor.
-To avoid that, please run cursor* functions inside
-[explicit transactions](#transactions) so statements will repeat on error.
-
-```php
-$conn->transaction(function () use ($conn) {
-    $cursor = $conn->cursor('SELECT ...');
-
-    foearch ($cursor as $value) { ...
-});
-```
 
 ### Queue Worker
 
