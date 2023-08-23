@@ -7,7 +7,7 @@ Added
 
 Changed
 - [Breaking] Match `Query\Builder::forceIndex()` behavior with laravel's (`forceIndex` property no longer exists). (#114)
-- [Breaking] SessionNotFoundErrorMode was removed and will always run clear session pool. (#) (#114)
+- [Breaking] SessionNotFoundErrorMode was removed and will always run clear session pool. (#132) (#130)
 
 # v5.2.2 (2023-08-22)
 
