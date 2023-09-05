@@ -89,12 +89,11 @@ class SessionsCommand extends Command
                 return false;
             });
         }
-
         return $sessions->map(static fn(SessionInfo $s) => [
                 'Name' => $s->getName(),
                 'Created' => (string) $s->getCreatedAt(),
                 'LastUsed' => (string) $s->getLastUsedAt(),
-                'Labels' => implode(', ', $s->getLabels()),
+                'Labels' => http_build_query($s->getLabels(), ', ', ''),
             ]);
     }
 

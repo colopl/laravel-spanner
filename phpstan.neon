@@ -32,3 +32,6 @@ parameters:
           path: src/Concerns/ManagesTransactions.php
         - message: '#^Parameter \#1 \$connection of method Illuminate\\Database\\DatabaseTransactionsManager::.+\(\) expects string, string\|null given\.$#'
           path: src/Concerns/ManagesTransactions.php
+        - message: '#^Property Colopl\\Spanner\\Session\\SessionInfo\:\:\$labels \(array\<string, string\>\) does not accept array\.$#'
+          path: src/Session/SessionInfo.php
+          count: 1
