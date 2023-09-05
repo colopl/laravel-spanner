@@ -30,7 +30,8 @@ class SessionsCommand extends Command
 {
     protected $signature = 'spanner:sessions {connections?* : The database connections to query}
                {--sort=LastUsed : Name of column to be sorted [Name, Created, LastUsed]}
-               {--order=desc : Sort order as "asc" or "desc"}';
+               {--order=desc : Sort order as "asc" or "desc"}
+               {--label= : Filter sessions by label (like pod=localhost)}';
 
     protected $description = 'List sessions on the server';
 
@@ -48,31 +49,52 @@ class SessionsCommand extends Command
 
         foreach ($spannerConnectionNames as $name) {
             $connection = $db->connection($name);
-            if ($connection instanceof SpannerConnection) {
-                $sessions = $this->makeSessionData($connection);
-                $this->info("{$connection->getName()} contains {$sessions->count()} session(s).");
-                if ($sessions->isNotEmpty()) {
-                    $headers = array_keys($sessions[0]);
-                    $this->table($headers, $sessions);
-                }
+            if (!($connection instanceof SpannerConnection)) {
+                continue;
+            }
+            $sessions = $this->makeSessionData($connection);
+            $message = "{$connection->getName()} contains {$sessions->count()} session(s).";
+            if ($label = $this->option('label')) {
+                assert(is_string($label));
+                $message .= " (filtered by Label: {$label})";
+            }
+            $this->info($message);
+            if ($sessions->isNotEmpty()) {
+                $headers = array_keys($sessions[0]);
+                $this->table($headers, $sessions);
             }
         }
     }
 
     /**
      * @param Connection $connection
-     * @return Collection<int, array{ Name: string, Created: string, LastUsed: string }>
+     * @return Collection<int, array{ Name: string, Created: string, LastUsed: string, Labels: string }>
      */
     protected function makeSessionData(Connection $connection): Collection
     {
         $descending = $this->getOrder() === 'desc';
+        $label = $this->option('label');
+        assert(is_string($label) || is_null($label));
 
-        return $connection->listSessions()
-            ->sortBy(fn(SessionInfo $s) => $this->getSortValue($s), descending: $descending)
-            ->map(static fn(SessionInfo $s) => [
+        $sessions = $connection->listSessions()
+            ->sortBy(fn(SessionInfo $s): string => $this->getSortValue($s), descending: $descending);
+
+        if ($label !== null) {
+            $sessions = $sessions->filter(static function(SessionInfo $session) use ($label): bool {
+                $labels = $session->getLabels();
+                [$key, $val] = explode('=', $label, 2);
+                if (isset($labels[$key])) {
+                    return $labels[$key] === $val;
+                }
+                return false;
+            });
+        }
+
+        return $sessions->map(static fn(SessionInfo $s) => [
                 'Name' => $s->getName(),
                 'Created' => (string) $s->getCreatedAt(),
                 'LastUsed' => (string) $s->getLastUsedAt(),
+                'Labels' => implode(', ', $s->getLabels()),
             ]);
     }
 
@@ -88,6 +110,7 @@ class SessionsCommand extends Command
             'Name' => $session->getName(),
             'Created' => (string) $session->getCreatedAt(),
             'LastUsed' => (string) $session->getLastUsedAt(),
+            'Labels' => implode(', ', $session->getLabels()),
             default => throw new RuntimeException("Unknown column: {$sort}"),
         };
     }
