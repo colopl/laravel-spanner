@@ -84,21 +84,6 @@ class Connection extends BaseConnection
     protected $sessionPool;
 
     /**
-     * Clear session pool on 'session not found' error
-     */
-    public const CLEAR_SESSION_POOL = 'CLEAR_SESSION_POOL';
-
-    /**
-     * The QueryException is raised and the client code is free to handle it by itself
-     */
-    public const THROW_EXCEPTION = 'THROW_EXCEPTION';
-
-    /**
-     * Used to detect specific exception
-     */
-    public const SESSION_NOT_FOUND_CONDITION = 'Session does not exist';
-
-    /**
      * @param string $instanceId instance ID
      * @param string $database
      * @param string $tablePrefix
@@ -510,16 +495,6 @@ class Connection extends BaseConnection
     }
 
     /**
-     * Returns current mode
-     *
-     * @return string
-     */
-    protected function getSessionNotFoundMode(): string
-    {
-        return $this->config['sessionNotFoundErrorMode'] ?? self::CLEAR_SESSION_POOL;
-    }
-
-    /**
      * Retry on "session not found" errors
      *
      * @see https://cloud.google.com/spanner/docs/sessions#handle_deleted_sessions
@@ -546,27 +521,11 @@ class Connection extends BaseConnection
      */
     protected function withSessionNotFoundHandling(Closure $callback): mixed
     {
-        $handlerMode = $this->getSessionNotFoundMode();
-
-        if (!in_array($handlerMode, [self::CLEAR_SESSION_POOL, self::THROW_EXCEPTION], true)) {
-            throw new InvalidArgumentException("Unsupported sessionNotFoundErrorMode [{$handlerMode}].");
-        }
-
-        if ($handlerMode === self::THROW_EXCEPTION || $this->inTransaction()) {
-            // skip handlers, transaction() will handle error by self
-            return $callback();
-        }
-
         try {
             return $callback();
         } catch (Throwable $e) {
-            if ($handlerMode === self::CLEAR_SESSION_POOL && $this->causedBySessionNotFound($e)) {
-                $this->disconnect();
-                // Currently, there is no way for us to delete the session, so we have to delete the whole pool.
-                // This might affect parallel processes.
-                $this->clearSessionPool();
-                $this->reconnect();
-                return $callback();
+            if (!$this->inTransaction() && $this->causedBySessionNotFound($e)) {
+                return $this->handleSessionNotFoundException($callback);
             }
             throw $e;
         }
@@ -610,19 +569,34 @@ class Connection extends BaseConnection
     }
 
     /**
+     * @template T
+     * @param Closure(): T $callback
+     * @return T
+     */
+    protected function handleSessionNotFoundException(Closure $callback): mixed
+    {
+        $this->disconnect();
+        // Currently, there is no way for us to delete the session, so we have to delete the whole pool.
+        // This might affect parallel processes.
+        $this->clearSessionPool();
+        $this->reconnect();
+        return $callback();
+    }
+
+    /**
      * Check if this is "session not found" error
      *
      * @param Throwable $e
-     * @return boolean
+     * @return bool
      */
-    public function causedBySessionNotFound(Throwable $e): bool
+    protected function causedBySessionNotFound(Throwable $e): bool
     {
         if ($e instanceof QueryException) {
             $e = $e->getPrevious();
         }
 
         return ($e instanceof NotFoundException)
-            && str_contains($e->getMessage(), self::SESSION_NOT_FOUND_CONDITION);
+            && str_contains($e->getMessage(), 'Session does not exist');
     }
 
 }
