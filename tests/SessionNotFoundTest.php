@@ -32,14 +32,10 @@ class SessionNotFoundTest extends TestCase
     }
 
     private function getSessionNotFoundConnection(
-        string $sessionNotFoundErrorMode,
         bool $useSessionPool = true,
     ): Connection
     {
         $config = $this->app['config']->get('database.connections.main');
-
-        // old behavior, just raise QueryException
-        $config['sessionNotFoundErrorMode'] = $sessionNotFoundErrorMode;
 
         $sessionPool = $useSessionPool
             ? new CacheSessionPool(new ArrayAdapter())
@@ -60,7 +56,7 @@ class SessionNotFoundTest extends TestCase
 
     public function test_session_not_found_handling(): void
     {
-        $conn = $this->getSessionNotFoundConnection(Connection::CLEAR_SESSION_POOL);
+        $conn = $this->getSessionNotFoundConnection();
 
         $conn->selectOne('SELECT 1');
 
@@ -71,7 +67,7 @@ class SessionNotFoundTest extends TestCase
 
     public function test_session_not_found_without_session_pool(): void
     {
-        $conn = $this->getSessionNotFoundConnection(Connection::CLEAR_SESSION_POOL, false);
+        $conn = $this->getSessionNotFoundConnection(false);
 
         $conn->selectOne('SELECT 1');
 
@@ -82,7 +78,7 @@ class SessionNotFoundTest extends TestCase
 
     public function test_session_not_found_in_transaction(): void
     {
-        $conn = $this->getSessionNotFoundConnection(Connection::CLEAR_SESSION_POOL);
+        $conn = $this->getSessionNotFoundConnection();
 
         $passes = 0;
 
@@ -102,7 +98,7 @@ class SessionNotFoundTest extends TestCase
 
     public function test_session_not_found_when_committing(): void
     {
-        $conn = $this->getSessionNotFoundConnection(Connection::CLEAR_SESSION_POOL);
+        $conn = $this->getSessionNotFoundConnection();
 
         $passes = 0;
 
@@ -120,7 +116,7 @@ class SessionNotFoundTest extends TestCase
 
     public function test_session_not_found_when_rolling_back(): void
     {
-        $conn = $this->getSessionNotFoundConnection(Connection::CLEAR_SESSION_POOL);
+        $conn = $this->getSessionNotFoundConnection();
 
         $passes = 0;
 
@@ -140,7 +136,7 @@ class SessionNotFoundTest extends TestCase
 
     public function test_session_not_found_on_nested_transaction(): void
     {
-        $conn = $this->getSessionNotFoundConnection(Connection::CLEAR_SESSION_POOL);
+        $conn = $this->getSessionNotFoundConnection();
 
         $passes = 0;
 
@@ -159,7 +155,7 @@ class SessionNotFoundTest extends TestCase
 
     public function test_session_not_found_on_cursor(): void
     {
-        $conn = $this->getSessionNotFoundConnection(Connection::CLEAR_SESSION_POOL);
+        $conn = $this->getSessionNotFoundConnection();
 
         $passes = 0;
 
@@ -176,81 +172,5 @@ class SessionNotFoundTest extends TestCase
             $passes++;
         });
         $this->assertEquals(2, $passes, 'Transaction should be called twice');
-    }
-
-    public function test_session_not_found_throw_exception_on_query(): void
-    {
-        $conn = $this->getSessionNotFoundConnection(Connection::THROW_EXCEPTION);
-
-        $conn->selectOne('SELECT 1');
-
-        // deliberately delete session on spanner side
-        $this->deleteSession($conn);
-
-        $this->expectException(QueryException::class);
-
-        // the string is used in sessionNotFoundWrapper() to catch 'session not found' error,
-        // if google changes it then string should be changed in Connection::SESSION_NOT_FOUND_CONDITION
-        $this->expectExceptionMessage($conn::SESSION_NOT_FOUND_CONDITION);
-
-        try {
-            $conn->selectOne('SELECT 1');
-        } catch (QueryException $e) {
-            $conn->disconnect();
-            $conn->clearSessionPool();
-            throw $e;
-        }
-    }
-
-    public function test_session_not_found_throw_exception_on_cursor(): void
-    {
-        $conn = $this->getSessionNotFoundConnection(Connection::THROW_EXCEPTION);
-
-        $cursor = $conn->cursor('SELECT 1');
-
-        // deliberately delete session on spanner side
-        $this->deleteSession($conn);
-
-        $this->expectException(NotFoundException::class);
-
-        // the string is used in sessionNotFoundWrapper() to catch 'session not found' error,
-        // if google changes it then string should be changed in Connection::SESSION_NOT_FOUND_CONDITION
-        $this->expectExceptionMessage($conn::SESSION_NOT_FOUND_CONDITION);
-
-        try {
-            iterator_to_array($cursor);
-        } catch (NotFoundException $e) {
-            $conn->disconnect();
-            $conn->clearSessionPool();
-            throw $e;
-        }
-    }
-
-    public function test_session_not_found_throw_exception_in_transaction(): void
-    {
-        $conn = $this->getSessionNotFoundConnection(Connection::THROW_EXCEPTION);
-
-        $this->expectException(NotFoundException::class);
-
-        // the string is used in sessionNotFoundWrapper() to catch 'session not found' error,
-        // if google changes it then string should be changed in Connection::SESSION_NOT_FOUND_CONDITION
-        $this->expectExceptionMessage($conn::SESSION_NOT_FOUND_CONDITION);
-
-        $passes = 0;
-
-        try {
-            $conn->transaction(function () use ($conn, &$passes) {
-                if ($passes === 0) {
-                    $this->deleteSession($conn);
-                    $passes++;
-                }
-
-                $conn->selectOne('SELECT 12345');
-            });
-        } catch (NotFoundException $e) {
-            $conn->disconnect();
-            $conn->clearSessionPool();
-            throw $e;
-        }
     }
 }
