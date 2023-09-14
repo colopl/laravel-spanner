@@ -98,13 +98,13 @@ class SessionsCommandTest extends TestCase
             ->sortByDesc(fn(SessionInfo $s) => $s->getName())
             ->map(static fn(SessionInfo $s) => [
                 $s->getName(),
-                $s->getCreatedAt()->format('Y-m-d H:i:s'),
-                $s->getLastUsedAt()->format('Y-m-d H:i:s'),
+                $s->getCreatedAt()?->format('Y-m-d H:i:s'),
+                $s->getLastUsedAt()?->format('Y-m-d H:i:s'),
             ]);
 
         $this->artisan('spanner:sessions', ['connections' => 'main', '--sort' => 'name'])
             ->expectsOutput('main contains 2 session(s).')
-            ->expectsTable(['Name', 'Created', 'LastUsed'], $list)
+            ->expectsTable(['Name', 'Created', 'LastUsed', 'Labels'], $list)
             ->assertSuccessful()
             ->run();
     }
@@ -119,13 +119,13 @@ class SessionsCommandTest extends TestCase
             ->sortBy(fn(SessionInfo $s) => $s->getName())
             ->map(static fn(SessionInfo $s) => [
                 $s->getName(),
-                $s->getCreatedAt()->format('Y-m-d H:i:s'),
-                $s->getLastUsedAt()->format('Y-m-d H:i:s'),
+                $s->getCreatedAt()?->format('Y-m-d H:i:s'),
+                $s->getLastUsedAt()?->format('Y-m-d H:i:s'),
             ]);
 
         $this->artisan('spanner:sessions', ['connections' => 'main', '--sort' => 'name', '--order' => 'asc'])
             ->expectsOutput('main contains 2 session(s).')
-            ->expectsTable(['Name', 'Created', 'LastUsed'], $list)
+            ->expectsTable(['Name', 'Created', 'LastUsed', 'Labels'], $list)
             ->assertSuccessful()
             ->run();
     }
@@ -136,12 +136,26 @@ class SessionsCommandTest extends TestCase
         $this->setUpDatabaseOnce($conn);
         $this->createSessions($conn, 1);
 
-        foreach (['Name', 'Created', 'LastUsed'] as $column) {
+        foreach (['Name', 'Created', 'LastUsed', 'Labels'] as $column) {
             foreach (['desc', 'asc'] as $order) {
                 $this->artisan('spanner:sessions', ['connections' => 'main', '--sort' => $column, '--order' => $order])
                     ->assertSuccessful()
                     ->run();
             }
         }
+    }
+
+    public function test_filter_label(): void
+    {
+        config()->set('database.connections.main.session_pool.labels', ['pod' => 'test']);
+
+        $conn = $this->getDefaultConnection();
+        $this->setUpDatabaseOnce($conn);
+        $this->createSessions($conn, 1);
+
+        $this->artisan('spanner:sessions', ['connections' => 'main', '--label' => 'pod=test'])
+            ->expectsOutput('main contains 1 session(s). (filtered by Label: pod=test)')
+            ->assertSuccessful()
+            ->run();
     }
 }
