@@ -42,6 +42,14 @@ class SessionInfo
      */
     protected $lastUsedAt;
 
+    /**
+     * @var array<string, string>
+     */
+    protected array $labels;
+
+    /**
+     * @param ProtoBufSession $protobufSession
+     */
     public function __construct(ProtoBufSession $protobufSession)
     {
         $this->fullName = $protobufSession->getName();
@@ -52,6 +60,7 @@ class SessionInfo
         if (($approximateLastUseTime = $protobufSession->getApproximateLastUseTime()) !== null) {
             $this->lastUsedAt = Carbon::instance($approximateLastUseTime->toDateTime());
         }
+        $this->labels = iterator_to_array($protobufSession->getLabels());
     }
 
     /**
@@ -71,18 +80,26 @@ class SessionInfo
     }
 
     /**
-     * @return Carbon
+     * @return Carbon|null
      */
-    public function getCreatedAt(): Carbon
+    public function getCreatedAt(): ?Carbon
     {
         return $this->createdAt;
     }
 
     /**
-     * @return Carbon
+     * @return Carbon|null
      */
-    public function getLastUsedAt(): Carbon
+    public function getLastUsedAt(): ?Carbon
     {
         return $this->lastUsedAt;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function getLabels(): array
+    {
+        return $this->labels;
     }
 }
