@@ -13,6 +13,7 @@ Laravel database driver for Google Cloud Spanner
 - Laravel >= 10
 - [gRPC extension](https://cloud.google.com/php/grpc)
 - [protobuf extension](https://cloud.google.com/php/grpc#install_the_protobuf_runtime_library) (not required, but strongly recommended)
+- Currently only supports Spanner running GoogleSQL (PostgreSQL mode not supported) 
 
 ## Installation
 Put JSON credential file path to env variable: `GOOGLE_APPLICATION_CREDENTIALS`
