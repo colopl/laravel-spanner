@@ -408,7 +408,7 @@ class ConnectionTest extends TestCase
         $conn = $this->getDefaultConnection();
         $conn->select('SELECT 1');
 
-        $outputPath = $this->app->storagePath("framework/spanner/{$conn->getName()}-auth");
+        $outputPath = $this->app->storagePath("framework/spanner");
         self::assertFileExists($outputPath);
         self::assertSame('0777', substr(sprintf('%o', fileperms(dirname($outputPath))), -4));
         self::assertSame('0644', substr(sprintf('%o', fileperms($outputPath)), -4));
@@ -438,7 +438,7 @@ class ConnectionTest extends TestCase
         $conn = $this->getDefaultConnection();
         $conn->select('SELECT 1');
 
-        $outputPath = $this->app->storagePath("framework/spanner/{$conn->getName()}-session");
+        $outputPath = $this->app->storagePath("framework/spanner");
         self::assertFileExists($outputPath);
         self::assertSame('0777', substr(sprintf('%o', fileperms(dirname($outputPath))), -4));
         self::assertSame('0644', substr(sprintf('%o', fileperms($outputPath)), -4));
