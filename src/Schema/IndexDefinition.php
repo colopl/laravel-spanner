@@ -19,6 +19,7 @@ class IndexDefinition extends Fluent
      */
     public function interleave(string $table)
     {
+        trigger_deprecation('colopl/laravel-spanner', '5.2', 'Blueprint::interleave() is deprecated. Use interleaveIn() instead. This method will be removed in v7.');
         return $this->interleaveIn($table);
     }
 }
