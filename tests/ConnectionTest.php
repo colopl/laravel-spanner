@@ -410,8 +410,8 @@ class ConnectionTest extends TestCase
 
         $outputPath = $this->app->storagePath("framework/spanner");
         self::assertFileExists($outputPath);
-        self::assertSame('0777', substr(sprintf('%o', fileperms(dirname($outputPath))), -4));
-        self::assertSame('0644', substr(sprintf('%o', fileperms($outputPath)), -4));
+        self::assertSame('0755', substr(sprintf('%o', fileperms(dirname($outputPath))), -4));
+        self::assertSame('0755', substr(sprintf('%o', fileperms($outputPath)), -4));
     }
 
     public function test_session_pool(): void
@@ -440,8 +440,8 @@ class ConnectionTest extends TestCase
 
         $outputPath = $this->app->storagePath("framework/spanner");
         self::assertFileExists($outputPath);
-        self::assertSame('0777', substr(sprintf('%o', fileperms(dirname($outputPath))), -4));
-        self::assertSame('0644', substr(sprintf('%o', fileperms($outputPath)), -4));
+        self::assertSame('0755', substr(sprintf('%o', fileperms(dirname($outputPath))), -4));
+        self::assertSame('0755', substr(sprintf('%o', fileperms($outputPath)), -4));
     }
 
     public function test_clearSessionPool(): void

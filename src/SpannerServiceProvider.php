@@ -26,6 +26,7 @@ use Illuminate\Queue\QueueManager;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
 use Symfony\Component\Cache\Adapter\AdapterInterface;
+use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 
 class SpannerServiceProvider extends ServiceProvider
 {
@@ -60,7 +61,7 @@ class SpannerServiceProvider extends ServiceProvider
      */
     protected function createSpannerConnection(array $config): Connection
     {
-        $cache = $this->getCacheAdapter();
+        $cache = $this->getCacheAdapter($config['name']);
 
         return new Connection(
             $config['instance'],
@@ -89,10 +90,10 @@ class SpannerServiceProvider extends ServiceProvider
     /**
      * @return AdapterInterface
      */
-    protected function getCacheAdapter(): AdapterInterface
+    protected function getCacheAdapter(string $namespace): AdapterInterface
     {
-        $path = $this->app->storagePath('framework');
-        return new FileCacheAdapter('spanner', $path);
+        $path = $this->app->storagePath('framework/spanner');
+        return new FilesystemAdapter($namespace, 0, $path);
     }
 
     protected function closeSessionAfterEachQueueJob(): void
