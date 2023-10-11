@@ -232,7 +232,7 @@ $schemaBuilder->create('user_items', function (Blueprint $table) {
     $table->interleaveInParent('users')->cascadeOnDelete();
     
     // interleaved index
-    $table->index(['userId', 'created_at'])->interleave('users');
+    $table->index(['userId', 'created_at'])->interleaveIn('users');
 });
 ```
 
@@ -269,7 +269,7 @@ You can define Spanner specific index options like [null filtering](https://clou
 $schemaBuilder->table('user_items', function (Blueprint $table) {
     $table->index('userId')
         // Interleave in parent table
-        ->interleave('user')
+        ->interleaveIn('user')
         // Add null filtering
         ->nullFiltered()
         // Add storing
