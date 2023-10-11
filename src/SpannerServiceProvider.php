@@ -21,12 +21,12 @@ use Colopl\Spanner\Console\CooldownCommand;
 use Colopl\Spanner\Console\SessionsCommand;
 use Colopl\Spanner\Console\WarmupCommand;
 use Google\Cloud\Spanner\Session\CacheSessionPool;
-use Google\Cloud\Spanner\Session\SessionPoolInterface;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Queue\QueueManager;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
-use Psr\Cache\CacheItemPoolInterface;
+use Symfony\Component\Cache\Adapter\AdapterInterface;
+use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 
 class SpannerServiceProvider extends ServiceProvider
 {
@@ -61,13 +61,15 @@ class SpannerServiceProvider extends ServiceProvider
      */
     protected function createSpannerConnection(array $config): Connection
     {
+        $cache = $this->getCacheAdapter($config['name']);
+
         return new Connection(
             $config['instance'],
             $config['database'],
             $config['prefix'],
             $config,
-            $this->createAuthCache($config['name']),
-            $this->createSessionPool($config['name'], $config['session_pool'] ?? [])
+            $cache,
+            new CacheSessionPool($cache, $config['session_pool'] ?? [])
         );
     }
 
@@ -86,24 +88,12 @@ class SpannerServiceProvider extends ServiceProvider
     }
 
     /**
-     * @param string $name
-     * @param array<string, mixed> $sessionPoolConfig
-     * @return SessionPoolInterface
+     * @return AdapterInterface
      */
-    protected function createSessionPool(string $name, array $sessionPoolConfig): SessionPoolInterface
+    protected function getCacheAdapter(string $namespace): AdapterInterface
     {
-        $cachePath = $this->app->storagePath(implode(DIRECTORY_SEPARATOR, ['framework', 'spanner']));
-        return new CacheSessionPool(new FileCacheAdapter("{$name}-session", $cachePath), $sessionPoolConfig);
-    }
-
-    /**
-     * @param string $name
-     * @return CacheItemPoolInterface
-     */
-    protected function createAuthCache(string $name): CacheItemPoolInterface
-    {
-        $cachePath = $this->app->storagePath(implode(DIRECTORY_SEPARATOR, ['framework', 'spanner']));
-        return new FileCacheAdapter("{$name}-auth", $cachePath);
+        $path = $this->app->storagePath('framework/spanner');
+        return new FilesystemAdapter($namespace, 0, $path);
     }
 
     protected function closeSessionAfterEachQueueJob(): void
