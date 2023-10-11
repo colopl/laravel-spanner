@@ -9,6 +9,7 @@ Added
 Changed
 - [Breaking] Match `Query\Builder::forceIndex()` behavior with laravel's (`forceIndex` property no longer exists). (#114)
 - [Breaking] SessionNotFoundErrorMode was removed and will always run clear session pool. (#132) (#130)
+- [Breaking] Auth cache and Session pool now share the same file cache adapter (#139)
 
 # v5.3.0 (2023-11-17)
 

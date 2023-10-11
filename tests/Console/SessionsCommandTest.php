@@ -53,8 +53,8 @@ class SessionsCommandTest extends TestCase
             ->run();
 
         $this->artisan('spanner:sessions')
-            ->expectsOutputToContain('main contains 2 session(s).')
-            ->expectsOutputToContain('alternative contains 2 session(s).')
+            ->expectsOutputToContain('main contains 1 session(s).')
+            ->expectsOutputToContain('alternative contains 1 session(s).')
             ->assertSuccessful()
             ->run();
     }
@@ -81,7 +81,9 @@ class SessionsCommandTest extends TestCase
 
     public function test_no_sessions_shows_no_table(): void
     {
-        $this->artisan('spanner:sessions', ['connections' => 'main'])
+        $conn = $this->getDefaultConnection();
+
+        $this->artisan('spanner:sessions', ['connections' => $conn->getName()])
             ->expectsOutputToContain('main contains 0 session(s).')
             ->doesntExpectOutputToContain('Name')
             ->assertSuccessful()
@@ -91,7 +93,6 @@ class SessionsCommandTest extends TestCase
     public function test_sort(): void
     {
         $conn = $this->getDefaultConnection();
-        $this->setUpDatabaseOnce($conn);
         $this->createSessions($conn, 2);
 
         $list = $conn->listSessions()
@@ -112,7 +113,6 @@ class SessionsCommandTest extends TestCase
     public function test_sort_order(): void
     {
         $conn = $this->getDefaultConnection();
-        $this->setUpDatabaseOnce($conn);
         $this->createSessions($conn, 2);
 
         $list = $conn->listSessions()
@@ -133,7 +133,6 @@ class SessionsCommandTest extends TestCase
     public function test_sort_patterns(): void
     {
         $conn = $this->getDefaultConnection();
-        $this->setUpDatabaseOnce($conn);
         $this->createSessions($conn, 1);
 
         foreach (['Name', 'Created', 'LastUsed', 'Labels'] as $column) {

@@ -34,7 +34,7 @@ $conn = [
 return [
     'connections' => [
         'main' => $conn,
-        'alternative' => $conn,
+        'alternative' => ['database' => $conn['database'] . '-alt'] + $conn,
     ],
     'default' => 'main',
 ];
