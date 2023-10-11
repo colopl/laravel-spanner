@@ -184,6 +184,7 @@ class Blueprint extends BaseBlueprint
      */
     public function interleave(string $parentTableName)
     {
+        trigger_deprecation('colopl/laravel-spanner', '5.2', 'Blueprint::interleave() is deprecated. Use interleaveInParent() instead. This method will be removed in v7.');
         return $this->interleaveInParent($parentTableName);
     }
 
