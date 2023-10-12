@@ -61,7 +61,10 @@ class SpannerServiceProvider extends ServiceProvider
      */
     protected function createSpannerConnection(array $config): Connection
     {
-        $cache = $this->getCacheAdapter($config['name']);
+        $cache = $this->getCacheAdapter(
+            $config['name'],
+            $config['cache_path'] ?? null,
+        );
 
         return new Connection(
             $config['instance'],
@@ -88,11 +91,13 @@ class SpannerServiceProvider extends ServiceProvider
     }
 
     /**
+     * @param string $namespace
+     * @param string|null $path
      * @return AdapterInterface
      */
-    protected function getCacheAdapter(string $namespace): AdapterInterface
+    protected function getCacheAdapter(string $namespace, ?string $path): AdapterInterface
     {
-        $path = $this->app->storagePath('framework/spanner');
+        $path ??= $this->app->storagePath('framework/spanner');
         return new FilesystemAdapter($namespace, 0, $path);
     }
 
