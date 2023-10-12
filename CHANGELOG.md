@@ -5,6 +5,7 @@ Added
 - Deprecation warnings to `Connection`'s methods `cursorWithTimestampBound` `selectWithTimestampBound` `selectOneWithTimestampBound`. Use `cursorWithOptions` `selectWithOptions` instead. (#122)
 - `Connection` has new methods `selectWithOptions` `cursorWithOptions` which allows spanner specific options to be set for each query. (#122)
 - `session:list` command can now show and filter by labels. (#134)
+- Allow custom cache path (#142)
 
 Changed
 - [Breaking] Match `Query\Builder::forceIndex()` behavior with laravel's (`forceIndex` property no longer exists). (#114)
