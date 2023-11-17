@@ -1,4 +1,4 @@
-# v5.3.0 [Not released Yet]
+# v5.3.0 (2023-11-17)
 
 Fixed
 - Explicitly stage/clear transaction on commit to correctly run afterCommit jobs in Laravel >= [v10.32.0](https://github.com/laravel/framework/pull/48859) (#144)
