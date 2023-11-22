@@ -1,4 +1,4 @@
-# v6.0.0 [Not released Yet]
+# v6.0.0 (2023-11-22)
 
 Added
 - Add [Data Boost](https://cloud.google.com/spanner/docs/databoost/databoost-overview) support (#131)
