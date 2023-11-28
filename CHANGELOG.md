@@ -1,3 +1,8 @@
+# v6.1.0 (Not Released Yet)
+
+Added
+- Add support for [NUMERIC](https://cloud.google.com/spanner/docs/reference/standard-sql/data-types#numeric_type) column type. (#145)
+
 # v6.0.0 (2023-11-22)
 
 Added
