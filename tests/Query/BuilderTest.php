@@ -18,19 +18,17 @@
 namespace Colopl\Spanner\Tests\Query;
 
 use BadMethodCallException;
-use Colopl\Spanner\Connection;
 use Colopl\Spanner\Query\Builder;
-use Colopl\Spanner\Schema\Blueprint;
 use Colopl\Spanner\Tests\TestCase;
 use Colopl\Spanner\TimestampBound\ExactStaleness;
 use Google\Cloud\Spanner\Bytes;
 use Google\Cloud\Spanner\Duration;
+use Google\Cloud\Spanner\Numeric;
 use Illuminate\Support\Str;
-use const Grpc\STATUS_ALREADY_EXISTS;
-use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use const Grpc\STATUS_ALREADY_EXISTS;
 
 class BuilderTest extends TestCase
 {
@@ -426,6 +424,21 @@ class BuilderTest extends TestCase
             ->delete();
 
         $this->assertDatabaseMissing($childTableName, $childUserItems[0]);
+    }
+
+    public function test_insert_numeric_types(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $tableName = self::TABLE_NAME_TEST;
+        $qb = $conn->table($tableName);
+
+        $row = $this->generateTestRow();
+        $qb->insert($row);
+
+        $insertedRow = $qb->get()->first();
+        $numeric = $insertedRow['numericTest'];
+        $this->assertSame('123.456', $numeric);
+        $this->assertNull($insertedRow['nullableNumericTest']);
     }
 
     public function testInsertDatetime(): void

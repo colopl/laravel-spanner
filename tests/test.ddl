@@ -7,6 +7,8 @@ CREATE TABLE `Test` (
   `nullableIntTest` INT64,
   `floatTest` FLOAT64 NOT NULL,
   `nullableFloatTest` FLOAT64,
+  `numericTest` NUMERIC NOT NULL,
+  `nullableNumericTest` NUMERIC,
   `timestampTest` TIMESTAMP NOT NULL,
   `nullableTimestampTest` TIMESTAMP,
   `dateTest` DATE NOT NULL,

@@ -22,6 +22,7 @@ use Colopl\Spanner\Session\SessionInfo;
 use Colopl\Spanner\SpannerServiceProvider;
 use Google\Cloud\Spanner\Bytes;
 use Google\Cloud\Spanner\Date;
+use Google\Cloud\Spanner\Numeric;
 use Google\Cloud\Spanner\SpannerClient;
 use Illuminate\Foundation\Application;
 use Ramsey\Uuid\Uuid;
@@ -62,6 +63,8 @@ abstract class TestCase extends \Orchestra\Testbench\TestCase
             'nullableIntTest' => null,
             'floatTest' => 123.456,
             'nullableFloatTest' => null,
+            'numericTest' => new Numeric('123.456'),
+            'nullableNumericTest' => null,
             'timestampTest' => new \DateTimeImmutable(),
             'nullableTimestampTest' => null,
             'dateTest' => new Date(new \DateTimeImmutable()),

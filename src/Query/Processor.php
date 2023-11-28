@@ -17,6 +17,7 @@
 
 namespace Colopl\Spanner\Query;
 
+use Google\Cloud\Spanner\Numeric;
 use Google\Cloud\Spanner\Timestamp;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Database\Query\Processors\Processor as BaseProcessor;
@@ -36,6 +37,9 @@ class Processor extends BaseProcessor
                     $dt = Carbon::instance($v->get());
                     $dt->setTimezone(date_default_timezone_get());
                     $results[$index][$k] = $dt;
+                }
+                if ($v instanceof Numeric) {
+                    $results[$index][$k] = $v->formatAsString();
                 }
             }
         }

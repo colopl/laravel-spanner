@@ -425,6 +425,17 @@ class Grammar extends BaseGrammar
     }
 
     /**
+     * Create the column definition for a decimal type.
+     *
+     * @param Fluent<string, mixed> $column
+     * @return string
+     */
+    protected function typeDecimal(Fluent $column)
+    {
+        return "numeric";
+    }
+
+    /**
      * Create the column definition for a date type.
      *
      * @param  Fluent<string, mixed> $column
@@ -555,6 +566,7 @@ class Grammar extends BaseGrammar
             'bool' => $this->formatBoolValue($column, $value),
             'date' => $this->formatDateValue($column, $value),
             'float64' => $this->formatFloatValue($column, $value),
+            'numeric' => $this->formatNumericValue($column, $value),
             'int64' => $this->formatIntValue($column, $value),
             'string' => $this->formatStringValue($column, $value),
             'timestamp' => $this->formatTimestampValue($column, $value),
@@ -610,6 +622,17 @@ class Grammar extends BaseGrammar
     protected function formatFloatValue(Fluent $column, mixed $value): string
     {
         assert(is_float($value));
+        return (string)$value;
+    }
+
+    /**
+     * @param Fluent<string, mixed> $column
+     * @param mixed $value
+     * @return string
+     */
+    protected function formatNumericValue(Fluent $column, mixed $value): string
+    {
+        assert(is_numeric($value));
         return (string)$value;
     }
 
