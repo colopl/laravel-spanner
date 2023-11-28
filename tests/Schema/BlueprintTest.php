@@ -36,6 +36,7 @@ class BlueprintTest extends TestCase
             $table->uuid('id');
             $table->integer('int');
             $table->float('float');
+            $table->decimal('decimal');
             $table->string('name');
             $table->text('text');
             $table->dateTime('started_at');
@@ -52,6 +53,7 @@ class BlueprintTest extends TestCase
                 '`id` string(36) not null',
                 '`int` int64 not null',
                 '`float` float64 not null',
+                '`decimal` numeric not null',
                 '`name` string(255) not null',
                 '`text` string(max) not null',
                 '`started_at` timestamp not null',
@@ -218,6 +220,7 @@ class BlueprintTest extends TestCase
             $table->integerArray('int_array')->nullable();
             $table->booleanArray('bool_array')->nullable();
             $table->floatArray('float_array')->nullable();
+            $table->decimalArray('decimal_array')->nullable();
             $table->stringArray('string_array_undef')->nullable();
             $table->stringArray('string_array_1', 1)->nullable();
             $table->stringArray('string_array_max', 'max')->nullable();
@@ -234,6 +237,7 @@ class BlueprintTest extends TestCase
                 '`int_array` array<int64>',
                 '`bool_array` array<bool>',
                 '`float_array` array<float64>',
+                '`decimal_array` array<numeric>',
                 '`string_array_undef` array<string(255)>',
                 '`string_array_1` array<string(1)>',
                 '`string_array_max` array<string(max)>',
@@ -405,6 +409,7 @@ class BlueprintTest extends TestCase
             $table->bigInteger('bigint')->default(1);
             $table->float('float')->default(0.1);
             $table->double('double')->default(0.1);
+            $table->decimal('decimal')->default(123.456);
             $table->boolean('bool')->default(true);
             $table->string('string')->default('a');
             $table->text('string_max')->default('a');
@@ -436,6 +441,7 @@ class BlueprintTest extends TestCase
                 '`bigint` int64 not null default (1)',
                 '`float` float64 not null default (0.1)',
                 '`double` float64 not null default (0.1)',
+                '`decimal` numeric not null default (123.456)',
                 '`bool` bool not null default (true)',
                 '`string` string(255) not null default ("a")',
                 '`string_max` string(max) not null default ("a")',

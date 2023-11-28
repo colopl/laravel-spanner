@@ -109,6 +109,30 @@ class Blueprint extends BaseBlueprint
 
     /**
      * @param string $column
+     * @param int $total
+     * @param int $places
+     * @param bool $unsigned
+     * @return ColumnDefinition
+     */
+    public function decimal($column, $total = 38, $places = 9, $unsigned = false)
+    {
+        if ($total !== 38) {
+            $this->markAsNotSupported('decimal with precision other than 38');
+        }
+
+        if ($places !== 9) {
+            $this->markAsNotSupported('decimal with scale other than 9');
+        }
+
+        if ($unsigned) {
+            $this->markAsNotSupported('unsigned decimal');
+        }
+
+        return parent::decimal($column, $total, $places, $unsigned);
+    }
+
+    /**
+     * @param string $column
      * @return ColumnDefinition
      */
     public function booleanArray($column)
@@ -137,6 +161,17 @@ class Blueprint extends BaseBlueprint
     {
         return $this->addColumn('array', $column, [
             'arrayType' => 'float',
+        ]);
+    }
+
+    /**
+     * @param string $column
+     * @return ColumnDefinition
+     */
+    public function decimalArray($column)
+    {
+        return $this->addColumn('array', $column, [
+            'arrayType' => 'decimal'
         ]);
     }
 
