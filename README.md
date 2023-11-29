@@ -80,6 +80,7 @@ For more information, please see [Google Client Library docs](http://googleapis.
 ## Unsupported features
 
 - STRUCT data types
+- Inserting/Updating JSON data types
 - Explicit Read-only transaction (snapshot)
 
 ## Limitations
@@ -189,14 +190,16 @@ $queryBuilder
 Some data types of Google Cloud Spanner does not have corresponding built-in type of PHP.
 You can use following classes by [Google Cloud PHP Client](https://github.com/googleapis/google-cloud-php)
 
+- BYTES: `Google\Cloud\Spanner\Bytes`
 - DATE: `Google\Cloud\Spanner\Date`
-- BYTES: `Google\Cloud\Spanner\Bytes` 
+- NUMERIC: `Google\Cloud\Spanner\Numeric`
 - TIMESTAMP: `Google\Cloud\Spanner\Timestamp`
 
-`Google\Cloud\Spanner\Timestamp` is a DateTime representation with UTC timezone and nanoseconds.
-In laravel-spanner QueryBuilder converts `Timestamp` in the fetched rows to [Carbon](https://laravel.com/api/6.x/Illuminate/Support/Carbon.html) with the default timezone in PHP.
+When fetching rows, the library coverts the following column types
+- `Timestamp` -> [Carbon](https://laravel.com/api/10.x/Illuminate/Support/Carbon.html) with the default timezone in PHP
+- `Numeric` -> `string`
 
-Note that if you execute a query without QueryBuilder, it will not have a conversion to Carbon.
+Note that if you execute a query without QueryBuilder, it will not have these conversions.
 
 
 ### Partitioned DML
