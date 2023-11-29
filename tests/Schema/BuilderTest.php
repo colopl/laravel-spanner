@@ -187,6 +187,47 @@ class BuilderTest extends TestCase
         $this->assertTrue($sb->hasTable(self::TABLE_NAME_RELATION_CHILD_INTERLEAVED));
     }
 
+    public function test_getTables(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $sb = $conn->getSchemaBuilder();
+
+        $sb->create(self::TABLE_NAME_CREATED, function (Blueprint $table) {
+            $table->uuid('id');
+            $table->primary('id');
+        });
+
+        /** @var array{ name: string, type: string } $row */
+        $row = Arr::first(
+            $sb->getTables(),
+            static fn (array $row): bool => $row['name'] === self::TABLE_NAME_CREATED,
+        );
+
+        $this->assertSame(self::TABLE_NAME_CREATED, $row['name']);
+    }
+
+    public function test_getColumns(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $sb = $conn->getSchemaBuilder();
+
+        $sb->create(self::TABLE_NAME_CREATED, function (Blueprint $table) {
+            $table->uuid('id');
+            $table->primary('id');
+        });
+
+        $this->assertSame([
+            'name' => 'id',
+            'type_name' => 'STRING',
+            'type' => 'STRING(36)',
+            'collation' => null,
+            'nullable' => false,
+            'default' => null,
+            'auto_increment' => false,
+            'comment' => null,
+        ], Arr::first($sb->getColumns(self::TABLE_NAME_CREATED)));
+    }
+
     public function test_getAllTables(): void
     {
         $conn = $this->getDefaultConnection();
