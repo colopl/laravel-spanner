@@ -196,7 +196,7 @@ You can use following classes by [Google Cloud PHP Client](https://github.com/go
 - TIMESTAMP: `Google\Cloud\Spanner\Timestamp`
 
 When fetching rows, the library coverts the following column types
-- `Timestamp` -> [Carbon](https://laravel.com/api/6.x/Illuminate/Support/Carbon.html) with the default timezone in PHP
+- `Timestamp` -> [Carbon](https://laravel.com/api/10.x/Illuminate/Support/Carbon.html) with the default timezone in PHP
 - `Numeric` -> `string`
 
 Note that if you execute a query without QueryBuilder, it will not have these conversions.
