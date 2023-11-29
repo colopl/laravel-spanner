@@ -141,14 +141,14 @@ trait ManagesTransactions
             $this->currentTransaction->commit();
         }
 
-        if ($this->isTransactionFinished()) {
-            $this->currentTransaction = null;
-        }
-
         [$levelBeingCommitted, $this->transactions] = [
             $this->transactions,
             max(0, $this->transactions - 1),
         ];
+
+        if ($this->isTransactionFinished()) {
+            $this->currentTransaction = null;
+        }
 
         $this->transactionsManager?->commit(
             $this->getName(),
