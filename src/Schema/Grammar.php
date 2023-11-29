@@ -40,6 +40,10 @@ class Grammar extends BaseGrammar
     protected $modifiers = ['Nullable', 'Default'];
 
     /**
+     * Compile the query to determine if a table exists.
+     *
+     * @deprecated Will be removed in a future Laravel version.
+     *
      * @return string
      */
     public function compileTableExists()
@@ -48,6 +52,18 @@ class Grammar extends BaseGrammar
     }
 
     /**
+     * Compile the query to determine the tables.
+     *
+     * @return string
+     */
+    public function compileTables()
+    {
+        return 'select `table_name` as name from information_schema.tables where table_schema = \'\' and table_type = \'BASE TABLE\'';
+    }
+
+    /**
+     * @deprecated Will be removed in a future Laravel version.
+     *
      * @return string
      */
     public function compileGetAllTables()
@@ -56,6 +72,10 @@ class Grammar extends BaseGrammar
     }
 
     /**
+     * Compile the query to determine the list of columns.
+     *
+     * @deprecated Will be removed in a future Laravel version.
+     *
      * @return string
      */
     public function compileColumnListing()
@@ -71,6 +91,20 @@ class Grammar extends BaseGrammar
     public function compileIndexListing()
     {
         return 'select index_name as `index_name` from information_schema.indexes where table_schema = \'\' and table_name = ?';
+    }
+
+    /**
+     * Compile the query to determine the columns.
+     *
+     * @param  string  $table
+     * @return string
+     */
+    public function compileColumns($table)
+    {
+        return sprintf(
+            'select * from information_schema.columns where table_schema = \'\' and table_name = %s',
+            $this->quoteString($table),
+        );
     }
 
     /**

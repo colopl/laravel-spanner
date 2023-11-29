@@ -41,6 +41,11 @@ abstract class TestCase extends \Orchestra\Testbench\TestCase
     protected const TABLE_NAME_ITEM_TAG = 'ItemTag';
     protected const TABLE_NAME_ARRAY_TEST = 'ArrayTest';
 
+    protected function generateTableName(string $prefix): string
+    {
+        return $prefix . '_' . date('Ymd_His_v');
+    }
+
     /**
      * @return string
      */

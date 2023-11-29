@@ -141,16 +141,20 @@ trait ManagesTransactions
             $this->currentTransaction->commit();
         }
 
-        $this->transactionsManager?->stageTransactions($this->getName());
+        [$levelBeingCommitted, $this->transactions] = [
+            $this->transactions,
+            max(0, $this->transactions - 1),
+        ];
 
-        $this->transactions = max(0, $this->transactions - 1);
         if ($this->isTransactionFinished()) {
             $this->currentTransaction = null;
         }
 
-        if ($this->afterCommitCallbacksShouldBeExecuted()) {
-            $this->transactionsManager?->commit($this->getName());
-        }
+        $this->transactionsManager?->commit(
+            $this->getName(),
+            $levelBeingCommitted,
+            $this->transactions
+        );
     }
 
     /**

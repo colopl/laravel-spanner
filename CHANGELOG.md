@@ -3,6 +3,9 @@
 Added
 - Add support for [NUMERIC](https://cloud.google.com/spanner/docs/reference/standard-sql/data-types#numeric_type) column type. (#145)
 
+Fixed
+- Match internals so that it lines up with laravel 10.34.0. (#150)
+
 # v6.0.0 (2023-11-22)
 
 Added

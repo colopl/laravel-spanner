@@ -32,7 +32,7 @@ use const Grpc\STATUS_ALREADY_EXISTS;
 
 class BuilderTest extends TestCase
 {
-    public function testInsert(): void
+    public function test_insert(): void
     {
         $conn = $this->getDefaultConnection();
         $tableName = self::TABLE_NAME_USER;
