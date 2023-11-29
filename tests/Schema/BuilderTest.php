@@ -191,8 +191,9 @@ class BuilderTest extends TestCase
     {
         $conn = $this->getDefaultConnection();
         $sb = $conn->getSchemaBuilder();
+        $table = $this->generateTableName(class_basename(__CLASS__));
 
-        $sb->create(self::TABLE_NAME_CREATED, function (Blueprint $table) {
+        $sb->create($table, function (Blueprint $table) {
             $table->uuid('id');
             $table->primary('id');
         });
@@ -200,18 +201,19 @@ class BuilderTest extends TestCase
         /** @var array{ name: string, type: string } $row */
         $row = Arr::first(
             $sb->getTables(),
-            static fn (array $row): bool => $row['name'] === self::TABLE_NAME_CREATED,
+            static fn (array $row): bool => $row['name'] === $table,
         );
 
-        $this->assertSame(self::TABLE_NAME_CREATED, $row['name']);
+        $this->assertSame($table, $row['name']);
     }
 
     public function test_getColumns(): void
     {
         $conn = $this->getDefaultConnection();
         $sb = $conn->getSchemaBuilder();
+        $table = $this->generateTableName(class_basename(__CLASS__));
 
-        $sb->create(self::TABLE_NAME_CREATED, function (Blueprint $table) {
+        $sb->create($table, function (Blueprint $table) {
             $table->uuid('id');
             $table->primary('id');
         });
@@ -225,15 +227,16 @@ class BuilderTest extends TestCase
             'default' => null,
             'auto_increment' => false,
             'comment' => null,
-        ], Arr::first($sb->getColumns(self::TABLE_NAME_CREATED)));
+        ], Arr::first($sb->getColumns($table)));
     }
 
     public function test_getAllTables(): void
     {
         $conn = $this->getDefaultConnection();
         $sb = $conn->getSchemaBuilder();
+        $table = $this->generateTableName(class_basename(__CLASS__));
 
-        $sb->create(self::TABLE_NAME_CREATED, function (Blueprint $table) {
+        $sb->create($table, function (Blueprint $table) {
             $table->uuid('id');
             $table->primary('id');
         });
@@ -241,10 +244,10 @@ class BuilderTest extends TestCase
         /** @var array{ name: string, type: string } $row */
         $row = Arr::first(
             $sb->getAllTables(),
-            static fn (array $row): bool => $row['name'] === self::TABLE_NAME_CREATED,
+            static fn (array $row): bool => $row['name'] === $table,
         );
 
-        $this->assertSame(self::TABLE_NAME_CREATED, $row['name']);
+        $this->assertSame($table, $row['name']);
         $this->assertSame('BASE TABLE', $row['type']);
     }
 }
