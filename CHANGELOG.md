@@ -1,4 +1,9 @@
-# v6.1.0 (Not Released Yet)
+# v6.1.1 (Not Released Yet)
+
+Fixed
+- Bug where auth and session pool writing to the same file may cause race condition (#152)
+
+# v6.1.0 (2023-11-29)
 
 Added
 - Add support for [NUMERIC](https://cloud.google.com/spanner/docs/reference/standard-sql/data-types#numeric_type) column type. (#145)
