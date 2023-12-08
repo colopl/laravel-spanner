@@ -21,10 +21,12 @@ use Colopl\Spanner\Console\CooldownCommand;
 use Colopl\Spanner\Console\SessionsCommand;
 use Colopl\Spanner\Console\WarmupCommand;
 use Google\Cloud\Spanner\Session\CacheSessionPool;
+use Google\Cloud\Spanner\Session\SessionPoolInterface;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Queue\QueueManager;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
+use LogicException;
 use Symfony\Component\Cache\Adapter\AdapterInterface;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 
@@ -56,38 +58,70 @@ class SpannerServiceProvider extends ServiceProvider
     }
 
     /**
-     * @param array $config
+     * @param array{
+     *      name: string,
+     *      instance: string,
+     *      database: string,
+     *      prefix: string,
+     *      cache_path: string,
+     *      session_pool: array<string, mixed>,
+     * } $config
      * @return Connection
      */
     protected function createSpannerConnection(array $config): Connection
     {
-        $cache = $this->getCacheAdapter(
-            $config['name'],
-            $config['cache_path'] ?? null,
-        );
-
         return new Connection(
             $config['instance'],
             $config['database'],
             $config['prefix'],
             $config,
-            $cache,
-            new CacheSessionPool($cache, $config['session_pool'] ?? [])
+            $this->createAuthCache($config),
+            $this->createSessionPool($config),
         );
     }
 
     /**
      * @param array<string, mixed> $config
      * @param string $name
-     * @return array<string, mixed>
+     * @return array{
+     *       name: string,
+     *       instance: string,
+     *       database: string,
+     *       prefix: string,
+     *       cache_path: string,
+     *       session_pool: array<string, mixed>,
+     *  } $config
      */
     protected function parseConfig(array $config, string $name): array
     {
         return $config + [
             'prefix' => '',
             'name' => $name,
+            'cache_path' => null,
+            'session_pool' => [],
             'useGapicBackoffs' => true,
         ];
+    }
+
+    /**
+     * @param array{ cache_path: string } $config
+     * @return AdapterInterface
+     */
+    protected function createAuthCache(array $config): AdapterInterface
+    {
+        return $this->getCacheAdapter('auth', $config['cache_path']);
+    }
+
+    /**
+     * @param array{ name: string, cache_path: string, session_pool: array<string, mixed> } $config
+     * @return SessionPoolInterface
+     */
+    protected function createSessionPool(array $config): SessionPoolInterface
+    {
+        return new CacheSessionPool(
+            $this->getCacheAdapter($config['name'], $config['cache_path']),
+            $config['session_pool'],
+        );
     }
 
     /**
@@ -101,6 +135,9 @@ class SpannerServiceProvider extends ServiceProvider
         return new FilesystemAdapter($namespace, 0, $path);
     }
 
+    /**
+     * @return void
+     */
     protected function closeSessionAfterEachQueueJob(): void
     {
         $this->app->resolving('queue', function (QueueManager $queue): void {
