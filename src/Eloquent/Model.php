@@ -45,17 +45,17 @@ class Model extends BaseModel
      */
     protected $types = [];
 
-    public function newModelQuery(): Builder|static
+    /** 
+     * @inheritDoc
+     */
+    public function newModelQuery()
     {
+        /** @var Builder */
+        $baseQueryBuilder = $this->newBaseQueryBuilder();
+
         return $this->newEloquentBuilder(
-            $this->newBaseQueryBuilder()->setTypes($this->types)
+            $baseQueryBuilder->setTypes($this->types)
         )->setModel($this);
-    }
-
-
-    protected function newBaseQueryBuilder(): Builder
-    {
-        return $this->getConnection()->query();
     }
 
     /**

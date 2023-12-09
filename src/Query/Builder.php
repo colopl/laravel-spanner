@@ -41,7 +41,7 @@ class Builder extends BaseBuilder
 
     /**
      * @param string[] $types
-     * @return self
+     * @return $this
      */
     public function setTypes($types)
     {
