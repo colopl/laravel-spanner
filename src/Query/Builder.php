@@ -55,24 +55,29 @@ class Builder extends BaseBuilder
     public function insert(array $values)
     {
         $values = $this->prepareInsertForDml($values);
-        $types = [];
-        $i = 0;
 
         if (empty($values))
             return true;
 
-        if (! is_array(reset($values)))
+        if (! is_array(reset($values))) {
             $values = [$values];
-        else {
-            /** @var array $value */
+        } else {
             foreach ($values as $key => $value) {
+                /** @var array $value */
                 ksort($value);
                 $values[$key] = $value;
-                foreach ($value as $k => $v) {
-                    [$p, $type] = $this->checkForType($i, $k, $v);
-                    if($type) $types[$p] = $type;
-                    $i++;
-                }
+            }
+        }
+
+        // Detect spanner types from values and greate a binding compatible array of types
+        $types = [];
+        $i = 0;
+        foreach ($values as $key => $value) {
+            /** @var array $value */
+            foreach ($value as $k => $v) {
+                $type = $this->checkForType($i, $k, $v);
+                if(count($type)) $types[$type[0]] = $type[1];
+                $i++;
             }
         }
 
@@ -87,11 +92,13 @@ class Builder extends BaseBuilder
         $this->applyBeforeQueryCallbacks();
 
         $sql = $this->grammar->compileUpdate($this, $values);
+
+        // Detect spanner types from values and greate a binding compatible array of types
         $types = [];
         $i = 0;
         foreach ($values as $key => $value) {
-            [$p, $type] = $this->checkForType($i, $key, $value, $sql);
-            if($type) $types[$p] = $type;
+            $type = $this->checkForType($i, $key, $value, $sql);
+            if(count($type)) $types[$type[0]] = $type[1];
             $i++;
         }
 
