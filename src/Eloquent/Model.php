@@ -39,6 +39,13 @@ class Model extends BaseModel
      */
     public $incrementing = false;
 
+    protected $types = [];
+
+    public function newModelQuery()
+    {
+        return parent::newModelQuery()->setTypes($this->types);
+    }
+
     /**
      * @param BaseModel|Relation $query
      * @param mixed $value

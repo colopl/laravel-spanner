@@ -280,7 +280,7 @@ class Connection extends BaseConnection
     /**
      * @inheritDoc
      */
-    public function statement($query, $bindings = []): bool
+    public function statement($query, $bindings = [], $types = []): bool
     {
         // is SELECT query
         if (0 === stripos(ltrim($query), 'select')) {
@@ -291,21 +291,30 @@ class Connection extends BaseConnection
         if (0 === stripos(ltrim($query), 'insert') ||
             0 === stripos(ltrim($query), 'update') ||
             0 === stripos(ltrim($query), 'delete')) {
-            return $this->affectingStatement($query, $bindings) !== null;
+            return $this->affectingStatement($query, $bindings, $types) !== null;
         }
 
         // is DDL Query
         return $this->runDdlBatch([$query]) !== null;
     }
 
+    public function insert($query, $bindings = [], $types = [])
+    {
+        return $this->statement($query, $bindings, $types);
+    }
+
+    public function update($query, $bindings = [], $types = [])
+    {
+        return $this->affectingStatement($query, $bindings, $types);
+    }
     /**
      * @inheritDoc
      */
-    public function affectingStatement($query, $bindings = []): int
+    public function affectingStatement($query, $bindings = [], $types = []): int
     {
         /** @var Closure(): int $runQueryCall */
-        $runQueryCall = function () use ($query, $bindings) {
-            return $this->run($query, $bindings, function ($query, $bindings) {
+        $runQueryCall = function () use ($query, $bindings, $types) {
+            return $this->run($query, $bindings, function ($query, $bindings) use ($types) {
                 if ($this->pretending()) {
                     return 0;
                 }
@@ -316,7 +325,10 @@ class Connection extends BaseConnection
                     throw new RuntimeException('Tried to run update outside of transaction! Affecting statements must be done inside a transaction');
                 }
 
-                $rowCount = $transaction->executeUpdate($query, ['parameters' => $this->prepareBindings($bindings)]);
+                $rowCount = $transaction->executeUpdate($query, [
+                    'parameters' => $this->prepareBindings($bindings),
+                    'types' => $types,
+                ]);
 
                 $this->recordsHaveBeenModified($rowCount > 0);
 

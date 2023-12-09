@@ -34,12 +34,70 @@ class Builder extends BaseBuilder
      */
     public $connection;
 
+    protected $types = [];
+    public function setTypes($types)
+    {
+        $this->types = $types;
+        return $this;
+    }
+
     /**
      * @inheritDoc
      */
     public function insert(array $values)
     {
-        return parent::insert($this->prepareInsertForDml($values));
+        $values = $this->prepareInsertForDml($values);
+        $types = [];
+        $i = 0;
+
+        if (empty($values))
+            return true;
+
+        if (! is_array(reset($values)))
+            $values = [$values];
+        else {
+            foreach ($values as $key => $value) {
+                ksort($value);
+                $values[$key] = $value;
+                foreach ($value as $k => $v) {
+                    [$p, $type] = $this->checkForType($i, $k, $v);
+                    if($type) $types[$p] = $type;
+                    $i++;
+                }
+            }
+        }
+
+        $this->applyBeforeQueryCallbacks();
+
+        $sql = $this->grammar->compileInsert($this, $values);
+        return $this->connection->insert($sql, $this->cleanBindings(Arr::flatten($values, 1)), $types);
+    }
+
+    public function update(array $values)
+    {
+        $this->applyBeforeQueryCallbacks();
+
+        $sql = $this->grammar->compileUpdate($this, $values);
+        $types = [];
+        $i = 0;
+        foreach ($values as $key => $value) {
+            [$p, $type] = $this->checkForType($i, $key, $value, $sql);
+            if($type) $types[$p] = $type;
+            $i++;
+        }
+
+        return $this->connection->update($sql, $this->cleanBindings(
+            $this->grammar->prepareBindingsForUpdate($this->bindings, $values)
+        ), $types);
+    }
+
+    public function checkForType($i, $key, $value, $sql = '')
+    {
+        if(!array_key_exists($key, $this->types)) return false;
+        if($value == null) return false;
+        if (is_array($value) && empty($value)) return false;
+        if (is_string($value) && Parameterizer::hasLikeWildcard($sql, $value)) return false;
+        return ["p$i", $this->types[$key]];
     }
 
     /**
