@@ -45,12 +45,13 @@ class Model extends BaseModel
      */
     protected $types = [];
 
-    public function newModelQuery(): Model
+    public function newModelQuery(): Builder|static
     {
         return $this->newEloquentBuilder(
-            $this->newBaseQueryBuilder()->setTypes($this)
+            $this->newBaseQueryBuilder()->setTypes($this->types)
         )->setModel($this);
     }
+
 
     protected function newBaseQueryBuilder(): Builder
     {
