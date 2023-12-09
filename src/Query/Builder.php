@@ -34,7 +34,15 @@ class Builder extends BaseBuilder
      */
     public $connection;
 
+    /**
+     * @var string[]
+     */
     protected $types = [];
+
+    /**
+     * @param string[] $types
+     * @return self
+     */
     public function setTypes($types)
     {
         $this->types = $types;
@@ -91,7 +99,7 @@ class Builder extends BaseBuilder
         ), $types);
     }
 
-    public function checkForType($i, $key, $value, $sql = '')
+    public function checkForType(int $i, string $key, mixed $value, string $sql = '')
     {
         if(!array_key_exists($key, $this->types)) return false;
         if($value == null) return false;

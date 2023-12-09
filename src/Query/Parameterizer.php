@@ -72,7 +72,7 @@ class Parameterizer
      * @param string $value
      * @return bool
      */
-    private static function hasLikeWildcard(string $query, string $value)
+    public static function hasLikeWildcard(string $query, string $value)
     {
         return Str::contains(strtolower($query), 'like')
             && Str::contains($value, ['%', '_'])

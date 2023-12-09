@@ -280,7 +280,7 @@ class Connection extends BaseConnection
     /**
      * @inheritDoc
      */
-    public function statement($query, $bindings = [], $types = []): bool
+    public function statement($query, $bindings = [], array $types = []): bool
     {
         // is SELECT query
         if (0 === stripos(ltrim($query), 'select')) {
@@ -298,19 +298,26 @@ class Connection extends BaseConnection
         return $this->runDdlBatch([$query]) !== null;
     }
 
-    public function insert($query, $bindings = [], $types = [])
+    /**
+     * @inheritDoc
+     */
+    public function insert($query, $bindings = [], array $types = []): bool
     {
         return $this->statement($query, $bindings, $types);
     }
 
-    public function update($query, $bindings = [], $types = [])
-    {
-        return $this->affectingStatement($query, $bindings, $types);
-    }
     /**
      * @inheritDoc
      */
-    public function affectingStatement($query, $bindings = [], $types = []): int
+    public function update($query, $bindings = [], array $types = []): int
+    {
+        return $this->affectingStatement($query, $bindings, $types);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function affectingStatement($query, $bindings = [], array $types = []): int
     {
         /** @var Closure(): int $runQueryCall */
         $runQueryCall = function () use ($query, $bindings, $types) {

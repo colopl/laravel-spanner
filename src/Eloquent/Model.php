@@ -39,8 +39,14 @@ class Model extends BaseModel
      */
     public $incrementing = false;
 
+    /**
+     * @var string[]
+     */
     protected $types = [];
 
+    /**
+     * @inheritDoc
+     */
     public function newModelQuery()
     {
         return parent::newModelQuery()->setTypes($this->types);
