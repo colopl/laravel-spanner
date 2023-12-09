@@ -107,7 +107,7 @@ class Builder extends BaseBuilder
     {
         if(!array_key_exists($key, $this->types)) return [];
         if($value == null) return [];
-        if (is_array($value) && empty($value)) return [];
+        if (is_array($value) && !count($value)) return [];
         if (is_string($value) && Parameterizer::hasLikeWildcard($sql, $value)) return [];
         return ["p$i", $this->types[$key]];
     }
