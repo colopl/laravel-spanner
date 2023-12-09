@@ -99,7 +99,10 @@ class Builder extends BaseBuilder
         ), $types);
     }
 
-    public function checkForType(int $i, string $key, mixed $value, string $sql = '')
+    /**
+     * @return string[]|false
+     */
+    public function checkForType(int $i, string|int $key, mixed $value, string $sql = '')
     {
         if(!array_key_exists($key, $this->types)) return false;
         if($value == null) return false;

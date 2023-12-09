@@ -17,6 +17,7 @@
 
 namespace Colopl\Spanner\Eloquent;
 
+use Colopl\Spanner\Query\Builder;
 use Illuminate\Database\Eloquent\Model as BaseModel;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Str;
@@ -44,12 +45,16 @@ class Model extends BaseModel
      */
     protected $types = [];
 
-    /**
-     * @inheritDoc
-     */
-    public function newModelQuery()
+    public function newModelQuery(): Model
     {
-        return parent::newModelQuery()->setTypes($this->types);
+        return $this->newEloquentBuilder(
+            $this->newBaseQueryBuilder()->setTypes($this)
+        )->setModel($this);
+    }
+
+    protected function newBaseQueryBuilder(): Builder
+    {
+        return $this->getConnection()->query();
     }
 
     /**
