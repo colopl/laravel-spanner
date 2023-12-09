@@ -64,6 +64,7 @@ class Builder extends BaseBuilder
         if (! is_array(reset($values)))
             $values = [$values];
         else {
+            /** @var array $value */
             foreach ($values as $key => $value) {
                 ksort($value);
                 $values[$key] = $value;
@@ -100,14 +101,14 @@ class Builder extends BaseBuilder
     }
 
     /**
-     * @return string[]|false
+     * @return string[]
      */
     public function checkForType(int $i, string|int $key, mixed $value, string $sql = '')
     {
-        if(!array_key_exists($key, $this->types)) return false;
-        if($value == null) return false;
-        if (is_array($value) && empty($value)) return false;
-        if (is_string($value) && Parameterizer::hasLikeWildcard($sql, $value)) return false;
+        if(!array_key_exists($key, $this->types)) return [];
+        if($value == null) return [];
+        if (is_array($value) && empty($value)) return [];
+        if (is_string($value) && Parameterizer::hasLikeWildcard($sql, $value)) return [];
         return ["p$i", $this->types[$key]];
     }
 
