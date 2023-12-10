@@ -121,6 +121,7 @@ class Builder extends BaseBuilder
             if(!count($value)) return [];
         }
         if (is_string($value) && Parameterizer::hasLikeWildcard($sql, $value)) return [];
+
         return ["p$i", $this->types[$key]];
     }
 
