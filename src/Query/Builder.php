@@ -69,13 +69,15 @@ class Builder extends BaseBuilder
             }
         }
 
+        $sql = $this->grammar->compileInsert($this, $values);
+
         // Detect spanner types from values and greate a binding compatible array of types
         $types = [];
         $i = 0;
         foreach ($values as $key => $value) {
             /** @var array $value */
             foreach ($value as $k => $v) {
-                $type = $this->checkForType($i, $k, $v);
+                $type = $this->checkForType($i, $k, $v, $sql);
                 if(count($type)) $types[$type[0]] = $type[1];
                 $i++;
             }
@@ -83,7 +85,6 @@ class Builder extends BaseBuilder
 
         $this->applyBeforeQueryCallbacks();
 
-        $sql = $this->grammar->compileInsert($this, $values);
         return $this->connection->insert($sql, $this->cleanBindings(Arr::flatten($values, 1)), $types);
     }
 
