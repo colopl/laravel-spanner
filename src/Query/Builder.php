@@ -71,7 +71,7 @@ class Builder extends BaseBuilder
 
         $sql = $this->grammar->compileInsert($this, $values);
 
-        // Detect spanner types from values and greate a binding compatible array of types
+        // Detect spanner types from values and create a binding compatible array of types
         $types = [];
         $i = 0;
         foreach ($values as $key => $value) {
@@ -94,7 +94,7 @@ class Builder extends BaseBuilder
 
         $sql = $this->grammar->compileUpdate($this, $values);
 
-        // Detect spanner types from values and greate a binding compatible array of types
+        // Detect spanner types from values and create a binding compatible array of types
         $types = [];
         $i = 0;
         foreach ($values as $key => $value) {
