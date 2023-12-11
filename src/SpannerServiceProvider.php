@@ -93,6 +93,10 @@ class SpannerServiceProvider extends ServiceProvider
      */
     protected function parseConfig(array $config, string $name): array
     {
+        if ($name === '_auth') {
+            throw new LogicException('Connection name "_auth" is reserved.');
+        }
+
         return $config + [
             'prefix' => '',
             'name' => $name,
@@ -108,7 +112,7 @@ class SpannerServiceProvider extends ServiceProvider
      */
     protected function createAuthCache(array $config): AdapterInterface
     {
-        return $this->getCacheAdapter('auth', $config['cache_path']);
+        return $this->getCacheAdapter('_auth', $config['cache_path']);
     }
 
     /**
