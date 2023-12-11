@@ -1,4 +1,4 @@
-# v6.1.1 (Not Released Yet)
+# v6.1.1 (2023-12-11)
 
 Fixed
 - Bug where auth and session pool writing to the same file may cause race condition (#152)
