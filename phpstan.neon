@@ -35,3 +35,6 @@ parameters:
         - message: '#^Property Colopl\\Spanner\\Session\\SessionInfo\:\:\$labels \(array\<string, string\>\) does not accept array\.$#'
           path: src/Session/SessionInfo.php
           count: 1
+        - message: "#^Method Colopl\\\\Spanner\\\\SpannerServiceProvider\\:\\:parseConfig\\(\\) should return array\\{name\\: string, instance\\: string, database\\: string, prefix\\: string, cache_path\\: string|null, session_pool\\: array\\<string, mixed\\>\\} but returns non\\-empty\\-array\\<string, mixed\\>\\.$#"
+          count: 1
+          path: src/SpannerServiceProvider.php
