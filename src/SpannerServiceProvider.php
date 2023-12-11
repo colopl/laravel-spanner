@@ -87,7 +87,7 @@ class SpannerServiceProvider extends ServiceProvider
      *       instance: string,
      *       database: string,
      *       prefix: string,
-     *       cache_path: string,
+     *       cache_path: string|null,
      *       session_pool: array<string, mixed>,
      *  } $config
      */
@@ -103,7 +103,7 @@ class SpannerServiceProvider extends ServiceProvider
     }
 
     /**
-     * @param array{ cache_path: string } $config
+     * @param array{ cache_path: string|null } $config
      * @return AdapterInterface
      */
     protected function createAuthCache(array $config): AdapterInterface
@@ -112,7 +112,7 @@ class SpannerServiceProvider extends ServiceProvider
     }
 
     /**
-     * @param array{ name: string, cache_path: string, session_pool: array<string, mixed> } $config
+     * @param array{ name: string, cache_path: string|null, session_pool: array<string, mixed> } $config
      * @return SessionPoolInterface
      */
     protected function createSessionPool(array $config): SessionPoolInterface
