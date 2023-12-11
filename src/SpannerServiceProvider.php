@@ -26,6 +26,7 @@ use Illuminate\Database\DatabaseManager;
 use Illuminate\Queue\QueueManager;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
+use LogicException;
 use Symfony\Component\Cache\Adapter\AdapterInterface;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 
@@ -62,7 +63,7 @@ class SpannerServiceProvider extends ServiceProvider
      *      instance: string,
      *      database: string,
      *      prefix: string,
-     *      cache_path: string,
+     *      cache_path: string|null,
      *      session_pool: array<string, mixed>,
      * } $config
      * @return Connection
