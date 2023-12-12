@@ -134,9 +134,10 @@ class Grammar extends BaseGrammar
      */
     public function compileAdd(Blueprint $blueprint, Fluent $command)
     {
-        $columns = $this->prefixArray('add column', $this->getColumns($blueprint));
-
-        return 'alter table '.$this->wrapTable($blueprint).' '.implode(', ', $columns);
+        return $this->prefixArray(
+            'alter table '.$this->wrapTable($blueprint).' add column',
+            $this->getColumns($blueprint)
+        );
     }
 
     /**
@@ -149,9 +150,10 @@ class Grammar extends BaseGrammar
      */
     public function compileChange(Blueprint $blueprint, Fluent $command, Connection $connection)
     {
-        $columns = $this->prefixArray('alter column', $this->getChangedColumns($blueprint));
-
-        return ['alter table '.$this->wrapTable($blueprint).' '.implode(', ', $columns)];
+       return $this->prefixArray(
+            'alter table '.$this->wrapTable($blueprint).' alter column',
+            $this->getChangedColumns($blueprint)
+        );
     }
 
     /**
