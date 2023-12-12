@@ -596,6 +596,6 @@ class BlueprintTest extends TestCase
         self::assertTrue(Str::isUuid($result['tiny']));
         self::assertTrue(Str::isUuid($result['small']));
         self::assertTrue(Str::isUuid($result['medium']));
-        self::assertTrue(Str::isUuid($result['large']));
+        self::assertTrue(Str::isUuid($result['big']));
     }
 }
