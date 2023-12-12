@@ -130,7 +130,7 @@ class Grammar extends BaseGrammar
      *
      * @param  Blueprint  $blueprint
      * @param  Fluent<string, mixed> $command
-     * @return string
+     * @return string[]
      */
     public function compileAdd(Blueprint $blueprint, Fluent $command)
     {
