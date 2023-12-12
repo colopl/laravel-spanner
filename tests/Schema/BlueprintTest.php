@@ -39,8 +39,11 @@ class BlueprintTest extends TestCase
             $table->decimal('decimal');
             $table->string('name');
             $table->text('text');
+            $table->mediumText('medium_text');
+            $table->longText('long_text');
             $table->dateTime('started_at');
             $table->binary('blob');
+            $table->json('json');
             $table->timestamps();
 
             $table->primary('id');
@@ -56,8 +59,11 @@ class BlueprintTest extends TestCase
                 '`decimal` numeric not null',
                 '`name` string(255) not null',
                 '`text` string(max) not null',
+                '`medium_text` string(max) not null',
+                '`long_text` string(max) not null',
                 '`started_at` timestamp not null',
                 '`blob` bytes(255) not null',
+                '`json` json not null',
                 '`created_at` timestamp, `updated_at` timestamp',
             ]) . ') primary key (`id`)',
             $queries[0]
@@ -413,7 +419,10 @@ class BlueprintTest extends TestCase
             $table->boolean('bool')->default(true);
             $table->string('string')->default('a');
             $table->text('string_max')->default('a');
+            $table->mediumText('medium_text')->default('a');
+            $table->longText('long_text')->default('a');
             $table->float('raw')->default(DB::raw('1.1'));
+            $table->json('json')->default(DB::raw('json "[1,2,3]"'));
             $table->date('date_as_string')->default('2022-01-01');
             $table->date('date_as_carbon')->default(new Carbon('2022-01-01'));
             $table->dateTime('time_as_string')->default('2022-01-01');
@@ -445,7 +454,10 @@ class BlueprintTest extends TestCase
                 '`bool` bool not null default (true)',
                 '`string` string(255) not null default ("a")',
                 '`string_max` string(max) not null default ("a")',
+                '`medium_text` string(max) not null default ("a")',
+                '`long_text` string(max) not null default ("a")',
                 '`raw` float64 not null default (1.1)',
+                '`json` json not null default (json "[1,2,3]")',
                 '`date_as_string` date not null default (DATE "2022-01-01")',
                 '`date_as_carbon` date not null default (DATE "2022-01-01")',
                 '`time_as_string` timestamp not null default (TIMESTAMP "2022-01-01T00:00:00.000000+00:00")',
@@ -476,6 +488,10 @@ class BlueprintTest extends TestCase
         self::assertSame(0.1, $result['float']);
         self::assertSame(true, $result['bool']);
         self::assertSame('a', $result['string']);
+        self::assertSame('a', $result['string_max']);
+        self::assertSame('a', $result['medium_text']);
+        self::assertSame('a', $result['long_text']);
+        self::assertSame('[1,2,3]', $result['json']);
         self::assertSame(1.1, $result['raw']);
         self::assertSame('2022-01-01T00:00:00.000000+00:00', $result['date_as_string']->get()->format($grammar->getDateFormat()));
         self::assertSame('2022-01-01T00:00:00.000000+00:00', $result['date_as_carbon']->get()->format($grammar->getDateFormat()));
