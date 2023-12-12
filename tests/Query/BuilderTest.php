@@ -792,32 +792,26 @@ class BuilderTest extends TestCase
 
     public function test_lock(): void
     {
-        $this->expectException(BadMethodCallException::class);
-        $this->expectExceptionMessage('Cloud Spanner does not support explicit locking');
-
         $conn = $this->getDefaultConnection();
         $qb = $conn->table(self::TABLE_NAME_USER);
-        $qb->lock()->get();
+        $sql = $qb->lock()->toRawSql();
+        $this->assertSame('select * from `User`', $sql);
     }
 
     public function test_lockForUpdate(): void
     {
-        $this->expectException(BadMethodCallException::class);
-        $this->expectExceptionMessage('Cloud Spanner does not support explicit locking');
-
         $conn = $this->getDefaultConnection();
         $qb = $conn->table(self::TABLE_NAME_USER);
-        $qb->lockForUpdate()->get();
+        $sql = $qb->lockForUpdate()->toRawSql();
+        $this->assertSame('select * from `User`', $sql);
     }
 
     public function test_sharedLock(): void
     {
-        $this->expectException(BadMethodCallException::class);
-        $this->expectExceptionMessage('Cloud Spanner does not support explicit locking');
-
         $conn = $this->getDefaultConnection();
         $qb = $conn->table(self::TABLE_NAME_USER);
-        $qb->sharedLock()->get();
+        $sql = $qb->sharedLock()->toRawSql();
+        $this->assertSame('select * from `User`', $sql);
     }
 
     public function test_toRawSql(): void
