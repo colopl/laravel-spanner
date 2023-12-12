@@ -101,6 +101,11 @@ class Builder extends BaseBuilder
             : new Blueprint($table, $callback);
     }
 
+    /**
+     * Drop all tables from the database.
+     *
+     * @return void
+     */
     public function dropAllTables()
     {
         /** @var \Colopl\Spanner\Connection */
