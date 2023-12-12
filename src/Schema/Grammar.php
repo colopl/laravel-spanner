@@ -393,6 +393,17 @@ class Grammar extends BaseGrammar
     }
 
     /**
+     * Create the column definition for a char type.
+     *
+     * @param  Fluent<string, mixed> $column
+     * @return string
+     */
+    protected function typeChar(Fluent $column)
+    {
+        return $this->typeString($column);
+    }
+
+    /**
      * Create the column definition for a text type.
      *
      * @param  Fluent<string, mixed> $column
