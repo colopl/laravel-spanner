@@ -1,4 +1,17 @@
-# v6.1.0 (Not Released Yet)
+# v6.2.0 (Not Released Yet)
+
+Added
+- `json` `mediumText` `longText` support for `Schema\Builder` (#155)
+
+Changed
+- `Query\Builder::lock()` no longer throw an error and will be ignored instead (#156)
+
+# v6.1.1 (2023-12-11)
+
+Fixed
+- Bug where auth and session pool writing to the same file may cause race condition (#152)
+
+# v6.1.0 (2023-11-29)
 
 Added
 - Add support for [NUMERIC](https://cloud.google.com/spanner/docs/reference/standard-sql/data-types#numeric_type) column type. (#145)
