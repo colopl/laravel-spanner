@@ -417,7 +417,7 @@ class Grammar extends BaseGrammar
     /**
      * Create the column definition for a long text type.
      *
-     * @param  \Illuminate\Support\Fluent  $column
+     * @param  Fluent<string, mixed> $column
      * @return string
      */
     protected function typeLongText(Fluent $column)
