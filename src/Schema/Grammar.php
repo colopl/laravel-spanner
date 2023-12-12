@@ -23,6 +23,7 @@ use Illuminate\Database\Connection;
 use Illuminate\Contracts\Database\Query\Expression as ExpressionContract;
 use Illuminate\Database\Query\Expression;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Database\Schema\ColumnDefinition;
 use Illuminate\Database\Schema\Grammars\Grammar as BaseGrammar;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Fluent;
@@ -357,13 +358,15 @@ class Grammar extends BaseGrammar
 
         if (! is_null(
             $id = collect($blueprint->getColumns())
-                ->first(function($col) {
-                    return $col->type === 'uuid' && 
-                        $col->default instanceof Expression &&
-                        $col->default->getValue(new Grammar) === 'GENERATE_UUID()';
+                ->first(function(ColumnDefinition $col) {
+                    return $col->get('type') === 'uuid' && 
+                        $col->get('default') instanceof Expression &&
+                        $col->get('default')->getValue(new Grammar) === 'GENERATE_UUID()';
                 })
         )) {
-            return "primary key (`{$id->name}`)";
+            /** @var string */
+            $column = $id->get('name');
+            return "primary key (`$column`)";
         }
 
         throw new LogicException('Cloud Spanner require a primary key!');

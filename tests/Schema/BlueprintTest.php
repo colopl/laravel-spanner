@@ -193,6 +193,21 @@ class BlueprintTest extends TestCase
         );
     }
 
+    public function test_implicit_primaryKey(): void
+    {
+        $blueprint = new Blueprint('test', function (Blueprint $table) {
+            $table->create();
+            $table->id();
+        });
+
+        $queries = $blueprint->toSql($this->getDefaultConnection(), new Grammar());
+        $this->assertEquals(
+            'create table `test` (`id` string(36) not null default (GENERATE_UUID())) primary key (`id`)',
+            $queries[0]
+        );
+    }
+
+
     public function test_no_primaryKey(): void
     {
         $this->expectException(LogicException::class);
