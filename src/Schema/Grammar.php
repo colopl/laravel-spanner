@@ -406,7 +406,7 @@ class Grammar extends BaseGrammar
     /**
      * Create the column definition for a medium text type.
      *
-     * @param  \Illuminate\Support\Fluent  $column
+     * @param  Fluent<string, mixed> $column
      * @return string
      */
     protected function typeMediumText(Fluent $column)
