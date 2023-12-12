@@ -488,6 +488,9 @@ class BlueprintTest extends TestCase
         self::assertSame(0.1, $result['float']);
         self::assertSame(true, $result['bool']);
         self::assertSame('a', $result['string']);
+        self::assertSame('a', $result['string_max']);
+        self::assertSame('a', $result['medium_text']);
+        self::assertSame('a', $result['long_text']);
         self::assertSame('[1,2,3]', $result['json']);
         self::assertSame(1.1, $result['raw']);
         self::assertSame('2022-01-01T00:00:00.000000+00:00', $result['date_as_string']->get()->format($grammar->getDateFormat()));
