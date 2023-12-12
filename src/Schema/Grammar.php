@@ -355,8 +355,15 @@ class Grammar extends BaseGrammar
             return "primary key ({$this->columnize($primary->columns)})";
         }
 
-        if (! is_null($id = $this->getCommandByName($blueprint, 'id'))) {
-            return "primary key ({$this->columnize($id[0])})";
+        if (! is_null(
+            $id = collect($blueprint->getColumns())
+                ->first(function($col) {
+                    return $col->type === 'uuid' && 
+                        $col->default instanceof Expression &&
+                        $col->default->getValue(new Grammar) === 'GENERATE_UUID()';
+                })
+        )) {
+            return "primary key (`{$id->name}`)";
         }
 
         throw new LogicException('Cloud Spanner require a primary key!');
