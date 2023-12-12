@@ -404,6 +404,39 @@ class Grammar extends BaseGrammar
     }
 
     /**
+     * Create the column definition for a medium text type.
+     *
+     * @param  \Illuminate\Support\Fluent  $column
+     * @return string
+     */
+    protected function typeMediumText(Fluent $column)
+    {
+        return $this->typeText($column);
+    }
+
+    /**
+     * Create the column definition for a long text type.
+     *
+     * @param  \Illuminate\Support\Fluent  $column
+     * @return string
+     */
+    protected function typeLongText(Fluent $column)
+    {
+        return $this->typeText($column);
+    }
+
+    /**
+     * Create the column definition for a json type.
+     *
+     * @param  \Illuminate\Support\Fluent  $column
+     * @return string
+     */
+    protected function typeJson(Fluent $column)
+    {
+        return 'json';
+    }
+
+    /**
      * Create the column definition for a binary type.
      *
      * @param  Fluent<string, mixed> $column
