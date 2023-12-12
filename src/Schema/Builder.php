@@ -20,6 +20,7 @@ namespace Colopl\Spanner\Schema;
 use Closure;
 use Colopl\Spanner\Query\Processor;
 use Illuminate\Database\Schema\Builder as BaseBuilder;
+use Illuminate\Support\Facades\DB;
 
 /**
  * @property Grammar $grammar
@@ -98,5 +99,13 @@ class Builder extends BaseBuilder
         return isset($this->resolver)
             ? ($this->resolver)($table, $callback)
             : new Blueprint($table, $callback);
+    }
+
+    public function dropAllTables()
+    {
+        /** @var \Colopl\Spanner\Connection */
+        $connection = DB::connection();
+        $connection->dropDatabase();
+        $connection->createDatabase();
     }
 }
