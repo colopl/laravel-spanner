@@ -50,6 +50,20 @@ class Blueprint extends BaseBlueprint
     }
 
     /**
+     * @inheritDoc
+     */
+    public function morphs($name, $indexName = null)
+    {
+        if (Builder::$defaultMorphKeyType === 'int') {
+            $this->numericMorphs($name, $indexName);
+        } elseif (Builder::$defaultMorphKeyType === 'ulid') {
+            $this->ulidMorphs($name, $indexName);
+        } else {
+            $this->uuidMorphs($name, $indexName);
+        }
+    }
+
+    /**
      * Create a new auto-generating UUID column on the table.
      *
      * @param  string  $column
