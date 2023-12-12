@@ -551,4 +551,52 @@ class BlueprintTest extends TestCase
             $queries[0]
         );
     }
+
+    public function test_increments(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $conn->useDefaultSchemaGrammar();
+        $grammar = $conn->getSchemaGrammar();
+
+        $blueprint = new Blueprint('IncrementsItem', function (Blueprint $table) {
+            $table->increments('id')->primary();
+            $table->tinyIncrements('tiny');
+            $table->smallIncrements('small');
+            $table->mediumIncrements('medium');
+            $table->bigIncrements('big');
+            $table->text('item');
+        });
+
+        $blueprint->create();
+
+        $queries = $blueprint->toSql($conn, $grammar);
+        $this->assertEquals(
+            'create table `IncrementsItem` (' . implode(', ', [
+                '`id` string(36) not null default (GENERATE_UUID())',
+                '`tiny` string(36) not null default (GENERATE_UUID())',
+                '`small` string(36) not null default (GENERATE_UUID())',
+                '`medium` string(36) not null default (GENERATE_UUID())',
+                '`big` string(36) not null default (GENERATE_UUID())',
+                '`item` string(max) not null',
+            ]) . ') primary key (`id`)',
+            $queries[0]
+        );
+
+        $blueprint->build($conn, $grammar);
+
+        $query = $conn->table('IncrementsItem');
+
+        $query->insert(['item' => 'a']);
+
+        /** @var array<string, mixed> $result */
+        $result = $query->sole();
+
+        self::assertSame(null, $result['null']);
+        self::assertSame('a', $result['item']);
+        self::assertTrue(Str::isUuid($result['id']));
+        self::assertTrue(Str::isUuid($result['tiny']));
+        self::assertTrue(Str::isUuid($result['small']));
+        self::assertTrue(Str::isUuid($result['medium']));
+        self::assertTrue(Str::isUuid($result['large']));
+    }
 }

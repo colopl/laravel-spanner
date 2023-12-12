@@ -18,8 +18,10 @@
 namespace Colopl\Spanner\Schema;
 
 use Colopl\Spanner\Concerns\MarksAsNotSupported;
+use Illuminate\Database\Query\Expression;
 use Illuminate\Database\Schema\Blueprint as BaseBlueprint;
 use Illuminate\Database\Schema\ColumnDefinition;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Fluent;
 
 /**
@@ -49,48 +51,58 @@ class Blueprint extends BaseBlueprint
     }
 
     /**
-     * @inheritDoc
-     * @return never
+     * Create a new auto-generating UUID column on the table.
+     *
+     * @param  string  $column
+     * @return \Illuminate\Database\Schema\ColumnDefinition
      */
     public function increments($column)
     {
-        $this->markAsNotSupported('AUTO_INCREMENT');
+       return $this->uuid($column)->default(new Expression('GENERATE_UUID()'));
     }
 
     /**
-     * @inheritDoc
-     * @return never
+     * Create a new auto-generating UUID column on the table.
+     *
+     * @param  string  $column
+     * @return \Illuminate\Database\Schema\ColumnDefinition
      */
     public function bigIncrements($column)
     {
-        $this->markAsNotSupported('AUTO_INCREMENT');
+        return $this->increments($column);
     }
 
     /**
-     * @inheritDoc
-     * @return never
+     * Create a new auto-generating UUID column on the table.
+     *
+     * @param  string  $column
+     * @return \Illuminate\Database\Schema\ColumnDefinition
      */
     public function mediumIncrements($column)
     {
-        $this->markAsNotSupported('AUTO_INCREMENT');
+        return $this->increments($column);
     }
 
     /**
-     * @inheritDoc
-     * @return never
+     * Create a new auto-generating UUID column on the table.
+     *
+     * @param  string  $column
+     * @return \Illuminate\Database\Schema\ColumnDefinition
      */
     public function smallIncrements($column)
     {
-        $this->markAsNotSupported('AUTO_INCREMENT');
+        return $this->increments($column);
     }
 
     /**
-     * @inheritDoc
-     * @return never
+     * Create a new auto-generating UUID column on the table.
+     *
+     * @param  string  $column
+     * @return \Illuminate\Database\Schema\ColumnDefinition
      */
     public function tinyIncrements($column)
     {
-        $this->markAsNotSupported('AUTO_INCREMENT');
+        return $this->increments($column);
     }
 
     // region Spanner Specific Types
