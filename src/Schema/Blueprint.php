@@ -21,7 +21,6 @@ use Colopl\Spanner\Concerns\MarksAsNotSupported;
 use Illuminate\Database\Query\Expression;
 use Illuminate\Database\Schema\Blueprint as BaseBlueprint;
 use Illuminate\Database\Schema\ColumnDefinition;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Fluent;
 
 /**
