@@ -1,3 +1,11 @@
+# v6.2.0 (Not Released Yet)
+
+Added
+- `json` `mediumText` `longText` support for `Schema\Builder` (#155)
+
+Changed
+- `Query\Builder::lock()` no longer throw an error and will be ignored instead (#156)
+
 # v6.1.1 (2023-12-11)
 
 Fixed
