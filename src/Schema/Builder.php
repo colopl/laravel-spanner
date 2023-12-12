@@ -33,7 +33,13 @@ class Builder extends BaseBuilder
      */
     public static $defaultBinaryLength = 255;
 
-
+    /**
+     * The default relationship morph key type.
+     *
+     * @var string
+     */
+    public static $defaultMorphKeyType = 'uuid';
+    
     /**
      * @deprecated Will be removed in a future Laravel version.
      *
