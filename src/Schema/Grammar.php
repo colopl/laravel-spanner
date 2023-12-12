@@ -352,6 +352,11 @@ class Grammar extends BaseGrammar
         if (! is_null($primary = $this->getCommandByName($blueprint, 'primary'))) {
             return "primary key ({$this->columnize($primary->columns)})";
         }
+
+        if (! is_null($id = $this->getCommandByName($blueprint, 'id'))) {
+            return "primary key ({$this->columnize($id[0])})";
+        }
+
         throw new LogicException('Cloud Spanner require a primary key!');
     }
 
