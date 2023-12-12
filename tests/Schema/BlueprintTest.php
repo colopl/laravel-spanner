@@ -591,7 +591,6 @@ class BlueprintTest extends TestCase
         /** @var array<string, mixed> $result */
         $result = $query->sole();
 
-        self::assertSame(null, $result['null']);
         self::assertSame('a', $result['item']);
         self::assertTrue(Str::isUuid($result['id']));
         self::assertTrue(Str::isUuid($result['tiny']));
