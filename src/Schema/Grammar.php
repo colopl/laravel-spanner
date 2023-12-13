@@ -345,7 +345,7 @@ class Grammar extends BaseGrammar
      * Compile a drop foreign key command.
      *
      * @param  Blueprint  $blueprint
-     * @param  \Illuminate\Support\Fluent  $command
+     * @param  \Illuminate\Support\Fluent<string, mixed> $command
      * @return string
      */
     public function compileDropForeign(Blueprint $blueprint, Fluent $command)
