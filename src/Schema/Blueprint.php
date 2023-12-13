@@ -64,6 +64,20 @@ class Blueprint extends BaseBlueprint
     }
 
     /**
+    * @inheritDoc
+    */
+   public function nullableMorphs($name, $indexName = null)
+   {
+       if (Builder::$defaultMorphKeyType === 'int') {
+           $this->nullableNumericMorphs($name, $indexName);
+       } elseif (Builder::$defaultMorphKeyType === 'ulid') {
+           $this->nullableUlidMorphs($name, $indexName);
+       } else {
+           $this->nullableUuidMorphs($name, $indexName);
+       }
+   }
+
+    /**
      * Create a new auto-generating UUID column on the table.
      *
      * @param  string  $column
