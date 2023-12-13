@@ -110,7 +110,10 @@ class Builder extends BaseBuilder
     {
         /** @var \Colopl\Spanner\Connection */
         $connection = DB::connection();
-        $connection->dropDatabase();
+
+        if($connection->databaseExists())
+            $connection->dropDatabase();
+
         $connection->createDatabase();
     }
 }
