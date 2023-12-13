@@ -295,6 +295,10 @@ class Connection extends BaseConnection
         }
 
         // is DDL Query
+        // allow pretending for DDL queries
+        if($this->pretending())
+            return $this->affectingStatement($query, $bindings) !== null;
+
         return $this->runDdlBatch([$query]) !== null;
     }
 
