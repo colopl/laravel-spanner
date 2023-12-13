@@ -161,13 +161,14 @@ class Grammar extends BaseGrammar
      *
      * @param  Blueprint  $blueprint
      * @param  Fluent<string, mixed> $command
-     * @return string
+     * @return string[]
      */
     public function compileDropColumn(Blueprint $blueprint, Fluent $command)
     {
-        $columns = $this->prefixArray('drop column', $this->wrapArray($command->columns));
-
-        return 'alter table '.$this->wrapTable($blueprint).' '.implode(', ', $columns);
+        return $this->prefixArray(
+            'alter table '.$this->wrapTable($blueprint).' drop column',
+            $this->wrapArray($command->columns)
+        );
     }
 
     /**
