@@ -110,12 +110,15 @@ class BlueprintTest extends TestCase
 
         $blueprint = new Blueprint('Test3', function (Blueprint $table) {
             $table->string('description', 255);
+            $table->integer('value');
         });
 
         $queries = $blueprint->toSql($conn, new Grammar());
-        $this->assertEquals(
+        $this->assertEquals([
             'alter table `Test3` add column `description` string(255) not null',
-            $queries[0]
+            'alter table `Test3` add column `value` int64 not null'
+            ],
+            $queries
         );
     }
 
@@ -125,12 +128,15 @@ class BlueprintTest extends TestCase
 
         $blueprint = new Blueprint('Test3', function (Blueprint $table) {
             $table->string('description', 512)->change();
+            $table->float('value')->change();
         });
 
         $queries = $blueprint->toSql($conn, new Grammar());
-        $this->assertEquals(
+        $this->assertEquals([
             'alter table `Test3` alter column `description` string(512) not null',
-            $queries[0]
+            'alter table `Test3` alter column `value` float64 not null',
+            ],
+            $queries
         );
     }
 
@@ -182,6 +188,23 @@ class BlueprintTest extends TestCase
             [
                 'drop index `test3_name_unique`',
                 'drop index `test3_createdat_index`',
+            ],
+            $queries
+        );
+    }
+
+    public function testDropForeign(): void
+    {
+        $conn = $this->getDefaultConnection();
+
+        $blueprint = new Blueprint('Test3', function (Blueprint $table) {
+            $table->dropForeign('fk_test3');
+        });
+
+        $queries = $blueprint->toSql($conn, new Grammar());
+        $this->assertEquals(
+            [
+                'alter table `Test3` drop constraint `fk_test3`',
             ],
             $queries
         );

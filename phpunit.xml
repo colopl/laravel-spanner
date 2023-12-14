@@ -27,6 +27,7 @@
          stopOnFailure="true">
   <testsuite name="all">
     <directory suffix="Test.php">./tests</directory>
+    <directory suffix="TestLast.php">./tests</directory>
   </testsuite>
   <php>
     <env name="SPANNER_EMULATOR_HOST" value="emulator:9010"/>
