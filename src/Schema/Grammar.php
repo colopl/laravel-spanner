@@ -345,6 +345,20 @@ class Grammar extends BaseGrammar
     }
 
     /**
+     * Compile a drop foreign key command.
+     *
+     * @param  Blueprint  $blueprint
+     * @param  \Illuminate\Support\Fluent<string, mixed> $command
+     * @return string
+     */
+    public function compileDropForeign(Blueprint $blueprint, Fluent $command)
+    {
+        $index = $this->wrap($command->index);
+
+        return "alter table {$this->wrapTable($blueprint)} drop constraint {$index}";
+    }
+
+    /**
      * Get the primary key syntax for a table creation statement.
      *
      * @param  Blueprint  $blueprint

@@ -2,6 +2,7 @@
 
 Added
 - `json` `mediumText` `longText` `char` support for `Schema\Builder` (#155) (#158)
+- `Schema\Grammar::compileDropForeign` to allow dropping foreign key constraints (#163)
 
 Changed
 - `Query\Builder::lock()` no longer throw an error and will be ignored instead (#156)
