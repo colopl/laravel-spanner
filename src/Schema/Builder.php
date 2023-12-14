@@ -80,24 +80,6 @@ class Builder extends BaseBuilder
 
     /**
      * @param string $table
-     * @return string[]
-     */
-    public function getForeignKeys($table)
-    {
-        $table = $this->connection->getTablePrefix().$table;
-
-        $results = $this->connection->select(
-            $this->grammar->compileForeignKeys(), [$table]
-        );
-
-        /** @var Processor $processor */
-        $processor = $this->connection->getPostProcessor();
-
-        return $processor->processForeignKeys($results);
-    }
-
-    /**
-     * @param string $table
      * @param string $name
      * @return void
      */
