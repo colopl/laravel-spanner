@@ -58,7 +58,7 @@ class Grammar extends BaseGrammar
      */
     public function compileTables()
     {
-        return 'select `table_name` as name from information_schema.tables where table_schema = \'\' and table_type = \'BASE TABLE\'';
+        return 'select `table_name` as name, `table_type` as type, `parent_table_name` as parent from information_schema.tables where table_schema = \'\' and table_type = \'BASE TABLE\'';
     }
 
     /**
@@ -91,6 +91,16 @@ class Grammar extends BaseGrammar
     public function compileIndexListing()
     {
         return 'select index_name as `index_name` from information_schema.indexes where table_schema = \'\' and table_name = ?';
+    }
+
+    /**
+     * Compile the query to determine the list of foreign keys.
+     *
+     * @return string
+     */
+    public function compileForeignListing()
+    {
+        return 'select constraint_name as `index_name` from information_schema.table_constraints where constraint_type = "FOREIGN KEY" and table_schema = \'\' and table_name = ?';
     }
 
     /**
