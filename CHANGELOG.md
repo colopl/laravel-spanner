@@ -7,7 +7,7 @@ Added
 
 Changed
 - `Query\Builder::lock()` no longer throw an error and will be ignored instead (#156)
-- `Schema\Builder::getIndexListing()` `Schema\Grammar::compileIndexListing()` converted to `getIndexes()` and `compileIndexes()` to align with standard Laravel methods
+- `Schema\Builder::getIndexListing()` `Schema\Grammar::compileIndexListing()` converted to `getIndexes()` and `compileIndexes()` to align with standard Laravel methods (#161)
 
 Fixed
 - `Schema\Grammar::compileAdd()` `Schema\Grammar::compileChange()` `Schema\Grammar::compileChange()` now create separate statements (#159)
