@@ -81,10 +81,21 @@ class Processor extends BaseProcessor
      * @param array $results
      * @return array
      */
-    public function processIndexListing($results)
+    public function processIndexes($results)
     {
         return array_map(function ($result) {
             return ((object) $result)->index_name;
+        }, $results);
+    }
+
+    /**
+     * @param array $results
+     * @return array
+     */
+    public function processForeignKeys($results)
+    {
+        return array_map(function ($result) {
+            return ((object) $result)->key_name;
         }, $results);
     }
 }

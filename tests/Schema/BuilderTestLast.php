@@ -23,7 +23,7 @@ use Exception;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 
-class BuilderTest extends TestCase
+class BuilderTestLast extends TestCase
 {
     private const TABLE_NAME_CREATED = 'schema_builder_test_table';
     private const TABLE_NAME_RELATION_PARENT = 'users';
@@ -243,11 +243,53 @@ class BuilderTest extends TestCase
 
         /** @var array{ name: string, type: string } $row */
         $row = Arr::first(
-            $sb->getAllTables(),
+            $sb->getTables(),
             static fn (array $row): bool => $row['name'] === $table,
         );
 
         $this->assertSame($table, $row['name']);
         $this->assertSame('BASE TABLE', $row['type']);
+    }
+
+    public function test_dropAllTables(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $sb = $conn->getSchemaBuilder();
+        $table1 = $this->generateTableName(class_basename(__CLASS__));
+        $sb->create($table1, function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('something');
+            $table->index('something');
+        });
+
+        $table2 = $this->generateTableName(class_basename(__CLASS__));
+        $sb->create($table2, function (Blueprint $table) use ($table1) {
+            $table->uuid('table2_id')->primary();
+            $table->uuid('other_id');
+            $table->index('other_id');
+            $table->foreign('other_id')->references('id')->on($table1);
+        });
+
+        $table3 = $this->generateTableName(class_basename(__CLASS__));
+        $sb->create($table3, function (Blueprint $table) use ($table2) {
+            $table->uuid('table2_id');
+            $table->uuid('table3_id');
+            $table->primary(['table2_id', 'table3_id']);
+            $table->interleaveInParent($table2);
+        });
+
+        $table4 = $this->generateTableName(class_basename(__CLASS__));
+        $sb->create($table4, function (Blueprint $table) use ($table3) {
+            $table->uuid('table2_id');
+            $table->uuid('table3_id');
+            $table->uuid('table4_id');
+            $table->primary(['table2_id', 'table3_id', 'table4_id']);
+            $table->interleaveInParent($table3);
+        });
+
+        $sb->dropAllTables();
+
+        $tables = $sb->getTables();
+        $this->assertEmpty($tables);
     }
 }
