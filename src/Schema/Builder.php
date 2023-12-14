@@ -49,8 +49,8 @@ class Builder extends BaseBuilder
     }
 
     /**
-     * @inheritDoc
-     *
+     * @inheritDoc Adds a parent key, for tracking interleaving
+     * 
      * @return list<array{ name: string, type: string, parent: string }>
      */
     public function getTables()
