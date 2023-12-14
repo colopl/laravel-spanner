@@ -12,6 +12,9 @@ Changed
 Fixed
 - `Schema\Grammar::compileAdd()` `Schema\Grammar::compileChange()` `Schema\Grammar::compileChange()` now create separate statements (#159)
 
+Fixed
+- `Schema\Grammar::compileAdd()` `Schema\Grammar::compileChange()` `Schema\Grammar::compileChange()` now create separate statements (#159)
+
 # v6.1.1 (2023-12-11)
 
 Fixed
