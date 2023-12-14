@@ -144,28 +144,21 @@ class Builder extends BaseBuilder
         $tables = self::getTables();
         $sortedTables = [];
 
-        // get all tables
+        // add parents counter
         foreach ($tables as $table) {
-            $tableName = $table['name'];
-            $parentTableName = $table['parent'];
-
-            $sortedTables[$tableName] = [
-                'name' => $tableName,
-                'parent' => $parentTableName,
-                'parents' => 0
-            ];
+           $sortedTables[$table['name']] = ['parents' => 0, ...$table];
         }
 
         // loop through all tables and count how many parents they have
-        foreach ($sortedTables as $tableName => $tableData) {
-            if(!$tableData['parent']) continue;
+        foreach ($sortedTables as $key => $table) {
+            if(!$table['parent']) continue;
 
-            $current = $tableData;
+            $current = $table;
             while($current['parent']) {
-                $tableData['parents'] += 1;
+                $table['parents'] += 1;
                 $current = $sortedTables[$current['parent']];
             }
-            $sortedTables[$tableName] = $tableData;
+            $sortedTables[$key] = $table;
         }
 
         // sort tables desc based on parent count 
@@ -175,13 +168,12 @@ class Builder extends BaseBuilder
         $queries = [];
         foreach ($sortedTables as $tableData) {
             $tableName = $tableData['name'];
-            $blueprint = new Blueprint($tableName);
             $foreigns = self::getForeignListing($tableName);
+            $blueprint = $this->createBlueprint($tableName);
             foreach ($foreigns as $foreign) {
-                $column = new Fluent();
-                $column->index = $foreign;
-                $queries[] = $this->grammar->compileDropForeign($blueprint, $column);
+                $blueprint->dropForeign($foreign);
             }
+            array_push($queries, ...$blueprint->toSql($connection, $this->grammar));
         }
         $connection->runDdlBatch($queries);
 
@@ -189,15 +181,14 @@ class Builder extends BaseBuilder
         $queries = [];
         foreach ($sortedTables as $tableData) {
             $tableName = $tableData['name'];
-            $blueprint = new Blueprint($tableName);
             $indexes = self::getIndexListing($tableName);
+            $blueprint = $this->createBlueprint($tableName);
             foreach ($indexes as $index) {
                 if($index == 'PRIMARY_KEY') continue;
-                $column = new Fluent();
-                $column->index = $index;
-                $queries [] = $this->grammar->compileDropIndex($blueprint, $column);
+                $blueprint->dropIndex($index);
             }
-            $queries[] = $this->grammar->compileDrop($blueprint, new Fluent());
+            $blueprint->drop();
+            array_push($queries, ...$blueprint->toSql($connection, $this->grammar));
         }
         $connection->runDdlBatch($queries);
     }
