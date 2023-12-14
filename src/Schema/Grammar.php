@@ -100,7 +100,7 @@ class Grammar extends BaseGrammar
      */
     public function compileForeignKeys()
     {
-        return 'select constraint_name as `index_name` from information_schema.table_constraints where constraint_type = "FOREIGN KEY" and table_schema = \'\' and table_name = ?';
+        return 'select constraint_name as `key_name` from information_schema.table_constraints where constraint_type = "FOREIGN KEY" and table_schema = \'\' and table_name = ?';
     }
 
     /**

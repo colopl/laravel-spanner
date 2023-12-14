@@ -82,7 +82,7 @@ class Builder extends BaseBuilder
      * @param string $table
      * @return string[]
      */
-    public function getForeignListing($table)
+    public function getForeignKeys($table)
     {
         $table = $this->connection->getTablePrefix().$table;
 
@@ -93,7 +93,7 @@ class Builder extends BaseBuilder
         /** @var Processor $processor */
         $processor = $this->connection->getPostProcessor();
 
-        return $processor->processIndexListing($results);
+        return $processor->processForeignKeys($results);
     }
 
     /**
@@ -168,7 +168,7 @@ class Builder extends BaseBuilder
         $queries = [];
         foreach ($sortedTables as $tableData) {
             $tableName = $tableData['name'];
-            $foreigns = self::getForeignListing($tableName);
+            $foreigns = self::getForeignKeys($tableName);
             $blueprint = $this->createBlueprint($tableName);
             foreach ($foreigns as $foreign) {
                 $blueprint->dropForeign($foreign);
