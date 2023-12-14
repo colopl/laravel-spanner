@@ -1,7 +1,7 @@
 # v6.2.0 (Not Released Yet)
 
 Added
-- `json` `mediumText` `longText` support for `Schema\Builder` (#155)
+- `json` `mediumText` `longText` `char` support for `Schema\Builder` (#155) (#158)
 - `Schema\Grammar::compileDropForeign` to allow dropping foreign key constraints (#163)
 
 Changed
