@@ -23,7 +23,7 @@ use Exception;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 
-class BuilderTest extends TestCase
+class BuilderTestLast extends TestCase
 {
     private const TABLE_NAME_CREATED = 'schema_builder_test_table';
     private const TABLE_NAME_RELATION_PARENT = 'users';
@@ -251,7 +251,9 @@ class BuilderTest extends TestCase
         $this->assertSame('BASE TABLE', $row['type']);
     }
 
-    public function test_dropAllTables(): void {
+    public function test_dropAllTables(): void
+    {
+        dd('last');
         $conn = $this->getDefaultConnection();
         $sb = $conn->getSchemaBuilder();
         $table1 = $this->generateTableName(class_basename(__CLASS__));
