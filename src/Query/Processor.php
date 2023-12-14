@@ -78,6 +78,16 @@ class Processor extends BaseProcessor
     }
 
     /**
+     * @deprecated Use processIndexes($results) instead.
+     * @param array $results
+     * @return array
+     */
+    public function processIndexListing($results)
+    {
+        return self::processIndexes($results);
+    }
+
+    /**
      * @param array $results
      * @return array
      */

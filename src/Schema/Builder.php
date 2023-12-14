@@ -61,6 +61,17 @@ class Builder extends BaseBuilder
     }
 
     /**
+     * @deprecated Use getIndexes($table) instead
+     * 
+     * @param string $table
+     * @return string[]
+     */
+    public function getIndexListing($table)
+    {
+        return parent::getIndexes($table);
+    }
+
+    /**
      * @param string $table
      * @param string $name
      * @return void
