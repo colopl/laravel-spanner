@@ -98,7 +98,7 @@ class Grammar extends BaseGrammar
      *
      * @return string
      */
-    public function compileForeignListing()
+    public function compileForeignKeys()
     {
         return 'select constraint_name as `index_name` from information_schema.table_constraints where constraint_type = "FOREIGN KEY" and table_schema = \'\' and table_name = ?';
     }

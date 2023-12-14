@@ -87,7 +87,7 @@ class Builder extends BaseBuilder
         $table = $this->connection->getTablePrefix().$table;
 
         $results = $this->connection->select(
-            $this->grammar->compileForeignListing(), [$table]
+            $this->grammar->compileForeignKeys(), [$table]
         );
 
         /** @var Processor $processor */
