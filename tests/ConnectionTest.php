@@ -19,6 +19,7 @@ namespace Colopl\Spanner\Tests;
 
 use Colopl\Spanner\Connection;
 use Colopl\Spanner\Events\MutatingData;
+use Colopl\Spanner\Schema\Blueprint;
 use Colopl\Spanner\Session\SessionInfo;
 use Colopl\Spanner\TimestampBound\ExactStaleness;
 use Colopl\Spanner\TimestampBound\MaxStaleness;
@@ -175,6 +176,23 @@ class ConnectionTest extends TestCase
         $this->assertSame([], $resSelect);
         $this->assertTrue($resInsert);
         $this->assertSame(2, $executedCount);
+    }
+
+    public function test_pretendDdlStatement(): void {
+        $conn = $this->getDefaultConnection();
+        $sb = $conn->getSchemaBuilder();
+        $table = "ddlPretendsTable";
+        $result = $conn->pretend(function() use ($sb, $table) {
+            $sb->create($table, function(Blueprint $table) {
+                $table->integer('id')->primary();
+            });
+        });
+        $this->assertEquals(
+            "create table `$table` (`id` int64 not null) primary key (`id`)",
+            $result[0]['query']
+        );
+        $tableExists = $sb->hasTable($table);
+        $this->assertFalse($tableExists);
     }
 
     public function testInsertUsingMutationWithTransaction(): void

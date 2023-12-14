@@ -4,6 +4,7 @@ Added
 - `json` `mediumText` `longText` `char` support for `Schema\Builder` (#155) (#158)
 - `Schema\Grammar::compileDropForeign` to allow dropping foreign key constraints (#163)
 - `Schema\Builder::dropAllTables` works properly, dropping foreign keys, indexes, then tables in order of interleaving (#161)
+- Allow `Connection::statement()` to pass DDL through to `Connection::affectingStatement()` if the connection is pretending, to allow generating and returning raw SQL (#162)
 
 Changed
 - `Query\Builder::lock()` no longer throw an error and will be ignored instead (#156)
