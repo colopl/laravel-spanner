@@ -263,13 +263,32 @@ class BuilderTest extends TestCase
 
         $table2 = $this->generateTableName(class_basename(__CLASS__));
         $sb->create($table2, function (Blueprint $table) use ($table1) {
-            $table->uuid('id');
+            $table->uuid('table2_id')->primary();
             $table->uuid('other_id');
-            $table->primary('id');
             $table->index('other_id');
             $table->foreign('other_id')->references('id')->on($table1);
         });
 
+        $table3 = $this->generateTableName(class_basename(__CLASS__));
+        $sb->create($table3, function (Blueprint $table) use ($table2) {
+            $table->uuid('table2_id');
+            $table->uuid('table3_id');
+            $table->primary(['table2_id', 'table3_id']);
+            $table->interleaveInParent($table2);
+        });
+
+        $table4 = $this->generateTableName(class_basename(__CLASS__));
+        $sb->create($table4, function (Blueprint $table) use ($table3) {
+            $table->uuid('table2_id');
+            $table->uuid('table3_id');
+            $table->uuid('table4_id');
+            $table->primary(['table2_id', 'table3_id', 'table4_id']);
+            $table->interleaveInParent($table3);
+        });
+
         $sb->dropAllTables();
+
+        $tables = $sb->getTables();
+        $this->assertEmpty($tables);
     }
 }

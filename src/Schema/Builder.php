@@ -19,6 +19,7 @@ namespace Colopl\Spanner\Schema;
 
 use Closure;
 use Colopl\Spanner\Query\Processor;
+use Colopl\Spanner\Connection;
 use Illuminate\Database\Schema\Builder as BaseBuilder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Fluent;
@@ -139,51 +140,62 @@ class Builder extends BaseBuilder
      */
     public function dropAllTables()
     {
+        /** @var Connection */
+        $connection = $this->connection;
         $tables = self::getTables();
-        $sort = [];
+        $sortedTables = [];
 
+        // get all tables
         foreach ($tables as $table) {
             $tableName = $table['name'];
             $parentTableName = $table['parent'];
-            $indexes = self::getIndexListing($tableName);
-            $foreigns = self::getForeignListing($tableName);
 
-            $sort[$tableName] = [
+            $sortedTables[$tableName] = [
                 'name' => $tableName,
                 'parent' => $parentTableName,
-                'parents' => 0,
-                'indexes' => $indexes, 
-                'foreigns' => $foreigns,
+                'parents' => 0
             ];
         }
 
-        foreach ($sort as $tableName => $tableData) {
+        // loop through all tables and count how many parents they have
+        foreach ($sortedTables as $tableName => $tableData) {
             if(!$tableData['parent']) continue;
 
             $current = $tableData;
             while($current['parent']) {
                 $tableData['parents'] += 1;
-                $current = $sort[$current['parent']];
+                $current = $sortedTables[$current['parent']];
             }
-            $sort[$tableName] = $tableData;
+            $sortedTables[$tableName] = $tableData;
         }
 
-        usort($sort, fn($a, $b) => $b['parents'] <=> $a['parents']);
+        // sort tables desc based on parent count 
+        usort($sortedTables, fn($a, $b) => $b['parents'] <=> $a['parents']);
 
+        // drop foreign keys first (otherwise index queries will include them)
         $queries = [];
-        foreach ($sort as $tableData) {
+        foreach ($sortedTables as $tableData) {
             $tableName = $tableData['name'];
             $blueprint = new Blueprint($tableName);
-            foreach ($tableData['foreigns'] as $foreign) {
-                // $queries[] = $this->grammar->compileDrop
+            $foreigns = self::getForeignListing($tableName);
+            foreach ($foreigns as $foreign) {
+                $queries[] = $this->grammar->compileDropForeign($blueprint, new Fluent(['index' => $foreign]));
             }
-            foreach ($tableData['indexes'] as $index) {
+        }
+        $connection->runDdlBatch($queries);
+
+        // drop indexes and tables
+        $queries = [];
+        foreach ($sortedTables as $tableData) {
+            $tableName = $tableData['name'];
+            $blueprint = new Blueprint($tableName);
+            $indexes = self::getIndexListing($tableName);
+            foreach ($indexes as $index) {
+                if($index == 'PRIMARY_KEY') continue;
                 $queries [] = $this->grammar->compileDropIndex($blueprint, new Fluent(['index' => $index]));
             }
             $queries[] = $this->grammar->compileDrop($blueprint, new Fluent());
-
         }
-        
-        dd($sort);
+        $connection->runDdlBatch($queries);
     }
 }
