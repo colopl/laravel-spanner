@@ -38,6 +38,7 @@ class BlueprintTest extends TestCase
             $table->float('float');
             $table->decimal('decimal');
             $table->string('name');
+            $table->char('char');
             $table->text('text');
             $table->mediumText('medium_text');
             $table->longText('long_text');
@@ -58,6 +59,7 @@ class BlueprintTest extends TestCase
                 '`float` float64 not null',
                 '`decimal` numeric not null',
                 '`name` string(255) not null',
+                '`char` string(255) not null',
                 '`text` string(max) not null',
                 '`medium_text` string(max) not null',
                 '`long_text` string(max) not null',
@@ -108,12 +110,15 @@ class BlueprintTest extends TestCase
 
         $blueprint = new Blueprint('Test3', function (Blueprint $table) {
             $table->string('description', 255);
+            $table->integer('value');
         });
 
         $queries = $blueprint->toSql($conn, new Grammar());
-        $this->assertEquals(
+        $this->assertEquals([
             'alter table `Test3` add column `description` string(255) not null',
-            $queries[0]
+            'alter table `Test3` add column `value` int64 not null'
+            ],
+            $queries
         );
     }
 
@@ -123,12 +128,15 @@ class BlueprintTest extends TestCase
 
         $blueprint = new Blueprint('Test3', function (Blueprint $table) {
             $table->string('description', 512)->change();
+            $table->float('value')->change();
         });
 
         $queries = $blueprint->toSql($conn, new Grammar());
-        $this->assertEquals(
+        $this->assertEquals([
             'alter table `Test3` alter column `description` string(512) not null',
-            $queries[0]
+            'alter table `Test3` alter column `value` float64 not null',
+            ],
+            $queries
         );
     }
 
@@ -419,6 +427,7 @@ class BlueprintTest extends TestCase
             $table->boolean('bool')->default(true);
             $table->string('string')->default('a');
             $table->text('string_max')->default('a');
+            $table->char('char')->default('a');
             $table->mediumText('medium_text')->default('a');
             $table->longText('long_text')->default('a');
             $table->float('raw')->default(DB::raw('1.1'));
@@ -454,6 +463,7 @@ class BlueprintTest extends TestCase
                 '`bool` bool not null default (true)',
                 '`string` string(255) not null default ("a")',
                 '`string_max` string(max) not null default ("a")',
+                '`char` string(255) not null default ("a")',
                 '`medium_text` string(max) not null default ("a")',
                 '`long_text` string(max) not null default ("a")',
                 '`raw` float64 not null default (1.1)',

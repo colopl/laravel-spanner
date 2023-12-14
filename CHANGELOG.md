@@ -1,10 +1,13 @@
 # v6.2.0 (Not Released Yet)
 
 Added
-- `json` `mediumText` `longText` support for `Schema\Builder` (#155)
+- `json` `mediumText` `longText` `char` support for `Schema\Builder` (#155) (#158)
 
 Changed
 - `Query\Builder::lock()` no longer throw an error and will be ignored instead (#156)
+
+Fixed
+- `Schema\Grammar::compileAdd()` `Schema\Grammar::compileChange()` `Schema\Grammar::compileChange()` now create separate statements (#159)
 
 # v6.1.1 (2023-12-11)
 

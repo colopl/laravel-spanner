@@ -130,13 +130,14 @@ class Grammar extends BaseGrammar
      *
      * @param  Blueprint  $blueprint
      * @param  Fluent<string, mixed> $command
-     * @return string
+     * @return string[]
      */
     public function compileAdd(Blueprint $blueprint, Fluent $command)
     {
-        $columns = $this->prefixArray('add column', $this->getColumns($blueprint));
-
-        return 'alter table '.$this->wrapTable($blueprint).' '.implode(', ', $columns);
+        return $this->prefixArray(
+            'alter table '.$this->wrapTable($blueprint).' add column',
+            $this->getColumns($blueprint)
+        );
     }
 
     /**
@@ -149,9 +150,10 @@ class Grammar extends BaseGrammar
      */
     public function compileChange(Blueprint $blueprint, Fluent $command, Connection $connection)
     {
-        $columns = $this->prefixArray('alter column', $this->getChangedColumns($blueprint));
-
-        return ['alter table '.$this->wrapTable($blueprint).' '.implode(', ', $columns)];
+       return $this->prefixArray(
+            'alter table '.$this->wrapTable($blueprint).' alter column',
+            $this->getChangedColumns($blueprint)
+        );
     }
 
     /**
@@ -159,13 +161,14 @@ class Grammar extends BaseGrammar
      *
      * @param  Blueprint  $blueprint
      * @param  Fluent<string, mixed> $command
-     * @return string
+     * @return string[]
      */
     public function compileDropColumn(Blueprint $blueprint, Fluent $command)
     {
-        $columns = $this->prefixArray('drop column', $this->wrapArray($command->columns));
-
-        return 'alter table '.$this->wrapTable($blueprint).' '.implode(', ', $columns);
+        return $this->prefixArray(
+            'alter table '.$this->wrapTable($blueprint).' drop column',
+            $this->wrapArray($command->columns)
+        );
     }
 
     /**
@@ -390,6 +393,17 @@ class Grammar extends BaseGrammar
     protected function typeString(Fluent $column)
     {
         return "string({$column->length})";
+    }
+
+    /**
+     * Create the column definition for a char type.
+     *
+     * @param  Fluent<string, mixed> $column
+     * @return string
+     */
+    protected function typeChar(Fluent $column)
+    {
+        return $this->typeString($column);
     }
 
     /**
