@@ -253,7 +253,6 @@ class BuilderTestLast extends TestCase
 
     public function test_dropAllTables(): void
     {
-        dd('last');
         $conn = $this->getDefaultConnection();
         $sb = $conn->getSchemaBuilder();
         $table1 = $this->generateTableName(class_basename(__CLASS__));
