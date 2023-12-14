@@ -179,7 +179,9 @@ class Builder extends BaseBuilder
             $blueprint = new Blueprint($tableName);
             $foreigns = self::getForeignListing($tableName);
             foreach ($foreigns as $foreign) {
-                $queries[] = $this->grammar->compileDropForeign($blueprint, new Fluent(['index' => $foreign]));
+                $column = new Fluent();
+                $column->index = $foreign;
+                $queries[] = $this->grammar->compileDropForeign($blueprint, $column);
             }
         }
         $connection->runDdlBatch($queries);
@@ -192,7 +194,9 @@ class Builder extends BaseBuilder
             $indexes = self::getIndexListing($tableName);
             foreach ($indexes as $index) {
                 if($index == 'PRIMARY_KEY') continue;
-                $queries [] = $this->grammar->compileDropIndex($blueprint, new Fluent(['index' => $index]));
+                $column = new Fluent();
+                $column->index = $index;
+                $queries [] = $this->grammar->compileDropIndex($blueprint, $column);
             }
             $queries[] = $this->grammar->compileDrop($blueprint, new Fluent());
         }
