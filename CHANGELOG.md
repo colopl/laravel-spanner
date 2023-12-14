@@ -6,6 +6,9 @@ Added
 Changed
 - `Query\Builder::lock()` no longer throw an error and will be ignored instead (#156)
 
+Fixed
+- `Schema\Grammar::compileAdd()` `Schema\Grammar::compileChange()` `Schema\Grammar::compileChange()` now create separate statements (#159)
+
 # v6.1.1 (2023-12-11)
 
 Fixed
