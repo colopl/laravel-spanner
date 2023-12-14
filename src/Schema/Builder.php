@@ -62,24 +62,6 @@ class Builder extends BaseBuilder
 
     /**
      * @param string $table
-     * @return string[]
-     */
-    public function getIndexListing($table)
-    {
-        $table = $this->connection->getTablePrefix().$table;
-
-        $results = $this->connection->select(
-            $this->grammar->compileIndexListing(), [$table]
-        );
-
-        /** @var Processor $processor */
-        $processor = $this->connection->getPostProcessor();
-
-        return $processor->processIndexListing($results);
-    }
-
-    /**
-     * @param string $table
      * @param string $name
      * @return void
      */
@@ -97,7 +79,7 @@ class Builder extends BaseBuilder
      */
     public function dropIndexIfExist($table, $name)
     {
-        if(in_array($name, $this->getIndexListing($table))) {
+        if(in_array($name, $this->getIndexes($table))) {
             $blueprint = $this->createBlueprint($table);
             $blueprint->dropIndex($name);
             $this->build($blueprint);
@@ -123,7 +105,7 @@ class Builder extends BaseBuilder
     {
         /** @var Connection */
         $connection = $this->connection;
-        $tables = self::getTables();
+        $tables = $this->getTables();
         $sortedTables = [];
 
         // add parents counter
@@ -150,7 +132,7 @@ class Builder extends BaseBuilder
         $queries = [];
         foreach ($sortedTables as $tableData) {
             $tableName = $tableData['name'];
-            $foreigns = self::getForeignKeys($tableName);
+            $foreigns = $this->getForeignKeys($tableName);
             $blueprint = $this->createBlueprint($tableName);
             foreach ($foreigns as $foreign) {
                 $blueprint->dropForeign($foreign);
@@ -163,7 +145,7 @@ class Builder extends BaseBuilder
         $queries = [];
         foreach ($sortedTables as $tableData) {
             $tableName = $tableData['name'];
-            $indexes = self::getIndexListing($tableName);
+            $indexes = $this->getIndexes($tableName);
             $blueprint = $this->createBlueprint($tableName);
             foreach ($indexes as $index) {
                 if($index == 'PRIMARY_KEY') continue;
