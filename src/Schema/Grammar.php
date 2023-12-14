@@ -86,6 +86,18 @@ class Grammar extends BaseGrammar
     /**
      * Compile the query to determine the list of indexes.
      *
+     * @deprecated Use compileIndexes($table) instead.
+     * 
+     * @return string
+     */
+    public function compileIndexListing()
+    {
+        return 'select index_name as `index_name` from information_schema.indexes where table_schema = \'\' and table_name = ?';
+    }
+
+    /**
+     * Compile the query to determine the list of indexes.
+     *
      * @param  string  $table
      * @return string
      */
