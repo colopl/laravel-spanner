@@ -18,10 +18,8 @@
 namespace Colopl\Spanner\Schema;
 
 use Closure;
-use Colopl\Spanner\Query\Processor;
 use Colopl\Spanner\Connection;
 use Illuminate\Database\Schema\Builder as BaseBuilder;
-use Illuminate\Support\Fluent;
 
 /**
  * @property Grammar $grammar
