@@ -18,10 +18,8 @@
 namespace Colopl\Spanner\Schema;
 
 use Closure;
-use Colopl\Spanner\Query\Processor;
 use Colopl\Spanner\Connection;
 use Illuminate\Database\Schema\Builder as BaseBuilder;
-use Illuminate\Support\Fluent;
 
 /**
  * @property Grammar $grammar
@@ -117,6 +115,7 @@ class Builder extends BaseBuilder
         /** @var Connection */
         $connection = $this->connection;
         $tables = $this->getTables();
+        if(!count($tables)) return;
         $sortedTables = [];
 
         // add parents counter
@@ -150,7 +149,9 @@ class Builder extends BaseBuilder
             }
             array_push($queries, ...$blueprint->toSql($connection, $this->grammar));
         }
-        $connection->runDdlBatch($queries);
+
+        if(count($queries))
+            $connection->runDdlBatch($queries);
 
         // drop indexes and tables
         $queries = [];
@@ -165,6 +166,8 @@ class Builder extends BaseBuilder
             $blueprint->drop();
             array_push($queries, ...$blueprint->toSql($connection, $this->grammar));
         }
-        $connection->runDdlBatch($queries);
+
+        if(count($queries))
+            $connection->runDdlBatch($queries);
     }
 }
