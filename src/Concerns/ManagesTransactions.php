@@ -168,7 +168,7 @@ trait ManagesTransactions
 
         if ($this->currentTransaction !== null) {
             try {
-                if ($this->currentTransaction->state() === Transaction::STATE_ACTIVE) {
+                if ($this->currentTransaction->state() === Transaction::STATE_ACTIVE && $this->currentTransaction->id() !== null) {
                     $this->currentTransaction->rollBack();
                 }
             } finally {
