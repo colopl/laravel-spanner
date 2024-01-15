@@ -12,6 +12,11 @@ Changed
 Fixed
 - `Schema\Grammar::compileAdd()` `Schema\Grammar::compileChange()` `Schema\Grammar::compileChange()` now create separate statements (#159)
 
+# v6.1.2 (2024-01-xx)
+
+Fixed
+- Fixed an error when rolling back a transaction that did not execute begin (#166)
+
 # v6.1.1 (2023-12-11)
 
 Fixed
