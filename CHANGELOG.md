@@ -1,4 +1,9 @@
-# v6.1.1 (Not Released Yet)
+# v6.1.2 (2024-01-16)
+
+Fixed
+- Fixed an error when rolling back a transaction that did not execute begin (#166)
+
+# v6.1.1 (2023-12-11)
 
 Fixed
 - Bug where auth and session pool writing to the same file may cause race condition (#152)
