@@ -19,11 +19,11 @@ namespace Colopl\Spanner\Tests\Query;
 
 use BadMethodCallException;
 use Colopl\Spanner\Query\Builder;
+use Colopl\Spanner\Schema\Blueprint;
 use Colopl\Spanner\Tests\TestCase;
 use Colopl\Spanner\TimestampBound\ExactStaleness;
 use Google\Cloud\Spanner\Bytes;
 use Google\Cloud\Spanner\Duration;
-use Google\Cloud\Spanner\Numeric;
 use Illuminate\Support\Str;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Carbon;
@@ -32,33 +32,105 @@ use const Grpc\STATUS_ALREADY_EXISTS;
 
 class BuilderTest extends TestCase
 {
-    public function test_insert(): void
+    public function test_insert_single_row(): void
     {
         $conn = $this->getDefaultConnection();
-        $tableName = self::TABLE_NAME_USER;
 
-        $insertRow = [
-            'userId' => $this->generateUuid(),
-            'name' => '[laravel-spanner] phpunit testInsert()',
-        ];
-        $res = $conn->table($tableName)
-            ->insert($insertRow);
-        $this->assertTrue($res);
+        $table = $this->createTempTable(function (Blueprint $blueprint): void {
+            $blueprint->uuid('id')->primary();
+            $blueprint->integer('int');
+            $blueprint->float('float');
+            $blueprint->boolean('bool');
+            $blueprint->string('string');
+            $blueprint->integerArray('array_int');
+            $blueprint->floatArray('array_float');
+            $blueprint->booleanArray('array_bool');
+            $blueprint->stringArray('array_string');
+            $blueprint->timestampArray('array_timestamp');
+        });
 
-        $insertedRow = $conn->table($tableName)->where('userId', $insertRow['userId'])->first();
+        $id = $this->generateUuid();
 
-        $this->assertEquals($insertRow['userId'], $insertedRow['userId']);
+        $return = $conn->query()->from($table)->insert([
+            'id' => $id,
+            'int' => 1,
+            'float' => 1.1,
+            'bool' => true,
+            'string' => 'test',
+            'array_int' => [-1, 0],
+            'array_float' => [1.1, 2.2],
+            'array_bool' => [true, false],
+            'array_string' => ['t1', 't2'],
+            'array_timestamp' => [
+                new Carbon('2000-01-01 00:00:00 Asia/Tokyo'),
+                new Carbon('2001-01-01 00:00:00 Asia/Tokyo'),
+            ],
+        ]);
+
+        $this->assertTrue($return);
+
+        $row = $conn->table($table)
+            ->where('id', $id)
+            ->sole();
+
+        $this->assertSame(1, $row['int']);
+        $this->assertSame(1.1, $row['float']);
+        $this->assertSame(true, $row['bool']);
+        $this->assertSame('test', $row['string']);
+        $this->assertSame([-1, 0], $row['array_int']);
+        $this->assertSame([1.1, 2.2], $row['array_float']);
+        $this->assertSame([true, false], $row['array_bool']);
+        $this->assertSame(['t1', 't2'], $row['array_string']);
+        $this->assertSame($row['array_timestamp'][0]->format('Y-m-d H:i:s P'), '1999-12-31 15:00:00 +00:00');
+        $this->assertSame($row['array_timestamp'][1]->format('Y-m-d H:i:s P'), '2000-12-31 15:00:00 +00:00');
+    }
+
+    public function test_insert_many_rows(): void
+    {
+        $table = $this->createTempTable(function (Blueprint $blueprint): void {
+            $blueprint->uuid('id')->primary();
+            $blueprint->integerArray('array_int');
+        });
+
+        $conn = $this->getDefaultConnection();
+
+        $id1 = $this->generateUuid();
+        $id2 = $this->generateUuid();
+
+        $return = $conn->query()->from($table)->insert([
+            ['id' => $id1, 'array_int' => [1, 2]],
+            ['id' => $id2, 'array_int' => [3, 4]],
+        ]);
+
+        $this->assertTrue($return);
+
+        $row = $conn->table($table)->where('id', $id1)->sole();
+        $this->assertSame($row['id'], $id1);
+        $this->assertSame($row['array_int'], [1, 2]);
+
+        $row = $conn->table($table)->where('id', $id2)->sole();
+        $this->assertSame($row['id'], $id2);
+        $this->assertSame($row['array_int'], [3, 4]);
+    }
+
+    public function test_insert_same_primary_key_throws_error(): void
+    {
+        $conn = $this->getDefaultConnection();
+
+        $table = $this->createTempTable(function (Blueprint $blueprint): void {
+            $blueprint->uuid('id')->primary();
+            $blueprint->string('name');
+        });
+
+        $row = ['id' => $this->generateUuid(), 'name' => 'test'];
+
+        $return = $conn->table($table)->insert($row);
+        $this->assertTrue($return);
 
         // should not be able to insert the same thing twice
-        $expectedThrown = false;
-        try {
-            $conn->table($tableName)
-                ->insert($insertRow);
-        } catch (QueryException $ex) {
-            $this->assertEquals(STATUS_ALREADY_EXISTS, $ex->getCode());
-            $expectedThrown = true;
-        }
-        $this->assertTrue($expectedThrown);
+        $this->expectException(QueryException::class);
+        $this->expectExceptionCode(STATUS_ALREADY_EXISTS);
+        $conn->table($table)->insert($row);
     }
 
     public function testUpdate(): void

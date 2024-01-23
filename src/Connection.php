@@ -33,9 +33,11 @@ use Google\Cloud\Core\Exception\NotFoundException;
 use Google\Cloud\Spanner\Database;
 use Google\Cloud\Spanner\Session\SessionPoolInterface;
 use Google\Cloud\Spanner\SpannerClient;
+use Google\Cloud\Spanner\Timestamp;
 use Google\Cloud\Spanner\Transaction;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Connection as BaseConnection;
+use Illuminate\Database\Query\Grammars\Grammar as BaseQueryGrammar;
 use Illuminate\Database\QueryException;
 use InvalidArgumentException;
 use LogicException;
@@ -398,18 +400,34 @@ class Connection extends BaseConnection
         $grammar = $this->getQueryGrammar();
 
         foreach ($bindings as $key => $value) {
-            // We need to transform all instances of DateTimeInterface into the actual
-            // date string. Each query grammar maintains its own date string format
-            // so we'll just ask the grammar for the format to get from the date.
-            if ($value instanceof DateTimeInterface) {
-                $bindings[$key] = $value->format($grammar->getDateFormat());
-            }
-            else if ($value instanceof Arrayable) {
-                $bindings[$key] = $value->toArray();
-            }
+            $bindings[$key] = $this->prepareBinding($grammar, $value);
         }
 
         return $bindings;
+    }
+
+    protected function prepareBinding(BaseQueryGrammar $grammar, mixed $value): mixed
+    {
+        if ($value instanceof Arrayable) {
+            $value = $value->toArray();
+        }
+
+        // We need to transform all instances of DateTimeInterface into the actual
+        // date string. Each query grammar maintains its own date string format
+        // so we'll just ask the grammar for the format to get from the date.
+        if ($value instanceof DateTimeInterface) {
+            return new Timestamp($value);
+        }
+
+        if (is_array($value)) {
+            $arr = [];
+            foreach ($value as $k => $v) {
+                $arr[$k] = $this->prepareBinding($grammar, $v);
+            }
+            return $arr;
+        }
+
+        return $value;
     }
 
     /**

@@ -74,47 +74,6 @@ class SpannerArrayTest extends TestCase
         $this->assertCount(0, $result);
     }
 
-    public function testInsertArray(): void
-    {
-        $conn = $this->getDefaultConnection();
-        $tableName = self::TABLE_NAME_ARRAY_TEST;
-
-        $qb = $conn->table($tableName);
-
-        $row = $this->generateArrayTestRow();
-        $qb->insert($row);
-
-        $insertedRow = $qb->where('arrayTestId', $row['arrayTestId'])->first();
-        $this->assertEquals($row['int64Array'], $insertedRow['int64Array']);
-
-        // empty array
-        $row = $this->generateArrayTestRow();
-        $row['int64Array'] = [];
-        $conn->table($tableName)->insert($row);
-    }
-
-    public function testInsertArrayArray(): void
-    {
-        $conn = $this->getDefaultConnection();
-        $tableName = self::TABLE_NAME_ARRAY_TEST;
-
-        $qb = $conn->table($tableName);
-
-        $rows = [
-            $this->generateArrayTestRow(),
-            $this->generateArrayTestRow(),
-            $this->generateArrayTestRow(),
-        ];
-
-        $qb->insert($rows);
-
-        foreach ($rows as $row) {
-            $qb = $conn->table($tableName);
-            $insertedRow = $qb->where('arrayTestId', $row['arrayTestId'])->first();
-            $this->assertEquals($row['int64Array'], $insertedRow['int64Array']);
-        }
-    }
-
     public function testUpdateArray(): void
     {
         $conn = $this->getDefaultConnection();
