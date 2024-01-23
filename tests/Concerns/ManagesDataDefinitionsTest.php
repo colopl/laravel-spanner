@@ -39,7 +39,7 @@ class ManagesDataDefinitionsTest extends TestCase
         $this->assertSame($statement, $conn->getQueryLog()[0]['query']);
         $this->assertCount(1, $conn->getQueryLog());
         Event::assertDispatchedTimes(QueryExecuted::class, 1);
-        $this->assertContains($newTable, $conn->getSchemaBuilder()->getTables());
+        $this->assertContains($newTable, array_map(fn ($d) => $d['name'], $conn->getSchemaBuilder()->getTables()));
     }
 
     public function test_runDdlBatch_pretending(): void
@@ -61,7 +61,7 @@ class ManagesDataDefinitionsTest extends TestCase
         $this->assertSame($statement, $logs[0]['query']);
         $this->assertCount(1, $logs);
         Event::assertDispatchedTimes(QueryExecuted::class, 1);
-        $this->assertNotContains($newTable, $conn->getSchemaBuilder()->getTables());
+        $this->assertNotContains($newTable, array_map(fn ($d) => $d['name'], $conn->getSchemaBuilder()->getTables()));
     }
 
     public function test_runDdlBatch_with_empty_statement(): void
