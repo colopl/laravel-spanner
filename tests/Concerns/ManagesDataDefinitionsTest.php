@@ -42,6 +42,19 @@ class ManagesDataDefinitionsTest extends TestCase
         Event::assertDispatchedTimes(QueryExecuted::class, 1);
     }
 
+    public function test_runDdlBatch_with_empty_statement(): void
+    {
+        $events = Event::fake([QueryExecuted::class]);
+        $conn = $this->getDefaultConnection();
+        $conn->setEventDispatcher($events);
+        $conn->enableQueryLog();
+        $result = $conn->runDdlBatch([]);
+
+        $this->assertSame([], $result);
+        $this->assertCount(0, $conn->getQueryLog());
+        Event::assertNotDispatched(QueryExecuted::class);
+    }
+
     public function test_createDatabase_with_statements(): void
     {
         $events = Event::fake([QueryExecuted::class]);
