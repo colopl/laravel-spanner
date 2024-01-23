@@ -11,7 +11,7 @@ Changed
 
 Fixed
 - `Schema\Grammar::compileAdd()` `Schema\Grammar::compileChange()` `Schema\Grammar::compileChange()` now create separate statements (#159)
-- `Connection::runDdlBatch()` with empty statement now return an empty array instead of throwing an error (#)
+- `Connection::runDdlBatch()` with empty statement now return an empty array instead of throwing an error (#169)
 
 # v6.1.2 (2024-01-16)
 
