@@ -4,7 +4,7 @@ Added
 - `json` `mediumText` `longText` `char` support for `Schema\Builder` (#155) (#158)
 - `Schema\Grammar::compileDropForeign` to allow dropping foreign key constraints (#163)
 - `Schema\Builder::dropAllTables` works properly, dropping foreign keys, indexes, then tables in order of interleaving (#161)
-- Support for inserting and selecting array of DateTime/Numeric objects (#)
+- Support for inserting and selecting array of DateTime/Numeric objects (#168)
 
 Changed
 - `Query\Builder::lock()` no longer throw an error and will be ignored instead (#156)
