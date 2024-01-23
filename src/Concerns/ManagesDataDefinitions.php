@@ -58,6 +58,10 @@ trait ManagesDataDefinitions
      */
     public function runDdlBatch(array $statements): mixed
     {
+        if (count($statements) === 0) {
+            return [];
+        }
+
         $start = microtime(true);
 
         $result = $this->waitForOperation(
