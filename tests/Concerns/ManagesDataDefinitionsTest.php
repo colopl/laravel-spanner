@@ -38,8 +38,30 @@ class ManagesDataDefinitionsTest extends TestCase
         $this->assertSame([], $result);
         $this->assertSame($statement, $conn->getQueryLog()[0]['query']);
         $this->assertCount(1, $conn->getQueryLog());
-
         Event::assertDispatchedTimes(QueryExecuted::class, 1);
+        $this->assertContains($newTable, $conn->getSchemaBuilder()->getTables());
+    }
+
+    public function test_runDdlBatch_pretending(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $events = Event::fake([QueryExecuted::class]);
+        $conn->setEventDispatcher($events);
+        $conn->enableQueryLog();
+
+        $newTable = 'runDdlBatch_' . Str::random(5);
+        $statement = "create table {$newTable} (id int64) primary key (id)";
+        $result = null;
+        $conn->pretend(function (Connection $conn) use (&$result, $statement) {
+            $result = $conn->runDdlBatch([$statement]);
+        });
+        $this->assertSame([], $result);
+
+        $logs = $conn->getQueryLog();
+        $this->assertSame($statement, $logs[0]['query']);
+        $this->assertCount(1, $logs);
+        Event::assertDispatchedTimes(QueryExecuted::class, 1);
+        $this->assertNotContains($newTable, $conn->getSchemaBuilder()->getTables());
     }
 
     public function test_runDdlBatch_with_empty_statement(): void
