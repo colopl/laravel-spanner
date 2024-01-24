@@ -20,6 +20,7 @@ namespace Colopl\Spanner\Schema;
 use Colopl\Spanner\Concerns\MarksAsNotSupported;
 use Illuminate\Database\Schema\Blueprint as BaseBlueprint;
 use Illuminate\Database\Schema\ColumnDefinition;
+use Colopl\Spanner\Schema\ColumnDefinition as SpannerColumnDefinition;
 use Illuminate\Support\Fluent;
 
 /**
@@ -93,7 +94,16 @@ class Blueprint extends BaseBlueprint
         $this->markAsNotSupported('AUTO_INCREMENT');
     }
 
-    // region Spanner Specific Types
+    /**
+     * @inheritDoc
+     * @return SpannerColumnDefinition
+     */
+    public function uuid($column = 'uuid')
+    {
+        $definition = new SpannerColumnDefinition(['type' => 'uuid', 'name' => $column]);
+        $this->addColumnDefinition($definition);
+        return $definition;
+    }
 
     /**
      * @param  string  $column
