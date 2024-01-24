@@ -24,7 +24,6 @@ use Colopl\Spanner\TimestampBound\ExactStaleness;
 use Google\Cloud\Spanner\Bytes;
 use Google\Cloud\Spanner\Duration;
 use Google\Cloud\Spanner\Numeric;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Carbon;
