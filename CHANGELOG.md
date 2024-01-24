@@ -4,6 +4,7 @@ Added
 - `json` `mediumText` `longText` `char` support for `Schema\Builder` (#155) (#158)
 - `Schema\Grammar::compileDropForeign` to allow dropping foreign key constraints (#163)
 - `Schema\Builder::dropAllTables` works properly, dropping foreign keys, indexes, then tables in order of interleaving (#161)
+- Table prefixing support (#172)
 
 Changed
 - `Query\Builder::lock()` no longer throw an error and will be ignored instead (#156)
