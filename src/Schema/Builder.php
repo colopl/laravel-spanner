@@ -89,7 +89,7 @@ class Builder extends BaseBuilder
      */
     public function dropIndexIfExist($table, $name)
     {
-        if(in_array($name, $this->getIndexes($table))) {
+        if(in_array($name, $this->getIndexes($table), true)) {
             $blueprint = $this->createBlueprint($table);
             $blueprint->dropIndex($name);
             $this->build($blueprint);
