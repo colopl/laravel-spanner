@@ -24,6 +24,7 @@ use Colopl\Spanner\TimestampBound\ExactStaleness;
 use Google\Cloud\Spanner\Bytes;
 use Google\Cloud\Spanner\Duration;
 use Google\Cloud\Spanner\Numeric;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Carbon;
@@ -812,6 +813,13 @@ class BuilderTest extends TestCase
         $qb = $conn->table(self::TABLE_NAME_USER);
         $sql = $qb->sharedLock()->toRawSql();
         $this->assertSame('select * from `User`', $sql);
+    }
+
+    public function test_prefixing(): void
+    {
+        config()->set('database.connections.main.prefix', 'test_');
+        $conn = $this->getConnection('main');
+        self::assertSame('select * from `test_User`', $conn->table('User')->toRawSql());
     }
 
     public function test_toRawSql(): void

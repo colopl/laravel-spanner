@@ -52,6 +52,21 @@ class BuilderTestLast extends TestCase
         $this->assertCount(0, collect(['id', 'name', 'age', 'created_at'])->diff($columnNames));
     }
 
+    public function test_create_with_prefix(): void
+    {
+        config()->set('database.connections.main.prefix', 'test_');
+        $conn = $this->getConnection('main');
+
+        $sb = $conn->getSchemaBuilder();
+        $table = $this->generateTableName(class_basename(__CLASS__));
+
+        $sb->create($table, function (Blueprint $table) {
+            $table->uuid('id')->primary();
+        });
+        $tables = array_map(static fn (array $row) => $row['name'], $sb->getTables());
+        self::assertContains('test_' . $table, $tables);
+    }
+
     public function testSchemaDrop(): void
     {
         $conn = $this->getDefaultConnection();
