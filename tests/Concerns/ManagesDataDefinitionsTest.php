@@ -42,26 +42,26 @@ class ManagesDataDefinitionsTest extends TestCase
         $this->assertContains($newTable, array_map(fn ($d) => $d['name'], $conn->getSchemaBuilder()->getTables()));
     }
 
-    public function test_runDdlBatch_pretending(): void
+    public function test_runDdlBatch_within_pretend(): void
     {
         $conn = $this->getDefaultConnection();
-        $events = Event::fake([QueryExecuted::class]);
-        $conn->setEventDispatcher($events);
+        $conn->setEventDispatcher(Event::fake([QueryExecuted::class]));
         $conn->enableQueryLog();
 
-        $newTable = 'runDdlBatch_' . Str::random(5);
+        $newTable = $this->generateTableName('runDdlBatch');
         $statement = "create table {$newTable} (id int64) primary key (id)";
+
         $result = null;
         $conn->pretend(function (Connection $conn) use (&$result, $statement) {
             $result = $conn->runDdlBatch([$statement]);
         });
-        $this->assertSame([], $result);
 
-        $logs = $conn->getQueryLog();
-        $this->assertSame($statement, $logs[0]['query']);
-        $this->assertCount(1, $logs);
+        $this->assertSame([], $result);
+        $this->assertSame([['query' => $statement, 'bindings' => [], 'time' => 0.0]], $conn->getQueryLog());
+
         Event::assertDispatchedTimes(QueryExecuted::class, 1);
-        $this->assertNotContains($newTable, array_map(fn ($d) => $d['name'], $conn->getSchemaBuilder()->getTables()));
+
+        $this->assertFalse($conn->getSchemaBuilder()->hasTable($newTable));
     }
 
     public function test_runDdlBatch_with_empty_statement(): void
