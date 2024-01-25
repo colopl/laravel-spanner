@@ -47,7 +47,7 @@ abstract class TestCase extends \Orchestra\Testbench\TestCase
      */
     protected function createTempTable(Closure $callback): string
     {
-        $table = $this->generateTableName('Test_' . date('Ymd_His_v'));
+        $table = $this->generateTableName('Test');
 
         $this->getDefaultConnection()
             ->getSchemaBuilder()
