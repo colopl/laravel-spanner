@@ -63,10 +63,13 @@ trait ManagesDataDefinitions
         }
 
         $start = microtime(true);
+        $result = [];
 
-        $result = $this->waitForOperation(
-            $this->getSpannerDatabase()->updateDdlBatch($statements),
-        );
+        if (!$this->pretending()) {
+            $result = $this->waitForOperation(
+                $this->getSpannerDatabase()->updateDdlBatch($statements),
+            );
+        }
 
         foreach ($statements as $statement) {
             $this->logQuery($statement, [], $this->getElapsedTime($start));
