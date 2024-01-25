@@ -19,7 +19,6 @@ namespace Colopl\Spanner\Query\Concerns;
 
 use Colopl\Spanner\Connection;
 use Colopl\Spanner\Query\Grammar;
-use Illuminate\Support\Arr;
 
 /**
  * @property Connection $connection

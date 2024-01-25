@@ -17,7 +17,6 @@
 
 namespace Colopl\Spanner\Query;
 
-use Exception;
 use Illuminate\Support\Str;
 
 /**

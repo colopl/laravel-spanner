@@ -17,12 +17,13 @@
 
 namespace Colopl\Spanner\Eloquent;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model as BaseModel;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Str;
 
 /**
- * @mixin \Illuminate\Database\Eloquent\Builder
+ * @mixin Builder
  */
 class Model extends BaseModel
 {
