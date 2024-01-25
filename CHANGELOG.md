@@ -10,6 +10,7 @@ Added
 - Allow default max transaction attempts to be changed (#179)
 - Table prefixing support (#172)
 - Support for GENERATE_UUID() in migrations (#174)
+- Support `Schema\Blueprint::increments()` by using a column of type `STRING(36)` with `DEFAULT (GENERATE_UUID())` (#175)
 
 Changed
 - `Query\Builder::lock()` no longer throw an error and will be ignored instead (#156)

@@ -52,47 +52,44 @@ class Blueprint extends BaseBlueprint
 
     /**
      * @inheritDoc
-     * @return never
      */
     public function increments($column)
     {
-        $this->markAsNotSupported('AUTO_INCREMENT');
+        return $this->uuid($column)
+            ->generateUuid()
+            ->primary();
     }
 
     /**
      * @inheritDoc
-     * @return never
      */
     public function bigIncrements($column)
     {
-        $this->markAsNotSupported('AUTO_INCREMENT');
+        return $this->increments($column);
     }
 
     /**
      * @inheritDoc
-     * @return never
      */
     public function mediumIncrements($column)
     {
-        $this->markAsNotSupported('AUTO_INCREMENT');
+        return $this->increments($column);
     }
 
     /**
      * @inheritDoc
-     * @return never
      */
     public function smallIncrements($column)
     {
-        $this->markAsNotSupported('AUTO_INCREMENT');
+        return $this->increments($column);
     }
 
     /**
      * @inheritDoc
-     * @return never
      */
     public function tinyIncrements($column)
     {
-        $this->markAsNotSupported('AUTO_INCREMENT');
+        return $this->increments($column);
     }
 
     /**
