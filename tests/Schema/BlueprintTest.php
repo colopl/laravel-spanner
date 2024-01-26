@@ -526,15 +526,17 @@ class BlueprintTest extends TestCase
         ];
 
         foreach ($incrementTypeCalls as $typeCalls) {
-            $blueprint = new Blueprint('t', $typeCalls);
+            $table = $this->generateTableName(class_basename(__CLASS__));
+            $blueprint = new Blueprint($table, $typeCalls);
             $blueprint->create();
             $this->assertSame(
-                ['create table `t` (`id` string(36) not null default (generate_uuid())) primary key (`id`)'],
+                ['create table `' . $table . '` (`id` string(36) not null default (generate_uuid())) primary key (`id`)'],
                 $blueprint->toSql($conn, $grammar)
             );
         }
 
-        $blueprint = new Blueprint('t', function (Blueprint $table) {
+        $table = $this->generateTableName(class_basename(__CLASS__));
+        $blueprint = new Blueprint($table, function (Blueprint $table) {
             $table->id();
             $table->string('name');
         });
@@ -542,8 +544,8 @@ class BlueprintTest extends TestCase
         $statements = $blueprint->toSql($conn, $grammar);
 
         $conn->runDdlBatch($statements);
-        $conn->table('t')->insert(['name' => 't']);
-        $row = $conn->table('t')->first();
+        $conn->table($table)->insert(['name' => 't']);
+        $row = $conn->table($table)->first();
         $this->assertSame(36, strlen($row['id']));
         $this->assertSame('t', $row['name']);
     }
