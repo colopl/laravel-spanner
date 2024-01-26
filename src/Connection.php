@@ -52,7 +52,6 @@ class Connection extends BaseConnection
         Concerns\ManagesPartitionedDml,
         Concerns\ManagesSessionPool,
         Concerns\ManagesTransactions,
-        Concerns\ManagesStaleReads,
         Concerns\MarksAsNotSupported;
 
     /**
