@@ -1,4 +1,4 @@
-# v6.2.0 (Not Released Yet)
+# v7.0.0 (Not Released Yet)
 
 Added
 - `json` `mediumText` `longText` `char` support for `Schema\Builder` (#155) (#158)
@@ -10,6 +10,7 @@ Added
 Changed
 - `Query\Builder::lock()` no longer throw an error and will be ignored instead (#156)
 - `Schema\Builder::getIndexListing()` `Schema\Grammar::compileIndexListing()` converted to `getIndexes()` and `compileIndexes()` to align with standard Laravel methods (#161)
+- Missing primary key will no longer be checked and will be checked on the server side instead (#177)
 
 Fixed
 - `Schema\Grammar::compileAdd()` `Schema\Grammar::compileChange()` `Schema\Grammar::compileChange()` now create separate statements (#159)
