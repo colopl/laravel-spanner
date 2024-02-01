@@ -56,7 +56,7 @@ abstract class TestCase extends \Orchestra\Testbench\TestCase
         return $table;
     }
 
-    protected function generateTableName(string $prefix): string
+    protected function generateTableName(string $prefix = 'Temp'): string
     {
         return $prefix . '_' . date('Ymd_His_v');
     }
