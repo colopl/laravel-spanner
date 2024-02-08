@@ -36,15 +36,23 @@ trait ManagesTransactions
      */
     protected ?Transaction $currentTransaction = null;
 
+    protected ?int $maxAttempts = null;
+
     /**
      * @inheritDoc
      * @template T
      * @param  Closure(static): T $callback
-     * @param  int $attempts
+     * @param  int $attempts  -1 is used as a magic number to indicate the default value
      * @return T
      */
-    public function transaction(Closure $callback, $attempts = Database::MAX_RETRIES)
+    public function transaction(Closure $callback, $attempts = -1)
     {
+        // -1 is used as a magic number to indicate the default value defined in Database::MAX_RETRIES (+1)
+        // So, we need to resolve the actual value here.
+        if ($attempts === -1) {
+            $attempts = $this->getMaxTransactionAttempts();
+        }
+
         // Since Cloud Spanner does not support nested transactions,
         // we use Laravel's transaction management for nested transactions only.
         if ($this->transactions > 0) {
@@ -224,5 +232,23 @@ trait ManagesTransactions
         $this->transactions = 0;
 
         throw $e;
+    }
+
+    /**
+     * @return int
+     */
+    public function getMaxTransactionAttempts(): int
+    {
+        return $this->maxAttempts ??= (Database::MAX_RETRIES + 1);
+    }
+
+    /**
+     * @param int $attempts
+     * @return $this
+     */
+    public function setMaxTransactionAttempts(int $attempts): static
+    {
+        $this->maxAttempts = $attempts;
+        return $this;
     }
 }
