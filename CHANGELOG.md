@@ -6,7 +6,7 @@ Added
 - `Schema\Builder::dropAllTables` works properly, dropping foreign keys, indexes, then tables in order of interleaving (#161)
 - Support for inserting and selecting array of DateTime/Numeric objects (#168)
 - Allow pretending for DDL statements (#170) 
-- Allow spanner_emulator.disable_query_null_filtered_index_check to be set (#180)
+- Allow `spanner_emulator.disable_query_null_filtered_index_check` to be set (#180)
 
 Changed
 - `Query\Builder::lock()` no longer throw an error and will be ignored instead (#156)
