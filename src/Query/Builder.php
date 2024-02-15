@@ -21,6 +21,8 @@ use Colopl\Spanner\Connection;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Query\Builder as BaseBuilder;
 use Illuminate\Support\Arr;
+use LogicException;
+use Override;
 
 class Builder extends BaseBuilder
 {
@@ -146,5 +148,30 @@ class Builder extends BaseBuilder
         }
 
         return $this->connection->selectWithOptions($sql, $bindings, $options); 
+    }
+
+    /**
+     * @param string $index
+     * @return $this
+     */
+    public function forceIndex($index): static
+    {
+        $this->indexHint = new IndexHint('force', $index);
+
+        return $this;
+    }
+
+    public function disableEmulatorNullFilterIndexCheck(): static
+    {
+        $indexHint = $this->indexHint;
+
+        if ($indexHint === null) {
+            throw new LogicException('Force index must be set before disabling null filter index check');
+        }
+
+        assert($indexHint instanceof IndexHint);
+        $indexHint->disableEmulatorNullFilteredIndexCheck = true;
+
+        return $this;
     }
 }

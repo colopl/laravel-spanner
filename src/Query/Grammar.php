@@ -22,7 +22,6 @@ use Colopl\Spanner\Concerns\SharedGrammarCalls;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Contracts\Database\Query\Expression;
 use Illuminate\Database\Query\Grammars\Grammar as BaseGrammar;
-use Illuminate\Database\Query\IndexHint;
 use RuntimeException;
 
 class Grammar extends BaseGrammar
@@ -65,10 +64,18 @@ class Grammar extends BaseGrammar
             return '';
         }
 
-        return match ($indexHint->type) {
-            'force' => "@{FORCE_INDEX={$indexHint->index}}",
+        $statements = [];
+
+        $statements[] = match ($indexHint->type) {
+            'force' => "FORCE_INDEX={$indexHint->index}",
             default => $this->markAsNotSupported('index type: ' . $indexHint->type),
         };
+
+        if ($indexHint->disableEmulatorNullFilteredIndexCheck) {
+            $statements[] = 'spanner_emulator.disable_query_null_filtered_index_check=true';
+        }
+
+        return '@{' . implode(',', $statements) . '}';
     }
 
     /**

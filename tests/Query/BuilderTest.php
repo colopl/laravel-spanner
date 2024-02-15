@@ -415,18 +415,37 @@ class BuilderTest extends TestCase
         $tableName = self::TABLE_NAME_USER;
         $qb = $conn->table($tableName);
 
-        $this->assertEquals('select * from `User`', $qb->toSql());
+        $this->assertSame('select * from `User`', $qb->toSql());
 
         $qb->forceIndex('test_index_name');
-        $this->assertEquals('select * from `User` @{FORCE_INDEX=test_index_name}', $qb->toSql());
+        $this->assertSame('select * from `User` @{FORCE_INDEX=test_index_name}', $qb->toSql());
 
         $qb->forceIndex('test_index_name2');
-        $this->assertEquals('select * from `User` @{FORCE_INDEX=test_index_name2}', $qb->toSql());
+        $this->assertSame('select * from `User` @{FORCE_INDEX=test_index_name2}', $qb->toSql());
 
         $qb->forceIndex(null);
-        $this->assertEquals('select * from `User`', $qb->toSql());
+        $this->assertSame('select * from `User`', $qb->toSql());
 
         $this->assertInstanceOf(Builder::class, $qb->forceIndex(null));
+    }
+
+    public function test_disableEmulatorNullFilteredIndexCheck(): void
+    {
+        $conn = $this->getDefaultConnection();
+
+        $tableName = $this->createTempTable(function (Blueprint $blueprint): void {
+            $blueprint->uuid('id')->primary();
+            $blueprint->string('name');
+            $blueprint->index(['name'], 'test_index_name')->nullFiltered();
+        });
+
+        $qb = $conn->table($tableName)
+            ->forceIndex('test_index_name')
+            ->disableEmulatorNullFilterIndexCheck();
+
+        $hint = '@{FORCE_INDEX=test_index_name,spanner_emulator.disable_query_null_filtered_index_check=true}';
+        $this->assertSame("select * from `{$tableName}` {$hint}", $qb->toSql());
+        $this->assertSame([], $qb->get()->all());
     }
 
     public function test_useIndex(): void
