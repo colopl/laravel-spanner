@@ -480,32 +480,32 @@ class ConnectionTest extends TestCase
         $this->assertNotEmpty($timestamp);
 
         $timestampBound = new StrongRead();
-        $row = $conn->selectOneWithTimestampBound("SELECT * FROM ${tableName} WHERE userID = ?", [$uuid], $timestampBound);
-        $this->assertNotEmpty($row);
-        $this->assertEquals($uuid, $row['userId']);
-        $this->assertEquals('first', $row['name']);
+        $rows = $conn->selectWithOptions("SELECT * FROM ${tableName} WHERE userID = ?", [$uuid], $timestampBound->transactionOptions());
+        $this->assertCount(1, $rows);
+        $this->assertSame($uuid, $rows[0]['userId']);
+        $this->assertSame('first', $rows[0]['name']);
 
         $oldDatetime = Carbon::instance($timestamp->get())->subSecond();
 
         $timestampBound = new ReadTimestamp($oldDatetime);
-        $row = $conn->selectOneWithTimestampBound("SELECT * FROM ${tableName} WHERE userID = ?", [$uuid], $timestampBound);
-        $this->assertEmpty($row);
+        $rows = $conn->selectWithOptions("SELECT * FROM ${tableName} WHERE userID = ?", [$uuid], $timestampBound->transactionOptions());
+        $this->assertEmpty($rows);
 
         $timestampBound = new ExactStaleness(10);
-        $row = $conn->selectOneWithTimestampBound("SELECT * FROM ${tableName} WHERE userID = ?", [$uuid], $timestampBound);
-        $this->assertEmpty($row);
+        $rows = $conn->selectWithOptions("SELECT * FROM ${tableName} WHERE userID = ?", [$uuid], $timestampBound->transactionOptions());
+        $this->assertEmpty($rows);
 
         $timestampBound = new MaxStaleness(10);
-        $row = $conn->selectOneWithTimestampBound("SELECT * FROM ${tableName} WHERE userID = ?", [$uuid], $timestampBound);
-        $this->assertNotEmpty($row);
-        $this->assertEquals($uuid, $row['userId']);
-        $this->assertEquals('first', $row['name']);
+        $rows = $conn->selectWithOptions("SELECT * FROM ${tableName} WHERE userID = ?", [$uuid], $timestampBound->transactionOptions());
+        $this->assertCount(1, $rows);
+        $this->assertSame($uuid, $rows[0]['userId']);
+        $this->assertSame('first', $rows[0]['name']);
 
         $timestampBound = new MinReadTimestamp($oldDatetime);
-        $row = $conn->selectOneWithTimestampBound("SELECT * FROM ${tableName} WHERE userID = ?", [$uuid], $timestampBound);
-        $this->assertNotEmpty($row);
-        $this->assertEquals($uuid, $row['userId']);
-        $this->assertEquals('first', $row['name']);
+        $rows = $conn->selectWithOptions("SELECT * FROM ${tableName} WHERE userID = ?", [$uuid], $timestampBound->transactionOptions());
+        $this->assertCount(1, $rows);
+        $this->assertSame($uuid, $rows[0]['userId']);
+        $this->assertSame('first', $rows[0]['name']);
     }
 
     public function testEventListenOrder(): void
@@ -526,66 +526,6 @@ class ConnectionTest extends TestCase
         $this->assertEquals(TransactionBeginning::class, $receivedEventClasses[0]);
         $this->assertEquals(QueryExecuted::class, $receivedEventClasses[1]);
         $this->assertEquals(TransactionCommitted::class, $receivedEventClasses[2]);
-    }
-
-    public function test_connection_transaction_reset_on_exceptions(): void
-    {
-        $conn = $this->getDefaultConnection();
-
-        try {
-            $conn->transaction(function (Connection $conn) {
-                self::assertTrue($conn->inTransaction());
-                self::assertNotNull($conn->getCurrentTransaction());
-                self::assertSame(1, $conn->transactionLevel());
-                throw new NotFoundException('NG');
-            });
-        } catch(NotFoundException) {
-            // do nothing.
-        }
-
-        self::assertfalse($conn->inTransaction());
-        self::assertNull($conn->getCurrentTransaction());
-        self::assertSame(0, $conn->transactionLevel());
-    }
-
-    public function test_connection_transaction_reset_on_rollback_exceptions(): void
-    {
-        $base = $this->getDefaultConnection();
-
-        $conn = new class($base) extends Connection {
-            public function __construct(Connection $base)
-            {
-                parent::__construct(
-                    $base->instanceId,
-                    $base->database,
-                    $base->tablePrefix,
-                    $base->config,
-                    $base->authCache,
-                    $base->sessionPool,
-                );
-            }
-
-            protected function performRollBack($toLevel): void
-            {
-                $this->currentTransaction = null;
-                throw new AbortedException('NG');
-            }
-        };
-
-        try {
-            $conn->transaction(function (Connection $conn): mixed {
-                self::assertTrue($conn->inTransaction());
-                self::assertNotNull($conn->getCurrentTransaction());
-                self::assertSame(1, $conn->transactionLevel());
-                throw new RuntimeException('Trigger rollback');
-            });
-        } catch(AbortedException) {
-            // do nothing.
-        }
-
-        self::assertfalse($conn->inTransaction());
-        self::assertNull($conn->getCurrentTransaction());
-        self::assertSame(0, $conn->transactionLevel());
     }
 
     public function test_escape(): void

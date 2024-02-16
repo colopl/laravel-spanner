@@ -3,6 +3,7 @@
 namespace Colopl\Spanner\Schema;
 
 use Illuminate\Support\Fluent;
+use LogicException;
 
 /**
  * @method $this interleaveIn(string $table)
@@ -19,7 +20,6 @@ class IndexDefinition extends Fluent
      */
     public function interleave(string $table)
     {
-        trigger_deprecation('colopl/laravel-spanner', '5.2', 'Blueprint::interleave() is deprecated. Use interleaveIn() instead. This method will be removed in v7.');
-        return $this->interleaveIn($table);
+        throw new LogicException('This method is not longer valid. Use interleaveIn() instead.');
     }
 }

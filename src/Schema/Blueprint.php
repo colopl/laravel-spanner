@@ -22,6 +22,7 @@ use Illuminate\Database\Schema\Blueprint as BaseBlueprint;
 use Illuminate\Database\Schema\ColumnDefinition;
 use Colopl\Spanner\Schema\ColumnDefinition as SpannerColumnDefinition;
 use Illuminate\Support\Fluent;
+use LogicException;
 
 /**
  * @method IndexDefinition index(string|string[] $columns, string|null $name = null)
@@ -229,8 +230,7 @@ class Blueprint extends BaseBlueprint
      */
     public function interleave(string $parentTableName)
     {
-        trigger_deprecation('colopl/laravel-spanner', '5.2', 'Blueprint::interleave() is deprecated. Use interleaveInParent() instead. This method will be removed in v7.');
-        return $this->interleaveInParent($parentTableName);
+        throw new LogicException('This method is not longer valid. Use interleaveInParent() instead.');
     }
 
     /**

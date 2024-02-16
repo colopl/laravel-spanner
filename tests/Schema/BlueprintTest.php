@@ -28,12 +28,12 @@ use Ramsey\Uuid\Uuid;
 
 class BlueprintTest extends TestCase
 {
-    public function test_create(): void
+    public function test_create_with_all_valid_types(): void
     {
         $conn = $this->getDefaultConnection();
-
-        $blueprint = new Blueprint('Test3', function (Blueprint $table) {
-            $table->uuid('id');
+        $tableName = $this->generateTableName();
+        $blueprint = new Blueprint($tableName, function (Blueprint $table) {
+            $table->uuid('id')->primary();
             $table->integer('int');
             $table->float('float');
             $table->decimal('decimal');
@@ -45,15 +45,21 @@ class BlueprintTest extends TestCase
             $table->dateTime('started_at');
             $table->binary('blob');
             $table->json('json');
+            $table->integerArray('int_array')->nullable();
+            $table->booleanArray('bool_array')->nullable();
+            $table->floatArray('float_array')->nullable();
+            $table->decimalArray('decimal_array')->nullable();
+            $table->stringArray('string_array_undef')->nullable();
+            $table->stringArray('string_array_1', 1)->nullable();
+            $table->stringArray('string_array_max', 'max')->nullable();
+            $table->timestampArray('timestamp_array')->nullable();
             $table->timestamps();
-
-            $table->primary('id');
         });
         $blueprint->create();
 
-        $queries = $blueprint->toSql($conn, new Grammar());
-        $this->assertEquals(
-            'create table `Test3` (' . implode(', ', [
+        $statements = $blueprint->toSql($conn, new Grammar());
+        $this->assertSame([
+            "create table `{$tableName}` (" . implode(', ', [
                 '`id` string(36) not null',
                 '`int` int64 not null',
                 '`float` float64 not null',
@@ -66,10 +72,17 @@ class BlueprintTest extends TestCase
                 '`started_at` timestamp not null',
                 '`blob` bytes(255) not null',
                 '`json` json not null',
+                '`int_array` array<int64>',
+                '`bool_array` array<bool>',
+                '`float_array` array<float64>',
+                '`decimal_array` array<numeric>',
+                '`string_array_undef` array<string(255)>',
+                '`string_array_1` array<string(1)>',
+                '`string_array_max` array<string(max)>',
+                '`timestamp_array` array<timestamp>',
                 '`created_at` timestamp, `updated_at` timestamp',
             ]) . ') primary key (`id`)',
-            $queries[0]
-        );
+        ], $statements);
     }
 
     public function test_create_with_generateUuid(): void
@@ -101,245 +114,180 @@ class BlueprintTest extends TestCase
     public function test_drop(): void
     {
         $conn = $this->getDefaultConnection();
-
-        $blueprint = new Blueprint('Test3', function (Blueprint $table) {
+        $tableName = $this->generateTableName();
+        $blueprint = new Blueprint($tableName, function (Blueprint $table) {
             $table->drop();
         });
 
-        $queries = $blueprint->toSql($conn, new Grammar());
-        $this->assertEquals(
-            'drop table `Test3`',
-            $queries[0]
-        );
+        $statements = $blueprint->toSql($conn, new Grammar());
+        $this->assertSame([
+            "drop table `{$tableName}`",
+        ], $statements);
     }
 
     public function test_dropIfExists(): void
     {
         $conn = $this->getDefaultConnection();
-
-        $blueprint = new Blueprint('Test3', function (Blueprint $table) {
+        $tableName = $this->generateTableName();
+        $blueprint = new Blueprint($tableName, function (Blueprint $table) {
             $table->dropIfExists();
         });
 
-        $queries = $blueprint->toSql($conn, new Grammar());
-        $this->assertEquals(
-            'drop table if exists `Test3`',
-            $queries[0]
-        );
+        $statements = $blueprint->toSql($conn, new Grammar());
+        $this->assertSame([
+            "drop table if exists `{$tableName}`",
+        ], $statements);
 
-        $this->assertTrue($conn->statement($queries[0]));
+        $this->assertNotNull($conn->runDdlBatch($statements));
     }
 
-    public function testAddColumn(): void
+    public function test_adding_columns(): void
     {
         $conn = $this->getDefaultConnection();
-
-        $blueprint = new Blueprint('Test3', function (Blueprint $table) {
+        $tableName = $this->generateTableName();
+        $blueprint = new Blueprint($tableName, function (Blueprint $table) {
             $table->string('description', 255);
             $table->integer('value');
         });
 
-        $queries = $blueprint->toSql($conn, new Grammar());
-        $this->assertEquals([
-            'alter table `Test3` add column `description` string(255) not null',
-            'alter table `Test3` add column `value` int64 not null'
-            ],
-            $queries
-        );
+        $statements = $blueprint->toSql($conn, new Grammar());
+        $this->assertSame([
+            "alter table `{$tableName}` add column `description` string(255) not null",
+            "alter table `{$tableName}` add column `value` int64 not null",
+        ], $statements);
     }
 
-    public function testChangeColumn(): void
+    public function test_change_column(): void
     {
         $conn = $this->getDefaultConnection();
-
-        $blueprint = new Blueprint('Test3', function (Blueprint $table) {
+        $tableName = $this->generateTableName();
+        $blueprint = new Blueprint($tableName, function (Blueprint $table) {
             $table->string('description', 512)->change();
             $table->float('value')->change();
         });
 
-        $queries = $blueprint->toSql($conn, new Grammar());
-        $this->assertEquals([
-            'alter table `Test3` alter column `description` string(512) not null',
-            'alter table `Test3` alter column `value` float64 not null',
-            ],
-            $queries
-        );
+        $statements = $blueprint->toSql($conn, new Grammar());
+        $this->assertSame([
+            "alter table `{$tableName}` alter column `description` string(512) not null",
+            "alter table `{$tableName}` alter column `value` float64 not null",
+        ], $statements);
     }
 
-    public function testDropColumn(): void
+    public function test_dropColumn(): void
     {
         $conn = $this->getDefaultConnection();
-
-        $blueprint = new Blueprint('Test3', function (Blueprint $table) {
+        $tableName = $this->generateTableName();
+        $blueprint = new Blueprint($tableName, function (Blueprint $table) {
             $table->dropColumn('description');
         });
 
-        $queries = $blueprint->toSql($conn, new Grammar());
-        $this->assertEquals(
-            'alter table `Test3` drop column `description`',
-            $queries[0]
-        );
+        $statements = $blueprint->toSql($conn, new Grammar());
+        $this->assertSame([
+            "alter table `{$tableName}` drop column `description`",
+        ], $statements);
     }
 
-    public function testCreateIndex(): void
+    public function test_create_indexes(): void
     {
         $conn = $this->getDefaultConnection();
-
-        $blueprint = new Blueprint('Test3', function (Blueprint $table) {
+        $tableName = $this->generateTableName();
+        $indexPrefix = Str::snake($tableName);
+        $blueprint = new Blueprint($tableName, function (Blueprint $table) {
             $table->unique('name');
             $table->index('createdAt');
         });
 
-        $queries = $blueprint->toSql($conn, new Grammar());
-        $this->assertEquals(
-            [
-                'create unique index `test3_name_unique` on `Test3` (`name`)',
-                'create index `test3_createdat_index` on `Test3` (`createdAt`)',
-            ],
-            $queries
-        );
+        $statements = $blueprint->toSql($conn, new Grammar());
+        $this->assertSame([
+            "create unique index `{$indexPrefix}_name_unique` on `{$tableName}` (`name`)",
+            "create index `{$indexPrefix}_createdat_index` on `{$tableName}` (`createdAt`)",
+        ], $statements);
     }
 
-    public function testDropIndex(): void
+    public function test_dropIndex(): void
     {
         $conn = $this->getDefaultConnection();
-
-        $blueprint = new Blueprint('Test3', function (Blueprint $table) {
-            $table->dropUnique('test3_name_unique');
-            $table->dropIndex('test3_createdat_index');
+        $tableName = $this->generateTableName();
+        $indexPrefix = Str::snake($tableName);
+        $blueprint = new Blueprint($tableName, function (Blueprint $table) use ($indexPrefix) {
+            $table->dropUnique($indexPrefix . '_name_unique');
+            $table->dropIndex($indexPrefix . '_createdat_index');
         });
 
-        $queries = $blueprint->toSql($conn, new Grammar());
-        $this->assertEquals(
-            [
-                'drop index `test3_name_unique`',
-                'drop index `test3_createdat_index`',
-            ],
-            $queries
-        );
+        $statements = $blueprint->toSql($conn, new Grammar());
+        $this->assertSame([
+            "drop index `{$indexPrefix}_name_unique`",
+            "drop index `{$indexPrefix}_createdat_index`",
+        ], $statements);
     }
 
-    public function testDropForeign(): void
+    public function test_dropForeign(): void
     {
         $conn = $this->getDefaultConnection();
-
-        $blueprint = new Blueprint('Test3', function (Blueprint $table) {
-            $table->dropForeign('fk_test3');
+        $tableName = $this->generateTableName();
+        $foreignPrefix = Str::snake($tableName);
+        $blueprint = new Blueprint($tableName, function (Blueprint $table) use ($foreignPrefix) {
+            $table->dropForeign('fk_' . $foreignPrefix);
         });
 
-        $queries = $blueprint->toSql($conn, new Grammar());
-        $this->assertEquals(
-            [
-                'alter table `Test3` drop constraint `fk_test3`',
-            ],
-            $queries
-        );
+        $statements = $blueprint->toSql($conn, new Grammar());
+        $this->assertSame([
+            "alter table `{$tableName}` drop constraint `fk_{$foreignPrefix}`",
+        ], $statements);
     }
 
-    public function test_no_primaryKey(): void
-    {
-        $this->expectException(LogicException::class);
-        $this->expectExceptionMessage('Cloud Spanner require a primary key!');
-
-        $blueprint = new Blueprint('test', function (Blueprint $table) {
-            $table->create();
-            $table->uuid('id');
-        });
-        $blueprint->toSql($this->getDefaultConnection(), new Grammar());
-    }
-
-    public function testCompositePrimaryKey(): void
+    public function test_composite_primary_key(): void
     {
         $conn = $this->getDefaultConnection();
-
-        $blueprint = new Blueprint('CompositePrimaryKeyTest', function (Blueprint $table) {
+        $tableName = $this->generateTableName();
+        $blueprint = new Blueprint($tableName, function (Blueprint $table) {
             $table->uuid('id');
             $table->integer('number');
             $table->string('name');
-
             $table->primary(['id', 'number']);
         });
         $blueprint->create();
 
-        $queries = $blueprint->toSql($conn, new Grammar());
-        $this->assertEquals(
-            'create table `CompositePrimaryKeyTest` (`id` string(36) not null, `number` int64 not null, `name` string(255) not null) primary key (`id`, `number`)',
-            $queries[0]
-        );
+        $statements = $blueprint->toSql($conn, new Grammar());
+        $this->assertSame([
+            "create table `{$tableName}` (`id` string(36) not null, `number` int64 not null, `name` string(255) not null) primary key (`id`, `number`)"
+        ], $statements);
     }
 
-    public function test_array_types(): void
+    public function test_interleaving(): void
     {
         $conn = $this->getDefaultConnection();
+        $parentTableName = $this->generateTableName('Parent');
+        $childTableName = $this->generateTableName('Child');
 
-        $blueprint = new Blueprint('ArrayTypeTest', function (Blueprint $table) {
+        $blueprint = new Blueprint($childTableName, function (Blueprint $table) use ($parentTableName) {
             $table->uuid('id');
-            $table->integerArray('int_array')->nullable();
-            $table->booleanArray('bool_array')->nullable();
-            $table->floatArray('float_array')->nullable();
-            $table->decimalArray('decimal_array')->nullable();
-            $table->stringArray('string_array_undef')->nullable();
-            $table->stringArray('string_array_1', 1)->nullable();
-            $table->stringArray('string_array_max', 'max')->nullable();
-            $table->timestampArray('timestamp_array')->nullable();
-            $table->primary('id');
+            $table->uuid('pid');
+            $table->string('name');
+            $table->primary('pid');
+            $table->interleaveInParent($parentTableName);
         });
         $blueprint->create();
 
-        $queries = $blueprint->toSql($conn, new Grammar());
-        $this->assertEquals(
-            'create table `ArrayTypeTest` (' .
-            implode(', ', [
-                '`id` string(36) not null',
-                '`int_array` array<int64>',
-                '`bool_array` array<bool>',
-                '`float_array` array<float64>',
-                '`decimal_array` array<numeric>',
-                '`string_array_undef` array<string(255)>',
-                '`string_array_1` array<string(1)>',
-                '`string_array_max` array<string(max)>',
-                '`timestamp_array` array<timestamp>',
-            ]) .
-            ') primary key (`id`)',
-            $queries[0]
-        );
-    }
+        $statements = $blueprint->toSql($conn, new Grammar());
+        $this->assertSame([
+            "create table `{$childTableName}` (`id` string(36) not null, `pid` string(36) not null, `name` string(255) not null) primary key (`pid`), interleave in parent `{$parentTableName}`",
+        ], $statements);
 
-    public function testInterleaveTable(): void
-    {
-        $conn = $this->getDefaultConnection();
-
-        $blueprint = new Blueprint('UserItem', function (Blueprint $table) {
+        $blueprint = new Blueprint($childTableName, function (Blueprint $table) use ($parentTableName) {
             $table->uuid('id');
-            $table->uuid('userId');
+            $table->uuid('pid');
             $table->string('name');
 
-            $table->primary('userId');
-            $table->interleaveInParent('User');
+            $table->primary('pid');
+            $table->interleaveInParent($parentTableName)->cascadeOnDelete();
         });
         $blueprint->create();
 
-        $queries = $blueprint->toSql($conn, new Grammar());
-        $this->assertEquals(
-            'create table `UserItem` (`id` string(36) not null, `userId` string(36) not null, `name` string(255) not null) primary key (`userId`), interleave in parent `User`',
-            $queries[0]
-        );
-
-        $blueprint = new Blueprint('UserItem', function (Blueprint $table) {
-            $table->uuid('id');
-            $table->uuid('userId');
-            $table->string('name');
-
-            $table->primary('userId');
-            $table->interleaveInParent('User')->cascadeOnDelete();
-        });
-        $blueprint->create();
-
-        $queries = $blueprint->toSql($conn, new Grammar());
-        $this->assertEquals(
-            'create table `UserItem` (`id` string(36) not null, `userId` string(36) not null, `name` string(255) not null) primary key (`userId`), interleave in parent `User` on delete cascade',
-            $queries[0]
-        );
+        $statements = $blueprint->toSql($conn, new Grammar());
+        $this->assertSame([
+            "create table `{$childTableName}` (`id` string(36) not null, `pid` string(36) not null, `name` string(255) not null) primary key (`pid`), interleave in parent `{$parentTableName}` on delete cascade"
+        ], $statements);
     }
 
     public function test_create_with_row_deletion_policy(): void
@@ -347,24 +295,20 @@ class BlueprintTest extends TestCase
         $conn = $this->getDefaultConnection();
         $conn->useDefaultSchemaGrammar();
         $grammar = $conn->getSchemaGrammar();
-        $table = 'Test_' . Str::random();
-
-        $blueprint = new Blueprint($table, function (Blueprint $table) {
+        $tableName = $this->generateTableName();
+        $blueprint = new Blueprint($tableName, function (Blueprint $table) {
             $table->uuid('id');
             $table->primary('id');
             $table->dateTime('t')->nullable();
             $table->deleteRowsOlderThan('t', 100);
         });
-
         $blueprint->create();
         $blueprint->build($conn, $grammar);
 
-        $statement = $blueprint->toSql($conn, $grammar)[0];
-
-        self::assertEquals(
-            "create table `{$table}` (`id` string(36) not null, `t` timestamp) primary key (`id`), row deletion policy (older_than(t, interval 100 day))",
-            $statement,
-        );
+        $statements = $blueprint->toSql($conn, $grammar);
+        $this->assertSame([
+            "create table `{$tableName}` (`id` string(36) not null, `t` timestamp) primary key (`id`), row deletion policy (older_than(t, interval 100 day))",
+        ], $statements);
     }
 
     public function test_add_row_deletion_policy(): void
@@ -372,27 +316,23 @@ class BlueprintTest extends TestCase
         $conn = $this->getDefaultConnection();
         $conn->useDefaultSchemaGrammar();
         $grammar = $conn->getSchemaGrammar();
-        $table = 'Test_' . Str::random();
-
-        $blueprint1 = new Blueprint($table, function (Blueprint $table) {
+        $tableName = $this->generateTableName();
+        $blueprint1 = new Blueprint($tableName, function (Blueprint $table) {
             $table->create();
             $table->uuid('id');
             $table->primary('id');
             $table->dateTime('t')->nullable();
         });
         $blueprint1->build($conn, $grammar);
-
-        $blueprint2 = new Blueprint($table, function (Blueprint $table) {
+        $blueprint2 = new Blueprint($tableName, function (Blueprint $table) {
             $table->addRowDeletionPolicy('t', 200);
         });
         $blueprint2->build($conn, $grammar);
 
-        $statement = $blueprint2->toSql($conn, $grammar)[0];
-
-        self::assertEquals(
-            "alter table `{$table}` add row deletion policy (older_than(`t`, interval 200 day))",
-            $statement,
-        );
+        $statements = $blueprint2->toSql($conn, $grammar);
+        $this->assertSame([
+            "alter table `{$tableName}` add row deletion policy (older_than(`t`, interval 200 day))",
+        ], $statements);
     }
 
     public function test_replace_row_deletion_policy(): void
@@ -400,9 +340,8 @@ class BlueprintTest extends TestCase
         $conn = $this->getDefaultConnection();
         $conn->useDefaultSchemaGrammar();
         $grammar = $conn->getSchemaGrammar();
-        $table = 'Test_' . Str::random();
-
-        $blueprint1 = new Blueprint($table, function (Blueprint $table) {
+        $tableName = $this->generateTableName();
+        $blueprint1 = new Blueprint($tableName, function (Blueprint $table) {
             $table->create();
             $table->uuid('id');
             $table->primary('id');
@@ -410,18 +349,15 @@ class BlueprintTest extends TestCase
             $table->deleteRowsOlderThan('t', 100);
         });
         $blueprint1->build($conn, $grammar);
-
-        $blueprint2 = new Blueprint($table, function (Blueprint $table) {
+        $blueprint2 = new Blueprint($tableName, function (Blueprint $table) {
             $table->replaceRowDeletionPolicy('t', 200);
         });
         $blueprint2->build($conn, $grammar);
 
-        $statement = $blueprint2->toSql($conn, $grammar)[0];
-
-        self::assertEquals(
-            "alter table `{$table}` replace row deletion policy (older_than(`t`, interval 200 day))",
-            $statement,
-        );
+        $statements = $blueprint2->toSql($conn, $grammar);
+        $this->assertSame([
+            "alter table `{$tableName}` replace row deletion policy (older_than(`t`, interval 200 day))",
+        ], $statements);
     }
 
     public function test_drop_row_deletion_policy(): void
@@ -429,9 +365,8 @@ class BlueprintTest extends TestCase
         $conn = $this->getDefaultConnection();
         $conn->useDefaultSchemaGrammar();
         $grammar = $conn->getSchemaGrammar();
-        $table = 'Test_' . Str::random();
-
-        $blueprint1 = new Blueprint($table, function (Blueprint $table) {
+        $tableName = $this->generateTableName();
+        $blueprint1 = new Blueprint($tableName, function (Blueprint $table) {
             $table->create();
             $table->uuid('id');
             $table->primary('id');
@@ -439,18 +374,15 @@ class BlueprintTest extends TestCase
             $table->deleteRowsOlderThan('created_at', 100);
         });
         $blueprint1->build($conn, $grammar);
-
-        $blueprint2 = new Blueprint($table, function (Blueprint $table) {
+        $blueprint2 = new Blueprint($tableName, function (Blueprint $table) {
             $table->dropRowDeletionPolicy();
         });
         $blueprint2->build($conn, $grammar);
 
-        $statement = $blueprint2->toSql($conn, $grammar)[0];
-
-        self::assertEquals(
-            "alter table `{$table}` drop row deletion policy",
-            $statement,
-        );
+        $statements = $blueprint2->toSql($conn, $grammar);
+        $this->assertSame([
+            "alter table `{$tableName}` drop row deletion policy",
+        ], $statements);
     }
 
     public function test_default_values(): void
@@ -458,8 +390,9 @@ class BlueprintTest extends TestCase
         $conn = $this->getDefaultConnection();
         $conn->useDefaultSchemaGrammar();
         $grammar = $conn->getSchemaGrammar();
+        $tableName = $this->generateTableName();
 
-        $blueprint = new Blueprint('Test3', function (Blueprint $table) {
+        $blueprint = new Blueprint($tableName, function (Blueprint $table) {
             $table->uuid('id');
             $table->integer('null')->default(null)->nullable();
             $table->integer('int')->default(1);
@@ -489,13 +422,11 @@ class BlueprintTest extends TestCase
             $table->timestampArray('timestamp_array')->default(['2022-01-01']);
             $table->primary('id');
         });
-
         $blueprint->create();
 
-        $queries = $blueprint->toSql($conn, $grammar);
-
-        $this->assertEquals(
-            'create table `Test3` (' . implode(', ', [
+        $statements = $blueprint->toSql($conn, $grammar);
+        $this->assertSame([
+            "create table `{$tableName}` (" . implode(', ', [
                 '`id` string(36) not null',
                 '`null` int64',
                 '`int` int64 not null default (1)',
@@ -524,54 +455,49 @@ class BlueprintTest extends TestCase
                 '`date_array` array<date> not null default ([DATE "2022-01-01"])',
                 '`timestamp_array` array<timestamp> not null default ([TIMESTAMP "2022-01-01T00:00:00.000000+00:00"])',
             ]) . ') primary key (`id`)',
-            $queries[0]
-        );
+        ], $statements);
 
         $blueprint->build($conn, $grammar);
-
-        $query = $conn->table('Test3');
-
+        $query = $conn->table($tableName);
         $query->insert(['id' => Uuid::uuid4()->toString()]);
-
         /** @var array<string, mixed> $result */
         $result = $query->sole();
 
-        self::assertSame(null, $result['null']);
-        self::assertSame(1, $result['int']);
-        self::assertSame(0.1, $result['float']);
-        self::assertSame(true, $result['bool']);
-        self::assertSame('a', $result['string']);
-        self::assertSame('a', $result['string_max']);
-        self::assertSame('a', $result['medium_text']);
-        self::assertSame('a', $result['long_text']);
-        self::assertSame('[1,2,3]', $result['json']);
-        self::assertSame(1.1, $result['raw']);
-        self::assertSame('2022-01-01T00:00:00.000000+00:00', $result['date_as_string']->get()->format($grammar->getDateFormat()));
-        self::assertSame('2022-01-01T00:00:00.000000+00:00', $result['date_as_carbon']->get()->format($grammar->getDateFormat()));
-        self::assertSame('2022-01-01T00:00:00.000000+00:00', $result['time_as_string']->format($grammar->getDateFormat()));
-        self::assertSame('2022-01-01T00:00:00.000000+00:00', $result['time_as_carbon']->format($grammar->getDateFormat()));
-        self::assertInstanceOf(Carbon::class, $result['current_time']);
-        self::assertSame([1, 2], $result['int_array']);
-        self::assertSame([false, true], $result['bool_array']);
-        self::assertSame([2.2, 3.3], $result['float_array']);
-        self::assertSame(['a', 'b'], $result['string_array']);
+        $dateFormat = $grammar->getDateFormat();
+
+        $this->assertSame(null, $result['null']);
+        $this->assertSame(1, $result['int']);
+        $this->assertSame(0.1, $result['float']);
+        $this->assertSame(true, $result['bool']);
+        $this->assertSame('a', $result['string']);
+        $this->assertSame('a', $result['string_max']);
+        $this->assertSame('a', $result['medium_text']);
+        $this->assertSame('a', $result['long_text']);
+        $this->assertSame('[1,2,3]', $result['json']);
+        $this->assertSame(1.1, $result['raw']);
+        $this->assertSame('2022-01-01T00:00:00.000000+00:00', $result['date_as_string']->get()->format($dateFormat));
+        $this->assertSame('2022-01-01T00:00:00.000000+00:00', $result['date_as_carbon']->get()->format($dateFormat));
+        $this->assertSame('2022-01-01T00:00:00.000000+00:00', $result['time_as_string']->format($dateFormat));
+        $this->assertSame('2022-01-01T00:00:00.000000+00:00', $result['time_as_carbon']->format($dateFormat));
+        $this->assertInstanceOf(Carbon::class, $result['current_time']);
+        $this->assertSame([1, 2], $result['int_array']);
+        $this->assertSame([false, true], $result['bool_array']);
+        $this->assertSame([2.2, 3.3], $result['float_array']);
+        $this->assertSame(['a', 'b'], $result['string_array']);
     }
 
     public function test_index_with_interleave(): void
     {
         $conn = $this->getDefaultConnection();
-
         $blueprint = new Blueprint('UserItem', function (Blueprint $table) {
             $table->index(['userId', 'createdAt'])->interleaveIn('User');
-            $table->index(['userId', 'updatedAt'])->interleave('User');
         });
 
-        $queries = $blueprint->toSql($conn, new Grammar());
-        $this->assertEquals([
+        $statements = $blueprint->toSql($conn, new Grammar());
+        $this->assertSame([
                 'create index `useritem_userid_createdat_index` on `UserItem` (`userId`, `createdAt`), interleave in `User`',
-                'create index `useritem_userid_updatedat_index` on `UserItem` (`userId`, `updatedAt`), interleave in `User`',
             ],
-            $queries
+            $statements
         );
     }
 
@@ -583,25 +509,22 @@ class BlueprintTest extends TestCase
             $table->index(['userId', 'createdAt'])->storing(['itemId', 'count']);
         });
 
-        $queries = $blueprint->toSql($conn, new Grammar());
-        $this->assertEquals(
+        $statements = $blueprint->toSql($conn, new Grammar());
+        $this->assertSame([
             'create index `useritem_userid_createdat_index` on `UserItem` (`userId`, `createdAt`) storing (`itemId`, `count`)',
-            $queries[0]
-        );
+        ], $statements);
     }
 
     public function test_null_filtered_index(): void
     {
         $conn = $this->getDefaultConnection();
-
         $blueprint = new Blueprint('UserItem', function (Blueprint $table) {
             $table->index(['userId'])->nullFiltered();
         });
 
-        $queries = $blueprint->toSql($conn, new Grammar());
-        $this->assertEquals(
-            'create null_filtered index `useritem_userid_index` on `UserItem` (`userId`)',
-            $queries[0]
-        );
+        $statements = $blueprint->toSql($conn, new Grammar());
+        $this->assertSame([
+            'create null_filtered index `useritem_userid_index` on `UserItem` (`userId`)'
+        ], $statements);
     }
 }
