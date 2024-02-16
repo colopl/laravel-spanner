@@ -5,7 +5,7 @@ namespace Colopl\Spanner\Schema;
 use Illuminate\Database\Query\Expression;
 use Illuminate\Database\Schema\ColumnDefinition as BaseColumnDefinition;
 
-class ColumnDefinition extends BaseColumnDefinition
+class UuidColumnDefinition extends BaseColumnDefinition
 {
     /*
      * @return $this

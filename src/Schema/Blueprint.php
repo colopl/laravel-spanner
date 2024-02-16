@@ -20,7 +20,7 @@ namespace Colopl\Spanner\Schema;
 use Colopl\Spanner\Concerns\MarksAsNotSupported;
 use Illuminate\Database\Schema\Blueprint as BaseBlueprint;
 use Illuminate\Database\Schema\ColumnDefinition;
-use Colopl\Spanner\Schema\ColumnDefinition as SpannerColumnDefinition;
+use Colopl\Spanner\Schema\UuidColumnDefinition;
 use Illuminate\Support\Fluent;
 use LogicException;
 
@@ -97,11 +97,11 @@ class Blueprint extends BaseBlueprint
 
     /**
      * @inheritDoc
-     * @return SpannerColumnDefinition
+     * @return UuidColumnDefinition
      */
     public function uuid($column = 'uuid')
     {
-        $definition = new SpannerColumnDefinition(['type' => 'uuid', 'name' => $column]);
+        $definition = new UuidColumnDefinition(['type' => 'uuid', 'name' => $column]);
         $this->addColumnDefinition($definition);
         return $definition;
     }
