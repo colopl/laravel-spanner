@@ -12,6 +12,9 @@ Changed
 - `Query\Builder::lock()` no longer throw an error and will be ignored instead (#156)
 - `Schema\Builder::getIndexListing()` `Schema\Grammar::compileIndexListing()` converted to `getIndexes()` and `compileIndexes()` to align with standard Laravel methods (#161)
 - Missing primary key will no longer be checked and will be checked on the server side instead (#177)
+- `Connection::runDdl()` and `Connection::runDdls()` has been removed. Use `Connection::runDdlBatch()` instead. (#178)
+- Trait `ManagesStaleReads` has been removed (which contained `cursorWithTimestampBound()` and `selectWithTimestampBound()`. Use `selectWithOptions()` instead). (#178)
+- `Blueprint::interleave()` and `IndexDefinition::interleave()` now throw an error instead of a deprecation. (#178)
 
 Fixed
 - `Schema\Grammar::compileAdd()` `Schema\Grammar::compileChange()` `Schema\Grammar::compileChange()` now create separate statements (#159)

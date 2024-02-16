@@ -465,13 +465,11 @@ class BlueprintTest extends TestCase
         $conn = $this->getDefaultConnection();
         $blueprint = new Blueprint('UserItem', function (Blueprint $table) {
             $table->index(['userId', 'createdAt'])->interleaveIn('User');
-            $table->index(['userId', 'updatedAt'])->interleave('User');
         });
 
         $statements = $blueprint->toSql($conn, new Grammar());
         $this->assertSame([
                 'create index `useritem_userid_createdat_index` on `UserItem` (`userId`, `createdAt`), interleave in `User`',
-                'create index `useritem_userid_updatedat_index` on `UserItem` (`userId`, `updatedAt`), interleave in `User`',
             ],
             $statements
         );
