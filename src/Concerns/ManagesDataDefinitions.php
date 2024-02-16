@@ -21,7 +21,6 @@ use Google\Cloud\Core\LongRunning\LongRunningOperation;
 use Google\Cloud\Spanner\Database;
 use RuntimeException;
 use function json_encode;
-use function trigger_deprecation;
 
 trait ManagesDataDefinitions
 {
