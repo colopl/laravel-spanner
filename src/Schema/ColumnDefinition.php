@@ -7,6 +7,9 @@ use Illuminate\Database\Schema\ColumnDefinition as BaseColumnDefinition;
 
 class ColumnDefinition extends BaseColumnDefinition
 {
+    /*
+     * @return $this
+     */
     public function generateUuid(): static
     {
         return $this->default(new Expression('generate_uuid()'));
