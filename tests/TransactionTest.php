@@ -19,7 +19,6 @@ namespace Colopl\Spanner\Tests;
 
 use Exception;
 use Google\Cloud\Core\Exception\AbortedException;
-use Google\Cloud\Spanner\Database;
 use Google\Cloud\Spanner\Transaction;
 use Colopl\Spanner\Connection;
 use Google\Cloud\Spanner\TransactionalReadInterface;

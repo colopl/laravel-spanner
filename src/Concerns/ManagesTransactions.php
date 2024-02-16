@@ -50,7 +50,7 @@ trait ManagesTransactions
         // -1 is used as a magic number to indicate the default value defined in Database::MAX_RETRIES (+1)
         // So, we need to resolve the actual value here.
         if ($attempts === -1) {
-            $attempts = $this->getMaxTransactionAttempts();
+            $attempts = $this->getDefaultMaxTransactionAttempts();
         }
 
         // Since Cloud Spanner does not support nested transactions,
@@ -237,7 +237,7 @@ trait ManagesTransactions
     /**
      * @return int
      */
-    public function getMaxTransactionAttempts(): int
+    public function getDefaultMaxTransactionAttempts(): int
     {
         return $this->maxAttempts ??= (Database::MAX_RETRIES + 1);
     }
@@ -246,7 +246,7 @@ trait ManagesTransactions
      * @param int $attempts
      * @return $this
      */
-    public function setMaxTransactionAttempts(int $attempts): static
+    public function setDefaultMaxTransactionAttempts(int $attempts): static
     {
         $this->maxAttempts = $attempts;
         return $this;
