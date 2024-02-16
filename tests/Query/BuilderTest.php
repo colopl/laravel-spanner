@@ -443,7 +443,7 @@ class BuilderTest extends TestCase
 
         $qb = $conn->table($tableName)
             ->forceIndex('test_index_name')
-            ->disableEmulatorNullFilterIndexCheck();
+            ->disableEmulatorNullFilteredIndexCheck();
 
         $hint = '@{FORCE_INDEX=test_index_name,spanner_emulator.disable_query_null_filtered_index_check=true}';
         $this->assertSame("select * from `{$tableName}` {$hint}", $qb->toSql());
@@ -456,7 +456,7 @@ class BuilderTest extends TestCase
         $this->expectException(LogicException::class);
 
         $conn = $this->getDefaultConnection();
-        $conn->table('Test')->disableEmulatorNullFilterIndexCheck();
+        $conn->table('Test')->disableEmulatorNullFilteredIndexCheck();
     }
 
     public function test_useIndex(): void

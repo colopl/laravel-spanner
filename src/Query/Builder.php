@@ -164,7 +164,7 @@ class Builder extends BaseBuilder
     /**
      * @return $this
      */
-    public function disableEmulatorNullFilterIndexCheck(): static
+    public function disableEmulatorNullFilteredIndexCheck(): static
     {
         $indexHint = $this->indexHint;
 
