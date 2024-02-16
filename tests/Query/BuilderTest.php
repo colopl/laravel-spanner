@@ -916,6 +916,13 @@ class BuilderTest extends TestCase
         $this->assertSame('select * from `User`', $sql);
     }
 
+    public function test_prefixing(): void
+    {
+        config()->set('database.connections.main.prefix', 'test_');
+        $conn = $this->getConnection('main');
+        self::assertSame('select * from `test_User`', $conn->table('User')->toRawSql());
+    }
+
     public function test_toRawSql(): void
     {
         $table = 'RawSqlTest';

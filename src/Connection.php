@@ -181,7 +181,10 @@ class Connection extends BaseConnection
      */
     protected function getDefaultQueryGrammar(): QueryGrammar
     {
-        return (new QueryGrammar())->setConnection($this);
+        $grammar = new QueryGrammar();
+        $grammar->setConnection($this);
+        $this->withTablePrefix($grammar);
+        return $grammar;
     }
 
     /**
@@ -190,7 +193,10 @@ class Connection extends BaseConnection
      */
     protected function getDefaultSchemaGrammar(): SchemaGrammar
     {
-        return new SchemaGrammar();
+        $grammar = new SchemaGrammar();
+        $grammar->setConnection($this);
+        $this->withTablePrefix($grammar);
+        return $grammar;
     }
 
     /**
