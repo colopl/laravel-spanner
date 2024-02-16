@@ -22,7 +22,6 @@ use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Query\Builder as BaseBuilder;
 use Illuminate\Support\Arr;
 use LogicException;
-use Override;
 
 class Builder extends BaseBuilder
 {
