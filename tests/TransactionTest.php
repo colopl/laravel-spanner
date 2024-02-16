@@ -19,7 +19,7 @@ namespace Colopl\Spanner\Tests;
 
 use Exception;
 use Google\Cloud\Core\Exception\AbortedException;
-use Google\Cloud\Spanner\Database;
+use Google\Cloud\Core\Exception\NotFoundException;
 use Google\Cloud\Spanner\Transaction;
 use Colopl\Spanner\Connection;
 use Google\Cloud\Spanner\TransactionalReadInterface;
@@ -305,20 +305,123 @@ class TransactionTest extends TestCase
         Event::assertDispatchedTimes(TransactionRolledBack::class, 1);
     }
 
-    public function testAbortedException(): void
+    public function test_default_attempts(): void
     {
-        Event::fake();
-        $retries = 3;
+        $events = Event::fake();
         $conn = $this->getDefaultConnection();
+        $aborted = false;
+        $attempts = 11;
         try {
-            $conn->transaction(fn() => throw new AbortedException('abort'), $retries);
+            $conn->transaction(fn() => throw new AbortedException('abort'));
         } catch (AbortedException) {
-
+            $aborted = true;
         }
 
-        Event::assertDispatchedTimes(TransactionBeginning::class, $retries);
-        Event::assertDispatchedTimes(TransactionCommitting::class, 0);
-        Event::assertDispatchedTimes(TransactionCommitted::class, 0);
-        Event::assertDispatchedTimes(TransactionRolledBack::class, $retries);
+        $this->assertTrue($aborted);
+        $events->assertDispatchedTimes(TransactionBeginning::class, $attempts);
+        $events->assertDispatchedTimes(TransactionCommitting::class, 0);
+        $events->assertDispatchedTimes(TransactionCommitted::class, 0);
+        $events->assertDispatchedTimes(TransactionRolledBack::class, $attempts);
+        $this->assertSame($attempts, $conn->getDefaultMaxTransactionAttempts());
+    }
+
+    public function test_user_defined_attempts(): void
+    {
+        $events = Event::fake();
+        $conn = $this->getDefaultConnection();
+        $aborted = false;
+        $attempts = 3;
+        try {
+            $conn->transaction(fn() => throw new AbortedException('abort'), $attempts);
+        } catch (AbortedException) {
+            $aborted = true;
+        }
+
+        $this->assertTrue($aborted);
+        $events->assertDispatchedTimes(TransactionBeginning::class, $attempts);
+        $events->assertDispatchedTimes(TransactionCommitting::class, 0);
+        $events->assertDispatchedTimes(TransactionCommitted::class, 0);
+        $events->assertDispatchedTimes(TransactionRolledBack::class, $attempts);
+        $this->assertSame(11, $conn->getDefaultMaxTransactionAttempts());
+    }
+
+    public function test_setDefaultMaxTransactionAttempts(): void
+    {
+        $events = Event::fake();
+        $attempts = 2;
+        $conn = $this->getDefaultConnection();
+        $conn->setDefaultMaxTransactionAttempts($attempts);
+        $aborted = false;
+        try {
+            $conn->transaction(fn() => throw new AbortedException('abort'));
+        } catch (AbortedException) {
+            $aborted = true;
+        }
+
+        $this->assertTrue($aborted);
+        $this->assertSame($attempts, $conn->getDefaultMaxTransactionAttempts());
+        $events->assertDispatchedTimes(TransactionBeginning::class, $attempts);
+        $events->assertDispatchedTimes(TransactionCommitting::class, 0);
+        $events->assertDispatchedTimes(TransactionCommitted::class, 0);
+        $events->assertDispatchedTimes(TransactionRolledBack::class, $attempts);
+    }
+
+    public function test_reset_on_exceptions(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $exceptionThrown = false;
+        try {
+            $conn->transaction(function (Connection $conn) {
+                $this->assertSame(1, $conn->transactionLevel());
+                throw new NotFoundException('NG');
+            });
+        } catch(NotFoundException) {
+            $exceptionThrown = true;
+        }
+
+        $this->assertTrue($exceptionThrown);
+        $this->assertfalse($conn->inTransaction());
+        $this->assertSame(0, $conn->transactionLevel());
+    }
+
+    public function test_reset_on_rollback_exceptions(): void
+    {
+        $base = $this->getDefaultConnection();
+        $aborted = false;
+
+        $conn = new class($base) extends Connection {
+            public function __construct(Connection $base)
+            {
+                parent::__construct(
+                    $base->instanceId,
+                    $base->database,
+                    $base->tablePrefix,
+                    $base->config,
+                    $base->authCache,
+                    $base->sessionPool,
+                );
+            }
+
+            protected function performRollBack($toLevel): void
+            {
+                $this->currentTransaction = null;
+                throw new AbortedException('NG');
+            }
+        };
+
+        try {
+            $conn->transaction(function (Connection $conn): mixed {
+                $this->assertTrue($conn->inTransaction());
+                $this->assertSame(1, $conn->transactionLevel());
+                throw new RuntimeException('Trigger rollback');
+            });
+        } catch(AbortedException) {
+            // do nothing.
+            $aborted = true;
+        }
+
+        $this->assertTrue($aborted);
+        $this->assertFalse($conn->inTransaction());
+        $this->assertSame(0, $conn->transactionLevel());
     }
 }
