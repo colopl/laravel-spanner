@@ -114,32 +114,6 @@ class BlueprintTest extends TestCase
     public function test_drop(): void
     {
         $conn = $this->getDefaultConnection();
-
-        $blueprint = new Blueprint('t', function (Blueprint $table) {
-            $table->uuid('id')->primary()->generateUuid();
-            $table->string('name');
-        });
-        $blueprint->create();
-
-        $queries = $blueprint->toSql($conn, new Grammar());
-        $this->assertSame(
-            'create table `t` (' . implode(', ', [
-                '`id` string(36) not null default (generate_uuid())',
-                '`name` string(255) not null',
-            ]) . ') primary key (`id`)',
-            $queries[0]
-        );
-
-        $conn->runDdlBatch($queries);
-        $conn->table('t')->insert(['name' => 't']);
-        $row = $conn->table('t')->first();
-        $this->assertSame(36, strlen($row['id']));
-        $this->assertSame('t', $row['name']);
-    }
-
-    public function test_drop(): void
-    {
-        $conn = $this->getDefaultConnection();
         $tableName = $this->generateTableName();
         $blueprint = new Blueprint($tableName, function (Blueprint $table) {
             $table->drop();
