@@ -1,17 +1,27 @@
-# v6.2.0 (Not Released Yet)
+# v7.0.0 (Not Released Yet)
 
 Added
 - `json` `mediumText` `longText` `char` support for `Schema\Builder` (#155) (#158)
 - `Schema\Grammar::compileDropForeign` to allow dropping foreign key constraints (#163)
 - `Schema\Builder::dropAllTables` works properly, dropping foreign keys, indexes, then tables in order of interleaving (#161)
+- Support for inserting and selecting array of DateTime/Numeric objects (#168)
+- Allow pretending for DDL statements (#170) 
+- Allow `spanner_emulator.disable_query_null_filtered_index_check` to be set (#180)
+- Allow default max transaction attempts to be changed (#179)
 - Table prefixing support (#172)
 
 Changed
 - `Query\Builder::lock()` no longer throw an error and will be ignored instead (#156)
 - `Schema\Builder::getIndexListing()` `Schema\Grammar::compileIndexListing()` converted to `getIndexes()` and `compileIndexes()` to align with standard Laravel methods (#161)
+- Missing primary key will no longer be checked and will be checked on the server side instead (#177)
+- `Connection::runDdl()` and `Connection::runDdls()` has been removed. Use `Connection::runDdlBatch()` instead. (#178)
+- Trait `ManagesStaleReads` has been removed (which contained `cursorWithTimestampBound()` and `selectWithTimestampBound()`. Use `selectWithOptions()` instead). (#178)
+- `Blueprint::interleave()` and `IndexDefinition::interleave()` now throw an error instead of a deprecation. (#178)
+- `Connection::transaction()`'s `$attempts` argument's default value was changed from 10 to -1 (which is a magic number for default value which is 11) (#179)
 
 Fixed
 - `Schema\Grammar::compileAdd()` `Schema\Grammar::compileChange()` `Schema\Grammar::compileChange()` now create separate statements (#159)
+- `Connection::runDdlBatch()` with empty statement now return an empty array instead of throwing an error (#169)
 
 # v6.1.2 (2024-01-16)
 

@@ -19,6 +19,7 @@ namespace Colopl\Spanner\Query;
 
 use Google\Cloud\Spanner\Numeric;
 use Google\Cloud\Spanner\Timestamp;
+use Google\Cloud\Spanner\ValueInterface;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Database\Query\Processors\Processor as BaseProcessor;
 use Illuminate\Support\Carbon;
@@ -31,19 +32,35 @@ class Processor extends BaseProcessor
     public function processSelect(Builder $query, $results): array
     {
         foreach ($results as $index => $result) {
-            foreach ($result as $k => $v) {
-                // Convert TIMESTAMP column values to Carbon instances
-                if ($v instanceof Timestamp) {
-                    $dt = Carbon::instance($v->get());
-                    $dt->setTimezone(date_default_timezone_get());
-                    $results[$index][$k] = $dt;
+            foreach ($result as $name => $value) {
+                if ($value instanceof ValueInterface) {
+                    $results[$index][$name] = $this->processColumn($value);
                 }
-                if ($v instanceof Numeric) {
-                    $results[$index][$k] = $v->formatAsString();
+                else if (is_array($value)) {
+                    $array = [];
+                    foreach ($value as $k => $v) {
+                        $array[$k] = ($v instanceof ValueInterface)
+                            ? $this->processColumn($v)
+                            : $v;
+                    }
+                    $results[$index][$name] = $array;
                 }
             }
         }
         return $results;
+    }
+
+    protected function processColumn(mixed $value): mixed
+    {
+        if ($value instanceof Timestamp) {
+            return Carbon::instance($value->get())->setTimezone(date_default_timezone_get());
+        }
+
+        if ($value instanceof Numeric) {
+            return $value->formatAsString();
+        }
+
+        return $value;
     }
 
     /**

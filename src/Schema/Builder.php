@@ -18,10 +18,8 @@
 namespace Colopl\Spanner\Schema;
 
 use Closure;
-use Colopl\Spanner\Query\Processor;
 use Colopl\Spanner\Connection;
 use Illuminate\Database\Schema\Builder as BaseBuilder;
-use Illuminate\Support\Fluent;
 
 /**
  * @property Grammar $grammar
@@ -34,7 +32,6 @@ class Builder extends BaseBuilder
      * @var int
      */
     public static $defaultBinaryLength = 255;
-
 
     /**
      * @deprecated Will be removed in a future Laravel version.
@@ -90,7 +87,7 @@ class Builder extends BaseBuilder
      */
     public function dropIndexIfExist($table, $name)
     {
-        if(in_array($name, $this->getIndexes($table))) {
+        if(in_array($name, $this->getIndexes($table), true)) {
             $blueprint = $this->createBlueprint($table);
             $blueprint->dropIndex($name);
             $this->build($blueprint);
@@ -108,13 +105,11 @@ class Builder extends BaseBuilder
     }
 
     /**
-     * Drop all tables from the database.
-     *
-     * @return void
+     * @inheritDoc
      */
     public function dropAllTables()
     {
-        /** @var Connection */
+        /** @var Connection $connection */
         $connection = $this->connection;
         $tables = $this->getTables();
         $sortedTables = [];
@@ -126,7 +121,9 @@ class Builder extends BaseBuilder
 
         // loop through all tables and count how many parents they have
         foreach ($sortedTables as $key => $table) {
-            if(!$table['parent']) continue;
+            if(!$table['parent']) {
+                continue;
+            }
 
             $current = $table;
             while($current['parent']) {
@@ -137,7 +134,7 @@ class Builder extends BaseBuilder
         }
 
         // sort tables desc based on parent count 
-        usort($sortedTables, fn($a, $b) => $b['parents'] <=> $a['parents']);
+        usort($sortedTables, static fn($a, $b) => $b['parents'] <=> $a['parents']);
 
         // drop foreign keys first (otherwise index queries will include them)
         $queries = [];
@@ -159,7 +156,9 @@ class Builder extends BaseBuilder
             $indexes = $this->getIndexes($tableName);
             $blueprint = $this->createBlueprint($tableName);
             foreach ($indexes as $index) {
-                if($index == 'PRIMARY_KEY') continue;
+                if($index === 'PRIMARY_KEY') {
+                    continue;
+                }
                 $blueprint->dropIndex($index);
             }
             $blueprint->drop();

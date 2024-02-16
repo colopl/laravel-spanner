@@ -17,8 +17,6 @@
 
 namespace Colopl\Spanner\Eloquent\Concerns;
 
-use Illuminate\Database\Eloquent\Builder;
-
 /**
  * Support for interleaved keys
  */

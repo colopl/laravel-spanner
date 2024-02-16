@@ -17,8 +17,9 @@
 
 namespace Colopl\Spanner\Tests;
 
+use Closure;
 use Colopl\Spanner\Connection;
-use Colopl\Spanner\Session\SessionInfo;
+use Colopl\Spanner\Schema\Blueprint;
 use Colopl\Spanner\SpannerServiceProvider;
 use Google\Cloud\Spanner\Bytes;
 use Google\Cloud\Spanner\Date;
@@ -41,7 +42,21 @@ abstract class TestCase extends \Orchestra\Testbench\TestCase
     protected const TABLE_NAME_ITEM_TAG = 'ItemTag';
     protected const TABLE_NAME_ARRAY_TEST = 'ArrayTest';
 
-    protected function generateTableName(string $prefix): string
+    /**
+     * @param Closure(Blueprint): void $callback
+     */
+    protected function createTempTable(Closure $callback): string
+    {
+        $table = $this->generateTableName('Test');
+
+        $this->getDefaultConnection()
+            ->getSchemaBuilder()
+            ->create($table, $callback);
+
+        return $table;
+    }
+
+    protected function generateTableName(string $prefix = 'Temp'): string
     {
         return $prefix . '_' . date('Ymd_His_v');
     }
