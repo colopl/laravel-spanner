@@ -555,4 +555,26 @@ class ConnectionTest extends TestCase
         $conn = $this->getDefaultConnection();
         self::assertSame('[]', $conn->escape([[]]));
     }
+
+    public function test_getTablePrefix(): void
+    {
+        config()->set('database.connections.main.prefix', 'test_');
+        $tablePrefix = $this->getConnection('main')->getTablePrefix();
+        self::assertSame('test_', $tablePrefix);
+    }
+
+    public function test_getQueryGrammar(): void
+    {
+        config()->set('database.connections.main.prefix', 'test_');
+        $conn = $this->getConnection('main');
+        self::assertSame('test_', $conn->getQueryGrammar()->getTablePrefix());
+    }
+
+    public function test_getSchemaGrammar(): void
+    {
+        config()->set('database.connections.main.prefix', 'test_');
+        $conn = $this->getConnection('main');
+        $conn->useDefaultSchemaGrammar();
+        self::assertSame('test_', $conn->getSchemaGrammar()->getTablePrefix());
+    }
 }
