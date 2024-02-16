@@ -28,6 +28,8 @@ use Illuminate\Support\Str;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use LogicException;
+
 use const Grpc\STATUS_ALREADY_EXISTS;
 
 class BuilderTest extends TestCase
@@ -251,7 +253,7 @@ class BuilderTest extends TestCase
         for ($i = 0; $i < 100; $i++) {
             $insertValues[] = [
                 'userId' => $this->generateUuid(),
-                'name' => 'test'.$i,
+                'name' => 'test' . $i,
             ];
         }
         $qb->insert($insertValues);
@@ -400,7 +402,7 @@ class BuilderTest extends TestCase
         $testDataCount = 100;
         $insertValues = [];
         for ($i = 0; $i < $testDataCount; $i++) {
-            $insertValues[] = ['userId' => $this->generateUuid(), 'name' => 'test'.$i];
+            $insertValues[] = ['userId' => $this->generateUuid(), 'name' => 'test' . $i];
         }
         $qb->insert($insertValues);
 
@@ -415,18 +417,46 @@ class BuilderTest extends TestCase
         $tableName = self::TABLE_NAME_USER;
         $qb = $conn->table($tableName);
 
-        $this->assertEquals('select * from `User`', $qb->toSql());
+        $this->assertSame('select * from `User`', $qb->toSql());
 
         $qb->forceIndex('test_index_name');
-        $this->assertEquals('select * from `User` @{FORCE_INDEX=test_index_name}', $qb->toSql());
+        $this->assertSame('select * from `User` @{FORCE_INDEX=test_index_name}', $qb->toSql());
 
         $qb->forceIndex('test_index_name2');
-        $this->assertEquals('select * from `User` @{FORCE_INDEX=test_index_name2}', $qb->toSql());
+        $this->assertSame('select * from `User` @{FORCE_INDEX=test_index_name2}', $qb->toSql());
 
         $qb->forceIndex(null);
-        $this->assertEquals('select * from `User`', $qb->toSql());
+        $this->assertSame('select * from `User`', $qb->toSql());
 
         $this->assertInstanceOf(Builder::class, $qb->forceIndex(null));
+    }
+
+    public function test_disableEmulatorNullFilteredIndexCheck(): void
+    {
+        $conn = $this->getDefaultConnection();
+
+        $tableName = $this->createTempTable(function (Blueprint $blueprint): void {
+            $blueprint->uuid('id')->primary();
+            $blueprint->string('name');
+            $blueprint->index(['name'], 'test_index_name')->nullFiltered();
+        });
+
+        $qb = $conn->table($tableName)
+            ->forceIndex('test_index_name')
+            ->disableEmulatorNullFilteredIndexCheck();
+
+        $hint = '@{FORCE_INDEX=test_index_name,spanner_emulator.disable_query_null_filtered_index_check=true}';
+        $this->assertSame("select * from `{$tableName}` {$hint}", $qb->toSql());
+        $this->assertSame([], $qb->get()->all());
+    }
+
+    public function test_disableEmulatorNullFilteredIndexCheck_without_calling_force_index(): void
+    {
+        $this->expectExceptionMessage('Force index must be set before disabling null filter index check');
+        $this->expectException(LogicException::class);
+
+        $conn = $this->getDefaultConnection();
+        $conn->table('Test')->disableEmulatorNullFilteredIndexCheck();
     }
 
     public function test_useIndex(): void
