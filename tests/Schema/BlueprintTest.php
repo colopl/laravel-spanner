@@ -486,6 +486,44 @@ class BlueprintTest extends TestCase
         $this->assertSame(['a', 'b'], $result['string_array']);
     }
 
+    public function test_increments(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $grammar = new Grammar();
+
+        $incrementTypeCalls = [
+            fn(Blueprint $t) => $t->id(),
+            fn(Blueprint $t) => $t->tinyIncrements('id'),
+            fn(Blueprint $t) => $t->smallIncrements('id'),
+            fn(Blueprint $t) => $t->mediumIncrements('id'),
+            fn(Blueprint $t) => $t->bigIncrements('id'),
+        ];
+
+        foreach ($incrementTypeCalls as $typeCalls) {
+            $table = $this->generateTableName(class_basename(__CLASS__));
+            $blueprint = new Blueprint($table, $typeCalls);
+            $blueprint->create();
+            $this->assertSame(
+                ['create table `' . $table . '` (`id` string(36) not null default (generate_uuid())) primary key (`id`)'],
+                $blueprint->toSql($conn, $grammar)
+            );
+        }
+
+        $table = $this->generateTableName(class_basename(__CLASS__));
+        $blueprint = new Blueprint($table, function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+        });
+        $blueprint->create();
+        $statements = $blueprint->toSql($conn, $grammar);
+
+        $conn->runDdlBatch($statements);
+        $conn->table($table)->insert(['name' => 't']);
+        $row = $conn->table($table)->first();
+        $this->assertSame(36, strlen($row['id']));
+        $this->assertSame('t', $row['name']);
+    }
+
     public function test_index_with_interleave(): void
     {
         $conn = $this->getDefaultConnection();
