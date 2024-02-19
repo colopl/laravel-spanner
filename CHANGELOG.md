@@ -9,6 +9,7 @@ Added
 - Allow `spanner_emulator.disable_query_null_filtered_index_check` to be set (#180)
 - Allow default max transaction attempts to be changed (#179)
 - Table prefixing support (#172)
+- Support for GENERATE_UUID() in migrations (#174)
 
 Changed
 - `Query\Builder::lock()` no longer throw an error and will be ignored instead (#156)

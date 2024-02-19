@@ -37,7 +37,7 @@ class BlueprintTest extends TestCase
             $table->integer('int');
             $table->float('float');
             $table->decimal('decimal');
-            $table->string('name');
+            $table->string('string');
             $table->char('char');
             $table->text('text');
             $table->mediumText('medium_text');
@@ -64,7 +64,7 @@ class BlueprintTest extends TestCase
                 '`int` int64 not null',
                 '`float` float64 not null',
                 '`decimal` numeric not null',
-                '`name` string(255) not null',
+                '`string` string(255) not null',
                 '`char` string(255) not null',
                 '`text` string(max) not null',
                 '`medium_text` string(max) not null',
@@ -83,6 +83,32 @@ class BlueprintTest extends TestCase
                 '`created_at` timestamp, `updated_at` timestamp',
             ]) . ') primary key (`id`)',
         ], $statements);
+    }
+
+    public function test_create_with_generateUuid(): void
+    {
+        $conn = $this->getDefaultConnection();
+
+        $blueprint = new Blueprint('t', function (Blueprint $table) {
+            $table->uuid('id')->primary()->generateUuid();
+            $table->string('name');
+        });
+        $blueprint->create();
+
+        $queries = $blueprint->toSql($conn, new Grammar());
+        $this->assertSame(
+            'create table `t` (' . implode(', ', [
+                '`id` string(36) not null default (generate_uuid())',
+                '`name` string(255) not null',
+            ]) . ') primary key (`id`)',
+            $queries[0]
+        );
+
+        $conn->runDdlBatch($queries);
+        $conn->table('t')->insert(['name' => 't']);
+        $row = $conn->table('t')->first();
+        $this->assertSame(36, strlen($row['id']));
+        $this->assertSame('t', $row['name']);
     }
 
     public function test_drop(): void

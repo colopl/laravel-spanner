@@ -94,7 +94,16 @@ class Blueprint extends BaseBlueprint
         $this->markAsNotSupported('AUTO_INCREMENT');
     }
 
-    // region Spanner Specific Types
+    /**
+     * @inheritDoc
+     * @return UuidColumnDefinition
+     */
+    public function uuid($column = 'uuid')
+    {
+        $definition = new UuidColumnDefinition(['type' => 'uuid', 'name' => $column]);
+        $this->addColumnDefinition($definition);
+        return $definition;
+    }
 
     /**
      * @param  string  $column
