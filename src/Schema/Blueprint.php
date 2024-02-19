@@ -94,11 +94,11 @@ class Blueprint extends BaseBlueprint
 
     /**
      * @inheritDoc
-     * @return SpannerColumnDefinition
+     * @return UuidColumnDefinition
      */
     public function uuid($column = 'uuid')
     {
-        $definition = new SpannerColumnDefinition(['type' => 'uuid', 'name' => $column]);
+        $definition = new UuidColumnDefinition(['type' => 'uuid', 'name' => $column]);
         $this->addColumnDefinition($definition);
         return $definition;
     }
