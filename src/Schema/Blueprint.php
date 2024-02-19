@@ -33,6 +33,26 @@ class Blueprint extends BaseBlueprint
 
     /**
      * @inheritDoc
+     * @return IntColumnDefinition
+     */
+    public function bigInteger($column, $autoIncrement = false, $unsigned = false): IntColumnDefinition
+    {
+        $definition = new IntColumnDefinition($this, ['type' => 'bigInteger', 'name' => $column]);
+        $this->addColumnDefinition($definition);
+        return $definition;
+    }
+
+    /**
+     * @inheritDoc
+     * @return IntColumnDefinition
+     */
+    public function integer($column, $autoIncrement = false, $unsigned = false): IntColumnDefinition
+    {
+        return $this->bigInteger($column, $autoIncrement, $unsigned);
+    }
+
+    /**
+     * @inheritDoc
      * @return never
      */
     public function temporary()
@@ -293,6 +313,57 @@ class Blueprint extends BaseBlueprint
     public function dropRowDeletionPolicy(): Fluent
     {
         return $this->addCommand('dropRowDeletionPolicy');
+    }
+
+    /**
+     * @param string $name
+     * @return SequenceDefinition
+     */
+    public function createSequence(string $name): Fluent
+    {
+        $definition = new SequenceDefinition($name);
+        $this->addCommand('createSequence', ['definition' => $definition, 'ifNotExists' => false]);
+        return $definition;
+    }
+
+    /**
+     * @param string $name
+     * @return SequenceDefinition
+     */
+    public function createSequenceIfNotExist(string $name): SequenceDefinition
+    {
+        $definition = new SequenceDefinition($name);
+        $this->addCommand('createSequence', ['definition' => $definition, 'ifNotExists' => true]);
+        return $definition;
+    }
+
+    /**
+     * @param string $name
+     * @return SequenceDefinition
+     */
+    public function alterSequence(string $name): Fluent
+    {
+        $definition = new SequenceDefinition($name);
+        $this->addCommand('alterSequence', ['definition' => $definition]);
+        return $definition;
+    }
+
+    /**
+     * @param string $name
+     * @return Fluent<string, mixed>
+     */
+    public function dropSequence(string $name): Fluent
+    {
+        return $this->addCommand('dropSequence', ['sequence' => $name, 'ifExists' => false]);
+    }
+
+    /**
+     * @param string $name
+     * @return Fluent<string, mixed>
+     */
+    public function dropSequenceIfExist(string $name): Fluent
+    {
+        return $this->addCommand('dropSequence', ['sequence' => $name, 'ifExists' => true]);
     }
 
     /**

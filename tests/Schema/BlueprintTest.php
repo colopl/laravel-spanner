@@ -20,6 +20,7 @@ namespace Colopl\Spanner\Tests\Schema;
 use Colopl\Spanner\Schema\Blueprint;
 use Colopl\Spanner\Schema\Grammar;
 use Colopl\Spanner\Tests\TestCase;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -384,6 +385,134 @@ class BlueprintTest extends TestCase
         ], $statements);
     }
 
+    public function test_createSequence(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $conn->useDefaultSchemaGrammar();
+        $grammar = $conn->getSchemaGrammar();
+        $seqName = $this->generateTableName('seq');
+        $blueprint = new Blueprint('_', function (Blueprint $table) use ($seqName) {
+            $table->createSequence($seqName);
+        });
+        $blueprint->build($conn, $grammar);
+
+        $this->assertSame([
+            "create sequence `{$seqName}` options (sequence_kind='bit_reversed_positive')",
+        ], $blueprint->toSql($conn, $grammar));
+        $this->assertContains(
+            $seqName,
+            Arr::pluck($conn->select('SELECT NAME FROM INFORMATION_SCHEMA.SEQUENCES'), 'NAME'),
+        );
+    }
+
+    public function test_createSequence_with_options(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $conn->useDefaultSchemaGrammar();
+        $grammar = $conn->getSchemaGrammar();
+        $seqName = $this->generateTableName('seq');
+        $blueprint = new Blueprint('_', function (Blueprint $table) use ($seqName) {
+            $table->createSequence($seqName)
+                ->skipRangeMin(1)
+                ->skipRangeMax(10)
+                ->startWithCounter(5);
+        });
+        $blueprint->build($conn, $grammar);
+
+        $this->assertSame([
+            "create sequence `{$seqName}` options (sequence_kind='bit_reversed_positive', start_with_counter=5, skip_range_min=1, skip_range_max=10)",
+        ], $blueprint->toSql($conn, $grammar));
+        $this->assertContains(
+            $seqName,
+            Arr::pluck($conn->select('SELECT NAME FROM INFORMATION_SCHEMA.SEQUENCES'), 'NAME'),
+        );
+    }
+
+    public function test_createSequenceIfNotExist(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $conn->useDefaultSchemaGrammar();
+        $grammar = $conn->getSchemaGrammar();
+        $seqName = $this->generateTableName('seq');
+        $blueprint = new Blueprint('_', static fn(Blueprint $table) => $table->createSequenceIfNotExist($seqName));
+        $blueprint->build($conn, $grammar);
+        $count = count($conn->select('SELECT * FROM INFORMATION_SCHEMA.SEQUENCES'));
+        $blueprint = new Blueprint('_', static fn(Blueprint $table) => $table->createSequenceIfNotExist($seqName));
+        $blueprint->build($conn, $grammar);
+        $this->assertSame([
+            "create sequence if not exists `{$seqName}` options (sequence_kind='bit_reversed_positive')",
+        ], $blueprint->toSql($conn, $grammar));
+        $this->assertCount($count, $conn->select('SELECT * FROM INFORMATION_SCHEMA.SEQUENCES'));
+    }
+
+    public function test_alterSequence(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $conn->useDefaultSchemaGrammar();
+        $grammar = $conn->getSchemaGrammar();
+        $seqName = $this->generateTableName('seq');
+
+        $blueprint = new Blueprint('_', fn(Blueprint $table) => $table->createSequence($seqName));
+        $blueprint->build($conn, $grammar);
+
+        $blueprint = new Blueprint('_', function (Blueprint $table) use ($seqName) {
+            $table->alterSequence($seqName)->startWithCounter(5);
+        });
+        $blueprint->build($conn, $grammar);
+
+        $this->assertSame([
+            "alter sequence `{$seqName}` set options (sequence_kind='bit_reversed_positive', start_with_counter=5)",
+        ], $blueprint->toSql($conn, $grammar));
+        $this->assertContains(
+            $seqName,
+            Arr::pluck($conn->select('SELECT NAME FROM INFORMATION_SCHEMA.SEQUENCES'), 'NAME'),
+        );
+    }
+
+    public function test_dropSequence(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $conn->useDefaultSchemaGrammar();
+        $grammar = $conn->getSchemaGrammar();
+        $seqName = $this->generateTableName('seq');
+
+        $blueprint = new Blueprint('_', static fn(Blueprint $table) => $table->createSequence($seqName));
+        $blueprint->build($conn, $grammar);
+
+        $blueprint = new Blueprint('_', static fn(Blueprint $table) => $table->dropSequence($seqName));
+        $blueprint->build($conn, $grammar);
+
+        $this->assertSame(["drop sequence `{$seqName}`"], $blueprint->toSql($conn, $grammar));
+        $this->assertNotContains(
+            $seqName,
+            Arr::pluck($conn->select('SELECT NAME FROM INFORMATION_SCHEMA.SEQUENCES'), 'NAME'),
+        );
+    }
+
+    public function test_dropSequenceIfExist(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $conn->useDefaultSchemaGrammar();
+        $grammar = $conn->getSchemaGrammar();
+        $seqName = $this->generateTableName('seq');
+
+        $blueprint = new Blueprint('_', fn(Blueprint $table) => $table->createSequence($seqName));
+        $blueprint->build($conn, $grammar);
+
+        $blueprint = new Blueprint('_', static fn(Blueprint $table) => $table->dropSequenceIfExist($seqName));
+        $blueprint->build($conn, $grammar);
+
+        $this->assertSame(["drop sequence if exists `{$seqName}`"], $blueprint->toSql($conn, $grammar));
+        $this->assertNotContains(
+            $seqName,
+            Arr::pluck($conn->select('SELECT NAME FROM INFORMATION_SCHEMA.SEQUENCES'), 'NAME'),
+        );
+
+        // No error should be thrown
+        $blueprint = new Blueprint('_', static fn(Blueprint $table) => $table->dropSequenceIfExist($seqName));
+        $blueprint->build($conn, $grammar);
+    }
+
     public function test_default_values(): void
     {
         $conn = $this->getDefaultConnection();
@@ -395,7 +524,9 @@ class BlueprintTest extends TestCase
             $table->uuid('id');
             $table->integer('null')->default(null)->nullable();
             $table->integer('int')->default(1);
+            $table->integer('int_seq')->useSequence();
             $table->bigInteger('bigint')->default(1);
+            $table->integer('bigint_seq')->useSequence();
             $table->float('float')->default(0.1);
             $table->double('double')->default(0.1);
             $table->decimal('decimal')->default(123.456);
@@ -425,11 +556,15 @@ class BlueprintTest extends TestCase
 
         $statements = $blueprint->toSql($conn, $grammar);
         $this->assertSame([
+            "create sequence `{$tableName}_int_seq_sequence` options (sequence_kind='bit_reversed_positive')",
+            "create sequence `{$tableName}_bigint_seq_sequence` options (sequence_kind='bit_reversed_positive')",
             "create table `{$tableName}` (" . implode(', ', [
                 '`id` string(36) not null',
                 '`null` int64',
                 '`int` int64 not null default (1)',
+                '`int_seq` int64 not null default (get_next_sequence_value(sequence ' . $tableName . '_int_seq_sequence))',
                 '`bigint` int64 not null default (1)',
+                '`bigint_seq` int64 not null default (get_next_sequence_value(sequence ' . $tableName . '_bigint_seq_sequence))',
                 '`float` float64 not null default (0.1)',
                 '`double` float64 not null default (0.1)',
                 '`decimal` numeric not null default (123.456)',
@@ -466,6 +601,9 @@ class BlueprintTest extends TestCase
 
         $this->assertSame(null, $result['null']);
         $this->assertSame(1, $result['int']);
+        $this->assertIsInt($result['int_seq']);
+        $this->assertSame(1, $result['bigint']);
+        $this->assertIsInt($result['bigint_seq']);
         $this->assertSame(0.1, $result['float']);
         $this->assertSame(true, $result['bool']);
         $this->assertSame('a', $result['string']);
