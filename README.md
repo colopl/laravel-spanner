@@ -93,7 +93,8 @@ If you use interleaved keys, you MUST define them in the `interleaveKeys` proper
 ### Migrations
 
 Since Cloud Spanner does not support AUTO_INCREMENT attribute, `Blueprint::increments` (and all of its variants) will 
-create a column of type `STRING(36) DEFAULT (GENERATE_UUID())` (set as primary key) to generate and fill the column with a UUID.
+create a column of type `STRING(36) DEFAULT (GENERATE_UUID())` to generate and fill the column with a UUID
+and flag it as a primary key.
 
 ### Transactions
 Google Cloud Spanner sometimes requests transaction retries (e.g. `UNAVAILABLE`, and `ABORTED`), even if the logic is correct. For that reason, please do not manage transactions manually.
