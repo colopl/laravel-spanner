@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace Colopl\Spanner\Schema;
 
-use Colopl\Spanner\Support\Ensure;
 use Illuminate\Database\Schema\ColumnDefinition;
 
+/**
+ * @property string $name
+ * @property string|null $useSequence
+ */
 class IntColumnDefinition extends ColumnDefinition
 {
     public function __construct(protected Blueprint $blueprint, $attributes = [])
@@ -22,7 +25,7 @@ class IntColumnDefinition extends ColumnDefinition
      */
     public function useSequence(?string $name = null): static
     {
-        $this->attributes['useSequence'] = $name ?? $this->createDefaultSequence();
+        $this->useSequence = $name ?? $this->createDefaultSequence();
         return $this;
     }
 
@@ -32,7 +35,8 @@ class IntColumnDefinition extends ColumnDefinition
     protected function createDefaultSequence(): string
     {
         $definition = $this->blueprint->createSequence($this->createSequenceName());
-        return Ensure::string($definition->name);
+        $definition->startWithCounter(random_int(1, 1000000));
+        return $definition->name;
     }
 
     /**
@@ -43,7 +47,7 @@ class IntColumnDefinition extends ColumnDefinition
         return $this->blueprint->getPrefix()
             . $this->blueprint->getTable()
             . '_'
-            . Ensure::string($this['name'])
+            . $this->name
             . '_sequence';
     }
 

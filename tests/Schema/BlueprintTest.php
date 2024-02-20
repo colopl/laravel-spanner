@@ -555,9 +555,10 @@ class BlueprintTest extends TestCase
         $blueprint->create();
 
         $statements = $blueprint->toSql($conn, $grammar);
-        $this->assertSame([
-            "create sequence `{$tableName}_int_seq_sequence` options (sequence_kind='bit_reversed_positive')",
-            "create sequence `{$tableName}_bigint_seq_sequence` options (sequence_kind='bit_reversed_positive')",
+
+        $this->assertStringStartsWith("create sequence `{$tableName}_int_seq_sequence` options (sequence_kind='bit_reversed_positive', start_with_counter=", $statements[0]);
+        $this->assertStringStartsWith("create sequence `{$tableName}_bigint_seq_sequence` options (sequence_kind='bit_reversed_positive', start_with_counter=", $statements[1]);
+        $this->assertSame(
             "create table `{$tableName}` (" . implode(', ', [
                 '`id` string(36) not null',
                 '`null` int64',
@@ -588,8 +589,8 @@ class BlueprintTest extends TestCase
                 '`string_array` array<string(1)> not null default (["a", "b"])',
                 '`date_array` array<date> not null default ([date "2022-01-01"])',
                 '`timestamp_array` array<timestamp> not null default ([timestamp "2022-01-01T00:00:00.000000+00:00"])',
-            ]) . ') primary key (`id`)',
-        ], $statements);
+            ]) . ') primary key (`id`)'
+        , $statements[2]);
 
         $blueprint->build($conn, $grammar);
         $query = $conn->table($tableName);

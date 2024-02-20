@@ -252,7 +252,7 @@ class Grammar extends BaseGrammar
     {
         return 'create sequence '
             . ($command->ifNotExists ? 'if not exists ' : '')
-            . $this->wrap(Ensure::string($command->definition->name))
+            . $this->wrap($command->definition->name)
             . ' '
             . $this->formatSequenceOptions($command->definition);
     }

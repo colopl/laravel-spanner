@@ -37,7 +37,7 @@ class Blueprint extends BaseBlueprint
      */
     public function bigInteger($column, $autoIncrement = false, $unsigned = false): IntColumnDefinition
     {
-        $definition = new IntColumnDefinition($this, ['type' => 'bigInteger', 'name' => $column]);
+        $definition = new IntColumnDefinition($this, ['type' => __FUNCTION__, 'name' => $column]);
         $this->addColumnDefinition($definition);
         return $definition;
     }

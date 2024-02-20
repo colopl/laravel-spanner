@@ -188,6 +188,7 @@ $queryBuilder
 > This means, queries running with data boost will not be associated with transactions that may be taking place.
 
 ### Data Types
+
 Some data types of Google Cloud Spanner does not have corresponding built-in type of PHP.
 You can use following classes by [Google Cloud PHP Client](https://github.com/googleapis/google-cloud-php)
 
@@ -264,6 +265,35 @@ $schemaBuilder->table('user', function (Blueprint $table) {
     $table->dropRowDeletionPolicy();
 });
 ```
+
+### Sequence
+
+If you want a simple sequence to be used as a primary key, you can use `useSequence()` method.
+If `useSequence()` is called without providing a `$name`, a sequence with name `user_id_sequence` will be created
+with `start_with_counter` set with a random value between 1 and 1,000,000.
+
+```php
+$schemaBuilder->create('user', function (Blueprint $table) {
+    $table->integer('id')->useSequence();
+});
+```
+
+If you want to be more flexibility, you can also create, alter, and drop sequences directly as below.
+
+```php
+$schemaBuilder->create('user_items', function (Blueprint $table) {
+    $table->createSequence('sequence_name');
+    $table->integer('id')->useSequence('sequence_name');
+    
+    $table->alterSequence('sequence_name')
+        ->startWithCounter(100)
+        ->skipRangeMin(1)
+        ->skipRangeMax(10);
+    
+    $table->dropSequence('sequence_name');
+});
+```
+
 
 ### Secondary Index Options
 

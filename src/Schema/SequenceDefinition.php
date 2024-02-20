@@ -2,11 +2,13 @@
 
 namespace Colopl\Spanner\Schema;
 
-use Colopl\Spanner\Support\Ensure;
 use Illuminate\Support\Fluent;
 
 /**
  * @property string $name
+ * @property int|null $startWithCounter
+ * @property int|null $skipRangeMin
+ * @property int|null $skipRangeMax
  * @method $this startWithCounter(int $value) set option start_with_counter
  * @method $this skipRangeMin(int $value) set option skip_range_min
  * @method $this skipRangeMax(int $value) set option skip_range_max
@@ -24,18 +26,11 @@ class SequenceDefinition extends Fluent
      */
     public function getOptions(): array
     {
-        $options = [
+        return array_filter([
             'sequenceKind' => 'bit_reversed_positive',
-        ];
-        if (array_key_exists('startWithCounter', $this->attributes)) {
-            $options['startWithCounter'] = Ensure::int($this->attributes['startWithCounter']);
-        }
-        if (array_key_exists('skipRangeMin', $this->attributes)) {
-            $options['skipRangeMin'] = Ensure::int($this->attributes['skipRangeMin']);
-        }
-        if (array_key_exists('skipRangeMax', $this->attributes)) {
-            $options['skipRangeMax'] = Ensure::int($this->attributes['skipRangeMax']);
-        }
-        return $options;
+            'startWithCounter' => $this->startWithCounter,
+            'skipRangeMin' => $this->skipRangeMin,
+            'skipRangeMax' => $this->skipRangeMax,
+        ], static fn($v) => $v !== null);
     }
 }
