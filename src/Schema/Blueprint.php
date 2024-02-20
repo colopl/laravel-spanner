@@ -351,7 +351,7 @@ class Blueprint extends BaseBlueprint
      */
     public function dropSequence(string $name): Fluent
     {
-        return $this->addCommand(__FUNCTION__, ['sequence' => $name, 'ifExists' => false]);
+        return $this->addCommand(__FUNCTION__, ['sequence' => $name]);
     }
 
     /**
@@ -360,7 +360,7 @@ class Blueprint extends BaseBlueprint
      */
     public function dropSequenceIfExists(string $name): Fluent
     {
-        return $this->addCommand(__FUNCTION__, ['sequence' => $name, 'ifExists' => true]);
+        return $this->addCommand(__FUNCTION__, ['sequence' => $name]);
     }
 
     /**
