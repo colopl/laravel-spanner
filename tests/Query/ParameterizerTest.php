@@ -27,11 +27,11 @@ class ParameterizerTest extends TestCase
         $parameterizer = new Parameterizer();
         $bindings = [$this->generateUuid(), 'test-name', null, 0, [1, 2, 3], []];
         [$query, $newBindings] = $parameterizer->parameterizeQuery('INSERT INTO `Test` (ID, Name, Nullable, Int, IntList, EmptyList) VALUES (?, ?, ?, ?, ?, ?)', $bindings);
-        $this->assertEquals('INSERT INTO `Test` (ID, Name, Nullable, Int, IntList, EmptyList) VALUES (@p0, @p1, NULL, @p3, @p4, [])', $query);
-        $this->assertEquals($bindings[0], $newBindings['p0']);
-        $this->assertEquals($bindings[1], $newBindings['p1']);
-        $this->assertEquals($bindings[3], $newBindings['p3']);
-        $this->assertEquals($bindings[4], $newBindings['p4']);
+        $this->assertSame('INSERT INTO `Test` (ID, Name, Nullable, Int, IntList, EmptyList) VALUES (@p0, @p1, NULL, @p3, @p4, [])', $query);
+        $this->assertSame($bindings[0], $newBindings['p0']);
+        $this->assertSame($bindings[1], $newBindings['p1']);
+        $this->assertSame($bindings[3], $newBindings['p3']);
+        $this->assertSame($bindings[4], $newBindings['p4']);
     }
 
     /**
@@ -45,18 +45,18 @@ class ParameterizerTest extends TestCase
         // % should be treated as multi-string wildcard
         $bindings = ['normal\%string', '\'--injection%', '%'.chr(0xbf).chr(0x27), 'test'];
         [$query, $newBindings] = $parameterizer->parameterizeQuery('SELECT * FROM `User` WHERE `Col1` LIKE ? AND `Col2` LIKE ? AND `Col3` LIKE ? AND `Col4` LIKE ?', $bindings);
-        $this->assertEquals("SELECT * FROM `User` WHERE `Col1` LIKE @p0 AND `Col2` LIKE '\'--injection%' AND `Col3` LIKE '%\xbf\\\x27' AND `Col4` LIKE @p3", $query);
-        $this->assertEquals($bindings[0], $newBindings['p0']);
+        $this->assertSame("SELECT * FROM `User` WHERE `Col1` LIKE @p0 AND `Col2` LIKE '\'--injection%' AND `Col3` LIKE '%\xbf\\\x27' AND `Col4` LIKE @p3", $query);
+        $this->assertSame($bindings[0], $newBindings['p0']);
 
         // queries that do not have LIKE will not embed anything
         [$query, $newBindings] = $parameterizer->parameterizeQuery('INSERT INTO `User` (`ID`, `Name`) VALUES (?, ?, ?, ?)', $bindings);
-        $this->assertEquals("INSERT INTO `User` (`ID`, `Name`) VALUES (@p0, @p1, @p2, @p3)", $query);
+        $this->assertSame("INSERT INTO `User` (`ID`, `Name`) VALUES (@p0, @p1, @p2, @p3)", $query);
 
         // \_ (escaped) should be treated as normal string and should be converted to @p0
         // _ should be treated as single-string wildcard
         $bindings = ['normal\_string', 'wildcard_', '_wildcard', 'wil_card'];
         [$query, $newBindings] = $parameterizer->parameterizeQuery('LIKE ? ? ? ?', $bindings);
-        $this->assertEquals("LIKE @p0 'wildcard_' '_wildcard' 'wil_card'", $query);
+        $this->assertSame("LIKE @p0 'wildcard_' '_wildcard' 'wil_card'", $query);
     }
 
     /**
@@ -70,6 +70,6 @@ class ParameterizerTest extends TestCase
         $bindings = ["%\ntest"];
         [$query, $options] = $parameterizer->parameterizeQuery('LIKE ?', $bindings);
 
-        $this->assertEquals("LIKE '''%\ntest'''", $query);
+        $this->assertSame("LIKE '''%\ntest'''", $query);
     }
 }

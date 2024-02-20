@@ -49,9 +49,9 @@ class UnnestTest extends TestCase
         $sql = $qb->toSql();
         $results = $qb->get('testId')->pluck('testId')->sort()->values();
 
-        self::assertEquals('select * from `Test` where `testId` in unnest(?)', $sql);
-        self::assertCount(3, $results);
-        self::assertEquals($ids->all(), $results->all());
+        $this->assertSame('select * from `Test` where `testId` in unnest(?)', $sql);
+        $this->assertCount(3, $results);
+        $this->assertSame($ids->all(), $results->all());
     }
 
     public function testUnnestingEmpty(): void
@@ -63,7 +63,7 @@ class UnnestTest extends TestCase
         $sql = $qb->toSql();
         $results = $qb->get('testId')->pluck('testId')->sort()->values();
 
-        self::assertEquals('select * from `Test` where 0 = 1', $sql);
-        self::assertEquals([], $results->all());
+        $this->assertSame('select * from `Test` where 0 = 1', $sql);
+        $this->assertSame([], $results->all());
     }
 }

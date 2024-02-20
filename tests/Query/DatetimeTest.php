@@ -35,13 +35,13 @@ class DatetimeTest extends TestCase
 
         /** @var Timestamp $ts */
         $ts = $db->execute('SELECT TIMESTAMP("2018-01-01T00:00:00.000000Z")')->rows()->current()[0];
-        $this->assertEquals('Z', $ts->get()->getTimezone()->getName());
-        $this->assertEquals('2018-01-01 00:00:00.000000+00:00', $ts->get()->format('Y-m-d H:i:s.uP'));
+        $this->assertSame('Z', $ts->get()->getTimezone()->getName());
+        $this->assertSame('2018-01-01 00:00:00.000000+00:00', $ts->get()->format('Y-m-d H:i:s.uP'));
 
         /** @var Timestamp $ts2 */
         $ts2 = $db->execute('SELECT TIMESTAMP("2018-01-01T09:00:00.000000+09:00")')->rows()->current()[0];
-        $this->assertEquals('Z', $ts2->get()->getTimezone()->getName());
-        $this->assertEquals('2018-01-01 00:00:00.000000+00:00', $ts2->get()->format('Y-m-d H:i:s.uP'));
+        $this->assertSame('Z', $ts2->get()->getTimezone()->getName());
+        $this->assertSame('2018-01-01 00:00:00.000000+00:00', $ts2->get()->format('Y-m-d H:i:s.uP'));
 
 
         // Cloud Spanner library will ignore PHP's default timezone and always returns UTC (Z)
@@ -49,8 +49,8 @@ class DatetimeTest extends TestCase
 
         /** @var Timestamp $ts3 */
         $ts3 = $db->execute('SELECT TIMESTAMP("2018-01-01T09:00:00.000000+09:00")')->rows()->current()[0];
-        $this->assertEquals('Z', $ts3->get()->getTimezone()->getName());
-        $this->assertEquals('2018-01-01 00:00:00.000000+00:00', $ts3->get()->format('Y-m-d H:i:s.uP'));
+        $this->assertSame('Z', $ts3->get()->getTimezone()->getName());
+        $this->assertSame('2018-01-01 00:00:00.000000+00:00', $ts3->get()->format('Y-m-d H:i:s.uP'));
     }
 
     public function testTimezoneWithQueryBuilder(): void
@@ -59,13 +59,13 @@ class DatetimeTest extends TestCase
 
         date_default_timezone_set('Asia/Tokyo');
         $expected = new DateTime('2018-03-13 09:00:00');
-        $this->assertEquals('Asia/Tokyo', $expected->getTimezone()->getName());
+        $this->assertSame('Asia/Tokyo', $expected->getTimezone()->getName());
 
         $row = $conn->query()->selectRaw('TIMESTAMP("2018-03-13T00:00:00Z")')->get()->first();
         /** @var DateTimeInterface $datetime */
         $datetime = $row[0];
-        $this->assertEquals($expected->getTimestamp(), $datetime->getTimestamp());
-        $this->assertEquals('Asia/Tokyo', $datetime->getTimezone()->getName());
+        $this->assertSame($expected->getTimestamp(), $datetime->getTimestamp());
+        $this->assertSame('Asia/Tokyo', $datetime->getTimezone()->getName());
     }
 
     public function testTimestampCreateWithNanoseconds(): void
@@ -73,8 +73,8 @@ class DatetimeTest extends TestCase
         $datetime = DateTime::createFromFormat(Timestamp::FORMAT, '2018-03-13T16:40:12.345678Z');
         $ts = new Timestamp($datetime);
 
-        $this->assertEquals($datetime->getTimestamp(), $ts->get()->getTimestamp());
-        $this->assertEquals(345678000, $ts->nanoSeconds());
+        $this->assertSame($datetime->getTimestamp(), $ts->get()->getTimestamp());
+        $this->assertSame(345678000, $ts->nanoSeconds());
     }
 
     public function testFormatTimestamp(): void
@@ -83,7 +83,7 @@ class DatetimeTest extends TestCase
         $row = $conn->query()->selectRaw('TIMESTAMP("2018-03-13T16:40:12.300000Z")')->get()->first();
         /** @var DateTimeInterface $datetime */
         $datetime = $row[0];
-        $this->assertEquals('2018-03-13T16:40:12.300000Z', $datetime->format('Y-m-d\TH:i:s.u\Z'));
+        $this->assertSame('2018-03-13T16:40:12.300000Z', $datetime->format('Y-m-d\TH:i:s.u\Z'));
     }
 
     public function testDateType(): void
@@ -96,9 +96,9 @@ class DatetimeTest extends TestCase
         $this->assertInstanceOf(Date::class, $date);
 
         $dateCarbon = Carbon::instance($date->get());
-        $this->assertEquals(2018, $dateCarbon->year);
-        $this->assertEquals(6, $dateCarbon->month);
-        $this->assertEquals(7, $dateCarbon->day);
+        $this->assertSame(2018, $dateCarbon->year);
+        $this->assertSame(6, $dateCarbon->month);
+        $this->assertSame(7, $dateCarbon->day);
     }
 
     public function testTimestampWithConnection(): void
@@ -109,6 +109,6 @@ class DatetimeTest extends TestCase
         $ts = $row['ts'];
         $this->assertInstanceOf(Timestamp::class, $ts);
         // Cloud Spanner TIMESTAMP always has UTC timezone
-        $this->assertEquals('Z', $ts->get()->getTimezone()->getName());
+        $this->assertSame('Z', $ts->get()->getTimezone()->getName());
     }
 }

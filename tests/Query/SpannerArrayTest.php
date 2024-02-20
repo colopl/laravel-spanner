@@ -39,7 +39,7 @@ class SpannerArrayTest extends TestCase
         $conn = $this->getDefaultConnection();
         $row = $conn->selectOne('SELECT [1, 2, 3] as numbers');
 
-        $this->assertEquals([1, 2, 3], $row['numbers']);
+        $this->assertSame([1, 2, 3], $row['numbers']);
     }
 
     public function testSearchInArray(): void
@@ -85,13 +85,13 @@ class SpannerArrayTest extends TestCase
         $qb->insert($row);
 
         $insertedRow = $qb->where('arrayTestId', $row['arrayTestId'])->first();
-        $this->assertEquals($row['int64Array'], $insertedRow['int64Array']);
+        $this->assertSame($row['int64Array'], $insertedRow['int64Array']);
 
         $conn->table($tableName)
             ->where('arrayTestId', $row['arrayTestId'])
             ->update(['int64Array' => [4, 5, 6]]);
 
         $updatedRow = $conn->table($tableName)->where('arrayTestId', $row['arrayTestId'])->first();
-        $this->assertEquals([4, 5, 6], $updatedRow['int64Array']);
+        $this->assertSame([4, 5, 6], $updatedRow['int64Array']);
     }
 }

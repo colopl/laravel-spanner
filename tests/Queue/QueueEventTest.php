@@ -29,8 +29,8 @@ class QueueEventTest extends TestCase
 
         dispatch(new QueryJob());
 
-        self::assertCount(1, DB::getConnections());
-        self::assertInstanceOf(Connection::class, DB::getConnections()['main']);
-        self::assertFalse(DB::getConnections()['main']->isConnected());
+        $this->assertCount(1, DB::getConnections());
+        $this->assertInstanceOf(Connection::class, DB::getConnections()['main']);
+        $this->assertFalse(DB::getConnections()['main']->isConnected());
     }
 }

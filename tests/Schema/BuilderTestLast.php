@@ -64,7 +64,7 @@ class BuilderTestLast extends TestCase
             $table->uuid('id')->primary();
         });
         $tables = array_map(static fn (array $row) => $row['name'], $sb->getTables());
-        self::assertContains('test_' . $table, $tables);
+        $this->assertContains('test_' . $table, $tables);
     }
 
     public function testSchemaDrop(): void
