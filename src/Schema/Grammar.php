@@ -591,7 +591,7 @@ class Grammar extends BaseGrammar
     protected function typeTimestamp(Fluent $column)
     {
         if ($column->useCurrent) {
-            $column->default(new Expression('CURRENT_TIMESTAMP()'));
+            $column->default(new Expression('current_timestamp()'));
         }
 
         return 'timestamp';
@@ -736,7 +736,7 @@ class Grammar extends BaseGrammar
         if (is_string($value)) {
             $value = Carbon::parse($value);
         }
-        return 'DATE "' . $value->format('Y-m-d') . '"';
+        return 'date "' . $value->format('Y-m-d') . '"';
     }
 
     /**
@@ -794,7 +794,7 @@ class Grammar extends BaseGrammar
         if (is_string($value)) {
             $value = Carbon::parse($value);
         }
-        return 'TIMESTAMP "' . $value->format($this->getDateFormat()) . '"';
+        return 'timestamp "' . $value->format($this->getDateFormat()) . '"';
     }
 
     /**
