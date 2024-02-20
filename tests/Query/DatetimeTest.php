@@ -18,9 +18,12 @@
 namespace Colopl\Spanner\Tests\Query;
 
 use Colopl\Spanner\Tests\TestCase;
+use DateTime;
+use DateTimeInterface;
 use Google\Cloud\Spanner\Date;
 use Google\Cloud\Spanner\SpannerClient;
 use Google\Cloud\Spanner\Timestamp;
+use Illuminate\Support\Carbon;
 
 class DatetimeTest extends TestCase
 {
@@ -55,11 +58,11 @@ class DatetimeTest extends TestCase
         $conn = $this->getDefaultConnection();
 
         date_default_timezone_set('Asia/Tokyo');
-        $expected = new \DateTime('2018-03-13 09:00:00');
+        $expected = new DateTime('2018-03-13 09:00:00');
         $this->assertEquals('Asia/Tokyo', $expected->getTimezone()->getName());
 
         $row = $conn->query()->selectRaw('TIMESTAMP("2018-03-13T00:00:00Z")')->get()->first();
-        /** @var \DateTimeInterface $datetime */
+        /** @var DateTimeInterface $datetime */
         $datetime = $row[0];
         $this->assertEquals($expected->getTimestamp(), $datetime->getTimestamp());
         $this->assertEquals('Asia/Tokyo', $datetime->getTimezone()->getName());
@@ -67,7 +70,7 @@ class DatetimeTest extends TestCase
 
     public function testTimestampCreateWithNanoseconds(): void
     {
-        $datetime = \DateTime::createFromFormat(Timestamp::FORMAT, '2018-03-13T16:40:12.345678Z');
+        $datetime = DateTime::createFromFormat(Timestamp::FORMAT, '2018-03-13T16:40:12.345678Z');
         $ts = new Timestamp($datetime);
 
         $this->assertEquals($datetime->getTimestamp(), $ts->get()->getTimestamp());
@@ -78,7 +81,7 @@ class DatetimeTest extends TestCase
     {
         $conn = $this->getDefaultConnection();
         $row = $conn->query()->selectRaw('TIMESTAMP("2018-03-13T16:40:12.300000Z")')->get()->first();
-        /** @var \DateTimeInterface $datetime */
+        /** @var DateTimeInterface $datetime */
         $datetime = $row[0];
         $this->assertEquals('2018-03-13T16:40:12.300000Z', $datetime->format('Y-m-d\TH:i:s.u\Z'));
     }
@@ -92,7 +95,7 @@ class DatetimeTest extends TestCase
         $date = $row[0];
         $this->assertInstanceOf(Date::class, $date);
 
-        $dateCarbon = \Illuminate\Support\Carbon::instance($date->get());
+        $dateCarbon = Carbon::instance($date->get());
         $this->assertEquals(2018, $dateCarbon->year);
         $this->assertEquals(6, $dateCarbon->month);
         $this->assertEquals(7, $dateCarbon->day);

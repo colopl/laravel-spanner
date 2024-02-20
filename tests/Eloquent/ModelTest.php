@@ -360,7 +360,7 @@ class ModelTest extends TestCase
         $user->getConnection()->enableQueryLog();
         UserItem::all()
             ->map(fn(UserItem $item): User => $item->user);
-        $this->assertTrue(\count($user->getConnection()->getQueryLog()) > 5, 'preload をしていない場合、所持 User を取る SELECT 文が全部分かれるので 5個以上のクエリが発行されるはず');
+        $this->assertTrue(count($user->getConnection()->getQueryLog()) > 5, 'preload をしていない場合、所持 User を取る SELECT 文が全部分かれるので 5個以上のクエリが発行されるはず');
         $user->getConnection()->flushQueryLog();
 
         UserItem::with('user')

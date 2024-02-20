@@ -20,7 +20,6 @@ namespace Colopl\Spanner\Schema;
 use Colopl\Spanner\Concerns\MarksAsNotSupported;
 use Illuminate\Database\Schema\Blueprint as BaseBlueprint;
 use Illuminate\Database\Schema\ColumnDefinition;
-use Colopl\Spanner\Schema\UuidColumnDefinition;
 use Illuminate\Support\Fluent;
 use LogicException;
 

@@ -29,7 +29,7 @@ class Parameterizer
      * Something like `WHERE a = ? AND b = ?` will be converted to `WHERE a = @p0 AND b = @p1`
      *
      * Note: NULL and empty arrays do not work well with the converter.
-     * It tries to guess the type and gets them wrong so we have to convert them into strings
+     * It tries to guess the type and gets them wrong, so we have to convert them into strings
      * and apply it here before it is passed down to Google's Spanner client.
      *
      * @see https://googlecloudplatform.github.io/google-cloud-php/#/docs/google-cloud/latest/spanner/database?method=execute

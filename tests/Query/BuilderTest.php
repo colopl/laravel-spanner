@@ -804,7 +804,7 @@ class BuilderTest extends TestCase
         // all rows start with % so there should be more than 100
         $this->assertEquals(100, $conn->table($tableName)->where('name', 'like', '\%%')->count());
 
-        // if % is escaped, its treated as a normal string so it should return no results
+        // if % is escaped, its treated as a normal string, so it should return no results
         $this->assertEquals(0, $conn->table($tableName)->where('name', 'like', '\%\%')->count());
 
         // since names are formatted from %0 to %99, it should return rows (0, 10, 20, 30, 40, 50, 60, 70, 80, 90) for a total of 10
