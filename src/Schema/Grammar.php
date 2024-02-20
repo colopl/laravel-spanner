@@ -18,7 +18,6 @@
 namespace Colopl\Spanner\Schema;
 
 use Colopl\Spanner\Concerns\SharedGrammarCalls;
-use Colopl\Spanner\Support\Ensure;
 use DateTimeInterface;
 use Illuminate\Database\Connection;
 use Illuminate\Contracts\Database\Query\Expression as ExpressionContract;
@@ -245,38 +244,52 @@ class Grammar extends BaseGrammar
 
     /**
      * @param Blueprint $blueprint
-     * @param Fluent<string, mixed>&object{ definition: SequenceDefinition, ifNotExists: bool } $command
+     * @param SequenceDefinition $command
      * @return string
      */
     public function compileCreateSequence(Blueprint $blueprint, Fluent $command): string
     {
-        return 'create sequence '
-            . ($command->ifNotExists ? 'if not exists ' : '')
-            . $this->wrap($command->definition->name)
-            . ' '
-            . $this->formatSequenceOptions($command->definition);
+        return "create sequence {$this->wrap($command->sequence)} {$this->formatSequenceOptions($command)}";
     }
 
     /**
      * @param Blueprint $blueprint
-     * @param Fluent<string, mixed>&object{ definition: SequenceDefinition } $command
+     * @param SequenceDefinition $command
+     * @return string
+     */
+    public function compileCreateSequenceIfNotExists(Blueprint $blueprint, Fluent $command): string
+    {
+        return "create sequence if not exists {$this->wrap($command->sequence)} {$this->formatSequenceOptions($command)}";
+    }
+
+    /**
+     * @param Blueprint $blueprint
+     * @param SequenceDefinition $command
      * @return string
      */
     public function compileAlterSequence(Blueprint $blueprint, Fluent $command): string
     {
-        return 'alter sequence ' . $this->wrap($command->definition->name) . ' set ' . $this->formatSequenceOptions($command->definition);
+        return 'alter sequence ' . $this->wrap($command->sequence) . ' set ' . $this->formatSequenceOptions($command);
     }
 
     /**
      * @param Blueprint $blueprint
-     * @param Fluent<string, mixed>&object{ sequence: string, ifExists: bool } $command
+     * @param Fluent<string, mixed>&object{ sequence: string } $command
      * @return string
      */
     public function compileDropSequence(Blueprint $blueprint, object $command): string
     {
-        return 'drop sequence '
-            . ($command->ifExists ? 'if exists ' : '')
-            . $this->wrap($command->sequence);
+        return 'drop sequence ' . $this->wrap($command->sequence);
+    }
+
+    /**
+     * @param Blueprint $blueprint
+     * @param Fluent<string, mixed>&object{ sequence: string } $command
+     * @return string
+     */
+    public function compileDropSequenceIfExists(Blueprint $blueprint, object $command): string
+    {
+        return 'drop sequence if exists ' . $this->wrap($command->sequence);
     }
 
     /**

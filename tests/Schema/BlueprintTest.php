@@ -428,16 +428,16 @@ class BlueprintTest extends TestCase
         );
     }
 
-    public function test_createSequenceIfNotExist(): void
+    public function test_createSequenceIfNotExists(): void
     {
         $conn = $this->getDefaultConnection();
         $conn->useDefaultSchemaGrammar();
         $grammar = $conn->getSchemaGrammar();
         $seqName = $this->generateTableName('seq');
-        $blueprint = new Blueprint('_', static fn(Blueprint $table) => $table->createSequenceIfNotExist($seqName));
+        $blueprint = new Blueprint('_', static fn(Blueprint $table) => $table->createSequenceIfNotExists($seqName));
         $blueprint->build($conn, $grammar);
         $count = count($conn->select('SELECT * FROM INFORMATION_SCHEMA.SEQUENCES'));
-        $blueprint = new Blueprint('_', static fn(Blueprint $table) => $table->createSequenceIfNotExist($seqName));
+        $blueprint = new Blueprint('_', static fn(Blueprint $table) => $table->createSequenceIfNotExists($seqName));
         $blueprint->build($conn, $grammar);
         $this->assertSame([
             "create sequence if not exists `{$seqName}` options (sequence_kind='bit_reversed_positive')",
@@ -489,7 +489,7 @@ class BlueprintTest extends TestCase
         );
     }
 
-    public function test_dropSequenceIfExist(): void
+    public function test_dropSequenceIfExists(): void
     {
         $conn = $this->getDefaultConnection();
         $conn->useDefaultSchemaGrammar();
@@ -499,7 +499,7 @@ class BlueprintTest extends TestCase
         $blueprint = new Blueprint('_', fn(Blueprint $table) => $table->createSequence($seqName));
         $blueprint->build($conn, $grammar);
 
-        $blueprint = new Blueprint('_', static fn(Blueprint $table) => $table->dropSequenceIfExist($seqName));
+        $blueprint = new Blueprint('_', static fn(Blueprint $table) => $table->dropSequenceIfExists($seqName));
         $blueprint->build($conn, $grammar);
 
         $this->assertSame(["drop sequence if exists `{$seqName}`"], $blueprint->toSql($conn, $grammar));
@@ -509,7 +509,7 @@ class BlueprintTest extends TestCase
         );
 
         // No error should be thrown
-        $blueprint = new Blueprint('_', static fn(Blueprint $table) => $table->dropSequenceIfExist($seqName));
+        $blueprint = new Blueprint('_', static fn(Blueprint $table) => $table->dropSequenceIfExists($seqName));
         $blueprint->build($conn, $grammar);
     }
 

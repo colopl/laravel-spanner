@@ -1,11 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Colopl\Spanner\Schema;
 
 use Illuminate\Support\Fluent;
 
 /**
  * @property string $name
+ * @property string $sequence
  * @property int|null $startWithCounter
  * @property int|null $skipRangeMin
  * @property int|null $skipRangeMax
@@ -16,9 +19,13 @@ use Illuminate\Support\Fluent;
  */
 class SequenceDefinition extends Fluent
 {
-    public function __construct(string $name)
+    /**
+     * @param string $name
+     * @param string $sequence
+     */
+    public function __construct(string $name, string $sequence)
     {
-        parent::__construct(['name' => $name]);
+        parent::__construct(['name' => $name, 'sequence' => $sequence]);
     }
 
     /**

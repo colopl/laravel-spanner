@@ -319,33 +319,30 @@ class Blueprint extends BaseBlueprint
      * @param string $name
      * @return SequenceDefinition
      */
-    public function createSequence(string $name): Fluent
+    public function createSequence(string $name): SequenceDefinition
     {
-        $definition = new SequenceDefinition($name);
-        $this->addCommand('createSequence', ['definition' => $definition, 'ifNotExists' => false]);
-        return $definition;
+        $this->commands[] = $command = new SequenceDefinition(__FUNCTION__, $name);
+        return $command;
     }
 
     /**
      * @param string $name
      * @return SequenceDefinition
      */
-    public function createSequenceIfNotExist(string $name): SequenceDefinition
+    public function createSequenceIfNotExists(string $name): SequenceDefinition
     {
-        $definition = new SequenceDefinition($name);
-        $this->addCommand('createSequence', ['definition' => $definition, 'ifNotExists' => true]);
-        return $definition;
+        $this->commands[] = $command = new SequenceDefinition(__FUNCTION__, $name);
+        return $command;
     }
 
     /**
      * @param string $name
      * @return SequenceDefinition
      */
-    public function alterSequence(string $name): Fluent
+    public function alterSequence(string $name): SequenceDefinition
     {
-        $definition = new SequenceDefinition($name);
-        $this->addCommand('alterSequence', ['definition' => $definition]);
-        return $definition;
+        $this->commands[] = $command = new SequenceDefinition(__FUNCTION__, $name);
+        return $command;
     }
 
     /**
@@ -354,16 +351,16 @@ class Blueprint extends BaseBlueprint
      */
     public function dropSequence(string $name): Fluent
     {
-        return $this->addCommand('dropSequence', ['sequence' => $name, 'ifExists' => false]);
+        return $this->addCommand(__FUNCTION__, ['sequence' => $name, 'ifExists' => false]);
     }
 
     /**
      * @param string $name
      * @return Fluent<string, mixed>
      */
-    public function dropSequenceIfExist(string $name): Fluent
+    public function dropSequenceIfExists(string $name): Fluent
     {
-        return $this->addCommand('dropSequence', ['sequence' => $name, 'ifExists' => true]);
+        return $this->addCommand(__FUNCTION__, ['sequence' => $name, 'ifExists' => true]);
     }
 
     /**
