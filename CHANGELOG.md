@@ -20,6 +20,7 @@ Changed
 - Trait `ManagesStaleReads` has been removed (which contained `cursorWithTimestampBound()` and `selectWithTimestampBound()`. Use `selectWithOptions()` instead). (#178)
 - `Blueprint::interleave()` and `IndexDefinition::interleave()` now throw an error instead of a deprecation. (#178)
 - `Connection::transaction()`'s `$attempts` argument's default value was changed from 10 to -1 (which is a magic number for default value which is 11) (#179)
+- All upper case functions and casting `DATE` `TIMESTAMP` `CURRENT_TIMESTAMP()` has been changed to lower case for consistency. (#182)
 
 Fixed
 - `Schema\Grammar::compileAdd()` `Schema\Grammar::compileChange()` `Schema\Grammar::compileChange()` now create separate statements (#159)
