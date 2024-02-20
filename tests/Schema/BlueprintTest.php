@@ -88,8 +88,8 @@ class BlueprintTest extends TestCase
     public function test_create_with_generateUuid(): void
     {
         $conn = $this->getDefaultConnection();
-
-        $blueprint = new Blueprint('t', function (Blueprint $table) {
+        $tableName = $this->generateTableName();
+        $blueprint = new Blueprint($tableName, function (Blueprint $table) {
             $table->uuid('id')->primary()->generateUuid();
             $table->string('name');
         });
@@ -97,7 +97,7 @@ class BlueprintTest extends TestCase
 
         $queries = $blueprint->toSql($conn, new Grammar());
         $this->assertSame(
-            'create table `t` (' . implode(', ', [
+            'create table `' . $tableName . '` (' . implode(', ', [
                 '`id` string(36) not null default (generate_uuid())',
                 '`name` string(255) not null',
             ]) . ') primary key (`id`)',
@@ -105,8 +105,8 @@ class BlueprintTest extends TestCase
         );
 
         $conn->runDdlBatch($queries);
-        $conn->table('t')->insert(['name' => 't']);
-        $row = $conn->table('t')->first();
+        $conn->table($tableName)->insert(['name' => 't']);
+        $row = $conn->table($tableName)->first();
         $this->assertSame(36, strlen($row['id']));
         $this->assertSame('t', $row['name']);
     }
