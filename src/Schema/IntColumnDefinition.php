@@ -36,7 +36,7 @@ class IntColumnDefinition extends ColumnDefinition
     {
         $definition = $this->blueprint->createSequence($this->createSequenceName());
         $definition->startWithCounter(random_int(1, 1000000));
-        return $definition->name;
+        return $definition->sequence;
     }
 
     /**
