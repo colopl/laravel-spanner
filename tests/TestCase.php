@@ -21,6 +21,7 @@ use Closure;
 use Colopl\Spanner\Connection;
 use Colopl\Spanner\Schema\Blueprint;
 use Colopl\Spanner\SpannerServiceProvider;
+use DateTimeImmutable;
 use Google\Cloud\Spanner\Bytes;
 use Google\Cloud\Spanner\Date;
 use Google\Cloud\Spanner\Numeric;
@@ -85,9 +86,9 @@ abstract class TestCase extends \Orchestra\Testbench\TestCase
             'nullableFloatTest' => null,
             'numericTest' => new Numeric('123.456'),
             'nullableNumericTest' => null,
-            'timestampTest' => new \DateTimeImmutable(),
+            'timestampTest' => new DateTimeImmutable(),
             'nullableTimestampTest' => null,
-            'dateTest' => new Date(new \DateTimeImmutable()),
+            'dateTest' => new Date(new DateTimeImmutable()),
             'nullableDateTest' => null,
             'bytesTest' => new Bytes("\x00\x01\x02"),
             'nullableBytesTest' => null,

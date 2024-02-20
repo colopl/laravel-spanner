@@ -23,7 +23,6 @@ use Colopl\Spanner\Tests\TestCase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use LogicException;
 use Ramsey\Uuid\Uuid;
 
 class BlueprintTest extends TestCase
@@ -442,18 +441,18 @@ class BlueprintTest extends TestCase
                 '`long_text` string(max) not null default ("a")',
                 '`raw` float64 not null default (1.1)',
                 '`json` json not null default (json "[1,2,3]")',
-                '`date_as_string` date not null default (DATE "2022-01-01")',
-                '`date_as_carbon` date not null default (DATE "2022-01-01")',
-                '`time_as_string` timestamp not null default (TIMESTAMP "2022-01-01T00:00:00.000000+00:00")',
-                '`time_as_carbon` timestamp not null default (TIMESTAMP "2022-01-01T00:00:00.000000+00:00")',
-                '`current_time` timestamp not null default (CURRENT_TIMESTAMP())',
-                '`current_time_as_ts` timestamp not null default (CURRENT_TIMESTAMP())',
+                '`date_as_string` date not null default (date "2022-01-01")',
+                '`date_as_carbon` date not null default (date "2022-01-01")',
+                '`time_as_string` timestamp not null default (timestamp "2022-01-01T00:00:00.000000+00:00")',
+                '`time_as_carbon` timestamp not null default (timestamp "2022-01-01T00:00:00.000000+00:00")',
+                '`current_time` timestamp not null default (current_timestamp())',
+                '`current_time_as_ts` timestamp not null default (current_timestamp())',
                 '`int_array` array<int64> not null default ([1, 2])',
                 '`bool_array` array<bool> not null default ([false, true])',
                 '`float_array` array<float64> not null default ([2.2, 3.3])',
                 '`string_array` array<string(1)> not null default (["a", "b"])',
-                '`date_array` array<date> not null default ([DATE "2022-01-01"])',
-                '`timestamp_array` array<timestamp> not null default ([TIMESTAMP "2022-01-01T00:00:00.000000+00:00"])',
+                '`date_array` array<date> not null default ([date "2022-01-01"])',
+                '`timestamp_array` array<timestamp> not null default ([timestamp "2022-01-01T00:00:00.000000+00:00"])',
             ]) . ') primary key (`id`)',
         ], $statements);
 
