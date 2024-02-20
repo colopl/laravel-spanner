@@ -60,7 +60,7 @@ class SessionNotFoundTest extends TestCase
 
         $this->deleteSession($conn);
 
-        $this->assertEquals([12345], $conn->selectOne('SELECT 12345'));
+        $this->assertSame([12345], $conn->selectOne('SELECT 12345'));
     }
 
     public function test_session_not_found_without_session_pool(): void
@@ -71,7 +71,7 @@ class SessionNotFoundTest extends TestCase
 
         $this->deleteSession($conn);
 
-        $this->assertEquals([12345], $conn->selectOne('SELECT 12345'));
+        $this->assertSame([12345], $conn->selectOne('SELECT 12345'));
     }
 
     public function test_session_not_found_in_transaction(): void
@@ -87,11 +87,11 @@ class SessionNotFoundTest extends TestCase
                 $passes++;
             }
 
-            $this->assertEquals([12345], $conn->selectOne('SELECT 12345'));
+            $this->assertSame([12345], $conn->selectOne('SELECT 12345'));
 
             $passes++;
         });
-        $this->assertEquals(2, $passes, 'Transaction should be called twice');
+        $this->assertSame(2, $passes, 'Transaction should be called twice');
     }
 
     public function test_session_not_found_when_committing(): void
@@ -102,14 +102,14 @@ class SessionNotFoundTest extends TestCase
 
         $conn->transaction(function () use ($conn, &$passes) {
 
-            $this->assertEquals([12345], $conn->selectOne('SELECT 12345'));
+            $this->assertSame([12345], $conn->selectOne('SELECT 12345'));
 
             if ($passes === 0) {
                 $this->deleteSession($conn);
             }
             $passes++;
         });
-        $this->assertEquals(2, $passes, 'Transaction should be called twice');
+        $this->assertSame(2, $passes, 'Transaction should be called twice');
     }
 
     public function test_session_not_found_when_rolling_back(): void
@@ -120,7 +120,7 @@ class SessionNotFoundTest extends TestCase
 
         $conn->transaction(function () use ($conn, &$passes) {
 
-            $this->assertEquals([12345], $conn->selectOne('SELECT 12345'));
+            $this->assertSame([12345], $conn->selectOne('SELECT 12345'));
 
             if ($passes === 0) {
                 $this->deleteSession($conn);
@@ -129,7 +129,7 @@ class SessionNotFoundTest extends TestCase
             // explicit rollback should force rerunning of code
             $conn->rollback();
         });
-        $this->assertEquals(2, $passes, 'Transaction should be called twice');
+        $this->assertSame(2, $passes, 'Transaction should be called twice');
     }
 
     public function test_session_not_found_on_nested_transaction(): void
@@ -140,7 +140,7 @@ class SessionNotFoundTest extends TestCase
 
         $conn->transaction(function () use ($conn, &$passes) {
             $conn->transaction(function () use ($conn, &$passes) {
-                $this->assertEquals([12345], $conn->selectOne('SELECT 12345'));
+                $this->assertSame([12345], $conn->selectOne('SELECT 12345'));
 
                 if ($passes === 0) {
                     $this->deleteSession($conn);
@@ -148,7 +148,7 @@ class SessionNotFoundTest extends TestCase
                 $passes++;
             });
         });
-        $this->assertEquals(2, $passes, 'Transaction should be called twice');
+        $this->assertSame(2, $passes, 'Transaction should be called twice');
     }
 
     public function test_session_not_found_on_cursor(): void
@@ -165,10 +165,10 @@ class SessionNotFoundTest extends TestCase
 
             $cursor = $conn->cursor('SELECT 12345');
 
-            $this->assertEquals([12345], $cursor->current());
+            $this->assertSame([12345], $cursor->current());
 
             $passes++;
         });
-        $this->assertEquals(2, $passes, 'Transaction should be called twice');
+        $this->assertSame(2, $passes, 'Transaction should be called twice');
     }
 }

@@ -41,10 +41,10 @@ class TransactionTest extends TestCase
         $conn->beginTransaction();
         $t = $conn->getCurrentTransaction();
         $this->assertInstanceOf(Transaction::class, $t);
-        $this->assertEquals(TransactionalReadInterface::STATE_ACTIVE, $t->state());
+        $this->assertSame(TransactionalReadInterface::STATE_ACTIVE, $t->state());
 
         $conn->commit();
-        $this->assertEquals(TransactionalReadInterface::STATE_COMMITTED, $t->state());
+        $this->assertSame(TransactionalReadInterface::STATE_COMMITTED, $t->state());
         Event::assertDispatchedTimes(TransactionBeginning::class);
         Event::assertDispatchedTimes(TransactionCommitting::class);
         Event::assertDispatchedTimes(TransactionCommitted::class);
@@ -56,7 +56,7 @@ class TransactionTest extends TestCase
         Event::fake();
         $conn = $this->getDefaultConnection();
         $result = $conn->transaction(function (Connection $conn) {
-            $this->assertEquals(TransactionalReadInterface::STATE_ACTIVE, $conn->getCurrentTransaction()?->state());
+            $this->assertSame(TransactionalReadInterface::STATE_ACTIVE, $conn->getCurrentTransaction()?->state());
             return 1;
         });
         $this->assertSame(1, $result);
@@ -78,7 +78,7 @@ class TransactionTest extends TestCase
         ];
 
         $conn->transaction(function (Connection $conn) use($qb, $insertRow) {
-            $this->assertEquals(TransactionalReadInterface::STATE_ACTIVE, $conn->getCurrentTransaction()?->state());
+            $this->assertSame(TransactionalReadInterface::STATE_ACTIVE, $conn->getCurrentTransaction()?->state());
             $qb->insert($insertRow);
         });
 
@@ -102,7 +102,7 @@ class TransactionTest extends TestCase
 
         try {
             $conn->transaction(function (Connection $conn) {
-                $this->assertEquals(TransactionalReadInterface::STATE_ACTIVE, $conn->getCurrentTransaction()?->state());
+                $this->assertSame(TransactionalReadInterface::STATE_ACTIVE, $conn->getCurrentTransaction()?->state());
                 throw new RuntimeException('abort test');
             });
         } catch (RuntimeException $ex) {
@@ -132,16 +132,16 @@ class TransactionTest extends TestCase
         ];
 
         $conn->transaction(function () use ($conn, $qb, $insertRow) {
-            $this->assertEquals(1, $conn->transactionLevel());
+            $this->assertSame(1, $conn->transactionLevel());
             $conn->transaction(function () use ($conn, $qb, $insertRow) {
-                $this->assertEquals(2, $conn->transactionLevel());
+                $this->assertSame(2, $conn->transactionLevel());
                 $conn->transaction(function () use ($conn, $qb, $insertRow) {
-                    $this->assertEquals(3, $conn->transactionLevel());
+                    $this->assertSame(3, $conn->transactionLevel());
                     $qb->insert($insertRow);
                 });
-                $this->assertEquals(2, $conn->transactionLevel());
+                $this->assertSame(2, $conn->transactionLevel());
             });
-            $this->assertEquals(1, $conn->transactionLevel());
+            $this->assertSame(1, $conn->transactionLevel());
         });
         $this->assertDatabaseHas($tableName, $insertRow);
         Event::assertDispatchedTimes(TransactionCommitting::class);
@@ -156,7 +156,7 @@ class TransactionTest extends TestCase
                 }
             });
         });
-        $this->assertEquals(2, $cnt);
+        $this->assertSame(2, $cnt);
         Event::assertDispatchedTimes(TransactionCommitting::class, 2);
         Event::assertDispatchedTimes(TransactionCommitted::class, 5);
     }
@@ -296,7 +296,7 @@ class TransactionTest extends TestCase
             $caughtException = $ex;
         }
 
-        self::assertSame('updated', $qb->where('userId', $userId)->first()['name']);
+        $this->assertSame('updated', $qb->where('userId', $userId)->first()['name']);
         $this->assertInstanceOf(AbortedException::class, $caughtException);
         $this->assertStringContainsString('ABORTED', $caughtException->getMessage());
         Event::assertDispatchedTimes(TransactionBeginning::class, 2);

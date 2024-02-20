@@ -149,7 +149,7 @@ class BuilderTest extends TestCase
         $affectedRowCount = $conn->table($tableName)
             ->where('userId', $insertRow['userId'])
             ->update(['name' => 'test']);
-        $this->assertEquals(0, $affectedRowCount);
+        $this->assertSame(0, $affectedRowCount);
 
         $res = $conn->table($tableName)
             ->insert($insertRow);
@@ -164,7 +164,7 @@ class BuilderTest extends TestCase
             ->where('userId', $insertRow['userId'])
             ->first();
 
-        $this->assertEquals($afterName, $afterRow['name']);
+        $this->assertSame($afterName, $afterRow['name']);
     }
 
     public function testDelete(): void
@@ -230,7 +230,7 @@ class BuilderTest extends TestCase
             ->get();
 
         $this->assertCount(1, $resultRows);
-        $this->assertEquals($userItems[1]['userItemId'], $resultRows[0]['userItemId']);
+        $this->assertSame($userItems[1]['userItemId'], $resultRows[0]['userItemId']);
 
         // requires all interleave keys for delete
         $conn->table($tableName)
@@ -247,7 +247,7 @@ class BuilderTest extends TestCase
         $tableName = self::TABLE_NAME_USER;
         $qb = $conn->table($tableName);
 
-        $this->assertEquals(0, $qb->count());
+        $this->assertSame(0, $qb->count());
 
         $insertValues = [];
         for ($i = 0; $i < 100; $i++) {
@@ -258,8 +258,8 @@ class BuilderTest extends TestCase
         }
         $qb->insert($insertValues);
 
-        $this->assertEquals(100, $qb->count());
-        $this->assertEquals(100, $qb->count('userId'));
+        $this->assertSame(100, $qb->count());
+        $this->assertSame(100, $qb->count('userId'));
     }
 
     public function testAggregate(): void
@@ -277,10 +277,10 @@ class BuilderTest extends TestCase
         }
         $qb->insert($insertValues);
 
-        $this->assertEqualsWithDelta(49.5, $qb->average('intTest'), 0.0001);
-        $this->assertEquals(4950, $qb->sum('intTest'));
-        $this->assertEquals(0, $qb->min('intTest'));
-        $this->assertEquals(99, $qb->max('intTest'));
+        $this->assertSameWithDelta(49.5, $qb->average('intTest'), 0.0001);
+        $this->assertSame(4950, $qb->sum('intTest'));
+        $this->assertSame(0, $qb->min('intTest'));
+        $this->assertSame(99, $qb->max('intTest'));
     }
 
     public function testOrderBy(): void
@@ -299,8 +299,8 @@ class BuilderTest extends TestCase
         $qb->insert($insertValues);
 
         $qb->orderByDesc('intTest');
-        $this->assertEquals(sprintf('select * from `%s` order by `intTest` desc', $tableName), $qb->toSql());
-        $this->assertEquals(99, $qb->first()['intTest']);
+        $this->assertSame(sprintf('select * from `%s` order by `intTest` desc', $tableName), $qb->toSql());
+        $this->assertSame(99, $qb->first()['intTest']);
     }
 
     public function testExistsSubquery(): void
@@ -326,12 +326,12 @@ class BuilderTest extends TestCase
                 ->whereRaw("{$tableNameChild}.userId = {$tableNameParent}.userId");
         });
 
-        $this->assertEquals(
+        $this->assertSame(
             sprintf('select * from `%s` where exists (select 1 from `%s` where %s.userId = %s.userId)',
                 $tableNameParent, $tableNameChild, $tableNameChild, $tableNameParent),
             $qb->toSql());
         $this->assertCount(1, $qb->get());
-        $this->assertEquals($userId1, $qb->get()->first()['userId']);
+        $this->assertSame($userId1, $qb->get()->first()['userId']);
     }
 
     public function testGroupBy(): void
@@ -349,20 +349,20 @@ class BuilderTest extends TestCase
         $qb->insert($insertValues);
 
         $qb = $conn->table($tableName);
-        $this->assertEquals(collect([
+        $this->assertSame(collect([
             'test1' => ['stringTest' => 'test1', 'cnt' => 2],
             'test2' => ['stringTest' => 'test2', 'cnt' => 2],
         ]), $qb->groupBy('stringTest')->selectRaw('stringTest, count(*) as cnt')->get()->keyBy('stringTest'));
 
         $qb = $conn->table($tableName);
-        $this->assertEquals(collect([
+        $this->assertSame(collect([
             20 => ['intTest' => 20, 'cnt' => 3],
             40 => ['intTest' => 40, 'cnt' => 1],
         ]), $qb->groupBy('intTest')->selectRaw('intTest, count(*) as cnt')->get()->keyBy('intTest'));
 
         // HAVING
         $qb = $conn->table($tableName);
-        $this->assertEquals(collect([
+        $this->assertSame(collect([
             40 => ['intTest' => 40, 'cnt' => 1],
         ]), $qb->groupBy('intTest')->having('intTest', '>', 20)->selectRaw('intTest, count(*) as cnt')->get()->keyBy('intTest'));
     }
@@ -389,8 +389,8 @@ class BuilderTest extends TestCase
             ->select("{$tableNameParent}.*", "{$tableNameChild}.itemId", "{$tableNameChild}.count")
             ->get();
         $this->assertCount(1, $users);
-        $this->assertEquals($userId1, $users->first()['userId']);
-        $this->assertEquals(10, $users->first()['count']);
+        $this->assertSame($userId1, $users->first()['userId']);
+        $this->assertSame(10, $users->first()['count']);
     }
 
     public function testPaginate(): void
@@ -407,8 +407,8 @@ class BuilderTest extends TestCase
         $qb->insert($insertValues);
 
         $pagination = $conn->table($tableName)->paginate(2);
-        $this->assertEquals(50, $pagination->lastPage());
-        $this->assertEquals(100, $pagination->total());
+        $this->assertSame(50, $pagination->lastPage());
+        $this->assertSame(100, $pagination->total());
     }
 
     public function test_forceIndex(): void
@@ -518,7 +518,7 @@ class BuilderTest extends TestCase
             ->get();
 
         $this->assertCount(1, $resultRows);
-        $this->assertEquals($childUserItems[1]['count'], $resultRows[0]['count']);
+        $this->assertSame($childUserItems[1]['count'], $resultRows[0]['count']);
 
         $conn->table($childTableName)
             ->where('userId', $childUserItems[0]['userId'])
@@ -559,7 +559,7 @@ class BuilderTest extends TestCase
         $insertedRow = $qb->get()->first();
         /** @var Carbon $insertedTimestamp */
         $insertedTimestamp = $insertedRow['timestampTest'];
-        $this->assertEquals($carbonMax->getTimestamp(), $insertedTimestamp->getTimestamp());
+        $this->assertSame($carbonMax->getTimestamp(), $insertedTimestamp->getTimestamp());
     }
 
     public function testWhereDatetime(): void
@@ -575,9 +575,9 @@ class BuilderTest extends TestCase
         $row['timestampTest'] = $carbonMax;
         $qb->insert($row);
 
-        $this->assertEquals(1, $qb->where('timestampTest', '=', Carbon::maxValue())->count());
-        $this->assertEquals(1, $qb->where('timestampTest', '<=', Carbon::maxValue())->count());
-        $this->assertEquals(0, $qb->where('timestampTest', '<', Carbon::maxValue())->count());
+        $this->assertSame(1, $qb->where('timestampTest', '=', Carbon::maxValue())->count());
+        $this->assertSame(1, $qb->where('timestampTest', '<=', Carbon::maxValue())->count());
+        $this->assertSame(0, $qb->where('timestampTest', '<', Carbon::maxValue())->count());
     }
 
     /**
@@ -599,7 +599,7 @@ class BuilderTest extends TestCase
             ->where('testId', $insertRow['testId'])
             ->first();
 
-        $this->assertEquals('hello', $insertedRow['nullableStringTest']);
+        $this->assertSame('hello', $insertedRow['nullableStringTest']);
 
         $conn->table($tableName)
             ->where('testId', $insertRow['testId'])
@@ -609,7 +609,7 @@ class BuilderTest extends TestCase
             ->where('testId', $insertRow['testId'])
             ->first();
 
-        $this->assertEquals(null, $afterRow['nullableStringTest']);
+        $this->assertSame(null, $afterRow['nullableStringTest']);
     }
 
     public function testUpdateOrInsert(): void
@@ -634,7 +634,7 @@ class BuilderTest extends TestCase
         $this->assertTrue($res2);
 
         $record = (array) $conn->table($tableName)->where('testId', $row['testId'])->first();
-        $this->assertEquals('updated', $record['stringTest']);
+        $this->assertSame('updated', $record['stringTest']);
     }
 
     public function testDeleteOnCascase(): void
@@ -694,7 +694,7 @@ class BuilderTest extends TestCase
         $insertedRow = $qb->first();
         /** @var Bytes $insertedBytes */
         $insertedBytes = $insertedRow['bytesTest'];
-        $this->assertEquals($bytes->formatAsString(), $insertedBytes->formatAsString());
+        $this->assertSame($bytes->formatAsString(), $insertedBytes->formatAsString());
     }
 
     public function testWhereBytes(): void
@@ -708,8 +708,8 @@ class BuilderTest extends TestCase
         $row['bytesTest'] = $bytes;
         $qb->insert($row);
 
-        $this->assertEquals(1, $qb->where('bytesTest', '=', $bytes)->count());
-        $this->assertEquals(0, $qb->where('bytesTest', '=', new Bytes("\x00\x01"))->count());
+        $this->assertSame(1, $qb->where('bytesTest', '=', $bytes)->count());
+        $this->assertSame(0, $qb->where('bytesTest', '=', new Bytes("\x00\x01"))->count());
     }
 
     public function testWhereIn(): void
@@ -728,9 +728,9 @@ class BuilderTest extends TestCase
         }
         $qb->insert($insertValues);
 
-        $this->assertEquals(2, $conn->table($tableName)->whereIn('intTest', [10, 20])->count());
-        $this->assertEquals(0, $conn->table($tableName)->whereIn('intTest', [50])->count());
-        $this->assertEquals(2, $conn->table($tableName)->whereIn('bytesTest', [new Bytes(chr(10)), new Bytes(chr(20))])->count());
+        $this->assertSame(2, $conn->table($tableName)->whereIn('intTest', [10, 20])->count());
+        $this->assertSame(0, $conn->table($tableName)->whereIn('intTest', [50])->count());
+        $this->assertSame(2, $conn->table($tableName)->whereIn('bytesTest', [new Bytes(chr(10)), new Bytes(chr(20))])->count());
     }
 
     public function testPartitionedDml(): void
@@ -764,21 +764,21 @@ class BuilderTest extends TestCase
         $this->assertInstanceOf(QueryException::class, $caughtException);
         $this->assertTrue(Str::contains($caughtException->getMessage(), 'too many mutations'));
 
-        $this->assertEquals(20001, $conn->table($tableName)
+        $this->assertSame(20001, $conn->table($tableName)
             ->where('stringTest', 'test')
             ->partitionedUpdate(['stringTest' => 'test2']));
 
-        $this->assertEquals(0, $conn->table($tableName)
+        $this->assertSame(0, $conn->table($tableName)
             ->where('stringTest', 'test')
             ->count());
-        $this->assertEquals(20001, $conn->table($tableName)
+        $this->assertSame(20001, $conn->table($tableName)
             ->where('stringTest', 'test2')
             ->count());
 
-        $this->assertEquals(20001, $conn->table($tableName)
+        $this->assertSame(20001, $conn->table($tableName)
             ->where('stringTest', 'test2')
             ->partitionedDelete());
-        $this->assertEquals(0, $conn->table($tableName)
+        $this->assertSame(0, $conn->table($tableName)
             ->where('stringTest', 'test2')
             ->count());
     }
@@ -790,7 +790,7 @@ class BuilderTest extends TestCase
 
         $qb = $conn->table($tableName);
 
-        $this->assertEquals(0, $qb->count());
+        $this->assertSame(0, $qb->count());
 
         $insertValues = [];
         for ($i = 0; $i < 100; $i++) {
@@ -802,21 +802,21 @@ class BuilderTest extends TestCase
         $qb->insert($insertValues);
 
         // all rows start with % so there should be more than 100
-        $this->assertEquals(100, $conn->table($tableName)->where('name', 'like', '\%%')->count());
+        $this->assertSame(100, $conn->table($tableName)->where('name', 'like', '\%%')->count());
 
-        // if % is escaped, its treated as a normal string, so it should return no results
-        $this->assertEquals(0, $conn->table($tableName)->where('name', 'like', '\%\%')->count());
+        // if % is escaped, its treated as a normal string so it should return no results
+        $this->assertSame(0, $conn->table($tableName)->where('name', 'like', '\%\%')->count());
 
         // since names are formatted from %0 to %99, it should return rows (0, 10, 20, 30, 40, 50, 60, 70, 80, 90) for a total of 10
-        $this->assertEquals(10, $conn->table($tableName)->where('name', 'like', '%0')->count());
+        $this->assertSame(10, $conn->table($tableName)->where('name', 'like', '%0')->count());
 
         // STARTS_WITH should return the same result as using %
-        $this->assertEquals(100, $conn->table($tableName)->whereRaw("STARTS_WITH(`name`, '%')")->count());
+        $this->assertSame(100, $conn->table($tableName)->whereRaw("STARTS_WITH(`name`, '%')")->count());
 
         $injectionParam = mb_convert_encoding('%表 UNION ALL SELECT 1', 'Shift_JIS');
         $caughtException = null;
         try {
-            $this->assertEquals(0, $conn->table($tableName)->where('name', 'like', $injectionParam)->count());
+            $this->assertSame(0, $conn->table($tableName)->where('name', 'like', $injectionParam)->count());
         } catch (QueryException $ex) {
             $caughtException = $ex;
         }
@@ -834,7 +834,7 @@ class BuilderTest extends TestCase
 
         $qb = $conn->table($tableName);
 
-        $this->assertEquals(0, $qb->count());
+        $this->assertSame(0, $qb->count());
 
         $escapeChars = ["\n", "%\n", "\r"];
 
@@ -848,7 +848,7 @@ class BuilderTest extends TestCase
         $qb->insert($insertValues);
 
         foreach ($escapeChars as $ec) {
-            $this->assertEquals(1, $conn->table($tableName)->where('name', $ec)->count());
+            $this->assertSame(1, $conn->table($tableName)->where('name', $ec)->count());
         }
     }
 
@@ -920,7 +920,7 @@ class BuilderTest extends TestCase
     {
         config()->set('database.connections.main.prefix', 'test_');
         $conn = $this->getConnection('main');
-        self::assertSame('select * from `test_User`', $conn->table('User')->toRawSql());
+        $this->assertSame('select * from `test_User`', $conn->table('User')->toRawSql());
     }
 
     public function test_toRawSql(): void

@@ -215,7 +215,7 @@ class ConnectionTest extends TestCase
             $conn->updateUsingMutation(self::TABLE_NAME_USER, ['userId' => $userId, 'name' => 'tester']);
         });
 
-        $this->assertEquals(['userId' => $userId, 'name' => 'tester'], $conn->table(self::TABLE_NAME_USER)->where('userId', $userId)->first());
+        $this->assertSame(['userId' => $userId, 'name' => 'tester'], $conn->table(self::TABLE_NAME_USER)->where('userId', $userId)->first());
         Event::assertDispatchedTimes(TransactionBeginning::class, 2);
         Event::assertDispatchedTimes(MutatingData::class, 2);
         Event::assertDispatchedTimes(TransactionCommitted::class, 2);
@@ -230,7 +230,7 @@ class ConnectionTest extends TestCase
         $conn->insertUsingMutation(self::TABLE_NAME_USER, ['userId' => $userId, 'name' => 'test']);
         $conn->updateUsingMutation(self::TABLE_NAME_USER, ['userId' => $userId, 'name' => 'tester']);
 
-        $this->assertEquals(['userId' => $userId, 'name' => 'tester'], $conn->table(self::TABLE_NAME_USER)->where('userId', $userId)->first());
+        $this->assertSame(['userId' => $userId, 'name' => 'tester'], $conn->table(self::TABLE_NAME_USER)->where('userId', $userId)->first());
         Event::assertDispatchedTimes(TransactionBeginning::class, 2);
         Event::assertDispatchedTimes(MutatingData::class, 2);
         Event::assertDispatchedTimes(TransactionCommitted::class, 2);
@@ -253,8 +253,8 @@ class ConnectionTest extends TestCase
             ]);
         });
 
-        $this->assertEquals(['userId' => $userId1, 'name' => 'tester1'], $conn->table(self::TABLE_NAME_USER)->where('userId', $userId1)->first());
-        $this->assertEquals(['userId' => $userId2, 'name' => 'tester2'], $conn->table(self::TABLE_NAME_USER)->where('userId', $userId2)->first());
+        $this->assertSame(['userId' => $userId1, 'name' => 'tester1'], $conn->table(self::TABLE_NAME_USER)->where('userId', $userId1)->first());
+        $this->assertSame(['userId' => $userId2, 'name' => 'tester2'], $conn->table(self::TABLE_NAME_USER)->where('userId', $userId2)->first());
         Event::assertDispatchedTimes(TransactionBeginning::class, 2);
         Event::assertDispatchedTimes(MutatingData::class, 2);
         Event::assertDispatchedTimes(TransactionCommitted::class, 2);
@@ -274,8 +274,8 @@ class ConnectionTest extends TestCase
             ['userId' => $userId2, 'name' => 'tester2'],
         ]);
 
-        $this->assertEquals(['userId' => $userId1, 'name' => 'tester1'], $conn->table(self::TABLE_NAME_USER)->where('userId', $userId1)->first());
-        $this->assertEquals(['userId' => $userId2, 'name' => 'tester2'], $conn->table(self::TABLE_NAME_USER)->where('userId', $userId2)->first());
+        $this->assertSame(['userId' => $userId1, 'name' => 'tester1'], $conn->table(self::TABLE_NAME_USER)->where('userId', $userId1)->first());
+        $this->assertSame(['userId' => $userId2, 'name' => 'tester2'], $conn->table(self::TABLE_NAME_USER)->where('userId', $userId2)->first());
         Event::assertDispatchedTimes(TransactionBeginning::class, 2);
         Event::assertDispatchedTimes(MutatingData::class, 2);
         Event::assertDispatchedTimes(TransactionCommitted::class, 2);
@@ -354,7 +354,7 @@ class ConnectionTest extends TestCase
         $conn->update("UPDATE ${tableName} SET `name` = '${afterName}' WHERE `userId` = '${uuid}'");
         $conn->delete("DELETE FROM ${tableName} WHERE `userId` = '${uuid}'");
 
-        $this->assertEquals(5, $executedCount);
+        $this->assertSame(5, $executedCount);
     }
 
     public function testSession(): void
@@ -406,9 +406,9 @@ class ConnectionTest extends TestCase
         $conn->select('SELECT 1');
 
         $outputPath = $this->app->storagePath("framework/spanner");
-        self::assertFileExists($outputPath);
-        self::assertSame('0755', substr(sprintf('%o', fileperms(dirname($outputPath))), -4));
-        self::assertSame('0755', substr(sprintf('%o', fileperms($outputPath)), -4));
+        $this->assertFileExists($outputPath);
+        $this->assertSame('0755', substr(sprintf('%o', fileperms(dirname($outputPath))), -4));
+        $this->assertSame('0755', substr(sprintf('%o', fileperms($outputPath)), -4));
     }
 
     public function test_session_pool(): void
@@ -436,9 +436,9 @@ class ConnectionTest extends TestCase
         $conn->select('SELECT 1');
 
         $outputPath = $this->app->storagePath("framework/spanner");
-        self::assertFileExists($outputPath);
-        self::assertSame('0755', substr(sprintf('%o', fileperms(dirname($outputPath))), -4));
-        self::assertSame('0755', substr(sprintf('%o', fileperms($outputPath)), -4));
+        $this->assertFileExists($outputPath);
+        $this->assertSame('0755', substr(sprintf('%o', fileperms(dirname($outputPath))), -4));
+        $this->assertSame('0755', substr(sprintf('%o', fileperms($outputPath)), -4));
     }
 
     public function test_clearSessionPool(): void
@@ -446,7 +446,7 @@ class ConnectionTest extends TestCase
         $conn = $this->getDefaultConnection();
         $conn->warmupSessionPool();
         $conn->clearSessionPool();
-        self::assertSame(1, $conn->warmupSessionPool());
+        $this->assertSame(1, $conn->warmupSessionPool());
     }
 
     public function test_listSessions(): void
@@ -520,28 +520,28 @@ class ConnectionTest extends TestCase
         $conn->insert("INSERT INTO ${tableName} (`userId`, `name`) VALUES ('${uuid}', '${name}')");
 
         $this->assertCount(3, $receivedEventClasses);
-        $this->assertEquals(TransactionBeginning::class, $receivedEventClasses[0]);
-        $this->assertEquals(QueryExecuted::class, $receivedEventClasses[1]);
-        $this->assertEquals(TransactionCommitted::class, $receivedEventClasses[2]);
+        $this->assertSame(TransactionBeginning::class, $receivedEventClasses[0]);
+        $this->assertSame(QueryExecuted::class, $receivedEventClasses[1]);
+        $this->assertSame(TransactionCommitted::class, $receivedEventClasses[2]);
     }
 
     public function test_escape(): void
     {
         $conn = $this->getDefaultConnection();
 
-        self::assertSame('true', $conn->escape(true));
-        self::assertSame('false', $conn->escape(false));
-        self::assertSame('1', $conn->escape(1));
-        self::assertSame('0', $conn->escape(0));
-        self::assertSame('-1', $conn->escape(-1));
-        self::assertSame('1.1', $conn->escape(1.1));
-        self::assertSame('"a"', $conn->escape('a'));
-        self::assertSame('r"""' . "\n" . '"""', $conn->escape("\n"));
-        self::assertSame('[]', $conn->escape([]));
-        self::assertSame('["a"]', $conn->escape(['a']));
-        self::assertSame('[false]', $conn->escape([false]));
-        self::assertSame('[1]', $conn->escape([1]));
-        self::assertSame('[1.1]', $conn->escape([1.1]));
+        $this->assertSame('true', $conn->escape(true));
+        $this->assertSame('false', $conn->escape(false));
+        $this->assertSame('1', $conn->escape(1));
+        $this->assertSame('0', $conn->escape(0));
+        $this->assertSame('-1', $conn->escape(-1));
+        $this->assertSame('1.1', $conn->escape(1.1));
+        $this->assertSame('"a"', $conn->escape('a'));
+        $this->assertSame('r"""' . "\n" . '"""', $conn->escape("\n"));
+        $this->assertSame('[]', $conn->escape([]));
+        $this->assertSame('["a"]', $conn->escape(['a']));
+        $this->assertSame('[false]', $conn->escape([false]));
+        $this->assertSame('[1]', $conn->escape([1]));
+        $this->assertSame('[1.1]', $conn->escape([1.1]));
     }
 
     public function test_escape_nested_array(): void
@@ -550,21 +550,21 @@ class ConnectionTest extends TestCase
         $this->expectException(LogicException::class);
 
         $conn = $this->getDefaultConnection();
-        self::assertSame('[]', $conn->escape([[]]));
+        $this->assertSame('[]', $conn->escape([[]]));
     }
 
     public function test_getTablePrefix(): void
     {
         config()->set('database.connections.main.prefix', 'test_');
         $tablePrefix = $this->getConnection('main')->getTablePrefix();
-        self::assertSame('test_', $tablePrefix);
+        $this->assertSame('test_', $tablePrefix);
     }
 
     public function test_getQueryGrammar(): void
     {
         config()->set('database.connections.main.prefix', 'test_');
         $conn = $this->getConnection('main');
-        self::assertSame('test_', $conn->getQueryGrammar()->getTablePrefix());
+        $this->assertSame('test_', $conn->getQueryGrammar()->getTablePrefix());
     }
 
     public function test_getSchemaGrammar(): void
@@ -572,6 +572,6 @@ class ConnectionTest extends TestCase
         config()->set('database.connections.main.prefix', 'test_');
         $conn = $this->getConnection('main');
         $conn->useDefaultSchemaGrammar();
-        self::assertSame('test_', $conn->getSchemaGrammar()->getTablePrefix());
+        $this->assertSame('test_', $conn->getSchemaGrammar()->getTablePrefix());
     }
 }

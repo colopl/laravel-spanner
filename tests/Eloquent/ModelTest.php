@@ -268,7 +268,7 @@ class ModelTest extends TestCase
 
         $ownerUser = $userItem->user()->firstOrFail();
         $this->assertInstanceOf(User::class, $ownerUser);
-        $this->assertEquals($user->userId, $ownerUser->userId);
+        $this->assertSame($user->userId, $ownerUser->userId);
     }
 
     public function testHasOne(): void
@@ -284,8 +284,8 @@ class ModelTest extends TestCase
 
         /** @var UserInfo $fetchedUserInfo */
         $fetchedUserInfo = $user->info;
-        $this->assertEquals($user->userId, $fetchedUserInfo->userId);
-        $this->assertEquals($rank, $fetchedUserInfo->rank);
+        $this->assertSame($user->userId, $fetchedUserInfo->userId);
+        $this->assertSame($rank, $fetchedUserInfo->rank);
     }
 
     public function testHasMany(): void
@@ -307,7 +307,7 @@ class ModelTest extends TestCase
         $this->assertCount(2, $fetchedUserItems);
 
         $fetchedUser = $fetchedUserItems->first()->user;
-        $this->assertEquals($user->userId, $fetchedUser->userId);
+        $this->assertSame($user->userId, $fetchedUser->userId);
     }
 
     public function testBelongsToMany(): void
@@ -327,9 +327,9 @@ class ModelTest extends TestCase
 
         $tagFromQuery = $item->tags->first();
 
-        self::assertEquals($item->getKey(), $tagFromQuery->pivot->itemId);
-        self::assertEquals($tag->getKey(), $tagFromQuery->pivot->tagId);
-        self::assertEquals($tag->getKey(), $tagFromQuery->getKey());
+        $this->assertSame($item->getKey(), $tagFromQuery->pivot->itemId);
+        $this->assertSame($tag->getKey(), $tagFromQuery->pivot->tagId);
+        $this->assertSame($tag->getKey(), $tagFromQuery->getKey());
     }
 
     public function testFind(): void
@@ -430,7 +430,7 @@ class ModelTest extends TestCase
         $this->get('/b/'.$record->id)
             ->assertOk();
 
-        self::assertEquals($record->id, $result->id);
+        $this->assertSame($record->id, $result->id);
     }
 
     public function testChildRouteBinding(): void
@@ -457,8 +457,8 @@ class ModelTest extends TestCase
         $this->get('/p/'.$parentRecord->id.'/c/'.$childRecord->childId)
             ->assertOk();
 
-        self::assertEquals($parentRecord->id, $results[0]->id);
-        self::assertEquals($childRecord->childId, $results[1]->childId);
+        $this->assertSame($parentRecord->id, $results[0]->id);
+        $this->assertSame($childRecord->childId, $results[1]->childId);
     }
 
     public function test_refresh_uses_interleaved_keys(): void
@@ -473,9 +473,9 @@ class ModelTest extends TestCase
 
         $queryLogs = DB::getQueryLog();
 
-        self::assertCount(1, $queryLogs);
-        self::assertStringContainsString('`userId`', $queryLogs[0]['query']);
-        self::assertSame(
+        $this->assertCount(1, $queryLogs);
+        $this->assertStringContainsString('`userId`', $queryLogs[0]['query']);
+        $this->assertSame(
             [$user->getKey(), $userInfo->getKey()],
             $queryLogs[0]['bindings']
         );
@@ -486,9 +486,9 @@ class ModelTest extends TestCase
 
         $queryLogs = DB::getQueryLog();
 
-        self::assertCount(1, $queryLogs);
-        self::assertStringContainsString('`userId`', $queryLogs[0]['query']);
-        self::assertSame(
+        $this->assertCount(1, $queryLogs);
+        $this->assertStringContainsString('`userId`', $queryLogs[0]['query']);
+        $this->assertSame(
             [$user->getKey(), $userInfo->getKey()],
             $queryLogs[0]['bindings']
         );
