@@ -624,6 +624,25 @@ class BlueprintTest extends TestCase
         $this->assertSame(['a', 'b'], $result['string_array']);
     }
 
+    public function test_useSequence_with_name(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $conn->useDefaultSchemaGrammar();
+        $grammar = $conn->getSchemaGrammar();
+        $tableName = $this->generateTableName();
+
+        $blueprint = new Blueprint($tableName, function (Blueprint $table) {
+            $table->createSequence('seq');
+            $table->integer('id')->primary()->useSequence('seq');
+        });
+        $blueprint->create();
+        $statements = $blueprint->toSql($conn, $grammar);
+        $this->assertSame([
+            "create sequence `seq` options (sequence_kind='bit_reversed_positive')",
+            "create table `{$tableName}` (`id` int64 not null default (get_next_sequence_value(sequence seq))) primary key (`id`)",
+        ], $statements);
+    }
+
     public function test_increments(): void
     {
         $conn = $this->getDefaultConnection();
