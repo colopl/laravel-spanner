@@ -334,7 +334,7 @@ class BuilderTest extends TestCase
         $this->assertSame($userId1, $qb->get()->first()['userId']);
     }
 
-    public function testGroupBy(): void
+    public function test_groupBy(): void
     {
         $conn = $this->getDefaultConnection();
         $tableName = self::TABLE_NAME_TEST;
@@ -349,22 +349,38 @@ class BuilderTest extends TestCase
         $qb->insert($insertValues);
 
         $qb = $conn->table($tableName);
-        $this->assertSame(collect([
-            'test1' => ['stringTest' => 'test1', 'cnt' => 2],
-            'test2' => ['stringTest' => 'test2', 'cnt' => 2],
-        ]), $qb->groupBy('stringTest')->selectRaw('stringTest, count(*) as cnt')->get()->keyBy('stringTest'));
+        $this->assertSame(
+            ['test1' => ['stringTest' => 'test1', 'cnt' => 2], 'test2' => ['stringTest' => 'test2', 'cnt' => 2]],
+            $qb->groupBy('stringTest')
+                ->selectRaw('stringTest, count(*) as cnt')
+                ->get()
+                ->keyBy('stringTest')
+                ->sort()
+                ->all()
+        );
 
         $qb = $conn->table($tableName);
-        $this->assertSame(collect([
-            20 => ['intTest' => 20, 'cnt' => 3],
-            40 => ['intTest' => 40, 'cnt' => 1],
-        ]), $qb->groupBy('intTest')->selectRaw('intTest, count(*) as cnt')->get()->keyBy('intTest'));
+        $this->assertSame(
+            [20 => ['intTest' => 20, 'cnt' => 3], 40 => ['intTest' => 40, 'cnt' => 1]],
+            $qb->groupBy('intTest')
+            ->selectRaw('intTest, count(*) as cnt')
+            ->get()
+            ->keyBy('intTest')
+            ->sort()
+            ->all()
+        );
 
         // HAVING
         $qb = $conn->table($tableName);
-        $this->assertSame(collect([
-            40 => ['intTest' => 40, 'cnt' => 1],
-        ]), $qb->groupBy('intTest')->having('intTest', '>', 20)->selectRaw('intTest, count(*) as cnt')->get()->keyBy('intTest'));
+        $this->assertSame(
+            [40 => ['intTest' => 40, 'cnt' => 1]],
+            $qb->groupBy('intTest')
+                ->having('intTest', '>', 20)
+                ->selectRaw('intTest, count(*) as cnt')
+                ->get()
+                ->keyBy('intTest')
+                ->all()
+        );
     }
 
     public function testJoin(): void
