@@ -378,7 +378,7 @@ class Grammar extends BaseGrammar
      * Compile a drop foreign key command.
      *
      * @param  Blueprint  $blueprint
-     * @param  \Illuminate\Support\Fluent<string, mixed> $command
+     * @param Fluent<string, mixed> $command
      * @return string
      */
     public function compileDropForeign(Blueprint $blueprint, Fluent $command)
@@ -598,7 +598,7 @@ class Grammar extends BaseGrammar
     }
 
     /**
-     * Create the column definition for a uuid type.
+     * Create the column definition for an uuid type.
      *
      * @param  Fluent<string, mixed> $column
      * @return string

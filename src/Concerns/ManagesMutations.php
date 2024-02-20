@@ -18,6 +18,7 @@
 namespace Colopl\Spanner\Concerns;
 
 use Colopl\Spanner\Events\MutatingData;
+use DateTimeInterface;
 use Google\Cloud\Spanner\Database;
 use Google\Cloud\Spanner\KeySet;
 use Google\Cloud\Spanner\Timestamp;
@@ -25,6 +26,7 @@ use Google\Cloud\Spanner\Transaction;
 use Illuminate\Database\Events\TransactionBeginning;
 use Illuminate\Database\Events\TransactionCommitted;
 use Illuminate\Support\Arr;
+use InvalidArgumentException;
 
 trait ManagesMutations
 {
@@ -122,7 +124,7 @@ trait ManagesMutations
 
         foreach ($dataSet as $index => $values) {
             foreach ($values as $name => $value) {
-                if ($value instanceof \DateTimeInterface) {
+                if ($value instanceof DateTimeInterface) {
                     $dataSet[$index][$name] = new Timestamp($value);
                 }
             }
@@ -142,7 +144,7 @@ trait ManagesMutations
         }
 
         if (is_object($keys)) {
-            throw new \InvalidArgumentException('delete should contain array of keys or be instance of KeySet. '.get_class($keys).' given.');
+            throw new InvalidArgumentException('delete should contain array of keys or be instance of KeySet. '.get_class($keys).' given.');
         }
 
         if (!is_array($keys)) {
