@@ -1,4 +1,4 @@
-# v7.0.0 (Not Released Yet)
+# v7.0.0 (2024-02-21)
 
 Added
 - `json` `mediumText` `longText` `char` support for `Schema\Builder` (#155) (#158)
