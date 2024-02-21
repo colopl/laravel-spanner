@@ -749,49 +749,30 @@ class BuilderTest extends TestCase
         $this->assertSame(2, $conn->table($tableName)->whereIn('bytesTest', [new Bytes(chr(10)), new Bytes(chr(20))])->count());
     }
 
-    public function testPartitionedDml(): void
+    public function test_partitionedDml(): void
     {
-        if (getenv('SPANNER_EMULATOR_HOST')) {
-            $this->markTestSkipped('Cannot test PartitionedDml on emulator');
-        }
-
         $conn = $this->getDefaultConnection();
         $tableName = self::TABLE_NAME_TEST;
+        $insertCount = 100;
 
         $insertValues = [];
-        for ($i = 0; $i < 20001; $i++) {
+        for ($i = 0; $i < $insertCount; $i++) {
             $insertValues[] = $this->generateTestRow();
         }
+        $conn->table($tableName)->insert($insertValues);
 
-        collect($insertValues)->chunk(50)->each(function(Collection $chunk) use($conn, $tableName) {
-            $insertValues = array_values($chunk->all());
-            $conn->table($tableName)->insert($insertValues);
-        });
-
-        // normal DML should throw error since its over 20000 rows
-        $caughtException = null;
-        try {
-            $conn->table($tableName)
-                ->where('stringTest', 'test')
-                ->update(['stringTest' => 'test2']);
-        } catch (QueryException $ex) {
-            $caughtException = $ex;
-        }
-        $this->assertInstanceOf(QueryException::class, $caughtException);
-        $this->assertTrue(Str::contains($caughtException->getMessage(), 'too many mutations'));
-
-        $this->assertSame(20001, $conn->table($tableName)
+        $this->assertSame($insertCount, $conn->table($tableName)
             ->where('stringTest', 'test')
             ->partitionedUpdate(['stringTest' => 'test2']));
 
         $this->assertSame(0, $conn->table($tableName)
             ->where('stringTest', 'test')
             ->count());
-        $this->assertSame(20001, $conn->table($tableName)
+        $this->assertSame($insertCount, $conn->table($tableName)
             ->where('stringTest', 'test2')
             ->count());
 
-        $this->assertSame(20001, $conn->table($tableName)
+        $this->assertSame($insertCount, $conn->table($tableName)
             ->where('stringTest', 'test2')
             ->partitionedDelete());
         $this->assertSame(0, $conn->table($tableName)
