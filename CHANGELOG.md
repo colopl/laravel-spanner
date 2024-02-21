@@ -1,3 +1,8 @@
+# v7.0.1 (2024-02-21)
+
+Fixed
+- `Connection::prepareBinding()` should not have changed return type (#188)
+
 # v7.0.0 (2024-02-21)
 
 Added
