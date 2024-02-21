@@ -34,4 +34,10 @@
     <env name="DB_SPANNER_INSTANCE_ID" value="test-instance"/>
     <env name="DB_SPANNER_DATABASE_ID" value="test-database"/>
   </php>
+  <coverage/>
+  <source>
+    <include>
+      <directory suffix=".php">./src</directory>
+    </include>
+  </source>
 </phpunit>
