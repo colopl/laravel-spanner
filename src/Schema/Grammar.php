@@ -705,7 +705,7 @@ class Grammar extends BaseGrammar
     protected function modifyUseSequence(Blueprint $blueprint, Fluent $column): ?string
     {
         if (isset($column->useSequence)) {
-            return " default (get_next_sequence_value(sequence {$column->useSequence}))";
+            return " default (get_next_sequence_value(sequence {$this->wrap($column->useSequence)}))";
         }
         return null;
     }
