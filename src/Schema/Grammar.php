@@ -24,6 +24,7 @@ use Illuminate\Contracts\Database\Query\Expression as ExpressionContract;
 use Illuminate\Database\Query\Expression;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Schema\Grammars\Grammar as BaseGrammar;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Fluent;
 use Illuminate\Support\Str;
@@ -37,7 +38,7 @@ class Grammar extends BaseGrammar
     /**
      * @inheritdoc
      */
-    protected $modifiers = ['Nullable', 'Default'];
+    protected $modifiers = ['Nullable', 'Default', 'UseSequence'];
 
     /**
      * Compile the query to determine if a table exists.
@@ -239,6 +240,71 @@ class Grammar extends BaseGrammar
     public function compileDropRowDeletionPolicy(Blueprint $blueprint, Fluent $command)
     {
         return 'alter table '.$this->wrapTable($blueprint).' drop row deletion policy';
+    }
+
+    /**
+     * @param Blueprint $blueprint
+     * @param SequenceDefinition $command
+     * @return string
+     */
+    public function compileCreateSequence(Blueprint $blueprint, Fluent $command): string
+    {
+        return "create sequence {$this->wrap($command->sequence)} {$this->formatSequenceOptions($command)}";
+    }
+
+    /**
+     * @param Blueprint $blueprint
+     * @param SequenceDefinition $command
+     * @return string
+     */
+    public function compileCreateSequenceIfNotExists(Blueprint $blueprint, Fluent $command): string
+    {
+        return "create sequence if not exists {$this->wrap($command->sequence)} {$this->formatSequenceOptions($command)}";
+    }
+
+    /**
+     * @param Blueprint $blueprint
+     * @param SequenceDefinition $command
+     * @return string
+     */
+    public function compileAlterSequence(Blueprint $blueprint, Fluent $command): string
+    {
+        return 'alter sequence ' . $this->wrap($command->sequence) . ' set ' . $this->formatSequenceOptions($command);
+    }
+
+    /**
+     * @param Blueprint $blueprint
+     * @param Fluent<string, mixed>&object{ sequence: string } $command
+     * @return string
+     */
+    public function compileDropSequence(Blueprint $blueprint, object $command): string
+    {
+        return 'drop sequence ' . $this->wrap($command->sequence);
+    }
+
+    /**
+     * @param Blueprint $blueprint
+     * @param Fluent<string, mixed>&object{ sequence: string } $command
+     * @return string
+     */
+    public function compileDropSequenceIfExists(Blueprint $blueprint, object $command): string
+    {
+        return 'drop sequence if exists ' . $this->wrap($command->sequence);
+    }
+
+    /**
+     * @param SequenceDefinition $definition
+     * @return string
+     */
+    protected function formatSequenceOptions(mixed $definition): string
+    {
+        $optionAsStrings = Arr::map($definition->getOptions(), function (mixed $v, string $k): string {
+            return Str::snake($k) . '=' . match (get_debug_type($v)) {
+                'string' => $this->quoteString($v),
+                default => $v,
+            };
+        });
+        return 'options (' . implode(', ', $optionAsStrings) . ')';
     }
 
     /**
@@ -629,6 +695,19 @@ class Grammar extends BaseGrammar
     protected function typeBoolean(Fluent $column)
     {
         return 'bool';
+    }
+
+    /**
+     * @param Blueprint $blueprint
+     * @param Fluent<string, mixed> $column
+     * @return string|null
+     */
+    protected function modifyUseSequence(Blueprint $blueprint, Fluent $column): ?string
+    {
+        if (isset($column->useSequence)) {
+            return " default (get_next_sequence_value(sequence {$this->wrap($column->useSequence)}))";
+        }
+        return null;
     }
 
     /**
