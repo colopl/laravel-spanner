@@ -278,7 +278,7 @@ $schemaBuilder->create('user', function (Blueprint $table) {
 });
 ```
 
-If you want to be more flexibility, you can also create, alter, and drop sequences directly as below.
+If you want more flexibility, you can also create, alter, and drop sequences directly as below.
 
 ```php
 $schemaBuilder->create('user_items', function (Blueprint $table) {
