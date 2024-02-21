@@ -418,12 +418,12 @@ class Connection extends BaseConnection
         }
 
         // We need to transform all instances of DateTimeInterface into the actual
-        // date string. Each query grammar maintains its own date string format
+        // date string. Each query grammar maintains its own date string format,
         // so we'll just ask the grammar for the format to get from the date.
         if ($value instanceof DateTimeInterface) {
-            return new Timestamp($value);
+            return $value->format($grammar->getDateFormat());
         }
-
+        
         if (is_array($value)) {
             $arr = [];
             foreach ($value as $k => $v) {
