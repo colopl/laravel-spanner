@@ -42,6 +42,7 @@
   },
   "scripts": {
     "analyze": "phpstan analyse --configuration phpstan.neon --memory-limit=-1",
+    "coverage": "phpunit --coverage-html=coverage",
     "test": "phpunit"
   },
   "suggest": {

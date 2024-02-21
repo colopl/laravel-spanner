@@ -1,8 +1,9 @@
-.env
-.idea
-.phpunit.cache
-vendor
-composer.lock
+/.env
+/.idea
+/.phpunit.cache
+/coverage
+/vendor
+/composer.lock
 
 # don't commit gcp service accounts
 key.json
