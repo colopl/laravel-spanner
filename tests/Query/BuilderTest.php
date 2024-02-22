@@ -948,6 +948,9 @@ class BuilderTest extends TestCase
 
         $sql = $conn->table($table)->where('s', "t\"e\"s\nt")->toRawSql();
         $this->assertSame("select * from `RawSqlTest` where `s` = r\"\"\"t\\\"e\\\"s\nt\"\"\"", $sql, 'newline with escaped quote');
+
+        $sql = $conn->table($table)->where('s', new Carbon('2024-02-21 00:00:00'))->toRawSql();
+        $this->assertSame('select * from `RawSqlTest` where `s` = "2024-02-21T00:00:00.000000Z"', $sql, 'Carbon');
     }
 
     public function test_dataBoost_enabled(): void
