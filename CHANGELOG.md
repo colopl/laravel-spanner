@@ -5,7 +5,7 @@ Added
 - `Schema\Grammar::compileDropForeign` to allow dropping foreign key constraints (#163)
 - `Schema\Builder::dropAllTables` works properly, dropping foreign keys, indexes, then tables in order of interleaving (#161)
 - Support for inserting and selecting array of DateTime/Numeric objects (#168)
-- Allow pretending for DDL statements (#170) 
+- Allow pretending for DDL statements (#170)
 - Allow `spanner_emulator.disable_query_null_filtered_index_check` to be set (#180)
 - Allow default max transaction attempts to be changed (#179)
 - Table prefixing support (#172)
@@ -14,15 +14,15 @@ Added
 - Support for `CREATE SEQUENCE` in migrations (#181)
 
 Changed
-- [Breaking Change] Timestamps no longer respect the date format specified in Grammar (#168)
+- **[Breaking]** Timestamps no longer respect the date format specified in Grammar (#168)
 - `Query\Builder::lock()` no longer throw an error and will be ignored instead (#156)
 - `Schema\Builder::getIndexListing()` `Schema\Grammar::compileIndexListing()` converted to `getIndexes()` and `compileIndexes()` to align with standard Laravel methods (#161)
 - Missing primary key will no longer be checked and will be checked on the server side instead (#177)
-- `Connection::runDdl()` and `Connection::runDdls()` has been removed. Use `Connection::runDdlBatch()` instead. (#178)
-- Trait `ManagesStaleReads` has been removed (which contained `cursorWithTimestampBound()` and `selectWithTimestampBound()`. Use `selectWithOptions()` instead). (#178)
-- `Blueprint::interleave()` and `IndexDefinition::interleave()` now throw an error instead of a deprecation. (#178)
-- `Connection::transaction()`'s `$attempts` argument's default value was changed from 10 to -1 (which is a magic number for default value which is 11) (#179)
-- All upper case functions and casting `DATE` `TIMESTAMP` `CURRENT_TIMESTAMP()` has been changed to lower case for consistency. (#182)
+- **[Breaking]** `Connection::runDdl()` and `Connection::runDdls()` has been removed. Use `Connection::runDdlBatch()` instead. (#178)
+- **[Breaking]** Trait `ManagesStaleReads` has been removed (which contained `cursorWithTimestampBound()` and `selectWithTimestampBound()`. Use `selectWithOptions()` instead). (#178)
+- **[Breaking]** `Blueprint::interleave()` and `IndexDefinition::interleave()` now throw an error instead of a deprecation. (#178)
+- **[Breaking]** `Connection::transaction()`'s `$attempts` argument's default value was changed from 10 to -1 (which is a magic number for default value which is 11) (#179)
+- **[Breaking]** All upper case functions and casting `DATE` `TIMESTAMP` `CURRENT_TIMESTAMP()` has been changed to lower case for consistency. (#182)
 
 Fixed
 - `Schema\Grammar::compileAdd()` `Schema\Grammar::compileChange()` now create separate statements (#159)
