@@ -14,6 +14,7 @@ Added
 - Support for `CREATE SEQUENCE` in migrations (#181)
 
 Changed
+- [Breaking Change] Timestamps no longer respect the date format specified in Grammar (#168)
 - `Query\Builder::lock()` no longer throw an error and will be ignored instead (#156)
 - `Schema\Builder::getIndexListing()` `Schema\Grammar::compileIndexListing()` converted to `getIndexes()` and `compileIndexes()` to align with standard Laravel methods (#161)
 - Missing primary key will no longer be checked and will be checked on the server side instead (#177)
@@ -24,7 +25,7 @@ Changed
 - All upper case functions and casting `DATE` `TIMESTAMP` `CURRENT_TIMESTAMP()` has been changed to lower case for consistency. (#182)
 
 Fixed
-- `Schema\Grammar::compileAdd()` `Schema\Grammar::compileChange()` `Schema\Grammar::compileChange()` now create separate statements (#159)
+- `Schema\Grammar::compileAdd()` `Schema\Grammar::compileChange()` now create separate statements (#159)
 - `Connection::runDdlBatch()` with empty statement now return an empty array instead of throwing an error (#169)
 
 # v6.1.2 (2024-01-16)
