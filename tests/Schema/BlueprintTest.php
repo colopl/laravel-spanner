@@ -639,7 +639,7 @@ class BlueprintTest extends TestCase
         $statements = $blueprint->toSql($conn, $grammar);
         $this->assertSame([
             "create sequence `seq` options (sequence_kind='bit_reversed_positive')",
-            "create table `{$tableName}` (`id` int64 not null default (get_next_sequence_value(sequence seq))) primary key (`id`)",
+            "create table `{$tableName}` (`id` int64 not null default (get_next_sequence_value(sequence `seq`))) primary key (`id`)",
         ], $statements);
     }
 
