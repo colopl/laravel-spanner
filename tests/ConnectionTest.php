@@ -161,7 +161,7 @@ class ConnectionTest extends TestCase
         $conn = $this->getDefaultConnection();
 
         $executedCount = 0;
-        $this->app['events']->listen(QueryExecuted::class, function ($e) use (&$executedCount) { dump($e);$executedCount++; });
+        $this->app['events']->listen(QueryExecuted::class, function ($e) use (&$executedCount) { $executedCount++; });
 
         $uuid = $this->generateUuid();
         $conn->pretend(function(Connection $conn) use ($uuid) {
