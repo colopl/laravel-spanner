@@ -158,20 +158,21 @@ class ConnectionTest extends TestCase
 
     public function test_pretend(): void
     {
-        $executedCount = 0;
-        $this->app['events']->listen(QueryExecuted::class, function () use (&$executedCount) { $executedCount++; });
-
-        $resSelect = null;
-        $resInsert = null;
         $conn = $this->getDefaultConnection();
-        $conn->pretend(function(Connection $conn) use (&$resSelect, &$resInsert) {
-            $resSelect = $conn->select('SELECT 12345');
-            $resInsert = $conn->table(self::TABLE_NAME_USER)->insert(['userId' => $this->generateUuid(), 'name' => __FUNCTION__]);
-        });
 
-        $this->assertSame([], $resSelect);
-        $this->assertTrue($resInsert);
+        $executedCount = 0;
+        $this->app['events']->listen(QueryExecuted::class, function ($e) use (&$executedCount) { dump($e);$executedCount++; });
+
+        $uuid = $this->generateUuid();
+        $conn->pretend(function(Connection $conn) use ($uuid) {
+            $resSelect = $conn->select('SELECT 12345');
+            $this->assertSame([], $resSelect);
+
+            $resInsert = $conn->table(self::TABLE_NAME_USER)->insert(['userId' => $uuid, 'name' => __FUNCTION__]);
+            $this->assertTrue($resInsert);
+        });
         $this->assertSame(2, $executedCount);
+        $this->assertFalse($conn->table(self::TABLE_NAME_USER)->where('userId', $uuid)->exists());
     }
 
     public function testInsertUsingMutationWithTransaction(): void
