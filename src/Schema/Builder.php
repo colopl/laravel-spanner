@@ -112,6 +112,11 @@ class Builder extends BaseBuilder
         /** @var Connection $connection */
         $connection = $this->connection;
         $tables = $this->getTables();
+
+        if(count($tables) === 0) {
+            return;
+        }
+        
         $sortedTables = [];
 
         // add parents counter
