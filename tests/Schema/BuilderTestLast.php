@@ -308,7 +308,7 @@ class BuilderTestLast extends TestCase
         $this->assertEmpty($tables);
     }
 
-    public function test_dropAllTablesEmpty(): void
+    public function test_dropAllTables_when_no_tables_exist(): void
     {
         $conn = $this->getDefaultConnection();
         $sb = $conn->getSchemaBuilder();
