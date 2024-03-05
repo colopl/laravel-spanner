@@ -312,6 +312,7 @@ class BuilderTestLast extends TestCase
     {
         $conn = $this->getDefaultConnection();
         $sb = $conn->getSchemaBuilder();
+        $sb->dropAllTables();
 
         $tables = $sb->getTables();
         $this->assertEmpty($tables);
