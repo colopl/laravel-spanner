@@ -312,6 +312,9 @@ class BuilderTestLast extends TestCase
     {
         $conn = $this->getDefaultConnection();
         $sb = $conn->getSchemaBuilder();
+
+         // All tables must be dropped before hand to ensure that this test will cover the "early return" case
+         // for when there are no tables.
         $sb->dropAllTables();
 
         $tables = $sb->getTables();
