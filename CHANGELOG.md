@@ -1,7 +1,7 @@
 # v7.0.1? (?)
 
 Changed
-- `Schema\Builder::dropAll()` returns immediately if no tables exist (#193)
+- `Schema\Builder::dropAllTables` returns immediately if no tables exist (#193)
 
 # v7.0.0 (2024-02-21)
 
