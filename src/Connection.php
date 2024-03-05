@@ -331,6 +331,10 @@ class Connection extends BaseConnection
             });
         };
 
+        if ($this->pretending()) {
+            return $runQueryCall();
+        }
+
         if ($this->inTransaction()) {
             return $runQueryCall();
         }
