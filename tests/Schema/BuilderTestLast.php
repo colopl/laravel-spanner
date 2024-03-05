@@ -307,4 +307,22 @@ class BuilderTestLast extends TestCase
         $tables = $sb->getTables();
         $this->assertEmpty($tables);
     }
+
+    public function test_dropAllTables_when_no_tables_exist(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $sb = $conn->getSchemaBuilder();
+
+         // All tables must be dropped before hand to ensure that this test will cover the "early return" case
+         // for when there are no tables.
+        $sb->dropAllTables();
+
+        $tables = $sb->getTables();
+        $this->assertEmpty($tables);
+
+        $sb->dropAllTables();
+
+        $tables = $sb->getTables();
+        $this->assertEmpty($tables);
+    }
 }
