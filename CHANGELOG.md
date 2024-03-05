@@ -2,6 +2,8 @@
 
 Changed
 - `Schema\Builder::dropAllTables` returns immediately if no tables exist (#193)
+- Performance enhancements for `DB::pretend` statements, no longer incurring the overhead of creating transactions (#191)
+- Set the `$defaultMorphKeyType` in `Schema\Builder` to `uuid` (#192)
 
 # v7.0.0 (2024-02-21)
 
