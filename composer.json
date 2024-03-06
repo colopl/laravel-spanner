@@ -46,6 +46,7 @@
     "test": "phpunit"
   },
   "suggest": {
+    "ext-protobuf": "Native support for protobuf is available. Will use pure PHP implementation if not present.",
     "ext-sysvmsg": "Can use SemaphoreLock for session handling. Will use FileLock if not present.",
     "ext-sysvsem": "Can use SemaphoreLock for session handling. Will use FileLock if not present.",
     "ext-sysvshm": "Can use SemaphoreLock for session handling. Will use FileLock if not present."
