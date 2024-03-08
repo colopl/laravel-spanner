@@ -7,7 +7,7 @@ Changed
 
 Fixed
 
-- `Connection::escapeString` now properly escapes backslashes (#)
+- `Connection::escapeString` now properly escapes backslashes (#197)
 
 # v7.0.0 (2024-02-21)
 
