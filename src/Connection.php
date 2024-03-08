@@ -482,8 +482,8 @@ class Connection extends BaseConnection
     protected function escapeString($value)
     {
         return str_contains($value, "\n")
-            ? 'r"""' . addcslashes($value, '"') . '"""'
-            : '"' . addcslashes($value, '"') . '"';
+            ? 'r"""' . addcslashes($value, '"\\') . '"""'
+            : '"' . addcslashes($value, '"\\') . '"';
     }
 
     /**

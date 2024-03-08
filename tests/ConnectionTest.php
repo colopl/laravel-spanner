@@ -537,6 +537,7 @@ class ConnectionTest extends TestCase
         $this->assertSame('-1', $conn->escape(-1));
         $this->assertSame('1.1', $conn->escape(1.1));
         $this->assertSame('"a"', $conn->escape('a'));
+        $this->assertSame('"\"a\\\\\\""', $conn->escape('"a\\"'));
         $this->assertSame('r"""' . "\n" . '"""', $conn->escape("\n"));
         $this->assertSame('[]', $conn->escape([]));
         $this->assertSame('["a"]', $conn->escape(['a']));
