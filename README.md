@@ -81,9 +81,9 @@ For more information, please see [Google Client Library docs](http://googleapis.
 
 Please note that the following are not required, but are strongly recommended for better performance.
 
-- [Protobuf extension](https://cloud.google.com/php/grpc#install_the_protobuf_runtime_library)
-- `sysvmsg`, `sysvsem`, `sysvshm` extensions
-- Mount the cache directory (`./storage/framework/spanner` by default) to tmpfs for better performance. 
+- Install `protobuf` pecl extension for faster network communication.
+- Install `sysvmsg`, `sysvsem`, `sysvshm` extensions for faster session management.
+- Mount the cache directory (`./storage/framework/spanner` by default) to tmpfs for better session io performance. 
   Cache path can be changed by setting `connections.{name}.cache_path` in your `config/database.php` file.
 
 ## Unsupported features
