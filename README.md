@@ -12,9 +12,8 @@ Laravel database driver for Google Cloud Spanner
 - PHP >= 8.1
 - Laravel >= 10
 - [gRPC extension](https://cloud.google.com/php/grpc)
-- [protobuf extension](https://cloud.google.com/php/grpc#install_the_protobuf_runtime_library) (not required, but strongly recommended)
-- Currently only supports Spanner running GoogleSQL (PostgreSQL mode not supported) 
-- `sysvmsg`, `sysvsem`, `sysvshm` extensions (strongly recommended for better performance)
+- [protobuf extension](https://cloud.google.com/php/grpc#install_the_protobuf_runtime_library) (recommended for better performance)
+- `sysvmsg`, `sysvsem`, `sysvshm` extensions (recommended for better performance)
 
 ## Installation
 Put JSON credential file path to env variable: `GOOGLE_APPLICATION_CREDENTIALS`
@@ -78,6 +77,15 @@ For more information, please see [Google Client Library docs](http://googleapis.
 ];
 ```
 
+## Recommended Setup
+
+Please note that the following are not required, but are strongly recommended for better performance.
+
+- [Protobuf extension](https://cloud.google.com/php/grpc#install_the_protobuf_runtime_library)
+- `sysvmsg`, `sysvsem`, `sysvshm` extensions
+- Mount the cache directory (`./storage/framework/spanner` by default) to tmpfs for better performance. 
+  Cache path can be changed by setting `connections.{name}.cache_path` in your `config/database.php` file.
+
 ## Unsupported features
 
 - STRUCT data types
@@ -86,8 +94,12 @@ For more information, please see [Google Client Library docs](http://googleapis.
 
 ## Limitations
 
+### SQL Mode
+Currently only supports Spanner running GoogleSQL (PostgreSQL mode is not supported).
+
 ### Eloquent
-If you use interleaved keys, you MUST define them in the `interleaveKeys` property or you won't be able to save. For more detailed instructions, see `Colopl\Spanner\Tests\Eloquent\ModelTest`.
+If you use interleaved keys, you MUST define them in the `interleaveKeys` property, or else you won't be able to save. 
+For more detailed instructions, see `Colopl\Spanner\Tests\Eloquent\ModelTest`.
 
 ## Additional Information
 
@@ -340,8 +352,6 @@ of sessions to warm up by setting the `connections.{name}.session_pool.maxSessio
 
 Similarly, the sessions remain active for 60 minutes after use so deleting the sessions during the shutdown phase 
 of your server is recommended. This can be achieved by running the `php artisan spanner:cooldown` command.
-
-```php
 
 ### Queue Worker
 
