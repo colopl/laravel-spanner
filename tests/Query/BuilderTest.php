@@ -568,7 +568,7 @@ class BuilderTest extends TestCase
         $qb = $conn->table($tableName);
 
         $row = $this->generateTestRow();
-        $carbonMax = Carbon::maxValue();
+        $carbonMax = Carbon::create(9999, 12, 31, 23, 59, 59, 'UTC');
         $row['timestampTest'] = $carbonMax;
         $qb->insert($row);
 
@@ -587,13 +587,13 @@ class BuilderTest extends TestCase
         $qb = $conn->table($tableName);
 
         $row = $this->generateTestRow();
-        $carbonMax = Carbon::maxValue();
+        $carbonMax = Carbon::create(9999, 12, 31, 23, 59, 59, 'UTC');
         $row['timestampTest'] = $carbonMax;
         $qb->insert($row);
 
-        $this->assertSame(1, $qb->where('timestampTest', '=', Carbon::maxValue())->count());
-        $this->assertSame(1, $qb->where('timestampTest', '<=', Carbon::maxValue())->count());
-        $this->assertSame(0, $qb->where('timestampTest', '<', Carbon::maxValue())->count());
+        $this->assertSame(1, $qb->where('timestampTest', '=', $carbonMax)->count());
+        $this->assertSame(1, $qb->where('timestampTest', '<=', $carbonMax)->count());
+        $this->assertSame(0, $qb->where('timestampTest', '<', $carbonMax)->count());
     }
 
     /**

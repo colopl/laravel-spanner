@@ -127,7 +127,7 @@ class Blueprint extends BaseBlueprint
      * @param int|null $length
      * @return ColumnDefinition
      */
-    public function binary($column, $length = null)
+    public function binary($column, $length = null, $fixed = false)
     {
         $length = $length ?: Builder::$defaultBinaryLength;
 

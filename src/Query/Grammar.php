@@ -22,6 +22,7 @@ use Colopl\Spanner\Concerns\SharedGrammarCalls;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Contracts\Database\Query\Expression;
 use Illuminate\Database\Query\Grammars\Grammar as BaseGrammar;
+use Illuminate\Support\Arr;
 use RuntimeException;
 
 class Grammar extends BaseGrammar
@@ -43,6 +44,20 @@ class Grammar extends BaseGrammar
     protected function compileLock(Builder $query, $value)
     {
         return '';
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function prepareBindingsForUpdate(array $bindings, array $values)
+    {
+        $bindings = parent::prepareBindingsForUpdate($bindings, $values);
+        foreach ($bindings as $key => $value) {
+            if ($value instanceof ArrayValue) {
+                $bindings[$key] = $value->value;
+            }
+        }
+        return $bindings;
     }
 
     /**

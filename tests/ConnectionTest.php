@@ -350,10 +350,10 @@ class ConnectionTest extends TestCase
         $tableName = self::TABLE_NAME_USER;
         $uuid = $this->generateUuid();
         $name = 'test';
-        $conn->insert("INSERT INTO ${tableName} (`userId`, `name`) VALUES ('${uuid}', '${name}')");
+        $conn->insert("INSERT INTO {$tableName} (`userId`, `name`) VALUES ('{$uuid}', '{$name}')");
         $afterName = 'test2';
-        $conn->update("UPDATE ${tableName} SET `name` = '${afterName}' WHERE `userId` = '${uuid}'");
-        $conn->delete("DELETE FROM ${tableName} WHERE `userId` = '${uuid}'");
+        $conn->update("UPDATE {$tableName} SET `name` = '{$afterName}' WHERE `userId` = '{$uuid}'");
+        $conn->delete("DELETE FROM {$tableName} WHERE `userId` = '{$uuid}'");
 
         $this->assertSame(5, $executedCount);
     }
@@ -471,14 +471,14 @@ class ConnectionTest extends TestCase
         $timestamp = null;
         $db->runTransaction(function(Transaction $tx) use ($tableName, $uuid, &$timestamp) {
             $name = 'first';
-            $tx->executeUpdate("INSERT INTO ${tableName} (`userId`, `name`) VALUES ('${uuid}', '${name}')");
+            $tx->executeUpdate("INSERT INTO {$tableName} (`userId`, `name`) VALUES ('{$uuid}', '{$name}')");
             $timestamp = $tx->commit();
         });
         $db->close();
         $this->assertNotEmpty($timestamp);
 
         $timestampBound = new StrongRead();
-        $rows = $conn->selectWithOptions("SELECT * FROM ${tableName} WHERE userID = ?", [$uuid], $timestampBound->transactionOptions());
+        $rows = $conn->selectWithOptions("SELECT * FROM {$tableName} WHERE userID = ?", [$uuid], $timestampBound->transactionOptions());
         $this->assertCount(1, $rows);
         $this->assertSame($uuid, $rows[0]['userId']);
         $this->assertSame('first', $rows[0]['name']);
@@ -486,21 +486,21 @@ class ConnectionTest extends TestCase
         $oldDatetime = Carbon::instance($timestamp->get())->subSecond();
 
         $timestampBound = new ReadTimestamp($oldDatetime);
-        $rows = $conn->selectWithOptions("SELECT * FROM ${tableName} WHERE userID = ?", [$uuid], $timestampBound->transactionOptions());
+        $rows = $conn->selectWithOptions("SELECT * FROM {$tableName} WHERE userID = ?", [$uuid], $timestampBound->transactionOptions());
         $this->assertEmpty($rows);
 
         $timestampBound = new ExactStaleness(10);
-        $rows = $conn->selectWithOptions("SELECT * FROM ${tableName} WHERE userID = ?", [$uuid], $timestampBound->transactionOptions());
+        $rows = $conn->selectWithOptions("SELECT * FROM {$tableName} WHERE userID = ?", [$uuid], $timestampBound->transactionOptions());
         $this->assertEmpty($rows);
 
         $timestampBound = new MaxStaleness(10);
-        $rows = $conn->selectWithOptions("SELECT * FROM ${tableName} WHERE userID = ?", [$uuid], $timestampBound->transactionOptions());
+        $rows = $conn->selectWithOptions("SELECT * FROM {$tableName} WHERE userID = ?", [$uuid], $timestampBound->transactionOptions());
         $this->assertCount(1, $rows);
         $this->assertSame($uuid, $rows[0]['userId']);
         $this->assertSame('first', $rows[0]['name']);
 
         $timestampBound = new MinReadTimestamp($oldDatetime);
-        $rows = $conn->selectWithOptions("SELECT * FROM ${tableName} WHERE userID = ?", [$uuid], $timestampBound->transactionOptions());
+        $rows = $conn->selectWithOptions("SELECT * FROM {$tableName} WHERE userID = ?", [$uuid], $timestampBound->transactionOptions());
         $this->assertCount(1, $rows);
         $this->assertSame($uuid, $rows[0]['userId']);
         $this->assertSame('first', $rows[0]['name']);
@@ -518,7 +518,7 @@ class ConnectionTest extends TestCase
         $tableName = self::TABLE_NAME_USER;
         $uuid = $this->generateUuid();
         $name = 'test';
-        $conn->insert("INSERT INTO ${tableName} (`userId`, `name`) VALUES ('${uuid}', '${name}')");
+        $conn->insert("INSERT INTO {$tableName} (`userId`, `name`) VALUES ('{$uuid}', '{$name}')");
 
         $this->assertCount(3, $receivedEventClasses);
         $this->assertSame(TransactionBeginning::class, $receivedEventClasses[0]);
