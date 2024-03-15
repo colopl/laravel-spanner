@@ -41,18 +41,6 @@ class Grammar extends BaseGrammar
     protected $modifiers = ['Nullable', 'Default', 'UseSequence'];
 
     /**
-     * Compile the query to determine if a table exists.
-     *
-     * @deprecated Will be removed in a future Laravel version.
-     *
-     * @return string
-     */
-    public function compileTableExists()
-    {
-        return 'select * from information_schema.tables where table_schema = \'\' and table_name = ?';
-    }
-
-    /**
      * Compile the query to determine the tables.
      *
      * @return string
@@ -60,40 +48,6 @@ class Grammar extends BaseGrammar
     public function compileTables()
     {
         return 'select `table_name` as name, `table_type` as type, `parent_table_name` as parent from information_schema.tables where table_schema = \'\' and table_type = \'BASE TABLE\'';
-    }
-
-    /**
-     * @deprecated Will be removed in a future Laravel version.
-     *
-     * @return string
-     */
-    public function compileGetAllTables()
-    {
-        return 'select `table_name` as name, `table_type` as type from information_schema.tables where table_schema = \'\' and table_type = \'BASE TABLE\'';
-    }
-
-    /**
-     * Compile the query to determine the list of columns.
-     *
-     * @deprecated Will be removed in a future Laravel version.
-     *
-     * @return string
-     */
-    public function compileColumnListing()
-    {
-        return 'select column_name as `column_name` from information_schema.columns where table_schema = \'\' and table_name = ?';
-    }
-
-    /**
-     * Compile the query to determine the list of indexes.
-     *
-     * @deprecated Use compileIndexes($table) instead.
-     * 
-     * @return string
-     */
-    public function compileIndexListing()
-    {
-        return 'select index_name as `index_name` from information_schema.indexes where table_schema = \'\' and table_name = ?';
     }
 
     /**

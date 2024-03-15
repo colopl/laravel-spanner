@@ -64,16 +64,6 @@ class Processor extends BaseProcessor
     }
 
     /**
-     * @inheritDoc
-     */
-    public function processColumnListing($results)
-    {
-        return array_map(function ($result) {
-            return ((object) $result)->column_name;
-        }, $results);
-    }
-
-    /**
      * Process the results of a columns query.
      *
      * @inheritDoc
@@ -92,16 +82,6 @@ class Processor extends BaseProcessor
                 'comment' => null,
             ];
         }, $results);
-    }
-
-    /**
-     * @deprecated Use processIndexes($results) instead.
-     * @param array $results
-     * @return array
-     */
-    public function processIndexListing($results)
-    {
-        return self::processIndexes($results);
     }
 
     /**

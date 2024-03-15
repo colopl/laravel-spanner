@@ -138,10 +138,9 @@ class Blueprint extends BaseBlueprint
      * @param string $column
      * @param int $total
      * @param int $places
-     * @param bool $unsigned
      * @return ColumnDefinition
      */
-    public function decimal($column, $total = 38, $places = 9, $unsigned = false)
+    public function decimal($column, $total = 38, $places = 9)
     {
         if ($total !== 38) {
             $this->markAsNotSupported('decimal with precision other than 38');
@@ -151,11 +150,7 @@ class Blueprint extends BaseBlueprint
             $this->markAsNotSupported('decimal with scale other than 9');
         }
 
-        if ($unsigned) {
-            $this->markAsNotSupported('unsigned decimal');
-        }
-
-        return parent::decimal($column, $total, $places, $unsigned);
+        return parent::decimal($column, $total, $places);
     }
 
     /**
