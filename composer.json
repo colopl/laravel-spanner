@@ -8,15 +8,15 @@
     {"name": "Takayasu Oyama", "email": "t-oyama@colopl.co.jp"}
   ],
   "require": {
-    "php": "^8.2",
+    "php": "^8.1",
     "ext-grpc": "*",
     "ext-json": "*",
     "laravel/framework": "^10.37.0|^11",
     "google/cloud-spanner": "^1.58.4",
     "grpc/grpc": "^1.42",
-    "symfony/cache": "~7",
+    "symfony/cache": "~6|~7",
     "symfony/deprecation-contracts": "~2",
-    "symfony/lock": "~7"
+    "symfony/lock": "~6|~7"
   },
   "require-dev": {
     "orchestra/testbench": "~9",

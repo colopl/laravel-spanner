@@ -1,3 +1,8 @@
+# v7.2.0 (2024-03-11)
+
+Added
+- Laravel 11 Support (#200)
+
 # v7.1.0 (2024-03-11)
 
 Changed
