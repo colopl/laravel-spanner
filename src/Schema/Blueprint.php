@@ -125,6 +125,7 @@ class Blueprint extends BaseBlueprint
     /**
      * @param  string  $column
      * @param int|null $length
+     * @param bool $fixed
      * @return ColumnDefinition
      */
     public function binary($column, $length = null, $fixed = false)
