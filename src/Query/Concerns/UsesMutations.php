@@ -31,7 +31,7 @@ trait UsesMutations
      */
     public function insertUsingMutation(array $values)
     {
-        $this->connection->insertUsingMutation($this->from, $values);
+        $this->connection->insertUsingMutation($this->getTableName(), $values);
     }
 
     /**
@@ -40,7 +40,7 @@ trait UsesMutations
      */
     public function updateUsingMutation(array $values)
     {
-        $this->connection->updateUsingMutation($this->from, $values);
+        $this->connection->updateUsingMutation($this->getTableName(), $values);
     }
 
     /**
@@ -49,7 +49,7 @@ trait UsesMutations
      */
     public function insertOrUpdateUsingMutation(array $values)
     {
-        $this->connection->insertOrUpdateUsingMutation($this->from, $values);
+        $this->connection->insertOrUpdateUsingMutation($this->getTableName(), $values);
     }
 
     /**
@@ -58,6 +58,12 @@ trait UsesMutations
      */
     public function deleteUsingMutation($keys)
     {
-        $this->connection->deleteUsingMutation($this->from, $keys);
+        $this->connection->deleteUsingMutation($this->getTableName(), $keys);
+    }
+
+    protected function getTableName(): string
+    {
+        assert(is_string($this->from));
+        return $this->from;
     }
 }

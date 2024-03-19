@@ -1,3 +1,18 @@
+# v8.0.0 (2024-03-15)
+
+Added
+- Laravel 11 Support (#200)
+  - The following deprecated methods have been removed
+    - `Schema\Builder::getAllTables()`
+    - `Schema\Builder::getIndexListing()`
+    - `Schema\Grammar::compileTableExists()`
+    - `Schema\Grammar::compileGetAllTables()`
+    - `Schema\Grammar::compileColumnListing()`
+    - `Schema\Grammar::compileIndexListing()`
+    - `Query\Processor::processColumnListing()`
+    - `Query\Processor::processIndexListing()`
+  - `Blueprint::decimal()` can no longer specify `unsigned` flag.
+
 # v7.1.0 (2024-03-11)
 
 Changed

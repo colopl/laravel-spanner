@@ -41,18 +41,6 @@ class Builder extends BaseBuilder
     public static $defaultMorphKeyType = 'uuid';
 
     /**
-     * @deprecated Will be removed in a future Laravel version.
-     *
-     * @return list<array{ name: string, type: string }>
-     */
-    public function getAllTables()
-    {
-        return $this->connection->select(
-            $this->grammar->compileGetAllTables()
-        );
-    }
-
-    /**
      * @inheritDoc Adds a parent key, for tracking interleaving
      * 
      * @return list<array{ name: string, type: string, parent: string }>
@@ -62,17 +50,6 @@ class Builder extends BaseBuilder
         return $this->connection->select(
             $this->grammar->compileTables()
         );
-    }
-
-    /**
-     * @deprecated Use getIndexes($table) instead
-     * 
-     * @param string $table
-     * @return string[]
-     */
-    public function getIndexListing($table)
-    {
-        return parent::getIndexes($table);
     }
 
     /**
