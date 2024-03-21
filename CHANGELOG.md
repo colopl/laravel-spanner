@@ -1,3 +1,8 @@
+# v7.2.0 (Not released yet)
+
+Added
+- Support for `Query\Builder::upsert()` (#203)
+
 # v7.1.0 (2024-03-11)
 
 Changed
