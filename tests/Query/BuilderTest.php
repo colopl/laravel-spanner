@@ -889,9 +889,9 @@ class BuilderTest extends TestCase
             $caughtException = $ex;
         }
         if (getenv('SPANNER_EMULATOR_HOST')) {
-            $this->assertStringContainsString('INTERNAL', $caughtException?->getMessage());
-        } else {
             $this->assertStringContainsString('Invalid UTF-8', $caughtException?->getMessage());
+        } else {
+            $this->assertStringContainsString('Invalid request proto: an error was encountered during deserialization of the request proto.', $caughtException?->getMessage());
         }
     }
 
