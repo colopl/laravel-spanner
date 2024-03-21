@@ -28,6 +28,7 @@ use DateTimeInterface;
 use Exception;
 use Generator;
 use Google\Cloud\Core\Exception\AbortedException;
+use Google\Cloud\Core\Exception\ConflictException;
 use Google\Cloud\Core\Exception\GoogleException;
 use Google\Cloud\Core\Exception\NotFoundException;
 use Google\Cloud\Spanner\Database;
@@ -617,11 +618,17 @@ class Connection extends BaseConnection
         $result = $transaction->executeUpdateBatch([
             ['sql' => $query, 'parameters' => $this->prepareBindings($bindings)]
         ]);
-        dump($result);
-        $errors = $result->error();
-        if ($errors !== null) {
-            // do something
+
+        $error = $result->error();
+        if ($error !== null) {
+            throw new ConflictException(
+                $error['status']['message'] ?? '',
+                $error['status']['code'] ?? 0,
+                null,
+                ['details' => $error['details'] ?? []],
+            );
         }
+
         $rowCount = array_sum($result->rowCounts() ?? []);
         $this->recordsHaveBeenModified($rowCount > 0);
         return $rowCount;
@@ -633,7 +640,7 @@ class Connection extends BaseConnection
      */
     protected function shouldRunAsBatchDml(string $query): bool
     {
-        return str_starts_with(strtolower($query), 'insert or');
+        return stripos($query, 'insert or ') === 0;
     }
 
     /**
