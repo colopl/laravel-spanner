@@ -323,11 +323,9 @@ class Connection extends BaseConnection
                     throw new RuntimeException('Tried to run update outside of transaction! Affecting statements must be done inside a transaction');
                 }
 
-                $rowCount = $transaction->executeUpdate($query, ['parameters' => $this->prepareBindings($bindings)]);
-
-                $this->recordsHaveBeenModified($rowCount > 0);
-
-                return $rowCount;
+                return $this->shouldRunAsBatchDml($query)
+                    ? $this->executeBatchDml($transaction, $query, $bindings)
+                    : $this->executeDml($transaction, $query, $bindings);
             });
         };
 
@@ -593,6 +591,49 @@ class Connection extends BaseConnection
                 yield $row;
             }
         }
+    }
+
+    /**
+     * @param Transaction $transaction
+     * @param string $query
+     * @param list<mixed> $bindings
+     * @return int
+     */
+    protected function executeDml(Transaction $transaction, string $query, array $bindings = []): int
+    {
+        $rowCount = $transaction->executeUpdate($query, ['parameters' => $this->prepareBindings($bindings)]);
+        $this->recordsHaveBeenModified($rowCount > 0);
+        return $rowCount;
+    }
+
+    /**
+     * @param Transaction $transaction
+     * @param string $query
+     * @param list<mixed> $bindings
+     * @return int
+     */
+    protected function executeBatchDml(Transaction $transaction, string $query, array $bindings = []): int
+    {
+        $result = $transaction->executeUpdateBatch([
+            ['sql' => $query, 'parameters' => $this->prepareBindings($bindings)]
+        ]);
+        dump($result);
+        $errors = $result->error();
+        if ($errors !== null) {
+            // do something
+        }
+        $rowCount = array_sum($result->rowCounts() ?? []);
+        $this->recordsHaveBeenModified($rowCount > 0);
+        return $rowCount;
+    }
+
+    /**
+     * @param string $query
+     * @return bool
+     */
+    protected function shouldRunAsBatchDml(string $query): bool
+    {
+        return str_starts_with(strtolower($query), 'insert or');
     }
 
     /**
