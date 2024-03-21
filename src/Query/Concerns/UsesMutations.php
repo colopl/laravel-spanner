@@ -26,21 +26,21 @@ use Google\Cloud\Spanner\KeySet;
 trait UsesMutations
 {
     /**
-     * @param array $values
+     * @param array<string, mixed> $values
      * @return void
      */
     public function insertUsingMutation(array $values)
     {
-        $this->connection->insertUsingMutation($this->from, $values);
+        $this->connection->insertUsingMutation($this->getTableName(), $values);
     }
 
     /**
-     * @param array $values
+     * @param array<string, mixed> $values
      * @return void
      */
     public function updateUsingMutation(array $values)
     {
-        $this->connection->updateUsingMutation($this->from, $values);
+        $this->connection->updateUsingMutation($this->getTableName(), $values);
     }
 
     /**
@@ -49,15 +49,23 @@ trait UsesMutations
      */
     public function insertOrUpdateUsingMutation(array $values)
     {
-        $this->connection->insertOrUpdateUsingMutation($this->from, $values);
+        $this->connection->insertOrUpdateUsingMutation($this->getTableName(), $values);
     }
 
     /**
-     * @param array|KeySet $keys
+     * @param list<string>|KeySet $keys
      * @return void
      */
     public function deleteUsingMutation($keys)
     {
-        $this->connection->deleteUsingMutation($this->from, $keys);
+        $this->connection->deleteUsingMutation($this->getTableName(), $keys);
+    }
+
+    /**
+     * @return string
+     */
+    private function getTableName(): string
+    {
+        return (string) $this->getGrammar()->getValue($this->from);
     }
 }
