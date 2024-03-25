@@ -59,7 +59,7 @@ class Builder extends BaseBuilder
     /**
      * @inheritDoc
      */
-    public function upsert(array $values, $uniqueBy = null, $update = null)
+    public function upsert(array $values, $uniqueBy = [], $update = null)
     {
         if (empty($values)) {
             return 0;
