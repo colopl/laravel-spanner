@@ -41,3 +41,6 @@ parameters:
         - message: "#^Method Colopl\\\\Spanner\\\\SpannerServiceProvider\\:\\:parseConfig\\(\\) should return array\\{name\\: string, instance\\: string, database\\: string, prefix\\: string, cache_path\\: string|null, session_pool\\: array\\<string, mixed\\>\\} but returns non\\-empty\\-array\\<string, mixed\\>\\.$#"
           count: 1
           path: src/SpannerServiceProvider.php
+        - message: "#^Expression on left side of \\?\\? is not nullable\\.$#"
+          count: 1
+          path: src/Connection.php
