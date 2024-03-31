@@ -97,7 +97,7 @@ class MigrateCommand extends Command
 
         if($this->option('seed'))
             $this->call('db:seed');
-        else
-            $this->info("Done");
+        
+        $this->info("Done");
     }
 }

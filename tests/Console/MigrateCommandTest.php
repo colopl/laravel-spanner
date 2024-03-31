@@ -18,6 +18,7 @@
 namespace Console;
 
 use Colopl\Spanner\Tests\Console\TestCase;
+use Colopl\Spanner\Tests\DatabaseSeeder;
 
 class MigrateCommandTest extends TestCase
 {
@@ -26,6 +27,23 @@ class MigrateCommandTest extends TestCase
         $this->artisan('spanner:migrate')
             ->expectsOutputToContain("Checking DB")
             ->expectsOutputToContain("Generating batch DDL")
+            ->expectsOutputToContain("Done")
+            ->doesntExpectOutputToContain("Dropping all tables")
+            ->doesntExpectOutputToContain("Seeding database")
+            ->assertSuccessful()
+            ->run();
+    }
+
+    public function test_with_seed(): void
+    {
+        if(!class_exists('DatabaseSeeder'))
+            class_alias(DatabaseSeeder::class, 'DatabaseSeeder');
+
+        $this->artisan('spanner:migrate', ['--seed' => true])
+            ->expectsOutputToContain("Checking DB")
+            ->expectsOutputToContain("Generating batch DDL")
+            ->expectsOutputToContain("Seeding database")
+            ->expectsOutputToContain("Done")
             ->doesntExpectOutputToContain("Dropping all tables")
             ->assertSuccessful()
             ->run();
