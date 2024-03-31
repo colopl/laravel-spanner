@@ -18,6 +18,8 @@
 namespace Colopl\Spanner;
 
 use Colopl\Spanner\Console\CooldownCommand;
+use Colopl\Spanner\Console\MigrateCommand;
+use Colopl\Spanner\Console\MigrateFreshCommand;
 use Colopl\Spanner\Console\SessionsCommand;
 use Colopl\Spanner\Console\WarmupCommand;
 use Google\Cloud\Spanner\Session\CacheSessionPool;
@@ -48,6 +50,8 @@ class SpannerServiceProvider extends ServiceProvider
                 CooldownCommand::class,
                 SessionsCommand::class,
                 WarmupCommand::class,
+                MigrateCommand::class,
+                MigrateFreshCommand::class,
             ]);
         }
     }

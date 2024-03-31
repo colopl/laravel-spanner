@@ -15,27 +15,19 @@
  * limitations under the License.
  */
 
-$conn = [
-    'driver' => 'spanner',
-    'instance' => getenv('DB_SPANNER_INSTANCE_ID'),
-    'database' => getenv('DB_SPANNER_DATABASE_ID'),
+namespace Console;
 
-    'client' => [
-        'projectId' => getenv('DB_SPANNER_PROJECT_ID'),
-        'requestTimeout' => 600,
-    ],
+use Colopl\Spanner\Tests\Console\TestCase;
 
-    'session_pool' => [
-        'minSessions' => 1,
-        'maxSessions' => 100,
-    ],
-];
-
-return [
-    'connections' => [
-        'main' => $conn,
-        'alternative' => ['database' => $conn['database'] . '-alt'] + $conn,
-    ],
-    'default' => 'main',
-    'migrations' => 'migrations',
-];
+class MigrateCommandTest extends TestCase
+{
+    public function test_no_args(): void
+    {
+        $this->artisan('spanner:migrate')
+            ->expectsOutputToContain("Checking DB")
+            ->expectsOutputToContain("Generating batch DDL")
+            ->doesntExpectOutputToContain("Dropping all tables")
+            ->assertSuccessful()
+            ->run();
+    }
+}
