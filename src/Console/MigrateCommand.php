@@ -71,7 +71,7 @@ class MigrateCommand extends Command
                 $repository->createRepository();
             $migrator->runPending($migrations);
         });
-    
+
         foreach($results as $result) {
             $query = $result['query'];
             if(Str::startsWith($query, 'select')) continue;
