@@ -20,7 +20,7 @@ namespace Console;
 use Colopl\Spanner\Tests\Console\TestCase;
 use Colopl\Spanner\Tests\DatabaseSeeder;
 
-class MigrateCommandTest extends TestCase
+class MigrateCommandTestLast extends TestCase
 {
     public function test_no_args(): void
     {
