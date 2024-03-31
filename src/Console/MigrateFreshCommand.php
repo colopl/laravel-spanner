@@ -6,7 +6,7 @@ class MigrateFreshCommand extends MigrateCommand
 {
     protected $signature = 'spanner:migrate:fresh {--seed}';
 
-    public function handle($fresh = true)
+    public function handle(bool $fresh = true):void
     {
         parent::handle(true);
     }

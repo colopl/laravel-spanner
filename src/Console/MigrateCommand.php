@@ -14,13 +14,13 @@ class MigrateCommand extends Command
 {
     protected $signature = 'spanner:migrate {--seed}';
 
-    public function handle($fresh = false)
+    public function handle(bool $fresh = false):void
     {
         $connection = DB::connection();
 
         // check if we not in spanner mode
         if(!$connection instanceof Connection) {
-            $command = 'migrate' . $fresh ? ':fresh' : '';
+            $command = 'migrate' . ($fresh ? ':fresh' : '');
             $this->call($command, ['--seed' => $this->option('seed')]);
             return;
         }
@@ -28,8 +28,8 @@ class MigrateCommand extends Command
         // if running emulator, ensure instance exists
         if (!empty(getenv('SPANNER_EMULATOR_HOST'))) {
             $this->info('Checking Emulator Instance');
-            $spanner = new SpannerClient($connection->getConfig('client'));
-            $instanceName = $connection->getConfig('instance');
+            $spanner = new SpannerClient((array)$connection->getConfig('client'));
+            $instanceName = (string)$connection->getConfig('instance');
             if (! $spanner->instance($instanceName)->exists()) {
                 $config = $spanner->instanceConfiguration('emulator-config');
                 $spanner->createInstance($config, $instanceName)->pollUntilComplete();
