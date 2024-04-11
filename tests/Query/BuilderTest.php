@@ -22,12 +22,11 @@ use Colopl\Spanner\Query\Builder;
 use Colopl\Spanner\Schema\Blueprint;
 use Colopl\Spanner\Tests\TestCase;
 use Colopl\Spanner\TimestampBound\ExactStaleness;
+use Google\Cloud\Core\Exception\ConflictException;
 use Google\Cloud\Spanner\Bytes;
 use Google\Cloud\Spanner\Duration;
-use Illuminate\Support\Str;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Collection;
 use LogicException;
 
 use const Grpc\STATUS_ALREADY_EXISTS;
@@ -576,6 +575,78 @@ class BuilderTest extends TestCase
         /** @var Carbon $insertedTimestamp */
         $insertedTimestamp = $insertedRow['timestampTest'];
         $this->assertSame($carbonMax->getTimestamp(), $insertedTimestamp->getTimestamp());
+    }
+
+    public function test_upsert_single_row(): void
+    {
+        $table = __FUNCTION__;
+        $conn = $this->getDefaultConnection();
+        $sb = $conn->getSchemaBuilder();
+        $sb->create($table, function (Blueprint $table) {
+            $table->integer('id')->primary();
+            $table->string('s', 1);
+        });
+
+        $query = $conn->table($table);
+        $this->assertSame(1, $query->upsert(['id' => 1, 's' => 'a']));
+        $this->assertSame(1, $query->upsert(['id' => 1, 's' => 'b']));
+
+        $this->assertSame(['id' => 1, 's' => 'b'], (array) $query->sole());
+    }
+
+    public function test_upsert_multi_row(): void
+    {
+        $table = __FUNCTION__;
+        $conn = $this->getDefaultConnection();
+        $sb = $conn->getSchemaBuilder();
+        $sb->create($table, function (Blueprint $table) {
+            $table->integer('id')->primary();
+            $table->string('s', 1);
+        });
+
+        $query = $conn->table($table);
+
+        // insert
+        $this->assertSame(2, $query->upsert([
+            ['id' => 1, 's' => 'a'],
+            ['id' => 2, 's' => 'b'],
+        ]));
+
+        // update (no change x1, change x1, insert x1)
+        $this->assertSame(3, $query->upsert([
+            ['id' => 1, 's' => 'a'],
+            ['id' => 2, 's' => '_'],
+            ['id' => 3, 's' => 'c'],
+        ]));
+
+        $this->assertSame(['a', '_', 'c'], $query->orderBy('id')->pluck('s')->all());
+    }
+
+    public function test_upsert_throw_error(): void
+    {
+        $table = __FUNCTION__;
+        $conn = $this->getDefaultConnection();
+        $sb = $conn->getSchemaBuilder();
+        $sb->create($table, function (Blueprint $table) {
+            $table->integer('id')->primary();
+            $table->string('s', 1);
+        });
+
+        $query = $conn->table($table);
+        $exceptionThrown = false;
+        try {
+            $query->upsert([
+                ['id' => 1, 's' => 'a'],
+                ['id' => 2, 's' => 'bb'],
+            ]);
+        } catch (QueryException $e) {
+            $this->assertSame(9, $e->getCode());
+            $this->assertStringContainsString('New value exceeds the maximum size limit', $e->getMessage());
+            $exceptionThrown = true;
+        }
+
+        $this->assertTrue($exceptionThrown);
+        $this->assertSame(0, $query->count());
     }
 
     public function testWhereDatetime(): void

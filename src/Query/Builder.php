@@ -17,6 +17,7 @@
 
 namespace Colopl\Spanner\Query;
 
+use Closure;
 use Colopl\Spanner\Connection;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Query\Builder as BaseBuilder;
@@ -68,6 +69,33 @@ class Builder extends BaseBuilder
         }
 
         return (bool) $this->take(1)->update(Arr::except($values, array_keys($attributes)));
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function upsert(array $values, $uniqueBy = [], $update = null)
+    {
+        if (empty($values)) {
+            return 0;
+        }
+
+        if (! array_is_list($values)) {
+            $values = [$values];
+        } else {
+            foreach ($values as $key => $value) {
+                ksort($value);
+
+                $values[$key] = $value;
+            }
+        }
+
+        $this->applyBeforeQueryCallbacks();
+
+        return $this->connection->affectingStatement(
+            $this->grammar->compileUpsert($this, $values, [], []),
+            $this->cleanBindings(Arr::flatten($values, 1)),
+        );
     }
 
     /**

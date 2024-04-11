@@ -1,4 +1,4 @@
-# v8.0.0 (2024-03-15)
+# v8.0.0 (2024-04-11)
 
 Added
 - Laravel 11 Support (#200)
@@ -12,6 +12,11 @@ Added
     - `Query\Processor::processColumnListing()`
     - `Query\Processor::processIndexListing()`
   - `Blueprint::decimal()` can no longer specify `unsigned` flag.
+
+# v7.2.0 (2024-03-27)
+
+Added
+- Support for `Query\Builder::upsert()` (#203)
 
 # v7.1.0 (2024-03-11)
 

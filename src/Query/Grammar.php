@@ -22,13 +22,21 @@ use Colopl\Spanner\Concerns\SharedGrammarCalls;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Contracts\Database\Query\Expression;
 use Illuminate\Database\Query\Grammars\Grammar as BaseGrammar;
-use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use RuntimeException;
 
 class Grammar extends BaseGrammar
 {
     use MarksAsNotSupported;
     use SharedGrammarCalls;
+
+    /**
+     * @inheritDoc
+     */
+    public function compileUpsert(Builder $query, array $values, array $uniqueBy, array $update)
+    {
+        return Str::replaceFirst('insert', 'insert or update', $this->compileInsert($query, $values));
+    }
 
     /**
      * @inheritDoc
