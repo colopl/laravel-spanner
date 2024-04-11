@@ -21,6 +21,7 @@ use Closure;
 use Colopl\Spanner\Connection;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Query\Builder as BaseBuilder;
+use Illuminate\Database\Query\Expression;
 use Illuminate\Support\Arr;
 use LogicException;
 
@@ -42,6 +43,20 @@ class Builder extends BaseBuilder
     public function insert(array $values)
     {
         return parent::insert($this->prepareInsertForDml($values));
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function update(array $values)
+    {
+        foreach ($values as $key => $value) {
+            if (is_array($value)) {
+                $values[$key] = new ArrayValue($value);
+            }
+        }
+
+        return parent::update($values);
     }
 
     /**

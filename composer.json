@@ -8,19 +8,19 @@
     {"name": "Takayasu Oyama", "email": "t-oyama@colopl.co.jp"}
   ],
   "require": {
-    "php": "^8.1",
+    "php": "^8.2",
     "ext-grpc": "*",
     "ext-json": "*",
-    "laravel/framework": "^10.37.0",
+    "laravel/framework": "^11",
     "google/cloud-spanner": "^1.58.4",
     "grpc/grpc": "^1.42",
-    "symfony/cache": "~6",
+    "symfony/cache": "~7",
     "symfony/deprecation-contracts": "~2",
-    "symfony/lock": "~6"
+    "symfony/lock": "~7"
   },
   "require-dev": {
-    "orchestra/testbench": "~8",
-    "phpunit/phpunit": "~10.0",
+    "orchestra/testbench": "~9",
+    "phpunit/phpunit": "~11.0",
     "phpstan/phpstan": "^1"
   },
   "autoload": {

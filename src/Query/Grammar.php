@@ -57,6 +57,20 @@ class Grammar extends BaseGrammar
     /**
      * @inheritDoc
      */
+    public function prepareBindingsForUpdate(array $bindings, array $values)
+    {
+        $bindings = parent::prepareBindingsForUpdate($bindings, $values);
+        foreach ($bindings as $key => $value) {
+            if ($value instanceof ArrayValue) {
+                $bindings[$key] = $value->value;
+            }
+        }
+        return $bindings;
+    }
+
+    /**
+     * @inheritDoc
+     */
     public function compileTruncate(Builder $query)
     {
         return ['delete from '.$this->wrapTable($query->from).' where true' => []];
