@@ -37,4 +37,5 @@ return [
         'alternative' => ['database' => $conn['database'] . '-alt'] + $conn,
     ],
     'default' => 'main',
+    'migrations' => 'migrations',
 ];
