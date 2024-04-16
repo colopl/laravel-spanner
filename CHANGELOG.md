@@ -1,3 +1,8 @@
+# v8.1.0 (2024-04-16)
+
+Added
+- Request and Transaction tagging support (#206)
+
 # v8.0.0 (2024-04-11)
 
 Added
