@@ -200,6 +200,17 @@ $queryBuilder
 > This creates a new session in the background which is not shared with the current session pool.
 > This means, queries running with data boost will not be associated with transactions that may be taking place.
 
+### Request Tags and Transaction Tags
+
+Spanner allows you to attach tags to your queries and transactions that can be [used for troubleshooting](https://cloud.google.com/spanner/docs/introspection/troubleshooting-with-tags).
+
+You can set request tags and transaction tags as below.
+
+```php
+$connection->setRequestTag('controller=user,action=login');
+$connection->setTransactionTag('controller=user,action=login');
+```
+
 ### Data Types
 
 Some data types of Google Cloud Spanner does not have corresponding built-in type of PHP.
