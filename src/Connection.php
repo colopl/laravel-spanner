@@ -52,6 +52,7 @@ class Connection extends BaseConnection
         Concerns\ManagesMutations,
         Concerns\ManagesPartitionedDml,
         Concerns\ManagesSessionPool,
+        Concerns\ManagesTagging,
         Concerns\ManagesTransactions,
         Concerns\MarksAsNotSupported;
 
@@ -569,6 +570,11 @@ class Connection extends BaseConnection
 
         if (isset($options['dataBoostEnabled'])) {
             return $this->executePartitionedQuery($query, $options);
+        }
+
+        if ($tag = $this->getRequestTag()) {
+            $options['requestOptions'] ??= [];
+            $options['requestOptions']['requestTag'] = $tag;
         }
 
         return $this->getDatabaseContext()
