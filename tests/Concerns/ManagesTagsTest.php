@@ -31,13 +31,14 @@ class ManagesTagsTest extends TestCase
         $conn->setRequestTag(null);
         $this->assertNull($conn->getRequestTag());
     }
-//
-//    public function test_set_and_get_transactionTag(): void
-//    {
-//        $conn = $this->getDefaultConnection();
-//        $conn->setTransactionTag('url=/api/users/update');
-//        $this->assertSame('url=/api/users/update', $conn->getTransactionTag());
-//        $conn->setTransactionTag(null);
-//        $this->assertNull($conn->getTransactionTag());
-//    }
+
+    public function test_set_and_get_transactionTag(): void
+    {
+        $conn = $this->getDefaultConnection();
+        assert($conn instanceof Connection);
+        $conn->setTransactionTag('url=/api/users/update');
+        $this->assertSame('url=/api/users/update', $conn->getTransactionTag());
+        $conn->setTransactionTag(null);
+        $this->assertNull($conn->getTransactionTag());
+    }
 }
