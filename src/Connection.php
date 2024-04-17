@@ -572,14 +572,16 @@ class Connection extends BaseConnection
             return $this->executePartitionedQuery($query, $options);
         }
 
-        if ($tag = $this->getRequestTag()) {
+        $tag = $this->getRequestTag();
+        if ($tag !== null) {
             $options['requestOptions'] ??= [];
             $options['requestOptions']['requestTag'] = $tag;
         }
 
-        return $this->getDatabaseContext()
-            ->execute($query, $options)
-            ->rows();
+        if ($transaction = $this->getCurrentTransaction()) {
+            return $transaction->execute($query, $options)->rows();
+        }
+        return $this->getSpannerDatabase()->execute($query, $options)->rows();
     }
 
     /**
