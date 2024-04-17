@@ -26,9 +26,8 @@ class ManagesTagsTest extends TestCase
         $conn = $this->getDefaultConnection();
         $conn->setRequestTag('url=/api/users');
         $uuid = $this->generateUuid();
-        $conn->table('User')->where('userId', $uuid)->get();
         $conn->table('User')->insert(['userId' => $uuid, 'name' => 'John Doe']);
-        $conn->table('User')->where('userId', $uuid)->get();
+        $conn->table('User')->where('userId', $uuid)->first();
         $this->assertSame('url=/api/users', $conn->getRequestTag());
         $conn->setRequestTag(null);
         $this->assertNull($conn->getRequestTag());
@@ -40,7 +39,6 @@ class ManagesTagsTest extends TestCase
         $conn->setTransactionTag('url=/api/users/update');
         $uuid = $this->generateUuid();
         $conn->transaction(function () use ($conn, $uuid) {
-            $conn->table('User')->where('userId', $uuid)->get();
             $conn->table('User')->insert(['userId' => $uuid, 'name' => 'John Doe']);
             $conn->table('User')->where('userId', $uuid)->get();
         });
