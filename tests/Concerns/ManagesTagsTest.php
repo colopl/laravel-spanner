@@ -21,29 +21,21 @@ use Colopl\Spanner\Tests\TestCase;
 
 class ManagesTagsTest extends TestCase
 {
-//    public function test_set_and_get_requestTag(): void
-//    {
-//        $conn = $this->getDefaultConnection();
-//        $conn->setRequestTag('url=/api/users');
-//        $uuid = $this->generateUuid();
-//        $conn->table('User')->insert(['userId' => $uuid, 'name' => 'John Doe']);
-//        $conn->table('User')->where('userId', $uuid)->first();
-//        $this->assertSame('url=/api/users', $conn->getRequestTag());
-//        $conn->setRequestTag(null);
-//        $this->assertNull($conn->getRequestTag());
-//    }
-//
-//    public function test_set_and_get_transactionTag(): void
-//    {
-//        $conn = $this->getDefaultConnection();
-//        $conn->setTransactionTag('url=/api/users/update');
-//        $uuid = $this->generateUuid();
-//        $conn->transaction(function () use ($conn, $uuid) {
-//            $conn->table('User')->insert(['userId' => $uuid, 'name' => 'John Doe']);
-//            $conn->table('User')->where('userId', $uuid)->get();
-//        });
-//        $this->assertSame('url=/api/users/update', $conn->getTransactionTag());
-//        $conn->setTransactionTag(null);
-//        $this->assertNull($conn->getTransactionTag());
-//    }
+    public function test_set_and_get_requestTag(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $conn->setRequestTag('url=/api/users');
+        $this->assertSame('url=/api/users', $conn->getRequestTag());
+        $conn->setRequestTag(null);
+        $this->assertNull($conn->getRequestTag());
+    }
+
+    public function test_set_and_get_transactionTag(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $conn->setTransactionTag('url=/api/users/update');
+        $this->assertSame('url=/api/users/update', $conn->getTransactionTag());
+        $conn->setTransactionTag(null);
+        $this->assertNull($conn->getTransactionTag());
+    }
 }

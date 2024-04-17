@@ -60,10 +60,11 @@ trait ManagesTransactions
         }
 
         $options = ['maxRetries' => $attempts - 1];
-//
-//        if ($tag = $this->getTransactionTag()) {
-//            $options['tag'] = $tag;
-//        }
+
+        $tag = $this->getTransactionTag();
+        if ($tag !== null) {
+            $options['tag'] = $tag;
+        }
 
         return $this->withSessionNotFoundHandling(function () use ($callback, $options) {
             $return = $this->getSpannerDatabase()->runTransaction(function (Transaction $tx) use ($callback) {
