@@ -44,3 +44,6 @@ parameters:
         - message: "#^Expression on left side of \\?\\? is not nullable\\.$#"
           count: 1
           path: src/Connection.php
+        - message: "#^Cannot access offset 'requestTag' on mixed\\.$#"
+          count: 1
+          path: src/Connection.php

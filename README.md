@@ -207,8 +207,10 @@ Spanner allows you to attach tags to your queries and transactions that can be [
 You can set request tags and transaction tags as below.
 
 ```php
-$connection->setRequestTag('controller=user,action=login');
-$connection->setTransactionTag('controller=user,action=login');
+$requestPath = request()->path();
+$tag = 'url=' . $requestPath;
+$connection->setRequestTag($tag);
+$connection->setTransactionTag($tag);
 ```
 
 ### Data Types
