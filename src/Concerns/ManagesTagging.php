@@ -23,11 +23,11 @@ trait ManagesTagging
      * @var string|null
      */
     protected ?string $requestTag = null;
-
-    /**
-     * @var string|null
-     */
-    protected ?string $transactionTag = null;
+//
+//    /**
+//     * @var string|null
+//     */
+//    protected ?string $transactionTag = null;
 
     /**
      * @param string|null $tag
@@ -46,22 +46,22 @@ trait ManagesTagging
     {
         return $this->requestTag;
     }
-
-    /**
-     * @param string|null $tag
-     * @return $this
-     */
-    public function setTransactionTag(?string $tag): static
-    {
-        $this->transactionTag = $tag;
-        return $this;
-    }
-
-    /**
-     * @return string|null
-     */
-    public function getTransactionTag(): ?string
-    {
-        return $this->transactionTag;
-    }
+//
+//    /**
+//     * @param string|null $tag
+//     * @return $this
+//     */
+//    public function setTransactionTag(?string $tag): static
+//    {
+//        $this->transactionTag = $tag;
+//        return $this;
+//    }
+//
+//    /**
+//     * @return string|null
+//     */
+//    public function getTransactionTag(): ?string
+//    {
+//        return $this->transactionTag;
+//    }
 }
