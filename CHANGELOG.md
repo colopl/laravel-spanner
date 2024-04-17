@@ -1,4 +1,9 @@
-# v7.2.0 (Not released yet)
+# v7.3.0 (2024-04-17)
+
+Added
+- Request and Transaction tagging support (#206)
+
+# v7.2.0 (2024-03-27)
 
 Added
 - Support for `Query\Builder::upsert()` (#203)
