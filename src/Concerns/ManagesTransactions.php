@@ -59,7 +59,14 @@ trait ManagesTransactions
             return parent::transaction($callback, $attempts);
         }
 
-        return $this->withSessionNotFoundHandling(function () use ($callback, $attempts) {
+        $options = ['maxRetries' => $attempts - 1];
+
+        $tag = $this->getTransactionTag();
+        if ($tag !== null) {
+            $options['tag'] = $tag;
+        }
+
+        return $this->withSessionNotFoundHandling(function () use ($callback, $options) {
             $return = $this->getSpannerDatabase()->runTransaction(function (Transaction $tx) use ($callback) {
                 try {
                     $this->currentTransaction = $tx;
@@ -81,7 +88,7 @@ trait ManagesTransactions
                     $this->rollBack();
                     throw $e;
                 }
-            }, ['maxRetries' => $attempts - 1]);
+            }, $options);
 
             $this->fireConnectionEvent('committed');
 
