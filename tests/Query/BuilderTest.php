@@ -25,6 +25,7 @@ use Colopl\Spanner\TimestampBound\ExactStaleness;
 use Google\Cloud\Core\Exception\ConflictException;
 use Google\Cloud\Spanner\Bytes;
 use Google\Cloud\Spanner\Duration;
+use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Carbon;
 use LogicException;
@@ -582,9 +583,10 @@ class BuilderTest extends TestCase
         $table = __FUNCTION__;
         $conn = $this->getDefaultConnection();
         $sb = $conn->getSchemaBuilder();
+
         $sb->create($table, function (Blueprint $table) {
-            $table->integer('id')->primary();
-            $table->string('s', 1);
+            $table->integer('id')->nullable()->primary();
+            $table->string('s', 1)->nullable();
         });
 
         $query = $conn->table($table);
@@ -597,8 +599,10 @@ class BuilderTest extends TestCase
         ]));
 
         $this->assertSame([
-            ['id' => 1, 's' => 'b'],
-        ], (array) $query->get());
+            ['id' => 1, 's' => 'a'],
+            ['id' => 2, 's' => 'c'],
+            ['id' => 3, 's' => 'd'],
+        ], $query->get()->sortBy('id')->values()->all());
 
     }
 
