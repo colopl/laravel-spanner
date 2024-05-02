@@ -1,3 +1,8 @@
+# v7.4.0 (2024-05-13)
+
+Added
+- Support for `INSERT OR IGNORE` (#207)
+
 # v7.3.0 (2024-04-17)
 
 Added

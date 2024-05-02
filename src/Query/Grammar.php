@@ -33,6 +33,14 @@ class Grammar extends BaseGrammar
     /**
      * @inheritDoc
      */
+    public function compileInsertOrIgnore(Builder $query, array $values)
+    {
+        return Str::replaceFirst('insert', 'insert or ignore', $this->compileInsert($query, $values));
+    }
+
+    /**
+     * @inheritDoc
+     */
     public function compileUpsert(Builder $query, array $values, array $uniqueBy, array $update)
     {
         return Str::replaceFirst('insert', 'insert or update', $this->compileInsert($query, $values));
