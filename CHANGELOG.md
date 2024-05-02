@@ -1,7 +1,8 @@
-# v8.1.0 (2024-04-16)
+# v8.1.0 (Not released yet)
 
 Added
 - Request and Transaction tagging support (#206)
+- Support for `INSERT OR IGNORE` (#207)
 
 # v8.0.0 (2024-04-11)
 
