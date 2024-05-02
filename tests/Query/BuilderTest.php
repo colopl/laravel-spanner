@@ -496,7 +496,7 @@ class BuilderTest extends TestCase
             ->toSql();
     }
 
-    public function testInterleaveTable(): void
+    public function test_interleaved_table(): void
     {
         $conn = $this->getDefaultConnection();
 
@@ -558,7 +558,7 @@ class BuilderTest extends TestCase
         $this->assertNull($insertedRow['nullableNumericTest']);
     }
 
-    public function testInsertDatetime(): void
+    public function test_insert_datetime_object(): void
     {
         date_default_timezone_set('Asia/Tokyo');
 
@@ -575,6 +575,31 @@ class BuilderTest extends TestCase
         /** @var Carbon $insertedTimestamp */
         $insertedTimestamp = $insertedRow['timestampTest'];
         $this->assertSame($carbonMax->getTimestamp(), $insertedTimestamp->getTimestamp());
+    }
+
+    public function test_insertOrIgnore(): void
+    {
+        $table = __FUNCTION__;
+        $conn = $this->getDefaultConnection();
+        $sb = $conn->getSchemaBuilder();
+        $sb->create($table, function (Blueprint $table) {
+            $table->integer('id')->primary();
+            $table->string('s', 1);
+        });
+
+        $query = $conn->table($table);
+        $query->truncate();
+        $this->assertSame(1, $query->insertOrIgnore(['id' => 1, 's' => 'a']));
+        $this->assertSame(2, $query->insertOrIgnore([
+            ['id' => 1, 's' => 'b'],
+            ['id' => 2, 's' => 'c'],
+            ['id' => 3, 's' => 'd'],
+        ]));
+
+        $this->assertSame([
+            ['id' => 1, 's' => 'b'],
+        ], (array) $query->get());
+
     }
 
     public function test_upsert_single_row(): void
@@ -649,7 +674,7 @@ class BuilderTest extends TestCase
         $this->assertSame(0, $query->count());
     }
 
-    public function testWhereDatetime(): void
+    public function test_where_with_datetime(): void
     {
         date_default_timezone_set('Asia/Tokyo');
 
@@ -670,7 +695,7 @@ class BuilderTest extends TestCase
     /**
      * null ではない列を null で上書きできるか
      */
-    public function testUpdateWithNull(): void
+    public function test_update_with_null(): void
     {
         $conn = $this->getDefaultConnection();
         $tableName = self::TABLE_NAME_TEST;
@@ -696,10 +721,10 @@ class BuilderTest extends TestCase
             ->where('testId', $insertRow['testId'])
             ->first();
 
-        $this->assertSame(null, $afterRow['nullableStringTest']);
+        $this->assertNull($afterRow['nullableStringTest']);
     }
 
-    public function testUpdateOrInsert(): void
+    public function test_updateOrInsert(): void
     {
         $conn = $this->getDefaultConnection();
         $tableName = self::TABLE_NAME_TEST;
@@ -724,7 +749,7 @@ class BuilderTest extends TestCase
         $this->assertSame('updated', $record['stringTest']);
     }
 
-    public function testDeleteOnCascase(): void
+    public function test_delete_with_cascading_interleaves(): void
     {
         $conn = $this->getDefaultConnection();
 
@@ -767,7 +792,7 @@ class BuilderTest extends TestCase
         $this->assertDatabaseMissing($tableName, $userItems[1]);
     }
 
-    public function testInsertBytes(): void
+    public function test_insert_bytes(): void
     {
         $conn = $this->getDefaultConnection();
         $tableName = self::TABLE_NAME_TEST;
@@ -784,7 +809,7 @@ class BuilderTest extends TestCase
         $this->assertSame($bytes->formatAsString(), $insertedBytes->formatAsString());
     }
 
-    public function testWhereBytes(): void
+    public function test_Where_with_bytes(): void
     {
         $conn = $this->getDefaultConnection();
         $tableName = self::TABLE_NAME_TEST;
@@ -799,7 +824,7 @@ class BuilderTest extends TestCase
         $this->assertSame(0, $qb->where('bytesTest', '=', new Bytes("\x00\x01"))->count());
     }
 
-    public function testWhereIn(): void
+    public function test_whereIn(): void
     {
         $conn = $this->getDefaultConnection();
         $tableName = self::TABLE_NAME_TEST;
@@ -895,7 +920,7 @@ class BuilderTest extends TestCase
         }
     }
 
-    public function testEscapeCharacter(): void
+    public function test_escapeCharacter(): void
     {
         $conn = $this->getDefaultConnection();
         $tableName = self::TABLE_NAME_USER;
@@ -920,7 +945,7 @@ class BuilderTest extends TestCase
         }
     }
 
-    public function testStaleReads(): void
+    public function test_stale_reads(): void
     {
         $conn = $this->getDefaultConnection();
         $tableName = self::TABLE_NAME_USER;
@@ -935,7 +960,7 @@ class BuilderTest extends TestCase
         $this->assertEmpty($stalenessRow);
     }
 
-    public function testTruncate(): void
+    public function test_truncate(): void
     {
         $conn = $this->getDefaultConnection();
         $tableName = self::TABLE_NAME_USER;
