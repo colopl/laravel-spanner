@@ -2,6 +2,7 @@
 
 Added
 - Support for `INSERT OR IGNORE` (#207)
+- Support adding request timeout at query level (#208)
 
 # v7.3.0 (2024-04-17)
 

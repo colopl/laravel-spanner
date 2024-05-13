@@ -17,7 +17,6 @@
 
 namespace Colopl\Spanner\Query;
 
-use Closure;
 use Colopl\Spanner\Connection;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Query\Builder as BaseBuilder;
@@ -26,6 +25,7 @@ use LogicException;
 
 class Builder extends BaseBuilder
 {
+    use Concerns\SetsRequestTimeouts;
     use Concerns\UsesDataBoost;
     use Concerns\UsesMutations;
     use Concerns\UsesPartitionedDml;
@@ -166,8 +166,13 @@ class Builder extends BaseBuilder
         $bindings = $this->getBindings();
         $options = [];
 
+        $requestTimeoutSeconds = $this->getRequestTimeoutSeconds();
+        if ($requestTimeoutSeconds !== null) {
+            $options['requestTimeout'] = $requestTimeoutSeconds;
+        }
+
         if ($this->dataBoostEnabled()) {
-            $options += ['dataBoostEnabled' => true];
+            $options['dataBoostEnabled'] = true;
         }
 
         if ($this->timestampBound !== null) {

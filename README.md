@@ -193,6 +193,7 @@ $connection->selectWithOptions('SELECT ...', $bindings, ['dataBoostEnabled' => t
 // Using Query Builder
 $queryBuilder
     ->useDataBoost()
+    ->setRequestTimeoutSeconds(60)
     ->get();
 ```
 

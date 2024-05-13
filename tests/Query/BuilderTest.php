@@ -23,6 +23,7 @@ use Colopl\Spanner\Schema\Blueprint;
 use Colopl\Spanner\Tests\TestCase;
 use Colopl\Spanner\TimestampBound\ExactStaleness;
 use Google\Cloud\Core\Exception\ConflictException;
+use Google\Cloud\Core\Exception\DeadlineExceededException;
 use Google\Cloud\Spanner\Bytes;
 use Google\Cloud\Spanner\Duration;
 use Illuminate\Database\Events\QueryExecuted;
@@ -1072,5 +1073,17 @@ class BuilderTest extends TestCase
     {
         $query = $this->getDefaultConnection()->table('t')->useDataBoost(false);
         $this->assertFalse($query->dataBoostEnabled());
+    }
+
+    public function test_setRequestTimeoutSeconds(): void
+    {
+        $query = $this->getDefaultConnection()->table(self::TABLE_NAME_USER);
+        $this->assertNull($query->getRequestTimeoutSeconds());
+        $query->setRequestTimeoutSeconds(0.0001);
+        $this->assertSame(0.0001, $query->getRequestTimeoutSeconds());
+
+        $this->expectException(QueryException::class);
+        $this->expectExceptionMessageMatches('/DEADLINE_EXCEEDED/');
+        $query->get();
     }
 }
