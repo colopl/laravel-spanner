@@ -3,6 +3,7 @@
 Added
 - Request and Transaction tagging support (#206)
 - Support for `INSERT OR IGNORE` (#207)
+- Support adding request timeout at query level (#208)
 
 # v8.0.0 (2024-04-11)
 
