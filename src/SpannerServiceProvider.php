@@ -108,12 +108,12 @@ class SpannerServiceProvider extends ServiceProvider
     }
 
     /**
-     * @param array{ cache_path: string|null } $config
+     * @param array{ name: string, cache_path: string|null } $config
      * @return AdapterInterface
      */
     protected function createAuthCache(array $config): AdapterInterface
     {
-        return $this->getCacheAdapter('_auth', $config['cache_path']);
+        return $this->getCacheAdapter($config['name'] . '_auth', $config['cache_path']);
     }
 
     /**
@@ -123,7 +123,7 @@ class SpannerServiceProvider extends ServiceProvider
     protected function createSessionPool(array $config): SessionPoolInterface
     {
         return new CacheSessionPool(
-            $this->getCacheAdapter($config['name'], $config['cache_path']),
+            $this->getCacheAdapter($config['name'] . '_sessions', $config['cache_path']),
             $config['session_pool'],
         );
     }
