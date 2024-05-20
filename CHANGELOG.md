@@ -5,6 +5,9 @@ Added
 - Support for `INSERT OR IGNORE` (#207)
 - Support adding request timeout at query level (#208)
 
+Fixed
+- authCache needs namespace for each connection (#210)
+
 # v8.0.0 (2024-04-11)
 
 Added
