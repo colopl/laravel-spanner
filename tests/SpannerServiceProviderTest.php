@@ -33,5 +33,7 @@ class SpannerServiceProviderTest extends TestCase
         $db->connection('main')->query()->select('SELECT 1');
 
         $this->assertDirectoryExists($newPath);
+        $this->assertDirectoryExists("{$newPath}/main_sessions");
+        $this->assertDirectoryExists("{$newPath}/main_auth");
     }
 }

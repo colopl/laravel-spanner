@@ -1,3 +1,9 @@
+# v7.4.1 (2024-05-21)
+
+Fixed
+- authCache needs namespace for each connection (#210)
+
+
 # v7.4.0 (2024-05-13)
 
 Added
