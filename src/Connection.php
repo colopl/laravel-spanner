@@ -642,6 +642,20 @@ class Connection extends BaseConnection
         return $rowCount;
     }
 
+    public function snapshot($options = [], Closure $callback)
+    {
+        if($this->currentTransaction)
+            throw new Exception('Cant run a snapshot in the middle of a transaction');
+
+        $this->currentTransaction = $this->getSpannerDatabase()->snapshot($options);
+
+        $result = $callback();
+
+        $this->currentTransaction = null;
+
+        return $result;
+    }
+
     /**
      * @param string $query
      * @return bool

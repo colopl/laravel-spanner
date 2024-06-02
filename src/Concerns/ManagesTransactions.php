@@ -21,6 +21,7 @@ use Closure;
 use Exception;
 use Google\Cloud\Core\Exception\AbortedException;
 use Google\Cloud\Spanner\Database;
+use Google\Cloud\Spanner\Snapshot;
 use Google\Cloud\Spanner\Transaction;
 use Throwable;
 
@@ -32,9 +33,9 @@ use Throwable;
 trait ManagesTransactions
 {
     /**
-     * @var Transaction|null
+     * @var Transaction|Snapshot|null
      */
-    protected ?Transaction $currentTransaction = null;
+    protected Transaction|Snapshot|null $currentTransaction = null;
 
     protected ?int $maxAttempts = null;
 
