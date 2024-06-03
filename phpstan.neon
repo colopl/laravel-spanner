@@ -1,9 +1,9 @@
 parameters:
     level: max
-    checkMissingIterableValueType: false
     paths:
         - src
     ignoreErrors:
+        - identifier: missingType.iterableValue
         - '#^Access to an undefined property Illuminate\\Support\\Fluent.*$#'
         - '#^Call to an undefined method Illuminate\\Support\\Fluent.*$#'
         - '#^Access to an undefined property Colopl\\Spanner\\Schema\\IndexDefinition.*$#'

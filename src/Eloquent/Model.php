@@ -17,6 +17,7 @@
 
 namespace Colopl\Spanner\Eloquent;
 
+use Illuminate\Contracts\Database\Eloquent\Builder as BuilderContract;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model as BaseModel;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -44,7 +45,7 @@ class Model extends BaseModel
      * @param BaseModel|Relation $query
      * @param mixed $value
      * @param string|null $field
-     * @return Relation
+     * @return BuilderContract
      */
     public function resolveRouteBindingQuery($query, $value, $field = null)
     {

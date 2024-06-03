@@ -459,7 +459,7 @@ class Connection extends BaseConnection
     {
         if (array_is_list($value)) {
             $escaped = array_map(function (mixed $v) use ($binary): string {
-                return !is_array($v)
+                return is_scalar($v)
                     ? $this->escape($v, $binary)
                     : throw new LogicException('Nested arrays are not supported by Cloud Spanner');
             }, $value);
