@@ -299,10 +299,7 @@ class Grammar extends BaseGrammar
     protected function formatSequenceOptions(mixed $definition): string
     {
         $optionAsStrings = Arr::map($definition->getOptions(), function (mixed $v, string $k): string {
-            return Str::snake($k) . '=' . match (get_debug_type($v)) {
-                'string' => $this->quoteString($v),
-                default => $v,
-            };
+            return Str::snake($k) . '=' . (is_string($v) ? $this->quoteString($v) : $v);
         });
         return 'options (' . implode(', ', $optionAsStrings) . ')';
     }
