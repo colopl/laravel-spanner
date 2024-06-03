@@ -578,15 +578,19 @@ class Connection extends BaseConnection
             $options['requestOptions']['requestTag'] = $tag;
         }
 
-        $forceReadOnlyTransaction =
+        $isTimestampBound =
             ($options['exactStaleness'] ?? false) ||
             ($options['maxStaleness'] ?? false) ||
             ($options['minReadTimestamp'] ?? false) ||
             ($options['readTimestamp'] ?? false) ||
             ($options['strong'] ?? false);
 
-        if (!$forceReadOnlyTransaction && $transaction = $this->getCurrentTransaction()) {
+        if (!$isTimestampBound && $transaction = $this->getCurrentTransaction()) {
             return $transaction->execute($query, $options)->rows();
+        }
+
+        if ($options['_snapshotEnabled'] ?? false) {
+            return $this->getSpannerDatabase()->snapshot()->execute($query, $options)->rows();
         }
 
         return $this->getSpannerDatabase()->execute($query, $options)->rows();

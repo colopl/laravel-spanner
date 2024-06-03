@@ -29,6 +29,7 @@ class Builder extends BaseBuilder
     use Concerns\UsesDataBoost;
     use Concerns\UsesMutations;
     use Concerns\UsesPartitionedDml;
+    use Concerns\UsesSnapshot;
     use Concerns\UsesStaleReads;
 
     /**
@@ -187,6 +188,10 @@ class Builder extends BaseBuilder
 
         if ($this->dataBoostEnabled()) {
             $options['dataBoostEnabled'] = true;
+        }
+
+        if ($this->snapshotEnabled()) {
+            $options['_snapshotEnabled'] = true;
         }
 
         if ($this->timestampBound !== null) {
