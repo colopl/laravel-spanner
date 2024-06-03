@@ -1,8 +1,12 @@
+# v7.4.2 (2024-06-03)
+
+Fixed
+- Timestamp bound queries were not applied when in transaction (#213)
+
 # v7.4.1 (2024-05-21)
 
 Fixed
 - authCache needs namespace for each connection (#210)
-
 
 # v7.4.0 (2024-05-13)
 

@@ -578,9 +578,17 @@ class Connection extends BaseConnection
             $options['requestOptions']['requestTag'] = $tag;
         }
 
-        if ($transaction = $this->getCurrentTransaction()) {
+        $forceReadOnlyTransaction =
+            ($options['exactStaleness'] ?? false) ||
+            ($options['maxStaleness'] ?? false) ||
+            ($options['minReadTimestamp'] ?? false) ||
+            ($options['readTimestamp'] ?? false) ||
+            ($options['strong'] ?? false);
+
+        if (!$forceReadOnlyTransaction && $transaction = $this->getCurrentTransaction()) {
             return $transaction->execute($query, $options)->rows();
         }
+
         return $this->getSpannerDatabase()->execute($query, $options)->rows();
     }
 

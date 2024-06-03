@@ -478,7 +478,7 @@ class ConnectionTest extends TestCase
         $this->assertNotEmpty($timestamp);
 
         $timestampBound = new StrongRead();
-        $rows = $conn->selectWithOptions("SELECT * FROM ${tableName} WHERE userID = ?", [$uuid], $timestampBound->transactionOptions());
+        $rows = $conn->selectWithOptions("SELECT * FROM {$tableName} WHERE userId = ?", [$uuid], $timestampBound->transactionOptions());
         $this->assertCount(1, $rows);
         $this->assertSame($uuid, $rows[0]['userId']);
         $this->assertSame('first', $rows[0]['name']);
@@ -486,24 +486,49 @@ class ConnectionTest extends TestCase
         $oldDatetime = Carbon::instance($timestamp->get())->subSecond();
 
         $timestampBound = new ReadTimestamp($oldDatetime);
-        $rows = $conn->selectWithOptions("SELECT * FROM ${tableName} WHERE userID = ?", [$uuid], $timestampBound->transactionOptions());
+        $rows = $conn->selectWithOptions("SELECT * FROM {$tableName} WHERE userId = ?", [$uuid], $timestampBound->transactionOptions());
         $this->assertEmpty($rows);
 
         $timestampBound = new ExactStaleness(10);
-        $rows = $conn->selectWithOptions("SELECT * FROM ${tableName} WHERE userID = ?", [$uuid], $timestampBound->transactionOptions());
+        $rows = $conn->selectWithOptions("SELECT * FROM {$tableName} WHERE userId = ?", [$uuid], $timestampBound->transactionOptions());
         $this->assertEmpty($rows);
 
         $timestampBound = new MaxStaleness(10);
-        $rows = $conn->selectWithOptions("SELECT * FROM ${tableName} WHERE userID = ?", [$uuid], $timestampBound->transactionOptions());
+        $rows = $conn->selectWithOptions("SELECT * FROM {$tableName} WHERE userId = ?", [$uuid], $timestampBound->transactionOptions());
         $this->assertCount(1, $rows);
         $this->assertSame($uuid, $rows[0]['userId']);
         $this->assertSame('first', $rows[0]['name']);
 
         $timestampBound = new MinReadTimestamp($oldDatetime);
-        $rows = $conn->selectWithOptions("SELECT * FROM ${tableName} WHERE userID = ?", [$uuid], $timestampBound->transactionOptions());
+        $rows = $conn->selectWithOptions("SELECT * FROM {$tableName} WHERE userId = ?", [$uuid], $timestampBound->transactionOptions());
         $this->assertCount(1, $rows);
         $this->assertSame($uuid, $rows[0]['userId']);
         $this->assertSame('first', $rows[0]['name']);
+    }
+
+    public function test_stale_reads_in_transaction(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $tableName = self::TABLE_NAME_USER;
+        $uuid = $this->generateUuid();
+
+        $conn->transaction(function(Connection $conn) use ($tableName, $uuid) {
+            $conn->insert("INSERT INTO {$tableName} (`userId`, `name`) VALUES ('{$uuid}', 'first')");
+
+            $oldDatetime = now()->subSecond();
+
+            $bounds = [
+                new StrongRead(),
+                new ExactStaleness(10),
+                new MaxStaleness(10),
+                new ReadTimestamp($oldDatetime),
+                new MinReadTimestamp($oldDatetime),
+            ];
+            foreach ($bounds as $timestampBound) {
+                $rows = $conn->selectWithOptions("SELECT * FROM {$tableName} WHERE userId = ?", [$uuid], $timestampBound->transactionOptions());
+                $this->assertEmpty($rows);
+            }
+        });
     }
 
     public function testEventListenOrder(): void
