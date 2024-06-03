@@ -1,3 +1,8 @@
+# v8.1.1 (2024-06-03)
+
+Fixed
+- Timestamp bound queries were not applied when in transaction (#213)
+
 # v8.1.0 (2024-05-21)
 
 Added
