@@ -514,27 +514,20 @@ class ConnectionTest extends TestCase
 
         $conn->transaction(function(Connection $conn) use ($tableName, $uuid) {
             $conn->insert("INSERT INTO {$tableName} (`userId`, `name`) VALUES ('{$uuid}', 'first')");
-            $timestampBound = new StrongRead();
-            $rows = $conn->selectWithOptions("SELECT * FROM {$tableName} WHERE userId = ?", [$uuid], $timestampBound->transactionOptions());
-            $this->assertEmpty($rows);
 
-            $oldDatetime = now()->subSeconds(10);
+            $oldDatetime = now()->subSecond();
 
-            $timestampBound = new ReadTimestamp($oldDatetime);
-            $rows = $conn->selectWithOptions("SELECT * FROM {$tableName} WHERE userId = ?", [$uuid], $timestampBound->transactionOptions());
-            $this->assertEmpty($rows);
-
-            $timestampBound = new ExactStaleness(10);
-            $rows = $conn->selectWithOptions("SELECT * FROM {$tableName} WHERE userId = ?", [$uuid], $timestampBound->transactionOptions());
-            $this->assertEmpty($rows);
-
-            $timestampBound = new MaxStaleness(10);
-            $rows = $conn->selectWithOptions("SELECT * FROM {$tableName} WHERE userId = ?", [$uuid], $timestampBound->transactionOptions());
-            $this->assertEmpty($rows);
-
-            $timestampBound = new MinReadTimestamp($oldDatetime);
-            $rows = $conn->selectWithOptions("SELECT * FROM {$tableName} WHERE userId = ?", [$uuid], $timestampBound->transactionOptions());
-            $this->assertEmpty($rows);
+            $bounds = [
+                new StrongRead(),
+                new ExactStaleness(10),
+                new MaxStaleness(10),
+                new ReadTimestamp($oldDatetime),
+                new MinReadTimestamp($oldDatetime),
+            ];
+            foreach ($bounds as $timestampBound) {
+                $rows = $conn->selectWithOptions("SELECT * FROM {$tableName} WHERE userId = ?", [$uuid], $timestampBound->transactionOptions());
+                $this->assertEmpty($rows);
+            }
         });
     }
 
