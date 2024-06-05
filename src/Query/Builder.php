@@ -17,6 +17,7 @@
 
 namespace Colopl\Spanner\Query;
 
+use Closure;
 use Colopl\Spanner\Connection;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Query\Builder as BaseBuilder;
@@ -56,6 +57,28 @@ class Builder extends BaseBuilder
         }
 
         return parent::update($values);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function updateOrInsert(array $attributes, array|callable $values = [])
+    {
+        $exists = $this->where($attributes)->exists();
+
+        if ($values instanceof Closure) {
+            $values = $values($exists);
+        }
+
+        if (! $exists) {
+            return $this->insert(array_merge($attributes, $values));
+        }
+
+        if (empty($values)) {
+            return true;
+        }
+
+        return (bool) $this->limit(1)->update(Arr::except($values, array_keys($attributes)));
     }
 
     /**
