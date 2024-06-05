@@ -61,18 +61,6 @@ class Builder extends BaseBuilder
     /**
      * @inheritDoc
      */
-    public function updateOrInsert(array $attributes, array $values = [])
-    {
-        if (! $this->where($attributes)->exists()) {
-            return $this->insert(array_merge($attributes, $values));
-        }
-
-        return (bool) $this->take(1)->update(Arr::except($values, array_keys($attributes)));
-    }
-
-    /**
-     * @inheritDoc
-     */
     public function upsert(array $values, $uniqueBy = [], $update = null)
     {
         if (empty($values)) {
