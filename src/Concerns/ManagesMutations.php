@@ -122,6 +122,7 @@ trait ManagesMutations
             $dataSet = [$dataSet];
         }
 
+        /** @var list<array<string, mixed>> $dataSet */
         foreach ($dataSet as $index => $values) {
             foreach ($values as $name => $value) {
                 if ($value instanceof DateTimeInterface) {
