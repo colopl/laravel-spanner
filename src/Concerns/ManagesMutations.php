@@ -110,7 +110,7 @@ trait ManagesMutations
 
     /**
      * @param list<array<string, mixed>>|array<string, mixed> $dataSet
-     * @return array<string, mixed>
+     * @return list<array<string, mixed>>
      */
     protected function prepareForMutation(array $dataSet): array
     {
