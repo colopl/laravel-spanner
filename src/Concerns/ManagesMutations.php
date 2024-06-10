@@ -37,7 +37,7 @@ trait ManagesMutations
 
     /**
      * @param string $table
-     * @param array $dataSet
+     * @param list<array<string, mixed>>|array<string, mixed> $dataSet
      * @return void
      */
     public function insertUsingMutation(string $table, array $dataSet)
@@ -51,7 +51,7 @@ trait ManagesMutations
 
     /**
      * @param string $table
-     * @param array $dataSet
+     * @param list<array<string, mixed>>|array<string, mixed> $dataSet
      * @return void
      */
     public function updateUsingMutation(string $table, array $dataSet)
@@ -65,7 +65,7 @@ trait ManagesMutations
 
     /**
      * @param string $table
-     * @param array<string, mixed> $dataSet
+     * @param list<array<string, mixed>>|array<string, mixed> $dataSet
      * @return void
      */
     public function insertOrUpdateUsingMutation(string $table, array $dataSet)
@@ -109,8 +109,8 @@ trait ManagesMutations
     }
 
     /**
-     * @param array $dataSet
-     * @return array
+     * @param list<array<string, mixed>>|array<string, mixed> $dataSet
+     * @return array<string, mixed>
      */
     protected function prepareForMutation(array $dataSet): array
     {
