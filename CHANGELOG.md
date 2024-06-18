@@ -1,8 +1,7 @@
 # v8.2.0 (2024-06-17)
 
 Added
-- New method `Query/Builder::whereInEmbedded` to allow for querying without parameterizing queries (#)
-
+- New method `Query/Builder::whereInEmbedded` to allow for querying without parameterizing queries (#221)
 # v8.1.1 (2024-06-03)
 
 Fixed
