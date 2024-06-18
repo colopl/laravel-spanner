@@ -851,7 +851,7 @@ class BuilderTest extends TestCase
         $this->assertSame(2, $conn->table($tableName)->whereIn('bytesTest', [new Bytes(chr(10)), new Bytes(chr(20))])->count());
     }
 
-    public function test_whereInUnnest(): void
+    public function test_whereInUnnest__with_some_values(): void
     {
         $conn = $this->getDefaultConnection();
         $tableName = self::TABLE_NAME_TEST;
@@ -892,14 +892,16 @@ class BuilderTest extends TestCase
     {
         $conn = $this->getDefaultConnection();
         $tableName = self::TABLE_NAME_USER;
-        $qb = $conn->table($tableName);
         $id1 = $this->generateUuid();
         $id2 = $this->generateUuid();
-        $dummyIds = array_map($this->generateUuid(...), range(0, 950));
+        $dummyIds = array_map($this->generateUuid(...), range(1, 950));
 
-        $qb->insert([['userId' => $id1, 'name' => 't1'], ['userId' => $id2, 'name' => 't2']]);
-        $ids = $qb->whereInUnnest('userId', [$id1, $id2, ...$dummyIds])->pluck('userId');
-        $this->assertEquals([$id1, $id2], $ids->all());
+        $query = $conn->table($tableName);
+        $query->insert([['userId' => $id1, 'name' => 'a'], ['userId' => $id2, 'name' => 'b']]);
+        $query->whereInUnnest('userId', [$id1, $id2, ...$dummyIds]);
+
+        $this->assertStringContainsString('unnest(', $query->toSql());
+        $this->assertEquals([$id1, $id2], $query->pluck('userId')->all());
     }
 
     public function test_partitionedDml(): void
