@@ -28,6 +28,7 @@ use Google\Cloud\Spanner\Bytes;
 use Google\Cloud\Spanner\Duration;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use LogicException;
 
@@ -848,6 +849,20 @@ class BuilderTest extends TestCase
         $this->assertSame(2, $conn->table($tableName)->whereIn('intTest', [10, 20])->count());
         $this->assertSame(0, $conn->table($tableName)->whereIn('intTest', [50])->count());
         $this->assertSame(2, $conn->table($tableName)->whereIn('bytesTest', [new Bytes(chr(10)), new Bytes(chr(20))])->count());
+    }
+
+    public function test_whereInEmbedded_can_do_more_than_950_parameters(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $tableName = self::TABLE_NAME_USER;
+        $qb = $conn->table($tableName);
+        $id1 = $this->generateUuid();
+        $id2 = $this->generateUuid();
+        $dummyIds = array_map($this->generateUuid(...), range(0, 950));
+
+        $qb->insert([['userId' => $id1, 'name' => 't1'], ['userId' => $id2, 'name' => 't2']]);
+        $ids = $qb->whereInEmbedded('userId', [$id1, $id2, ...$dummyIds])->pluck('userId');
+        $this->assertEquals([$id1, $id2], $ids->all());
     }
 
     public function test_partitionedDml(): void

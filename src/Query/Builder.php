@@ -166,6 +166,19 @@ class Builder extends BaseBuilder
     }
 
     /**
+     * @param string $column
+     * @param iterable<array-key, scalar> $values
+     * @return $this
+     */
+    public function whereInEmbedded(string $column, iterable $values): static
+    {
+        $rawColumn = $this->getGrammar()->wrap($column);
+        $rawValues = implode(', ', array_map($this->connection->escape(...), iterator_to_array($values)));
+        $this->whereRaw("{$rawColumn} in ({$rawValues})");
+        return $this;
+    }
+
+    /**
      * @param array<array-key, mixed> $values
      * @return array<int, mixed>
      */

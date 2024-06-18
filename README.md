@@ -97,6 +97,11 @@ Please note that the following are not required, but are strongly recommended fo
 ### SQL Mode
 Currently only supports Spanner running GoogleSQL (PostgreSQL mode is not supported).
 
+### Query
+- [Binding more than 950 parameters in a single query will result in an error](https://cloud.google.com/spanner/quotas#query-limits)
+  by the server. You may by-pass this limitation by using `Query\Builder::whereInEmbedded(...)` method to embed the
+  values instead of using query parameters. Using this method may have [negative impact on performance and security](https://cloud.google.com/spanner/docs/sql-best-practices#query-parameters).
+
 ### Eloquent
 If you use interleaved keys, you MUST define them in the `interleaveKeys` property, or else you won't be able to save. 
 For more detailed instructions, see `Colopl\Spanner\Tests\Eloquent\ModelTest`.
