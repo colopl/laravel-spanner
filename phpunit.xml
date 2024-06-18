@@ -22,9 +22,7 @@
          bootstrap="tests/bootstrap.php"
          cacheDirectory=".phpunit.cache"
          colors="true"
-         processIsolation="false"
-         stopOnError="true"
-         stopOnFailure="true">
+         processIsolation="false">
   <testsuite name="all">
     <directory suffix="Test.php">./tests</directory>
     <directory suffix="TestLast.php">./tests</directory>
