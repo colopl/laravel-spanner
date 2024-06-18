@@ -1,4 +1,4 @@
-FROM php:8.2-cli-alpine
+FROM php:8.3-cli-alpine
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
@@ -36,7 +36,6 @@ RUN pecl_mt_install() { \
   && docker-php-ext-install -j$(nproc) bcmath gmp \
   && pecl_mt_install protobuf \
   && pecl_mt_install grpc \
-  && pecl_mt_install pcov \
   && docker-php-ext-enable grpc opcache protobuf \
   && apk del .build-deps \
   && rm -rf /tmp/* \
