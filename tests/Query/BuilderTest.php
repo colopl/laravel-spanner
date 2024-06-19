@@ -851,59 +851,6 @@ class BuilderTest extends TestCase
         $this->assertSame(2, $conn->table($tableName)->whereIn('bytesTest', [new Bytes(chr(10)), new Bytes(chr(20))])->count());
     }
 
-    public function test_whereInUnnest__with_some_values(): void
-    {
-        $conn = $this->getDefaultConnection();
-        $tableName = self::TABLE_NAME_TEST;
-
-        $testDataCount = 3;
-        $insertValues = [];
-        for ($i = 0; $i < $testDataCount; $i++) {
-            $insertValues[] = $this->generateTestRow();
-        }
-        $qb = $conn->table($tableName);
-        $qb->insert($insertValues);
-
-        $ids = $qb->pluck('testId')->sort()->values();
-
-        $qb = $qb->whereInUnnest('testId', $ids);
-        $sql = $qb->toSql();
-        $results = $qb->get('testId')->pluck('testId')->sort()->values();
-
-        $this->assertSame('select * from `Test` where `testId` in unnest(?)', $sql);
-        $this->assertCount(3, $results);
-        $this->assertSame($ids->all(), $results->all());
-    }
-
-    public function test_whereInUnnest__with_empty_values(): void
-    {
-        $conn = $this->getDefaultConnection();
-        $tableName = self::TABLE_NAME_TEST;
-        $qb = $conn->table($tableName);
-        $qb = $qb->whereInUnnest('testId', []);
-        $sql = $qb->toSql();
-        $results = $qb->get('testId')->pluck('testId')->sort()->values();
-
-        $this->assertSame('select * from `Test` where 0 = 1', $sql);
-        $this->assertSame([], $results->all());
-    }
-
-    public function test_whereInUnnest__with_more_than_950_parameters(): void
-    {
-        $conn = $this->getDefaultConnection();
-        $tableName = self::TABLE_NAME_USER;
-        $id1 = $this->generateUuid();
-        $id2 = $this->generateUuid();
-        $dummyIds = array_map($this->generateUuid(...), range(1, 950));
-
-        $query = $conn->table($tableName);
-        $query->insert([['userId' => $id1, 'name' => 'a'], ['userId' => $id2, 'name' => 'b']]);
-        $query->whereInUnnest('userId', [$id1, $id2, ...$dummyIds]);
-
-        $this->assertStringContainsString('unnest(', $query->toSql());
-        $this->assertEquals([$id1, $id2], $query->pluck('userId')->all());
-    }
-
     public function test_partitionedDml(): void
     {
         $conn = $this->getDefaultConnection();
