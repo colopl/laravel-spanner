@@ -68,7 +68,8 @@ class UnnestTest extends TestCase
         $dummyIds = array_map($this->generateUuid(...), range(0, 950));
 
         $qb->insert([['userId' => $id1, 'name' => 't1'], ['userId' => $id2, 'name' => 't2']]);
-        $ids = $qb->whereInUnnest('userId', [$id1, $id2, ...$dummyIds])->pluck('userId');
-        $this->assertEquals([$id1, $id2], $ids->all());
+        $given = $qb->whereInUnnest('userId', [$id1, $id2, ...$dummyIds])->pluck('userId')->sort()->values();
+        $expected = collect([$id1, $id2])->sort()->values();
+        $this->assertSame($expected, $given);
     }
 }
