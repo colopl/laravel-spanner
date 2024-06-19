@@ -39,7 +39,6 @@ RUN pecl_mt_install() { \
   && pecl_mt_install pcov \
   && docker-php-ext-enable grpc opcache protobuf \
   && apk del .build-deps \
-  && rm -rf /tmp/* \
-  && mkdir -p /project/
+  && rm -rf /tmp/*
 
 WORKDIR /project

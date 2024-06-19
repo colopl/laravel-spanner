@@ -20,8 +20,6 @@ parameters:
         - message: '#^Parameter \#1 \$start of method Illuminate\\Database\\Connection::getElapsedTime\(\) expects int, float given\.$#'
           path: src/Connection.php
           count: 2
-        - message: "#^Parameter \\#1 \\$table of method Illuminate\\\\Database\\\\Query\\\\Builder\\:\\:from\\(\\) expects Closure\\|Illuminate\\\\Database\\\\Eloquent\\\\Builder\\|Illuminate\\\\Database\\\\Query\\\\Builder\\|string, Closure\\|Illuminate\\\\Contracts\\\\Database\\\\Query\\\\Expression\\|Illuminate\\\\Database\\\\Query\\\\Builder\\|string given\\.$#"
-          path: src/Connection.php
         - message: '#^Method Colopl\\Spanner\\Connection::selectWithOptions\(\) should return array<int, array> but returns mixed\.$#'
           path: src/Connection.php
         - message: '#^Generator expects value type array, mixed given.$#'

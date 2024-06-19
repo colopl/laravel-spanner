@@ -17,20 +17,11 @@
 
 namespace Colopl\Spanner\Tests\Query;
 
-use Colopl\Spanner\Tests\Eloquent\User;
 use Colopl\Spanner\Tests\TestCase;
 
 class UnnestTest extends TestCase
 {
-    protected function createTestUser(): User
-    {
-        $user = new User();
-        $user->userId = $this->generateUuid();
-        $user->name = 'test user on EloquentTest';
-        return $user;
-    }
-
-    public function testUnnesting(): void
+    public function test_whereInUnnest(): void
     {
         $conn = $this->getDefaultConnection();
         $tableName = self::TABLE_NAME_TEST;
@@ -54,7 +45,7 @@ class UnnestTest extends TestCase
         $this->assertSame($ids->all(), $results->all());
     }
 
-    public function testUnnestingEmpty(): void
+    public function test_whereInUnnest__with_empty_values(): void
     {
         $conn = $this->getDefaultConnection();
         $tableName = self::TABLE_NAME_TEST;
@@ -65,5 +56,20 @@ class UnnestTest extends TestCase
 
         $this->assertSame('select * from `Test` where 0 = 1', $sql);
         $this->assertSame([], $results->all());
+    }
+
+    public function test_whereInUnnest__with_more_than_950_parameters(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $tableName = self::TABLE_NAME_USER;
+        $qb = $conn->table($tableName);
+        $id1 = $this->generateUuid();
+        $id2 = $this->generateUuid();
+        $dummyIds = array_map($this->generateUuid(...), range(0, 950));
+
+        $qb->insert([['userId' => $id1, 'name' => 't1'], ['userId' => $id2, 'name' => 't2']]);
+        $given = $qb->whereInUnnest('userId', [$id1, $id2, ...$dummyIds])->pluck('userId')->sort()->values()->all();
+        $expected = collect([$id1, $id2])->sort()->values()->all();
+        $this->assertSame($expected, $given);
     }
 }
