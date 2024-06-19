@@ -42,4 +42,6 @@ RUN pecl_mt_install() { \
   && rm -rf /tmp/* \
   && mkdir -p /project/
 
+COPY docker/files /
+
 WORKDIR /project
