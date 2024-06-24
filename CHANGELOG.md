@@ -1,3 +1,13 @@
+# v8.1.3 (2024-06-24)
+
+Fixed
+- phpstan error for string('column', 'MAX') (#223)
+
+# v8.1.2 (2024-06-10)
+
+Fixed
+- updateOrInsert signature change in 11.10 (#216)
+
 # v8.1.1 (2024-06-03)
 
 Fixed
