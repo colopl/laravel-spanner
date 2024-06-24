@@ -45,3 +45,6 @@ parameters:
         - message: "#^Cannot access offset 'requestTag' on mixed\\.$#"
           count: 1
           path: src/Connection.php
+        - message: "#^Parameter \\#2 \\$length of method Illuminate\\\\Database\\\\Schema\\\\Blueprint\\:\\:string\\(\\) expects int\\|null, int\\|string\\|null given\\.$#"
+          count: 1
+          path: src/Schema/Blueprint.php

@@ -113,6 +113,15 @@ class Blueprint extends BaseBlueprint
 
     /**
      * @inheritDoc
+     * @param int|'max'|null $length add support for 'max'
+     */
+    public function string($column, $length = null)
+    {
+        return parent::string($column, $length);
+    }
+
+    /**
+     * @inheritDoc
      * @return UuidColumnDefinition
      */
     public function uuid($column = 'uuid')
