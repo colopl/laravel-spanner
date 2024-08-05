@@ -11,7 +11,7 @@
     "php": "^8.2",
     "ext-grpc": "*",
     "ext-json": "*",
-    "laravel/framework": "^11",
+    "laravel/framework": "^11.15.0",
     "google/cloud-spanner": "^1.58.4",
     "grpc/grpc": "^1.42",
     "symfony/cache": "~7",

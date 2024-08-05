@@ -131,14 +131,19 @@ class Grammar extends BaseGrammar
      * @param  Blueprint  $blueprint
      * @param  Fluent<string, mixed> $command
      * @param  Connection $connection
-     * @return string[]
+     * @return list<string>|string
      */
     public function compileChange(Blueprint $blueprint, Fluent $command, Connection $connection)
     {
-       return $this->prefixArray(
-            'alter table '.$this->wrapTable($blueprint).' alter column',
-            $this->getChangedColumns($blueprint)
+        $column = $command->column;
+
+        $sql = sprintf('alter table %s alter column %s %s',
+            $this->wrapTable($blueprint),
+            $this->wrap($column),
+            $this->getType($column),
         );
+
+        return $this->addModifiers($sql, $blueprint, $column);
     }
 
     /**
@@ -829,6 +834,8 @@ class Grammar extends BaseGrammar
 
     /**
      * Compile the blueprint's column definitions.
+     *
+     * @deprecated Not used anymore. Will be deleted in 9.x.
      *
      * @param  Blueprint $blueprint
      * @return array<int, string>

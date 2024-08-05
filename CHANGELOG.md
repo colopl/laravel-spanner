@@ -1,3 +1,8 @@
+# v8.2.0 (2024-08-05)
+
+Fixed
+- Fixed an issue where Schema changes were applied twice. (#)
+
 # v8.1.3 (2024-06-24)
 
 Fixed
