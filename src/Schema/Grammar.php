@@ -115,14 +115,19 @@ class Grammar extends BaseGrammar
      *
      * @param  Blueprint  $blueprint
      * @param  Fluent<string, mixed> $command
-     * @return string[]
+     * @return list<string>|string
      */
     public function compileAdd(Blueprint $blueprint, Fluent $command)
     {
-        return $this->prefixArray(
-            'alter table '.$this->wrapTable($blueprint).' add column',
-            $this->getColumns($blueprint)
+        $column = $command->column;
+
+        $sql = sprintf('alter table %s add column %s %s',
+            $this->wrapTable($blueprint),
+            $this->wrap($column),
+            $this->getType($column),
         );
+
+        return $this->addModifiers($sql, $blueprint, $column);
     }
 
     /**
