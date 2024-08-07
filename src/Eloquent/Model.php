@@ -24,7 +24,7 @@ use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Str;
 
 /**
- * @mixin Builder
+ * @mixin Builder<static>
  */
 class Model extends BaseModel
 {
@@ -42,7 +42,7 @@ class Model extends BaseModel
     public $incrementing = false;
 
     /**
-     * @param BaseModel|Relation $query
+     * @param BaseModel|Relation<BaseModel, $this, BaseModel> $query
      * @param mixed $value
      * @param string|null $field
      * @return BuilderContract
@@ -59,7 +59,7 @@ class Model extends BaseModel
      * @param  string  $childType
      * @param  mixed  $value
      * @param  string|null  $field
-     * @return Relation
+     * @return Relation<BaseModel, $this, *>
      */
     protected function resolveChildRouteBindingQuery($childType, $value, $field)
     {
