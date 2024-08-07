@@ -1,3 +1,7 @@
+# v8.3.0 (2024-09-02)
+
+- add support for `Query\Builder::whereNotInUnnest(...)` (#225)
+
 # v8.2.0 (2024-08-05)
 
 > [!NOTE]

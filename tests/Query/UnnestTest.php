@@ -72,4 +72,30 @@ class UnnestTest extends TestCase
         $expected = collect([$id1, $id2])->sort()->values()->all();
         $this->assertSame($expected, $given);
     }
+
+
+    public function test_whereNotInUnnest(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $tableName = self::TABLE_NAME_TEST;
+
+        $testDataCount = 3;
+        $insertValues = [];
+        for ($i = 0; $i < $testDataCount; $i++) {
+            $insertValues[] = $this->generateTestRow();
+        }
+        $qb = $conn->table($tableName);
+        $qb->insert($insertValues);
+
+        $ids = $qb->pluck('testId')->sort()->values();
+
+        $qb = $qb->whereNotInUnnest('testId', [$ids->first()]);
+        $sql = $qb->toSql();
+        $results = $qb->get('testId')->pluck('testId')->sort()->values();
+
+        $this->assertSame('select * from `Test` where `testId` not in unnest(?)', $sql);
+        $this->assertCount(2, $results);
+        $this->assertSame($ids->skip(1)->values()->all(), $results->all());
+    }
+
 }
