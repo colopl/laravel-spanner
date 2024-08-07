@@ -151,18 +151,29 @@ class Builder extends BaseBuilder
      * @param string $boolean
      * @return $this
      */
-    public function whereInUnnest(string $column, $values, string $boolean = 'and')
+    public function whereInUnnest(string $column, $values, string $boolean = 'and', bool $not = false)
     {
         $type = 'InUnnest';
 
         // prevent getBindings() from flattening the array by wrapping it in a class
         $values = ($values instanceof Nested) ? $values : new Nested($values);
 
-        $this->wheres[] = compact('type', 'column', 'values', 'boolean');
+        $this->wheres[] = compact('type', 'column', 'values', 'boolean', 'not');
 
         $this->addBinding($values);
 
         return $this;
+    }
+
+    /**
+     * @param string $column
+     * @param array<array-key, mixed>|Arrayable<array-key, mixed>|Nested $values
+     * @param string $boolean
+     * @return $this
+     */
+    public function whereNotInUnnest(string $column, array|Arrayable|Nested $values, string $boolean = 'and'): static
+    {
+        return $this->whereInUnnest($column, $values, $boolean, true);
     }
 
     /**

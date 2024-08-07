@@ -121,7 +121,7 @@ class Grammar extends BaseGrammar
 
     /**
      * @param Builder $query
-     * @param array $where
+     * @param array $where{ values: Nested, column: string, not: bool }
      * @return string
      */
     protected function whereInUnnest(Builder $query, $where)
@@ -132,9 +132,13 @@ class Grammar extends BaseGrammar
             throw new RuntimeException('Invalid Type:'.get_class($values).' given. '.Nested::class.' expected.');
         }
 
-        return (count($values) > 0)
-            ? $this->wrap($where['column']).' in unnest(?)'
-            : '0 = 1';
+        if (count($values) <= 0) {
+            return '0 = 1';
+        }
+
+        return $this->wrap($where['column'])
+            . ($where['not'] ? ' not' : '')
+            . ' in unnest(?)';
     }
 
     /**
