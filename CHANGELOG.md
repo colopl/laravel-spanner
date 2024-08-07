@@ -1,6 +1,7 @@
 # v8.2.0 (2024-08-05)
 
-> [!NOTE] Minimum supported Laravel version is bumped to 11.15.0 for #224.
+> [!NOTE]
+> Minimum supported Laravel version is bumped to 11.15.0 for #224.
 
 - Fixed an issue where Schema changes were applied twice. (#224)
 
