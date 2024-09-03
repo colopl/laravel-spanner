@@ -22,12 +22,14 @@ use Colopl\Spanner\Query\Builder;
 use Colopl\Spanner\Schema\Blueprint;
 use Colopl\Spanner\Tests\TestCase;
 use Colopl\Spanner\TimestampBound\ExactStaleness;
+use Google\Cloud\Core\Exception\BadRequestException;
 use Google\Cloud\Spanner\Bytes;
 use Google\Cloud\Spanner\Duration;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Carbon;
 use LogicException;
 
+use Ramsey\Uuid\Uuid;
 use const Grpc\STATUS_ALREADY_EXISTS;
 
 class BuilderTest extends TestCase
@@ -1082,5 +1084,23 @@ class BuilderTest extends TestCase
         $this->expectException(QueryException::class);
         $this->expectExceptionMessageMatches('/DEADLINE_EXCEEDED/');
         $query->get();
+    }
+
+    public function test_whereIn_with_unnest_overflow_flag_turned_on(): void
+    {
+        $query = $this->getDefaultConnection()->table(self::TABLE_NAME_USER);
+        $query->whereIn('userId', array_map(Uuid::uuid4()->toString(...), range(1, 1000)));
+        $this->assertSame([], $query->get());
+    }
+
+
+    public function test_whereIn_with_unnest_overflow_flag_turned_off(): void
+    {
+        $this->expectExceptionMessage('Number of parameters in query exceeds the maximum allowed limit of 950.');
+        $this->expectException(QueryException::class);
+
+        config()->set('database.connections.main.use_unnest_on_parameter_overflow', false);
+        $query = $this->getDefaultConnection()->table(self::TABLE_NAME_USER);
+        $query->whereIn('userId', array_map(Uuid::uuid4()->toString(...), range(1, 1000)))->get();
     }
 }
