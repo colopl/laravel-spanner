@@ -1099,7 +1099,7 @@ class BuilderTest extends TestCase
         $this->expectExceptionMessage('Number of parameters in query exceeds the maximum allowed limit of 950.');
         $this->expectException(QueryException::class);
 
-        config()->set('database.connections.main.use_unnest_on_parameter_overflow', false);
+        config()->set('database.connections.main.parameter_unnest_threshold', false);
         $query = $this->getDefaultConnection()->table(self::TABLE_NAME_USER);
         $query->whereIn('userId', array_map(Uuid::uuid4()->toString(...), range(1, 1000)))->get();
     }

@@ -130,10 +130,9 @@ class Builder extends BaseBuilder
     {
         // If parameter is over the limit, Spanner will throw an error. We will bypass this limit by
         // using UNNEST(). This is enabled by default, but can be disabled by setting the config.
-        if (is_countable($values) && count($values) > self::PARAMETER_LIMIT) {
-            if ($this->connection->getConfig('use_unnest_on_parameter_overflow') ?? true) {
-                return $this->whereInUnnest($column, $values, $boolean, $not);
-            }
+        $unnestThreshold = $this->connection->getConfig('parameter_unnest_threshold') ?? 900;
+        if ($unnestThreshold !== false && is_countable($values) && count($values) > $unnestThreshold) {
+            return $this->whereInUnnest($column, $values, $boolean, $not);
         }
 
         return parent::whereIn($column, $values, $boolean, $not);
