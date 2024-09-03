@@ -1090,7 +1090,7 @@ class BuilderTest extends TestCase
     {
         $query = $this->getDefaultConnection()->table(self::TABLE_NAME_USER);
         $query->whereIn('userId', array_map(Uuid::uuid4()->toString(...), range(1, 1000)));
-        $this->assertSame([], $query->get());
+        $this->assertSame([], $query->get()->all());
     }
 
 

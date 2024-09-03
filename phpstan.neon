@@ -48,3 +48,6 @@ parameters:
         - message: "#^Parameter \\#2 \\$length of method Illuminate\\\\Database\\\\Schema\\\\Blueprint\\:\\:string\\(\\) expects int\\|null, int\\|string\\|null given\\.$#"
           count: 1
           path: src/Schema/Blueprint.php
+        - message: "#^Parameter \\#1 \\$array of class Colopl\\\\Spanner\\\\Query\\\\Nested constructor expects array\\<int, mixed\\>\\|Illuminate\\\\Contracts\\\\Support\\\\Arrayable\\<int, mixed\\>, mixed given\\.$#"
+          count: 1
+          path: src/Query/Builder.php
