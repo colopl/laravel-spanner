@@ -19,6 +19,7 @@ namespace Colopl\Spanner\Query;
 
 use Closure;
 use Colopl\Spanner\Connection;
+use Illuminate\Contracts\Database\Query\Expression;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Query\Builder as BaseBuilder;
 use Illuminate\Support\Arr;
@@ -31,6 +32,9 @@ class Builder extends BaseBuilder
     use Concerns\UsesMutations;
     use Concerns\UsesPartitionedDml;
     use Concerns\UsesStaleReads;
+
+    public const PARAMETER_LIMIT = 950;
+    public const DEFAULT_UNNEST_THRESHOLD = 900;
 
     /**
      * @var Connection
@@ -121,6 +125,21 @@ class Builder extends BaseBuilder
     }
 
     /**
+     * @inheritDoc
+     */
+    public function whereIn($column, $values, $boolean = 'and', $not = false)
+    {
+        // If parameter is over the limit, Spanner will throw an error. We will bypass this limit by
+        // using UNNEST(). This is enabled by default, but can be disabled by setting the config.
+        $unnestThreshold = $this->connection->getConfig('parameter_unnest_threshold') ?? self::DEFAULT_UNNEST_THRESHOLD;
+        if ($unnestThreshold !== false && is_countable($values) && count($values) > $unnestThreshold) {
+            return $this->whereInUnnest($column, $values, $boolean, $not);
+        }
+
+        return parent::whereIn($column, $values, $boolean, $not);
+    }
+
+    /**
      * NOTE: We will attempt to bind column names included in UNNEST() here.
      * @see https://cloud.google.com/spanner/docs/lexical#query-parameters
      * > Query parameters can be used in substitution of arbitrary expressions.
@@ -146,12 +165,13 @@ class Builder extends BaseBuilder
     }
 
     /**
-     * @param string $column
-     * @param array<array-key, mixed>|Arrayable<array-key, mixed>|Nested $values
+     * @param string|Expression $column
+     * @param mixed $values
      * @param string $boolean
+     * @param bool $not
      * @return $this
      */
-    public function whereInUnnest(string $column, $values, string $boolean = 'and', bool $not = false)
+    public function whereInUnnest(string|Expression $column, $values, string $boolean = 'and', bool $not = false)
     {
         $type = 'InUnnest';
 

@@ -1,6 +1,7 @@
 # v8.3.0 (2024-09-02)
 
 - add support for `Query\Builder::whereNotInUnnest(...)` (#225)
+- `Query\Builder::whereIn` will now wrap values in `UNNEST` if the number of values exceeds the limit (950). (#)
 
 # v8.2.0 (2024-08-05)
 

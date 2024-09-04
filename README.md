@@ -99,8 +99,9 @@ Currently only supports Spanner running GoogleSQL (PostgreSQL mode is not suppor
 
 ### Query
 - [Binding more than 950 parameters in a single query will result in an error](https://cloud.google.com/spanner/quotas#query-limits)
-  by the server. You may by-pass this limitation by using `Query\Builder::whereInUnnest(...)` method to pass the values
-  as an array and unnest them on the server side instead of using query parameters.
+  by the server. In order to by-pass this limitation, this driver will attempt to switch to using `Query\Builder::whereInUnnest(...)`
+  internally when the passed parameter exceeds the limit set by `parameter_unnest_threshold` config (default: `900`).
+  You can turn this feature off by setting the value to `false`.
 
 ### Eloquent
 If you use interleaved keys, you MUST define them in the `interleaveKeys` property, or else you won't be able to save. 
@@ -409,4 +410,3 @@ make test
 
 ## License
 Apache 2.0 - See [LICENSE](./LICENSE) for more information.
-
