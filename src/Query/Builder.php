@@ -34,6 +34,7 @@ class Builder extends BaseBuilder
     use Concerns\UsesStaleReads;
 
     public const PARAMETER_LIMIT = 950;
+    public const DEFAULT_UNNEST_THRESHOLD = 900;
 
     /**
      * @var Connection
@@ -130,7 +131,7 @@ class Builder extends BaseBuilder
     {
         // If parameter is over the limit, Spanner will throw an error. We will bypass this limit by
         // using UNNEST(). This is enabled by default, but can be disabled by setting the config.
-        $unnestThreshold = $this->connection->getConfig('parameter_unnest_threshold') ?? 900;
+        $unnestThreshold = $this->connection->getConfig('parameter_unnest_threshold') ?? self::DEFAULT_UNNEST_THRESHOLD;
         if ($unnestThreshold !== false && is_countable($values) && count($values) > $unnestThreshold) {
             return $this->whereInUnnest($column, $values, $boolean, $not);
         }
