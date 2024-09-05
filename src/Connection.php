@@ -578,14 +578,14 @@ class Connection extends BaseConnection
             $options['requestOptions']['requestTag'] = $tag;
         }
 
-        $isTimestampBound =
+        $forceReadOnlyTransaction =
             ($options['exactStaleness'] ?? false) ||
             ($options['maxStaleness'] ?? false) ||
             ($options['minReadTimestamp'] ?? false) ||
             ($options['readTimestamp'] ?? false) ||
             ($options['strong'] ?? false);
 
-        if (!$isTimestampBound && $transaction = $this->getCurrentTransaction()) {
+        if (!$forceReadOnlyTransaction && $transaction = $this->getCurrentTransaction()) {
             return $transaction->execute($query, $options)->rows();
         }
 
