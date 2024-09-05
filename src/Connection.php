@@ -590,10 +590,15 @@ class Connection extends BaseConnection
         }
 
         if ($options['_snapshotEnabled'] ?? false) {
-            return $this->getSpannerDatabase()->snapshot()->execute($query, $options)->rows();
+            return $this->getSpannerDatabase()
+                ->snapshot($options)
+                ->execute($query, $options)
+                ->rows();
         }
 
-        return $this->getSpannerDatabase()->execute($query, $options)->rows();
+        return $this->getSpannerDatabase()
+            ->execute($query, $options)
+            ->rows();
     }
 
     /**

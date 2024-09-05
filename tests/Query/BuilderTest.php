@@ -22,7 +22,6 @@ use Colopl\Spanner\Query\Builder;
 use Colopl\Spanner\Schema\Blueprint;
 use Colopl\Spanner\Tests\TestCase;
 use Colopl\Spanner\TimestampBound\ExactStaleness;
-use Google\Cloud\Core\Exception\BadRequestException;
 use Google\Cloud\Spanner\Bytes;
 use Google\Cloud\Spanner\Duration;
 use Illuminate\Database\QueryException;
@@ -1093,7 +1092,6 @@ class BuilderTest extends TestCase
         $this->assertSame([], $query->get()->all());
     }
 
-
     public function test_whereIn_with_unnest_overflow_flag_turned_off(): void
     {
         $this->expectExceptionMessage('Number of parameters in query exceeds the maximum allowed limit of 950.');
@@ -1102,5 +1100,19 @@ class BuilderTest extends TestCase
         config()->set('database.connections.main.parameter_unnest_threshold', false);
         $query = $this->getDefaultConnection()->table(self::TABLE_NAME_USER);
         $query->whereIn('userId', array_map(Uuid::uuid4()->toString(...), range(1, 1000)))->get();
+    }
+
+    public function test_useSnapshot(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $tableName = self::TABLE_NAME_USER;
+
+        $conn->table($tableName)->insert(['userId' => $this->generateUuid(), 'name' => __FUNCTION__]);
+
+        $query = $conn->table($tableName)->useSnapshot(new ExactStaleness(10));
+        $result = $query->get();
+
+        $this->assertTrue($query->snapshotEnabled());
+        $this->assertSame(0, $result->count());
     }
 }

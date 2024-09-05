@@ -21,6 +21,8 @@ use Colopl\Spanner\TimestampBound\TimestampBoundInterface;
 
 trait UsesSnapshot
 {
+    use UsesStaleReads;
+
     /**
      * @var bool
      */
