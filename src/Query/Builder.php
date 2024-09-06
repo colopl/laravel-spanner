@@ -232,10 +232,6 @@ class Builder extends BaseBuilder
             $options['dataBoostEnabled'] = true;
         }
 
-        if ($this->snapshotEnabled()) {
-            $options['_snapshotEnabled'] = true;
-        }
-
         if ($this->timestampBound !== null) {
             $options += $this->timestampBound->transactionOptions();
         }

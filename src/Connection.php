@@ -33,6 +33,7 @@ use Google\Cloud\Core\Exception\GoogleException;
 use Google\Cloud\Core\Exception\NotFoundException;
 use Google\Cloud\Spanner\Database;
 use Google\Cloud\Spanner\Session\SessionPoolInterface;
+use Google\Cloud\Spanner\Snapshot;
 use Google\Cloud\Spanner\SpannerClient;
 use Google\Cloud\Spanner\Timestamp;
 use Google\Cloud\Spanner\Transaction;
@@ -40,6 +41,7 @@ use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Connection as BaseConnection;
 use Illuminate\Database\Query\Grammars\Grammar as BaseQueryGrammar;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Arr;
 use InvalidArgumentException;
 use LogicException;
 use Psr\Cache\CacheItemPoolInterface;
@@ -52,6 +54,7 @@ class Connection extends BaseConnection
         Concerns\ManagesMutations,
         Concerns\ManagesPartitionedDml,
         Concerns\ManagesSessionPool,
+        Concerns\ManagesSnapshots,
         Concerns\ManagesTagging,
         Concerns\ManagesTransactions,
         Concerns\MarksAsNotSupported;
@@ -578,22 +581,12 @@ class Connection extends BaseConnection
             $options['requestOptions']['requestTag'] = $tag;
         }
 
-        $forceReadOnlyTransaction =
-            ($options['exactStaleness'] ?? false) ||
-            ($options['maxStaleness'] ?? false) ||
-            ($options['minReadTimestamp'] ?? false) ||
-            ($options['readTimestamp'] ?? false) ||
-            ($options['strong'] ?? false);
-
-        if (!$forceReadOnlyTransaction && $transaction = $this->getCurrentTransaction()) {
-            return $transaction->execute($query, $options)->rows();
+        if ($this->inSnapshot()) {
+            return $this->executeSnapshotQuery($query, $options);
         }
 
-        if ($options['_snapshotEnabled'] ?? false) {
-            return $this->getSpannerDatabase()
-                ->snapshot($options)
-                ->execute($query, $options)
-                ->rows();
+        if ($this->canExecuteAsReadWriteTransaction($options) && $transaction = $this->getCurrentTransaction()) {
+            return $transaction->execute($query, $options)->rows();
         }
 
         return $this->getSpannerDatabase()
@@ -617,6 +610,18 @@ class Connection extends BaseConnection
                 yield $row;
             }
         }
+    }
+
+    /**
+     * @param string $query
+     * @param array<string, mixed> $options
+     * @return Generator<int, array<array-key, mixed>>
+     */
+    protected function executeSnapshotQuery(string $query, array $options): Generator
+    {
+        $executeOptions = Arr::only($options, ['parameters', 'types', 'queryOptions', 'requestOptions']);
+        assert($this->currentSnapshot !== null);
+        return $this->currentSnapshot->execute($query, $executeOptions)->rows();
     }
 
     /**
@@ -657,6 +662,29 @@ class Connection extends BaseConnection
         $rowCount = array_sum($result->rowCounts() ?? []);
         $this->recordsHaveBeenModified($rowCount > 0);
         return $rowCount;
+    }
+
+    /**
+     * @param array<string, mixed> $options
+     * @return bool
+     */
+    protected function canExecuteAsReadWriteTransaction(array $options): bool
+    {
+        $readOnlyTriggers = [
+            'singleUse',
+            'exactStaleness',
+            'maxStaleness',
+            'minReadTimestamp',
+            'readTimestamp',
+            'strong',
+        ];
+
+        foreach ($readOnlyTriggers as $option) {
+            if ($options[$option] ?? false) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**

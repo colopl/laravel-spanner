@@ -1109,6 +1109,31 @@ class BuilderTest extends TestCase
 
         $conn->table($tableName)->insert(['userId' => $this->generateUuid(), 'name' => __FUNCTION__]);
 
+        $query = $conn->table($tableName)->useSnapshot();
+        $result = $query->get();
+
+        $this->assertTrue($query->snapshotEnabled());
+        $this->assertSame(1, $result->count());
+    }
+
+    public function test_useSnapshot_fails_in_transaction(): void
+    {
+        $this->expectException(QueryException::class);
+        $this->expectExceptionMessage('Nested transactions are not supported by this client.');
+
+        $conn = $this->getDefaultConnection();
+        $tableName = self::TABLE_NAME_USER;
+
+        $conn->transaction(fn () => $conn->table($tableName)->useSnapshot()->get());
+    }
+
+    public function test_useSnapshot_with_staleness(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $tableName = self::TABLE_NAME_USER;
+
+        $conn->table($tableName)->insert(['userId' => $this->generateUuid(), 'name' => __FUNCTION__]);
+
         $query = $conn->table($tableName)->useSnapshot(new ExactStaleness(10));
         $result = $query->get();
 
