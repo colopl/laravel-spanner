@@ -45,7 +45,7 @@ trait ManagesMutations
         $this->withTransactionEvents(function () use ($table, $dataSet) {
             $dataSet = $this->prepareForMutation($dataSet);
             $this->event(new MutatingData($this, $table, 'insert', $dataSet));
-            $this->getDatabaseContext()->insertBatch($table, $dataSet);
+            $this->getMutationExecutor()->insertBatch($table, $dataSet);
         });
     }
 
@@ -59,7 +59,7 @@ trait ManagesMutations
         $this->withTransactionEvents(function () use ($table, $dataSet) {
             $dataSet = $this->prepareForMutation($dataSet);
             $this->event(new MutatingData($this, $table, 'update', $dataSet));
-            $this->getDatabaseContext()->updateBatch($table, $dataSet);
+            $this->getMutationExecutor()->updateBatch($table, $dataSet);
         });
     }
 
@@ -73,7 +73,7 @@ trait ManagesMutations
         $this->withTransactionEvents(function () use ($table, $dataSet) {
             $dataSet = $this->prepareForMutation($dataSet);
             $this->event(new MutatingData($this, $table, 'update', $dataSet));
-            $this->getDatabaseContext()->insertOrUpdateBatch($table, $dataSet);
+            $this->getMutationExecutor()->insertOrUpdateBatch($table, $dataSet);
         });
     }
 
@@ -88,8 +88,16 @@ trait ManagesMutations
             $keySet = $this->createDeleteMutationKeySet($keySet);
             $dataSet = $keySet->keys() ?: $keySet->keySetObject();
             $this->event(new MutatingData($this, $table, 'delete', $dataSet));
-            $this->getDatabaseContext()->delete($table, $keySet);
+            $this->getMutationExecutor()->delete($table, $keySet);
         });
+    }
+
+    /**
+     * @return Database|Transaction
+     */
+    protected function getMutationExecutor(): Database|Transaction
+    {
+        return $this->getCurrentTransaction() ?? $this->getSpannerDatabase();
     }
 
     /**
