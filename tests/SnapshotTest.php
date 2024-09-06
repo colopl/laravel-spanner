@@ -37,12 +37,16 @@ class SnapshotTest extends TestCase
         });
 
         $this->assertFalse($conn->inSnapshot());
-        $conn->snapshot(new StrongRead(), function () use ($conn) {
+        $result = $conn->snapshot(new StrongRead(), function () use ($conn) {
             $this->assertTrue($conn->inSnapshot());
             // call it multiple times
             $this->assertSame('t', $conn->table(self::TABLE_NAME_USER)->value('name'));
             $this->assertSame('t', $conn->table(self::TABLE_NAME_USER)->value('name'));
+
+            return 'ok';
         });
+
+        $this->assertSame('ok', $result);
     }
 
     public function test_snapshot_with_staleness(): void
