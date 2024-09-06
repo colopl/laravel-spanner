@@ -20,14 +20,10 @@ namespace Colopl\Spanner\Concerns;
 use Closure;
 use Colopl\Spanner\TimestampBound\TimestampBoundInterface;
 use Google\Cloud\Spanner\Snapshot;
+use LogicException;
 
 trait ManagesSnapshots
 {
-    /**
-     * @var int
-     */
-    protected int $snapshotLevel = 0;
-
     /**
      * @var Snapshot|null
      */
@@ -36,20 +32,22 @@ trait ManagesSnapshots
     /**
      * @template TReturn
      * @param TimestampBoundInterface $timestampBound
-     * @param Closure(): TReturn $callback
+     * @param Closure($this): TReturn $callback
      * @return TReturn
      */
     public function snapshot(TimestampBoundInterface $timestampBound, Closure $callback): mixed
     {
-        $this->snapshotLevel += 1;
+        if ($this->currentSnapshot !== null) {
+            throw new LogicException('Nested snapshots are not supported.');
+        }
 
         $options = $timestampBound->transactionOptions();
-        $this->currentSnapshot = $this->getSpannerDatabase()->snapshot($options);
-
-        $callback($this);
-
-        $this->snapshotLevel -= 1;
-
+        try {
+            $this->currentSnapshot = $this->getSpannerDatabase()->snapshot($options);
+            $callback($this);
+        } finally {
+            $this->currentSnapshot = null;
+        }
         return $this;
     }
 
@@ -58,6 +56,6 @@ trait ManagesSnapshots
      */
     public function inSnapshot(): bool
     {
-        return $this->snapshotLevel > 0;
+        return $this->currentSnapshot !== null;
     }
 }

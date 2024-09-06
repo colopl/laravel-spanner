@@ -22,6 +22,7 @@ use Exception;
 use Google\Cloud\Core\Exception\AbortedException;
 use Google\Cloud\Spanner\Database;
 use Google\Cloud\Spanner\Transaction;
+use LogicException;
 use Throwable;
 
 /**
@@ -69,6 +70,10 @@ trait ManagesTransactions
         return $this->withSessionNotFoundHandling(function () use ($callback, $options) {
             $return = $this->getSpannerDatabase()->runTransaction(function (Transaction $tx) use ($callback) {
                 try {
+                    if ($this->inSnapshot()) {
+                        throw new LogicException('Calling transaction() inside a snapshot is not supported.');
+                    }
+
                     $this->currentTransaction = $tx;
 
                     $this->transactions++;
