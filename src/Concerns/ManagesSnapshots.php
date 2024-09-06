@@ -32,7 +32,7 @@ trait ManagesSnapshots
     /**
      * @template TReturn
      * @param TimestampBoundInterface $timestampBound
-     * @param Closure($this): TReturn $callback
+     * @param Closure(): TReturn $callback
      * @return TReturn
      */
     public function snapshot(TimestampBoundInterface $timestampBound, Closure $callback): mixed
@@ -44,11 +44,10 @@ trait ManagesSnapshots
         $options = $timestampBound->transactionOptions();
         try {
             $this->currentSnapshot = $this->getSpannerDatabase()->snapshot($options);
-            $callback($this);
+            return $callback();
         } finally {
             $this->currentSnapshot = null;
         }
-        return $this;
     }
 
     /**
