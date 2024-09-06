@@ -17,10 +17,7 @@
 
 namespace Colopl\Spanner\Tests;
 
-use Carbon\Carbon;
 use Colopl\Spanner\TimestampBound\ExactStaleness;
-use Colopl\Spanner\TimestampBound\MaxStaleness;
-use Colopl\Spanner\TimestampBound\MinReadTimestamp;
 use Colopl\Spanner\TimestampBound\StrongRead;
 use LogicException;
 use RuntimeException;
