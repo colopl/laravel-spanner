@@ -31,7 +31,6 @@ class Builder extends BaseBuilder
     use Concerns\UsesDataBoost;
     use Concerns\UsesMutations;
     use Concerns\UsesPartitionedDml;
-    use Concerns\UsesSnapshot;
     use Concerns\UsesStaleReads;
 
     public const PARAMETER_LIMIT = 950;

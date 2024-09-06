@@ -1101,43 +1101,4 @@ class BuilderTest extends TestCase
         $query = $this->getDefaultConnection()->table(self::TABLE_NAME_USER);
         $query->whereIn('userId', array_map(Uuid::uuid4()->toString(...), range(1, 1000)))->get();
     }
-
-    public function test_useSnapshot(): void
-    {
-        $conn = $this->getDefaultConnection();
-        $tableName = self::TABLE_NAME_USER;
-
-        $conn->table($tableName)->insert(['userId' => $this->generateUuid(), 'name' => __FUNCTION__]);
-
-        $query = $conn->table($tableName)->useSnapshot();
-        $result = $query->get();
-
-        $this->assertTrue($query->snapshotEnabled());
-        $this->assertSame(1, $result->count());
-    }
-
-    public function test_useSnapshot_fails_in_transaction(): void
-    {
-        $this->expectException(QueryException::class);
-        $this->expectExceptionMessage('Nested transactions are not supported by this client.');
-
-        $conn = $this->getDefaultConnection();
-        $tableName = self::TABLE_NAME_USER;
-
-        $conn->transaction(fn () => $conn->table($tableName)->useSnapshot()->get());
-    }
-
-    public function test_useSnapshot_with_staleness(): void
-    {
-        $conn = $this->getDefaultConnection();
-        $tableName = self::TABLE_NAME_USER;
-
-        $conn->table($tableName)->insert(['userId' => $this->generateUuid(), 'name' => __FUNCTION__]);
-
-        $query = $conn->table($tableName)->useSnapshot(new ExactStaleness(10));
-        $result = $query->get();
-
-        $this->assertTrue($query->snapshotEnabled());
-        $this->assertSame(0, $result->count());
-    }
 }

@@ -589,9 +589,7 @@ class Connection extends BaseConnection
             return $transaction->execute($query, $options)->rows();
         }
 
-        return $this->getSpannerDatabase()
-            ->execute($query, $options)
-            ->rows();
+        return $this->getSpannerDatabase()->execute($query, $options)->rows();
     }
 
     /**
