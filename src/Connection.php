@@ -128,7 +128,7 @@ class Connection extends BaseConnection
     }
 
     /**
-     * @deprecated will be removed in v9
+     * @deprecated will be removed in v10
      * @return Database|Transaction
      */
     protected function getDatabaseContext(): Database|Transaction
