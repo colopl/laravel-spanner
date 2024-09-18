@@ -1,6 +1,7 @@
 # v8.3.0 (2024-09-02)
 
 - add support for snapshot queries (#215)
+- deprecate Connection::getDatabaseContext() and move logic to UseMutations::getMutationExecutor() (#227)
 - add support for `Query\Builder::whereNotInUnnest(...)` (#225)
 - `Query\Builder::whereIn` will now wrap values in `UNNEST` if the number of values exceeds the limit (950). (#)
 
