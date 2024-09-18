@@ -22,7 +22,6 @@ use Colopl\Spanner\Query\Builder;
 use Colopl\Spanner\Schema\Blueprint;
 use Colopl\Spanner\Tests\TestCase;
 use Colopl\Spanner\TimestampBound\ExactStaleness;
-use Google\Cloud\Core\Exception\BadRequestException;
 use Google\Cloud\Spanner\Bytes;
 use Google\Cloud\Spanner\Duration;
 use Illuminate\Database\QueryException;
@@ -1092,7 +1091,6 @@ class BuilderTest extends TestCase
         $query->whereIn('userId', array_map(Uuid::uuid4()->toString(...), range(1, 1000)));
         $this->assertSame([], $query->get()->all());
     }
-
 
     public function test_whereIn_with_unnest_overflow_flag_turned_off(): void
     {
