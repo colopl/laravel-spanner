@@ -274,7 +274,13 @@ trait ManagesTransactions
      */
     public function getCommitOptions(): array
     {
-        return $this->commitOptions ??= $this->getConfig('commit') ?? [];
+        if ($this->commitOptions !== null) {
+            return $this->commitOptions;
+        }
+
+        $options = $this->getConfig('commit') ?? [];
+        assert(is_array($options));
+        return $this->commitOptions = $options;
     }
 
     /**
