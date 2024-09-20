@@ -40,6 +40,11 @@ trait ManagesTransactions
     protected ?int $maxAttempts = null;
 
     /**
+     * @var array|null $commitOptions
+     */
+    protected ?array $commitOptions = null;
+
+    /**
      * @inheritDoc
      * @template T
      * @param  Closure(static): T $callback
@@ -158,7 +163,7 @@ trait ManagesTransactions
     {
         if ($this->transactions === 1 && $this->currentTransaction !== null) {
             $this->fireConnectionEvent('committing');
-            $this->currentTransaction->commit();
+            $this->currentTransaction->commit($this->getCommitOptions());
         }
 
         [$levelBeingCommitted, $this->transactions] = [
@@ -262,5 +267,22 @@ trait ManagesTransactions
     {
         $this->maxAttempts = $attempts;
         return $this;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function getCommitOptions(): array
+    {
+        return $this->commitOptions ??= $this->getConfig('commit') ?? [];
+    }
+
+    /**
+     * @param array<string, mixed> $options
+     * @return void
+     */
+    public function setCommitOptions(array $options): void
+    {
+        $this->commitOptions = $options;
     }
 }
