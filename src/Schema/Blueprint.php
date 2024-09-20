@@ -369,6 +369,32 @@ class Blueprint extends BaseBlueprint
     }
 
     /**
+     * @param string $name
+     * @return ChangeStreamDefinition
+     */
+    public function createChangeStream(string $name): ChangeStreamDefinition
+    {
+        $this->commands[] = $command = new ChangeStreamDefinition(__FUNCTION__, $name);
+        return $command;
+    }
+
+    /**
+     * @param string $name
+     * @return ChangeStreamDefinition
+     */
+    public function alterChangeStream(string $name): ChangeStreamDefinition
+    {
+        $this->commands[] = $command = new ChangeStreamDefinition(__FUNCTION__, $name);
+        return $command;
+    }
+
+    public function dropChangeStgream(string $name): ChangeStreamDefinition
+    {
+        $this->commands[] = $command = new ChangeStreamDefinition(__FUNCTION__, $name);
+        return $command;
+    }
+
+    /**
      * @param string $type
      * @param string|list<string> $columns
      * @param string $index

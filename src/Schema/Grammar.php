@@ -269,6 +269,81 @@ class Grammar extends BaseGrammar
     }
 
     /**
+     * @param Blueprint $blueprint
+     * @param ChangeStreamDefinition $command
+     * @return string
+     */
+    public function compileCreateChangeStream(Blueprint $blueprint, ChangeStreamDefinition $command): string
+    {
+        return implode(' ', [
+            "create change stream {$this->wrap($command->stream)}",
+            $this->formatChangeStreamTables($command),
+            $this->formatChangeStreamOptions($command),
+        ]);
+    }
+
+    /**
+     * @param Blueprint $blueprint
+     * @param ChangeStreamDefinition $command
+     * @return string
+     */
+    public function compileAlterChangeStream(Blueprint $blueprint, ChangeStreamDefinition $command): string
+    {
+        $parts = [];
+        $parts[] = "alter change stream {$this->wrap($command->stream)}";
+        if ($command->tables !== []) {
+            $parts[] = $this->formatChangeStreamTables($command);
+        }
+        if ($command->getOptions() !== []) {
+            $parts[] = 'set ' . $this->formatChangeStreamOptions($command);
+        }
+        return implode(' ', $parts);
+    }
+
+    /**
+     * @param Blueprint $blueprint
+     * @param ChangeStreamDefinition $command
+     * @return string
+     */
+    public function compileDropChangeStream(Blueprint $blueprint, ChangeStreamDefinition $command): string
+    {
+        return 'drop change stream ' . $this->wrap($command->stream);
+    }
+
+    protected function formatChangeStreamTables(ChangeStreamDefinition $definition): string
+    {
+        $parts = [];
+        foreach ($definition->tables as $table => $columns) {
+            $string = $this->wrap($table);
+            if ($columnsAsString = implode(', ', $columns)) {
+                $string .= " ({$columnsAsString})";
+            }
+            $parts[] = $string;
+        }
+        return $parts !== []
+            ? 'for ' . implode(', ', $parts)
+            : 'for all';
+    }
+
+    /**
+     * @param ChangeStreamDefinition $definition
+     * @return string
+     */
+    protected function formatChangeStreamOptions(ChangeStreamDefinition $definition): string
+    {
+        $optionAsStrings = Arr::map($definition->getOptions(), function (mixed $v, string $k): string {
+            return Str::snake($k) . '=' . match (true) {
+                $v === true => 'true',
+                $v === false => 'false',
+                is_string($v) => $this->quoteString($v),
+                $v instanceof ChangeStreamValueCaptureType => $this->quoteString($v->value),
+                default => throw new LogicException('Unsupported option value: ' . $v),
+            };
+        });
+        return 'options (' . implode(', ', $optionAsStrings) . ')';
+    }
+
+    /**
      * @see https://cloud.google.com/spanner/docs/data-definition-language?hl=ja#create_table
      * @param Blueprint $blueprint
      * @return string
