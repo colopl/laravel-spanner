@@ -18,6 +18,7 @@
 namespace Colopl\Spanner\Tests\Schema;
 
 use Colopl\Spanner\Schema\Blueprint;
+use Colopl\Spanner\Schema\ChangeStreamValueCaptureType;
 use Colopl\Spanner\Schema\Grammar;
 use Colopl\Spanner\Tests\TestCase;
 use Illuminate\Support\Arr;
@@ -511,6 +512,137 @@ class BlueprintTest extends TestCase
         // No error should be thrown
         $blueprint = new Blueprint('_', static fn(Blueprint $table) => $table->dropSequenceIfExists($seqName));
         $blueprint->build($conn, $grammar);
+    }
+
+    public function test_createChangeStream_for_all(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $conn->useDefaultSchemaGrammar();
+        $grammar = $conn->getSchemaGrammar();
+        $name = 'test_stream' . Uuid::uuid4()->toString();
+
+        $blueprint = new Blueprint('_', fn(Blueprint $table) => $table->createChangeStream($name));
+        $blueprint->build($conn, $grammar);
+
+        $this->assertSame(["create change stream `$name` for all"], $blueprint->toSql($conn, $grammar));
+        $this->assertContains($name, Arr::pluck($conn->select('SELECT * FROM INFORMATION_SCHEMA.CHANGE_STREAMS'), 'CHANGE_STREAM_NAME'),
+        );
+    }
+
+    public function test_createChangeStream_for_table(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $conn->useDefaultSchemaGrammar();
+        $grammar = $conn->getSchemaGrammar();
+        $name = 'test_stream' . Uuid::uuid4()->toString();
+
+        $blueprint = new Blueprint('_', fn(Blueprint $table) => $table->createChangeStream($name)
+            ->for(self::TABLE_NAME_TEST)
+            ->for(self::TABLE_NAME_USER)
+        );
+        $blueprint->build($conn, $grammar);
+
+        $this->assertSame(["create change stream `{$name}` for `Test`, `User`"], $blueprint->toSql($conn, $grammar));
+    }
+
+    public function test_createChangeStream_for_table_columns(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $conn->useDefaultSchemaGrammar();
+        $grammar = $conn->getSchemaGrammar();
+        $name = 'test_stream' . Uuid::uuid4()->toString();
+
+        $blueprint = new Blueprint('_', fn(Blueprint $table) => $table->createChangeStream($name)->for(self::TABLE_NAME_TEST, ['stringTest', 'intTest']));
+        $blueprint->build($conn, $grammar);
+
+        $this->assertSame(["create change stream `$name` for `Test`(`stringTest`, `intTest`)"], $blueprint->toSql($conn, $grammar));
+    }
+
+    public function test_createChangeStream_for_with_options(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $conn->useDefaultSchemaGrammar();
+        $grammar = $conn->getSchemaGrammar();
+        $uuid = substr(Uuid::uuid4()->toString(), 0, 8);
+        $tableName = self::TABLE_NAME_TEST . $uuid;
+        $streamName = 'test_stream' . $uuid;
+
+        $blueprint = new Blueprint($tableName, function (Blueprint $table) use ($streamName) {
+            $table->uuid('id')->primary();
+            $table->create();
+            $table->createChangeStream($streamName)
+                ->for($table->getTable())
+                ->excludeTtlDeletes(true)
+                ->excludeInsert(true)
+                ->excludeUpdate(true)
+                ->excludeDelete(true)
+                ->valueCaptureType(ChangeStreamValueCaptureType::NewRow)
+                ->retentionPeriod('1d');
+        });
+        $blueprint->build($conn, $grammar);
+
+        $this->assertSame([
+            "create table `$tableName` (`id` string(36) not null) primary key (`id`)",
+            "create change stream `$streamName` for `$tableName` options (" . implode(', ', [
+                "retention_period='1d'",
+                "value_capture_type='NEW_ROW'",
+                "exclude_ttl_deletes=true",
+                "exclude_insert=true",
+                "exclude_update=true",
+                "exclude_delete=true",
+            ]) . ")",
+        ], $blueprint->toSql($conn, $grammar));
+    }
+
+    public function test_alterChangeStream(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $conn->useDefaultSchemaGrammar();
+        $grammar = $conn->getSchemaGrammar();
+        $uuid = substr(Uuid::uuid4()->toString(), 0, 8);
+        $tableName = self::TABLE_NAME_TEST . $uuid;
+        $streamName = 'test_stream' . $uuid;
+
+        $blueprint = new Blueprint($tableName, function (Blueprint $table) use ($streamName) {
+            $table->uuid('id')->primary();
+            $table->create();
+            $table->createChangeStream($streamName)->for($table->getTable())->excludeTtlDeletes(true);
+        });
+        $blueprint->build($conn, $grammar);
+
+        $blueprint = new Blueprint('_', function (Blueprint $table) use ($streamName) {
+            $table->alterChangeStream($streamName)
+                ->excludeTtlDeletes(false)
+                ->retentionPeriod('7d');
+        });
+        $blueprint->build($conn, $grammar);
+
+        $this->assertSame([
+            "alter change stream `$streamName` set options (retention_period='7d', exclude_ttl_deletes=false)",
+        ], $blueprint->toSql($conn, $grammar));
+    }
+
+    public function test_dropChangeStream(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $conn->useDefaultSchemaGrammar();
+        $grammar = $conn->getSchemaGrammar();
+        $uuid = substr(Uuid::uuid4()->toString(), 0, 8);
+        $streamName = 'test_stream' . $uuid;
+
+        $blueprint = new Blueprint(self::TABLE_NAME_TEST . $uuid, function (Blueprint $table) use ($streamName) {
+            $table->uuid('id')->primary();
+            $table->create();
+            $table->createChangeStream($streamName)->for($table->getTable());
+        });
+        $blueprint->build($conn, $grammar);
+
+        $blueprint = new Blueprint('_', fn (Blueprint $table) => $table->dropChangeStream($streamName));
+        $blueprint->build($conn, $grammar);
+
+        $this->assertSame([
+            "drop change stream `$streamName`",
+        ], $blueprint->toSql($conn, $grammar));
     }
 
     public function test_default_values(): void

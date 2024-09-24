@@ -275,11 +275,11 @@ class Grammar extends BaseGrammar
      */
     public function compileCreateChangeStream(Blueprint $blueprint, ChangeStreamDefinition $command): string
     {
-        return implode(' ', [
+        return implode(' ', array_filter([
             "create change stream {$this->wrap($command->stream)}",
             $this->formatChangeStreamTables($command),
             $this->formatChangeStreamOptions($command),
-        ]);
+        ]));
     }
 
     /**
@@ -291,9 +291,6 @@ class Grammar extends BaseGrammar
     {
         $parts = [];
         $parts[] = "alter change stream {$this->wrap($command->stream)}";
-        if ($command->tables !== []) {
-            $parts[] = $this->formatChangeStreamTables($command);
-        }
         if ($command->getOptions() !== []) {
             $parts[] = 'set ' . $this->formatChangeStreamOptions($command);
         }
@@ -315,8 +312,8 @@ class Grammar extends BaseGrammar
         $parts = [];
         foreach ($definition->tables as $table => $columns) {
             $string = $this->wrap($table);
-            if ($columnsAsString = implode(', ', $columns)) {
-                $string .= " ({$columnsAsString})";
+            if ($columnsAsString = $this->columnize($columns)) {
+                $string .= "({$columnsAsString})";
             }
             $parts[] = $string;
         }
@@ -331,7 +328,13 @@ class Grammar extends BaseGrammar
      */
     protected function formatChangeStreamOptions(ChangeStreamDefinition $definition): string
     {
-        $optionAsStrings = Arr::map($definition->getOptions(), function (mixed $v, string $k): string {
+        $options = $definition->getOptions();
+
+        if ($options === []) {
+            return '';
+        }
+
+        $optionAsStrings = Arr::map($options, function (mixed $v, string $k): string {
             return Str::snake($k) . '=' . match (true) {
                 $v === true => 'true',
                 $v === false => 'false',

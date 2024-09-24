@@ -65,7 +65,7 @@ class ChangeStreamDefinition extends Fluent
 
     /**
      * @return array{
-     *     retentionPeriod: string,
+     *     retentionPeriod?: string,
      *     valueCaptureType?: ChangeStreamValueCaptureType,
      *     excludeTtlDeletes?: bool,
      *     excludeInsert?: bool,

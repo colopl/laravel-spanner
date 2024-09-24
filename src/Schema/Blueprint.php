@@ -388,7 +388,7 @@ class Blueprint extends BaseBlueprint
         return $command;
     }
 
-    public function dropChangeStgream(string $name): ChangeStreamDefinition
+    public function dropChangeStream(string $name): ChangeStreamDefinition
     {
         $this->commands[] = $command = new ChangeStreamDefinition(__FUNCTION__, $name);
         return $command;
