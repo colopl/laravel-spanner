@@ -563,7 +563,7 @@ class BlueprintTest extends TestCase
         $conn = $this->getDefaultConnection();
         $conn->useDefaultSchemaGrammar();
         $grammar = $conn->getSchemaGrammar();
-        $uuid = substr(Uuid::uuid4()->toString(), 0, 8);
+        $uuid = Uuid::uuid4()->toString();
         $tableName = self::TABLE_NAME_TEST . $uuid;
         $streamName = 'test_stream' . $uuid;
 
@@ -599,7 +599,7 @@ class BlueprintTest extends TestCase
         $conn = $this->getDefaultConnection();
         $conn->useDefaultSchemaGrammar();
         $grammar = $conn->getSchemaGrammar();
-        $uuid = substr(Uuid::uuid4()->toString(), 0, 8);
+        $uuid = Uuid::uuid4()->toString();
         $tableName = self::TABLE_NAME_TEST . $uuid;
         $streamName = 'test_stream' . $uuid;
 
@@ -627,7 +627,7 @@ class BlueprintTest extends TestCase
         $conn = $this->getDefaultConnection();
         $conn->useDefaultSchemaGrammar();
         $grammar = $conn->getSchemaGrammar();
-        $uuid = substr(Uuid::uuid4()->toString(), 0, 8);
+        $uuid = Uuid::uuid4()->toString();
         $streamName = 'test_stream' . $uuid;
 
         $blueprint = new Blueprint(self::TABLE_NAME_TEST . $uuid, function (Blueprint $table) use ($streamName) {
