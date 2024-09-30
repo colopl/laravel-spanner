@@ -519,7 +519,7 @@ class BlueprintTest extends TestCase
         $conn = $this->getDefaultConnection();
         $conn->useDefaultSchemaGrammar();
         $grammar = $conn->getSchemaGrammar();
-        $name = 'test_stream' . Uuid::uuid4()->toString();
+        $name = __FUNCTION__ . Uuid::uuid4()->toString();
 
         $blueprint = new Blueprint('_', fn(Blueprint $table) => $table->createChangeStream($name));
         $blueprint->build($conn, $grammar);
@@ -534,7 +534,7 @@ class BlueprintTest extends TestCase
         $conn = $this->getDefaultConnection();
         $conn->useDefaultSchemaGrammar();
         $grammar = $conn->getSchemaGrammar();
-        $name = 'test_stream' . Uuid::uuid4()->toString();
+        $name = __FUNCTION__ . Uuid::uuid4()->toString();
 
         $blueprint = new Blueprint('_', fn(Blueprint $table) => $table->createChangeStream($name)
             ->for(self::TABLE_NAME_TEST)
@@ -551,7 +551,7 @@ class BlueprintTest extends TestCase
         $conn = $this->getDefaultConnection();
         $conn->useDefaultSchemaGrammar();
         $grammar = $conn->getSchemaGrammar();
-        $name = 'test_stream' . Uuid::uuid4()->toString();
+        $name = __FUNCTION__ . Uuid::uuid4()->toString();
 
         $blueprint = new Blueprint('_', fn(Blueprint $table) => $table->createChangeStream($name)->for(self::TABLE_NAME_TEST, ['stringTest', 'intTest']));
         $blueprint->build($conn, $grammar);
@@ -567,7 +567,7 @@ class BlueprintTest extends TestCase
         $grammar = $conn->getSchemaGrammar();
         $uuid = Uuid::uuid4()->toString();
         $tableName = self::TABLE_NAME_TEST . $uuid;
-        $streamName = 'test_stream' . $uuid;
+        $streamName = __FUNCTION__ . $uuid;
 
         $blueprint = new Blueprint($tableName, function (Blueprint $table) use ($streamName) {
             $table->uuid('id')->primary();
@@ -582,7 +582,7 @@ class BlueprintTest extends TestCase
                 ->retentionPeriod('1d');
         });
         $blueprint->build($conn, $grammar);
-        $this->beforeApplicationDestroyed(fn() => $blueprint->dropChangeStream($name));
+        $this->beforeApplicationDestroyed(fn() => $blueprint->dropChangeStream($streamName));
 
         $this->assertSame([
             "create table `$tableName` (`id` string(36) not null) primary key (`id`)",
@@ -604,7 +604,7 @@ class BlueprintTest extends TestCase
         $grammar = $conn->getSchemaGrammar();
         $uuid = Uuid::uuid4()->toString();
         $tableName = self::TABLE_NAME_TEST . $uuid;
-        $streamName = 'test_stream' . $uuid;
+        $streamName = __FUNCTION__ . $uuid;
 
         $blueprint = new Blueprint($tableName, function (Blueprint $table) use ($streamName) {
             $table->uuid('id')->primary();
@@ -632,7 +632,7 @@ class BlueprintTest extends TestCase
         $conn->useDefaultSchemaGrammar();
         $grammar = $conn->getSchemaGrammar();
         $uuid = Uuid::uuid4()->toString();
-        $streamName = 'test_stream' . $uuid;
+        $streamName = __FUNCTION__ . $uuid;
 
         $blueprint = new Blueprint(self::TABLE_NAME_TEST . $uuid, function (Blueprint $table) use ($streamName) {
             $table->uuid('id')->primary();
