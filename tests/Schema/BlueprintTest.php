@@ -523,10 +523,10 @@ class BlueprintTest extends TestCase
 
         $blueprint = new Blueprint('_', fn(Blueprint $table) => $table->createChangeStream($name));
         $blueprint->build($conn, $grammar);
+        $this->beforeApplicationDestroyed(fn() => $blueprint->dropChangeStream($name));
 
         $this->assertSame(["create change stream `$name` for all"], $blueprint->toSql($conn, $grammar));
-        $this->assertContains($name, Arr::pluck($conn->select('SELECT * FROM INFORMATION_SCHEMA.CHANGE_STREAMS'), 'CHANGE_STREAM_NAME'),
-        );
+        $this->assertContains($name, Arr::pluck($conn->select('SELECT * FROM INFORMATION_SCHEMA.CHANGE_STREAMS'), 'CHANGE_STREAM_NAME'));
     }
 
     public function test_createChangeStream_for_table(): void
@@ -541,6 +541,7 @@ class BlueprintTest extends TestCase
             ->for(self::TABLE_NAME_USER)
         );
         $blueprint->build($conn, $grammar);
+        $this->beforeApplicationDestroyed(fn() => $blueprint->dropChangeStream($name));
 
         $this->assertSame(["create change stream `{$name}` for `Test`, `User`"], $blueprint->toSql($conn, $grammar));
     }
@@ -554,6 +555,7 @@ class BlueprintTest extends TestCase
 
         $blueprint = new Blueprint('_', fn(Blueprint $table) => $table->createChangeStream($name)->for(self::TABLE_NAME_TEST, ['stringTest', 'intTest']));
         $blueprint->build($conn, $grammar);
+        $this->beforeApplicationDestroyed(fn() => $blueprint->dropChangeStream($name));
 
         $this->assertSame(["create change stream `$name` for `Test`(`stringTest`, `intTest`)"], $blueprint->toSql($conn, $grammar));
     }
@@ -580,6 +582,7 @@ class BlueprintTest extends TestCase
                 ->retentionPeriod('1d');
         });
         $blueprint->build($conn, $grammar);
+        $this->beforeApplicationDestroyed(fn() => $blueprint->dropChangeStream($name));
 
         $this->assertSame([
             "create table `$tableName` (`id` string(36) not null) primary key (`id`)",
@@ -609,6 +612,7 @@ class BlueprintTest extends TestCase
             $table->createChangeStream($streamName)->for($table->getTable())->excludeTtlDeletes(true);
         });
         $blueprint->build($conn, $grammar);
+        $this->beforeApplicationDestroyed(fn() => $blueprint->dropChangeStream($streamName));
 
         $blueprint = new Blueprint('_', function (Blueprint $table) use ($streamName) {
             $table->alterChangeStream($streamName)
