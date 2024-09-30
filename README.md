@@ -327,6 +327,28 @@ $schemaBuilder->create('user_items', function (Blueprint $table) {
 });
 ```
 
+### Change Streams
+
+Spanner supports [Change Streams](https://cloud.google.com/spanner/docs/change-streams) which allows you to listen to changes in the database.
+Change streams can be created/altered/dropped through the schema builder as shown below.
+
+```php
+$schemaBuilder->create('user_items', function (Blueprint $table) {
+    $table->createChangeStream('stream_name')
+        ->for('user_items', ['userId', 'userItemId'])
+        ->retentionPeriod('7d')
+        ->valueCaptureType(ChangeStreamValueCaptureType::NewValues)
+        ->excludeTtlDeletes(true);
+
+    $table->createChangeStream('stream_name')
+        ->excludeInsert(true)
+        ->excludeUpdate(true)
+        ->excludeDelete(true);
+    
+    $table->dropChangeStream('stream_name');
+});
+```
+
 
 ### Secondary Index Options
 
