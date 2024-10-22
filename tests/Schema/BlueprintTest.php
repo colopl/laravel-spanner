@@ -623,8 +623,8 @@ class BlueprintTest extends TestCase
 
         $blueprint = new Blueprint('');
         $blueprint->alterChangeStream($streamName)
-                ->excludeTtlDeletes(false)
-                ->retentionPeriod('7d');
+            ->excludeTtlDeletes(false)
+            ->retentionPeriod('7d');
         $blueprint->build($conn, $grammar);
 
         $this->assertSame([
