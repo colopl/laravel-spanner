@@ -580,13 +580,13 @@ class BlueprintTest extends TestCase
         $blueprint->uuid('id')->primary();
         $blueprint->create();
         $blueprint->createChangeStream($streamName)
-                ->for($blueprint->getTable())
-                ->excludeTtlDeletes(true)
-                ->excludeInsert(true)
-                ->excludeUpdate(true)
-                ->excludeDelete(true)
-                ->valueCaptureType(ChangeStreamValueCaptureType::NewRow)
-                ->retentionPeriod('1d');
+            ->for($blueprint->getTable())
+            ->excludeTtlDeletes(true)
+            ->excludeInsert(true)
+            ->excludeUpdate(true)
+            ->excludeDelete(true)
+            ->valueCaptureType(ChangeStreamValueCaptureType::NewRow)
+            ->retentionPeriod('1d');
         $blueprint->build($conn, $grammar);
 
         $this->assertSame([
