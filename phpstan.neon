@@ -17,9 +17,6 @@ parameters:
           path: src/Query/Builder.php
         - message: '#^Parameter \#1 \$pdo of method Illuminate\\Database\\Connection::__construct\(\) expects Closure|PDO, null given\.$#'
           path: src/Connection.php
-        - message: '#^Parameter \#1 \$start of method Illuminate\\Database\\Connection::getElapsedTime\(\) expects int, float given\.$#'
-          path: src/Connection.php
-          count: 2
         - message: '#^Method Colopl\\Spanner\\Connection::selectWithOptions\(\) should return array<int, array> but returns mixed\.$#'
           path: src/Connection.php
         - message: '#^Generator expects value type array, mixed given.$#'
@@ -29,8 +26,6 @@ parameters:
           path: src/Eloquent/Model.php
         - message: '#^Property Illuminate\\Database\\Schema\\Builder::\$resolver \(Closure\) in isset\(\) is not nullable\.$#'
           path: src/Schema/Builder.php
-        - message: '#^Using nullsafe method call on non-nullable type Illuminate\\Database\\DatabaseTransactionsManager\. Use -> instead\.$#'
-          path: src/Concerns/ManagesTransactions.php
         - message: '#^Parameter \#1 \$connection of method Illuminate\\Database\\DatabaseTransactionsManager::.+\(\) expects string, string\|null given\.$#'
           path: src/Concerns/ManagesTransactions.php
         - message: '#^Property Colopl\\Spanner\\Session\\SessionInfo\:\:\$labels \(array\<string, string\>\) does not accept array\.$#'
