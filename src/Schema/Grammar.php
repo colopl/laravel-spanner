@@ -354,6 +354,7 @@ class Grammar extends BaseGrammar
     protected function addInterleaveToTable(Blueprint $blueprint)
     {
         if (! is_null($command = $this->getCommandByName($blueprint, 'interleaveInParent'))) {
+            assert($command instanceof InterleaveDefinition);
             $schema = ", interleave in parent {$this->wrap($command->table)}";
             if (! is_null($command->onDelete)) {
                 $schema .= " on delete {$command->onDelete}";
@@ -402,19 +403,13 @@ class Grammar extends BaseGrammar
      */
     public function compileIndex(Blueprint $blueprint, Fluent $command)
     {
-        $columnsAsString = null;
-
         // if index is defined as assoc array, key is treated as column name and value as order
         // if index is defined as numeric array, then values are read as column names
-        $keys = array_keys($command->columns);
-        if (array_keys($keys) !== $keys) {
-            $columns = [];
-            foreach ($command->columns as $column => $order) {
-                $columns[] = $this->wrap($column).' '.$order;
-            }
-            $columnsAsString = implode(', ', $columns);
-        } else {
-            $columnsAsString = $this->columnize($command->columns);
+        $columns = [];
+        foreach ($command->columns as $column => $order) {
+            $columns[] = is_string($column)
+                ? $this->wrap($column) . ' ' . $order
+                : $this->wrap($order);
         }
 
         return sprintf('create %s%sindex %s on %s (%s)%s%s',
@@ -422,7 +417,7 @@ class Grammar extends BaseGrammar
             empty($command->nullFiltered) ? '' :'null_filtered ',
             $this->wrap($command->index),
             $this->wrapTable($blueprint),
-            $columnsAsString,
+            implode(', ', $columns),
             $this->addStoringToIndex($command),
             $this->addInterleaveToIndex($command)
         );
@@ -457,7 +452,7 @@ class Grammar extends BaseGrammar
 
     /**
      * @param Blueprint $blueprint
-     * @param Fluent<string, mixed> $command
+     * @param IndexDefinition $command
      * @return string
      * @see https://cloud.google.com/spanner/docs/data-definition-language?hl=en
      */
@@ -470,7 +465,7 @@ class Grammar extends BaseGrammar
 
     /**
      * @param Blueprint $blueprint
-     * @param Fluent<string, mixed> $command
+     * @param IndexDefinition $command
      * @return string
      * @see https://cloud.google.com/spanner/docs/data-definition-language?hl=en
      */
@@ -483,7 +478,7 @@ class Grammar extends BaseGrammar
      * Compile a drop foreign key command.
      *
      * @param  Blueprint  $blueprint
-     * @param Fluent<string, mixed> $command
+     * @param IndexDefinition $command
      * @return string
      */
     public function compileDropForeign(Blueprint $blueprint, Fluent $command)
