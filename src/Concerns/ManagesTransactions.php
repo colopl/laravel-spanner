@@ -47,8 +47,8 @@ trait ManagesTransactions
     /**
      * @inheritDoc
      * @template T
-     * @param  Closure(static): T $callback
-     * @param  int $attempts  -1 is used as a magic number to indicate the default value
+     * @param Closure(static): T $callback
+     * @param int $attempts -1 is used as a magic number to indicate the default value
      * @return T
      */
     public function transaction(Closure $callback, $attempts = -1)
@@ -84,7 +84,7 @@ trait ManagesTransactions
                     $this->transactions++;
 
                     $this->transactionsManager?->begin(
-                        $this->getName(), $this->transactions
+                        $this->getName(), $this->transactions,
                     );
 
                     $this->fireConnectionEvent('beganTransaction');
@@ -178,7 +178,7 @@ trait ManagesTransactions
         $this->transactionsManager?->commit(
             $this->getName(),
             $levelBeingCommitted,
-            $this->transactions
+            $this->transactions,
         );
     }
 

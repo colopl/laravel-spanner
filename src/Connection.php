@@ -545,7 +545,7 @@ class Connection extends BaseConnection
      * https://github.com/googleapis/google-cloud-php/issues/6284.
      *
      * @template T
-     * @param  Closure(): T $callback
+     * @param Closure(): T $callback
      * @return T
      * @throws AbortedException|NotFoundException|InvalidArgumentException
      */
@@ -644,7 +644,7 @@ class Connection extends BaseConnection
     protected function executeBatchDml(Transaction $transaction, string $query, array $bindings = []): int
     {
         $result = $transaction->executeUpdateBatch([
-            ['sql' => $query, 'parameters' => $this->prepareBindings($bindings)]
+            ['sql' => $query, 'parameters' => $this->prepareBindings($bindings)],
         ]);
 
         $error = $result->error();

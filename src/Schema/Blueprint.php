@@ -132,7 +132,7 @@ class Blueprint extends BaseBlueprint
     }
 
     /**
-     * @param  string  $column
+     * @param string $column
      * @param int|null $length
      * @param bool $fixed
      * @return ColumnDefinition
@@ -170,7 +170,7 @@ class Blueprint extends BaseBlueprint
     public function booleanArray($column)
     {
         return $this->addColumn('array', $column, [
-            'arrayType' => 'boolean'
+            'arrayType' => 'boolean',
         ]);
     }
 
@@ -181,7 +181,7 @@ class Blueprint extends BaseBlueprint
     public function integerArray($column)
     {
         return $this->addColumn('array', $column, [
-            'arrayType' => 'integer'
+            'arrayType' => 'integer',
         ]);
     }
 
@@ -203,7 +203,7 @@ class Blueprint extends BaseBlueprint
     public function decimalArray($column)
     {
         return $this->addColumn('array', $column, [
-            'arrayType' => 'decimal'
+            'arrayType' => 'decimal',
         ]);
     }
 
@@ -261,7 +261,7 @@ class Blueprint extends BaseBlueprint
     public function interleaveInParent(string $table): InterleaveDefinition
     {
         $command = new InterleaveDefinition(
-            $this->addCommand('interleaveInParent', compact('table'))->getAttributes()
+            $this->addCommand('interleaveInParent', compact('table'))->getAttributes(),
         );
 
         $this->commands[count($this->commands) - 1] = $command;

@@ -19,8 +19,8 @@ namespace Colopl\Spanner\Query;
 
 use Colopl\Spanner\Concerns\MarksAsNotSupported;
 use Colopl\Spanner\Concerns\SharedGrammarCalls;
-use Illuminate\Database\Query\Builder;
 use Illuminate\Contracts\Database\Query\Expression;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Database\Query\Grammars\Grammar as BaseGrammar;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -81,7 +81,7 @@ class Grammar extends BaseGrammar
      */
     public function compileTruncate(Builder $query)
     {
-        return ['delete from '.$this->wrapTable($query->from).' where true' => []];
+        return ['delete from ' . $this->wrapTable($query->from) . ' where true' => []];
     }
 
     /**
@@ -116,7 +116,7 @@ class Grammar extends BaseGrammar
      */
     protected function whereInArray(Builder $query, $where)
     {
-        return '? in unnest('.$this->wrap($where['column']).')';
+        return '? in unnest(' . $this->wrap($where['column']) . ')';
     }
 
     /**
@@ -129,7 +129,7 @@ class Grammar extends BaseGrammar
         $values = $where['values'];
 
         if (!($values instanceof Nested)) {
-            throw new RuntimeException('Invalid Type:'.get_class($values).' given. '.Nested::class.' expected.');
+            throw new RuntimeException('Invalid Type:' . get_class($values) . ' given. ' . Nested::class . ' expected.');
         }
 
         if (count($values) <= 0) {

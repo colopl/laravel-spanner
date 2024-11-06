@@ -34,7 +34,7 @@ trait UsesPartitionedDml
     {
         $sql = $this->grammar->compileUpdate($this, $values);
         return $this->connection->runPartitionedDml($sql, $this->cleanBindings(
-            $this->grammar->prepareBindingsForUpdate($this->bindings, $values)
+            $this->grammar->prepareBindingsForUpdate($this->bindings, $values),
         ));
     }
 
@@ -45,7 +45,7 @@ trait UsesPartitionedDml
     {
         return $this->connection->runPartitionedDml(
             $this->grammar->compileDelete($this),
-            $this->cleanBindings($this->grammar->prepareBindingsForDelete($this->bindings))
+            $this->cleanBindings($this->grammar->prepareBindingsForDelete($this->bindings)),
         );
     }
 }

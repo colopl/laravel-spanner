@@ -96,7 +96,7 @@ trait ManagesDataDefinitions
     {
         $result = $operation->pollUntilComplete(['maxPollingDurationSeconds' => 0.0]);
         if ($operation->error() !== null) {
-            throw new RuntimeException((string) json_encode($operation->error()));
+            throw new RuntimeException((string)json_encode($operation->error()));
         }
         return $result;
     }

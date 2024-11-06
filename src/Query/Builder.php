@@ -74,7 +74,7 @@ class Builder extends BaseBuilder
             $values = $values($exists);
         }
 
-        if (! $exists) {
+        if (!$exists) {
             return $this->insert(array_merge($attributes, $values));
         }
 
@@ -82,7 +82,7 @@ class Builder extends BaseBuilder
             return true;
         }
 
-        return (bool) $this->limit(1)->update(Arr::except($values, array_keys($attributes)));
+        return (bool)$this->limit(1)->update(Arr::except($values, array_keys($attributes)));
     }
 
     /**
@@ -94,7 +94,7 @@ class Builder extends BaseBuilder
             return 0;
         }
 
-        if (! array_is_list($values)) {
+        if (!array_is_list($values)) {
             $values = [$values];
         } else {
             foreach ($values as $key => $value) {
@@ -235,7 +235,7 @@ class Builder extends BaseBuilder
             $options += $this->timestampBound->transactionOptions();
         }
 
-        return $this->connection->selectWithOptions($sql, $bindings, $options); 
+        return $this->connection->selectWithOptions($sql, $bindings, $options);
     }
 
     /**

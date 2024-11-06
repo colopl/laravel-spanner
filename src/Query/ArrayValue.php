@@ -23,7 +23,7 @@ namespace Colopl\Spanner\Query;
 final readonly class ArrayValue
 {
     public function __construct(
-        public array $value
+        public array $value,
     )
     {
     }

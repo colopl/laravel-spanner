@@ -56,9 +56,9 @@ class Model extends BaseModel
     }
 
     /**
-     * @param  string  $childType
-     * @param  mixed  $value
-     * @param  string|null  $field
+     * @param string $childType
+     * @param mixed $value
+     * @param string|null $field
      * @return Relation<BaseModel, $this, *>
      */
     protected function resolveChildRouteBindingQuery($childType, $value, $field)

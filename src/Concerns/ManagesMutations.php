@@ -153,7 +153,7 @@ trait ManagesMutations
         }
 
         if (is_object($keys)) {
-            throw new InvalidArgumentException('delete should contain array of keys or be instance of KeySet. '.get_class($keys).' given.');
+            throw new InvalidArgumentException('delete should contain array of keys or be instance of KeySet. ' . get_class($keys) . ' given.');
         }
 
         if (!is_array($keys)) {

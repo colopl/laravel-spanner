@@ -35,8 +35,7 @@ class Processor extends BaseProcessor
             foreach ($result as $name => $value) {
                 if ($value instanceof ValueInterface) {
                     $results[$index][$name] = $this->processColumn($value);
-                }
-                else if (is_array($value)) {
+                } elseif (is_array($value)) {
                     $array = [];
                     foreach ($value as $k => $v) {
                         $array[$k] = ($v instanceof ValueInterface)

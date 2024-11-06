@@ -80,7 +80,7 @@ class SessionsCommand extends Command
             ->sortBy(fn(SessionInfo $s): string => $this->getSortValue($s), descending: $descending);
 
         if ($label !== null) {
-            $sessions = $sessions->filter(static function(SessionInfo $session) use ($label): bool {
+            $sessions = $sessions->filter(static function (SessionInfo $session) use ($label): bool {
                 $labels = $session->getLabels();
                 [$key, $val] = explode('=', $label, 2);
                 if (isset($labels[$key])) {
@@ -90,11 +90,11 @@ class SessionsCommand extends Command
             });
         }
         return $sessions->map(static fn(SessionInfo $s) => [
-                'Name' => $s->getName(),
-                'Created' => (string) $s->getCreatedAt(),
-                'LastUsed' => (string) $s->getLastUsedAt(),
-                'Labels' => http_build_query($s->getLabels(), ', ', ''),
-            ]);
+            'Name' => $s->getName(),
+            'Created' => (string)$s->getCreatedAt(),
+            'LastUsed' => (string)$s->getLastUsedAt(),
+            'Labels' => http_build_query($s->getLabels(), ', ', ''),
+        ]);
     }
 
     /**
