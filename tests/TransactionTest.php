@@ -77,7 +77,7 @@ class TransactionTest extends TestCase
             'name' => 'test',
         ];
 
-        $conn->transaction(function (Connection $conn) use($qb, $insertRow) {
+        $conn->transaction(function (Connection $conn) use ($qb, $insertRow) {
             $this->assertSame(TransactionalReadInterface::STATE_ACTIVE, $conn->getCurrentTransaction()?->state());
             $qb->insert($insertRow);
         });
@@ -221,7 +221,9 @@ class TransactionTest extends TestCase
         $count = 0;
         $conn->transaction(function (Connection $conn) use ($qb, &$count) {
             $qb->insert(['userId' => $this->generateUuid(), 'name' => 't']);
-            $conn->afterCommit(static function() use (&$count) { $count++; });
+            $conn->afterCommit(static function () use (&$count) {
+                $count++;
+            });
         });
 
         // Should not be called on second try.
@@ -243,7 +245,7 @@ class TransactionTest extends TestCase
         try {
             $conn->transaction(function (Connection $conn) use ($qb, &$count) {
                 $qb->insert(['userId' => $this->generateUuid(), 'name' => 't']);
-                $conn->afterCommit(static function() use (&$count) {
+                $conn->afterCommit(static function () use (&$count) {
                     $count++;
                 });
                 throw new RuntimeException('fail');
@@ -406,7 +408,7 @@ class TransactionTest extends TestCase
                 $this->assertSame(1, $conn->transactionLevel());
                 throw new NotFoundException('NG');
             });
-        } catch(NotFoundException) {
+        } catch (NotFoundException) {
             $exceptionThrown = true;
         }
 
@@ -446,7 +448,7 @@ class TransactionTest extends TestCase
                 $this->assertSame(1, $conn->transactionLevel());
                 throw new RuntimeException('Trigger rollback');
             });
-        } catch(AbortedException) {
+        } catch (AbortedException) {
             // do nothing.
             $aborted = true;
         }

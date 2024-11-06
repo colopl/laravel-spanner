@@ -25,7 +25,7 @@ class SpannerServiceProviderTest extends TestCase
     {
         $newPath = '/tmp/spanner';
         config()->set('database.connections.main.cache_path', $newPath);
-        $this->beforeApplicationDestroyed(static fn () => shell_exec('rm -rf {$newPath}'));
+        $this->beforeApplicationDestroyed(static fn() => shell_exec('rm -rf {$newPath}'));
 
         /** @var DatabaseManager $db */
         $db = $this->app->make('db');

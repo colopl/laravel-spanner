@@ -354,18 +354,18 @@ class BuilderTest extends TestCase
                 ->get()
                 ->keyBy('stringTest')
                 ->sort()
-                ->all()
+                ->all(),
         );
 
         $qb = $conn->table($tableName);
         $this->assertSame(
             [20 => ['intTest' => 20, 'cnt' => 3], 40 => ['intTest' => 40, 'cnt' => 1]],
             $qb->groupBy('intTest')
-            ->selectRaw('intTest, count(*) as cnt')
-            ->get()
-            ->keyBy('intTest')
-            ->sort()
-            ->all()
+                ->selectRaw('intTest, count(*) as cnt')
+                ->get()
+                ->keyBy('intTest')
+                ->sort()
+                ->all(),
         );
 
         // HAVING
@@ -377,7 +377,7 @@ class BuilderTest extends TestCase
                 ->selectRaw('intTest, count(*) as cnt')
                 ->get()
                 ->keyBy('intTest')
-                ->all()
+                ->all(),
         );
     }
 
@@ -618,7 +618,7 @@ class BuilderTest extends TestCase
         $this->assertSame(1, $query->upsert(['id' => 1, 's' => 'a']));
         $this->assertSame(1, $query->upsert(['id' => 1, 's' => 'b']));
 
-        $this->assertSame(['id' => 1, 's' => 'b'], (array) $query->sole());
+        $this->assertSame(['id' => 1, 's' => 'b'], (array)$query->sole());
     }
 
     public function test_upsert_multi_row(): void
@@ -747,7 +747,7 @@ class BuilderTest extends TestCase
         $res2 = $conn->table($tableName)->updateOrInsert(['testId' => $row['testId']], $row);
         $this->assertTrue($res2);
 
-        $record = (array) $conn->table($tableName)->where('testId', $row['testId'])->first();
+        $record = (array)$conn->table($tableName)->where('testId', $row['testId'])->first();
         $this->assertSame('updated', $record['stringTest']);
     }
 
@@ -891,7 +891,7 @@ class BuilderTest extends TestCase
         for ($i = 0; $i < 100; $i++) {
             $insertValues[] = [
                 'userId' => $this->generateUuid(),
-                'name' => '%'.$i,
+                'name' => '%' . $i,
             ];
         }
         $qb->insert($insertValues);

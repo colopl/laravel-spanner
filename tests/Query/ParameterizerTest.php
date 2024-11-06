@@ -43,7 +43,7 @@ class ParameterizerTest extends TestCase
 
         // \% (escaped) should be treated as normal string and should be converted to @p0
         // % should be treated as multi-string wildcard
-        $bindings = ['normal\%string', '\'--injection%', '%'.chr(0xbf).chr(0x27), 'test'];
+        $bindings = ['normal\%string', '\'--injection%', '%' . chr(0xbf) . chr(0x27), 'test'];
         [$query, $newBindings] = $parameterizer->parameterizeQuery('SELECT * FROM `User` WHERE `Col1` LIKE ? AND `Col2` LIKE ? AND `Col3` LIKE ? AND `Col4` LIKE ?', $bindings);
         $this->assertSame("SELECT * FROM `User` WHERE `Col1` LIKE @p0 AND `Col2` LIKE '\'--injection%' AND `Col3` LIKE '%\xbf\\\x27' AND `Col4` LIKE @p3", $query);
         $this->assertSame($bindings[0], $newBindings['p0']);

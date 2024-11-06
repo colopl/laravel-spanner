@@ -63,7 +63,7 @@ class BuilderTestLast extends TestCase
         $sb->create($table, function (Blueprint $table) {
             $table->uuid('id')->primary();
         });
-        $tables = array_map(static fn (array $row) => $row['name'], $sb->getTables());
+        $tables = array_map(static fn(array $row) => $row['name'], $sb->getTables());
         $this->assertContains('test_' . $table, $tables);
     }
 
@@ -216,7 +216,7 @@ class BuilderTestLast extends TestCase
         /** @var array{ name: string, type: string } $row */
         $row = Arr::first(
             $sb->getTables(),
-            static fn (array $row): bool => $row['name'] === $table,
+            static fn(array $row): bool => $row['name'] === $table,
         );
 
         $this->assertSame($table, $row['name']);
@@ -259,7 +259,7 @@ class BuilderTestLast extends TestCase
         /** @var array{ name: string, type: string } $row */
         $row = Arr::first(
             $sb->getTables(),
-            static fn (array $row): bool => $row['name'] === $table,
+            static fn(array $row): bool => $row['name'] === $table,
         );
 
         $this->assertSame($table, $row['name']);
@@ -313,8 +313,8 @@ class BuilderTestLast extends TestCase
         $conn = $this->getDefaultConnection();
         $sb = $conn->getSchemaBuilder();
 
-         // All tables must be dropped before hand to ensure that this test will cover the "early return" case
-         // for when there are no tables.
+        // All tables must be dropped before hand to ensure that this test will cover the "early return" case
+        // for when there are no tables.
         $sb->dropAllTables();
 
         $tables = $sb->getTables();

@@ -1,13 +1,13 @@
 <?php
 
-require __DIR__ .'/../vendor/autoload.php';
+require __DIR__ . '/../vendor/autoload.php';
 
 use Google\Cloud\Spanner\SpannerClient;
 
 /**
  * database must be dropped after all tests
  */
-register_shutdown_function(function(){
+register_shutdown_function(function () {
     $client = new SpannerClient([
         'projectId' => getenv('DB_SPANNER_PROJECT_ID'),
     ]);

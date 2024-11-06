@@ -101,7 +101,9 @@ class ConnectionTest extends TestCase
     public function test_statement_with_select(): void
     {
         $executedCount = 0;
-        $this->app['events']->listen(QueryExecuted::class, function () use (&$executedCount) { $executedCount++; });
+        $this->app['events']->listen(QueryExecuted::class, function () use (&$executedCount) {
+            $executedCount++;
+        });
 
         $conn = $this->getDefaultConnection();
         $res = $conn->statement('SELECT ?', ['12345']);
@@ -115,11 +117,13 @@ class ConnectionTest extends TestCase
         $conn = $this->getDefaultConnection();
         $userId = $this->generateUuid();
         $executedCount = 0;
-        $this->app['events']->listen(QueryExecuted::class, function () use (&$executedCount) { $executedCount++; });
+        $this->app['events']->listen(QueryExecuted::class, function () use (&$executedCount) {
+            $executedCount++;
+        });
 
-        $res[] = $conn->statement('INSERT '.self::TABLE_NAME_USER.' (`userId`, `name`) VALUES (?,?)', [$userId, __FUNCTION__]);
-        $res[] = $conn->statement('UPDATE '.self::TABLE_NAME_USER.' SET `name`=? WHERE `userId`=?', [__FUNCTION__.'2', $userId]);
-        $res[] = $conn->statement('DELETE '.self::TABLE_NAME_USER.' WHERE `userId`=?', [$this->generateUuid()]);
+        $res[] = $conn->statement('INSERT ' . self::TABLE_NAME_USER . ' (`userId`, `name`) VALUES (?,?)', [$userId, __FUNCTION__]);
+        $res[] = $conn->statement('UPDATE ' . self::TABLE_NAME_USER . ' SET `name`=? WHERE `userId`=?', [__FUNCTION__ . '2', $userId]);
+        $res[] = $conn->statement('DELETE ' . self::TABLE_NAME_USER . ' WHERE `userId`=?', [$this->generateUuid()]);
 
         $this->assertTrue($res[0]);
         $this->assertTrue($res[1]);
@@ -130,7 +134,9 @@ class ConnectionTest extends TestCase
     public function test_unprepared_with_select(): void
     {
         $executedCount = 0;
-        $this->app['events']->listen(QueryExecuted::class, function () use (&$executedCount) { $executedCount++; });
+        $this->app['events']->listen(QueryExecuted::class, function () use (&$executedCount) {
+            $executedCount++;
+        });
 
         $conn = $this->getDefaultConnection();
         $res = $conn->unprepared('SELECT 12345');
@@ -144,11 +150,13 @@ class ConnectionTest extends TestCase
         $conn = $this->getDefaultConnection();
         $userId = $this->generateUuid();
         $executedCount = 0;
-        $this->app['events']->listen(QueryExecuted::class, function () use (&$executedCount) { $executedCount++; });
+        $this->app['events']->listen(QueryExecuted::class, function () use (&$executedCount) {
+            $executedCount++;
+        });
 
-        $res[] = $conn->unprepared('INSERT '.self::TABLE_NAME_USER.' (`userId`, `name`) VALUES (\''.$userId.'\',\''.__FUNCTION__.'\')');
-        $res[] = $conn->unprepared('UPDATE '.self::TABLE_NAME_USER.' SET `name`=\''.__FUNCTION__.'2'.'\' WHERE `userId`=\''.$userId.'\'');
-        $res[] = $conn->unprepared('DELETE '.self::TABLE_NAME_USER.' WHERE `userId`=\''.$userId.'\'');
+        $res[] = $conn->unprepared('INSERT ' . self::TABLE_NAME_USER . ' (`userId`, `name`) VALUES (\'' . $userId . '\',\'' . __FUNCTION__ . '\')');
+        $res[] = $conn->unprepared('UPDATE ' . self::TABLE_NAME_USER . ' SET `name`=\'' . __FUNCTION__ . '2' . '\' WHERE `userId`=\'' . $userId . '\'');
+        $res[] = $conn->unprepared('DELETE ' . self::TABLE_NAME_USER . ' WHERE `userId`=\'' . $userId . '\'');
 
         $this->assertTrue($res[0]);
         $this->assertTrue($res[1]);
@@ -161,10 +169,12 @@ class ConnectionTest extends TestCase
         $conn = $this->getDefaultConnection();
 
         $executedCount = 0;
-        $this->app['events']->listen(QueryExecuted::class, function ($e) use (&$executedCount) { $executedCount++; });
+        $this->app['events']->listen(QueryExecuted::class, function ($e) use (&$executedCount) {
+            $executedCount++;
+        });
 
         $uuid = $this->generateUuid();
-        $conn->pretend(function(Connection $conn) use ($uuid) {
+        $conn->pretend(function (Connection $conn) use ($uuid) {
             $resSelect = $conn->select('SELECT 12345');
             $this->assertSame([], $resSelect);
 
@@ -317,9 +327,13 @@ class ConnectionTest extends TestCase
     public function testDeleteUsingMutationWithDifferentArgs(): void
     {
         $conn = $this->getDefaultConnection();
-        $userIds = collect(range(0, 4))->map(function() { return $this->generateUuid(); });
-        $conn->transaction(function() use ($conn, $userIds) {
-            $dataSet = $userIds->map(function($userId) { return ['userId' => $userId, 'name' => 'test']; })->all();
+        $userIds = collect(range(0, 4))->map(function () {
+            return $this->generateUuid();
+        });
+        $conn->transaction(function () use ($conn, $userIds) {
+            $dataSet = $userIds->map(function ($userId) {
+                return ['userId' => $userId, 'name' => 'test'];
+            })->all();
             $conn->insertUsingMutation(self::TABLE_NAME_USER, $dataSet);
         });
 
@@ -469,7 +483,7 @@ class ConnectionTest extends TestCase
         $db = (new SpannerClient())->connect(config('database.connections.main.instance'), config('database.connections.main.database'));
         /** @var Timestamp|null $timestamp */
         $timestamp = null;
-        $db->runTransaction(function(Transaction $tx) use ($tableName, $uuid, &$timestamp) {
+        $db->runTransaction(function (Transaction $tx) use ($tableName, $uuid, &$timestamp) {
             $name = 'first';
             $tx->executeUpdate("INSERT INTO {$tableName} (`userId`, `name`) VALUES ('{$uuid}', '{$name}')");
             $timestamp = $tx->commit();
@@ -512,7 +526,7 @@ class ConnectionTest extends TestCase
         $tableName = self::TABLE_NAME_USER;
         $uuid = $this->generateUuid();
 
-        $conn->transaction(function(Connection $conn) use ($tableName, $uuid) {
+        $conn->transaction(function (Connection $conn) use ($tableName, $uuid) {
             $conn->insert("INSERT INTO {$tableName} (`userId`, `name`) VALUES ('{$uuid}', 'first')");
 
             $oldDatetime = now()->subSecond();
@@ -534,9 +548,15 @@ class ConnectionTest extends TestCase
     public function testEventListenOrder(): void
     {
         $receivedEventClasses = [];
-        $this->app['events']->listen(TransactionBeginning::class, function () use (&$receivedEventClasses) { $receivedEventClasses[] = TransactionBeginning::class; });
-        $this->app['events']->listen(QueryExecuted::class, function () use (&$receivedEventClasses) { $receivedEventClasses[] = QueryExecuted::class; });
-        $this->app['events']->listen(TransactionCommitted::class, function () use (&$receivedEventClasses) { $receivedEventClasses[] = TransactionCommitted::class; });
+        $this->app['events']->listen(TransactionBeginning::class, function () use (&$receivedEventClasses) {
+            $receivedEventClasses[] = TransactionBeginning::class;
+        });
+        $this->app['events']->listen(QueryExecuted::class, function () use (&$receivedEventClasses) {
+            $receivedEventClasses[] = QueryExecuted::class;
+        });
+        $this->app['events']->listen(TransactionCommitted::class, function () use (&$receivedEventClasses) {
+            $receivedEventClasses[] = TransactionCommitted::class;
+        });
 
         $conn = $this->getDefaultConnection();
 
