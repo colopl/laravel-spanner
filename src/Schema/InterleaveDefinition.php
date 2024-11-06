@@ -21,6 +21,8 @@ namespace Colopl\Spanner\Schema;
 use Illuminate\Support\Fluent;
 
 /**
+ * @property string $table
+ * @property string|null $onDelete
  * @method $this onDelete(string $action) Add an ON DELETE action
  * @extends Fluent<string, mixed>
  */

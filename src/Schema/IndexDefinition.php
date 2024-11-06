@@ -22,6 +22,12 @@ use Illuminate\Support\Fluent;
 use LogicException;
 
 /**
+ * @property string $indexType
+ * @property string $index
+ * @property array<string, 'desc'|'asc'>|list<string> $columns
+ * @property string|null $interleaveIn
+ * @property bool|null $nullFiltered
+ * @property list<string>|null $storing
  * @method $this interleaveIn(string $table)
  * @method $this nullFiltered()
  * @method $this storing(string[] $columns)
