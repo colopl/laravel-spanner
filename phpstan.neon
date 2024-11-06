@@ -4,8 +4,6 @@ parameters:
         - src
     ignoreErrors:
         - identifier: missingType.iterableValue
-        - '#^Access to an undefined property Illuminate\\Support\\Fluent.*$#'
-        - '#^Call to an undefined method Illuminate\\Support\\Fluent.*$#'
         - '#^Return type \(void\) of method .*? should be compatible with return type \(.*?\) of method .*?$#'
         - message: '#^Method Colopl\\Spanner\\Connection::runPartitionedDml\(\) should return int but returns mixed\.$#'
           path: src/Concerns/ManagesPartitionedDml.php
