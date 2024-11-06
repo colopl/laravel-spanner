@@ -1,6 +1,6 @@
 # v8.3.0 (2024-09-02)
 
-- add support for invisible columns (#)
+- add support for invisible columns (#240)
 - add support for change streams using Blueprint (#230)
 - add support for snapshot queries (#215)
 - deprecate Connection::getDatabaseContext() and move logic to UseMutations::getMutationExecutor() (#227)
