@@ -27,7 +27,6 @@ use Google\Cloud\Spanner\Duration;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Carbon;
 use LogicException;
-
 use Ramsey\Uuid\Uuid;
 use const Grpc\STATUS_ALREADY_EXISTS;
 

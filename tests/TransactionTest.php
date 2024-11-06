@@ -17,11 +17,11 @@
 
 namespace Colopl\Spanner\Tests;
 
+use Colopl\Spanner\Connection;
 use Exception;
 use Google\Cloud\Core\Exception\AbortedException;
 use Google\Cloud\Core\Exception\NotFoundException;
 use Google\Cloud\Spanner\Transaction;
-use Colopl\Spanner\Connection;
 use Google\Cloud\Spanner\TransactionalReadInterface;
 use Illuminate\Database\Events\TransactionBeginning;
 use Illuminate\Database\Events\TransactionCommitted;
