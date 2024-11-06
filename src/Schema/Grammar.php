@@ -23,6 +23,7 @@ use Illuminate\Database\Connection;
 use Illuminate\Contracts\Database\Query\Expression as ExpressionContract;
 use Illuminate\Database\Query\Expression;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Database\Schema\ColumnDefinition;
 use Illuminate\Database\Schema\Grammars\Grammar as BaseGrammar;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
@@ -38,7 +39,7 @@ class Grammar extends BaseGrammar
     /**
      * @inheritdoc
      */
-    protected $modifiers = ['Nullable', 'Default', 'UseSequence'];
+    protected $modifiers = ['Nullable', 'Default', 'Invisible', 'UseSequence'];
 
     /**
      * Compile the query to determine the tables.
@@ -731,6 +732,20 @@ class Grammar extends BaseGrammar
     protected function typeBoolean(Fluent $column)
     {
         return 'bool';
+    }
+
+    /**
+     * Get the SQL for an invisible column modifier.
+     *
+     * @param Blueprint $blueprint
+     * @param ColumnDefinition&object{ invisible: bool } $column
+     * @return string|null
+     */
+    protected function modifyInvisible(Blueprint $blueprint, Fluent $column)
+    {
+        return $column->invisible !== null
+            ? ' hidden'
+            : null;
     }
 
     /**
