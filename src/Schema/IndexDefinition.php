@@ -24,9 +24,9 @@ use LogicException;
 /**
  * @property string $indexType
  * @property string $index
- * @property list<string>|array<string, string> $columns
+ * @property array<string, 'desc'|'asc'>|list<string> $columns
  * @property string|null $interleaveIn
- * @property string|null $nullFiltered
+ * @property bool|null $nullFiltered
  * @property list<string>|null $storing
  * @method $this interleaveIn(string $table)
  * @method $this nullFiltered()
