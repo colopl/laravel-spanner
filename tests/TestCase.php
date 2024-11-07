@@ -167,7 +167,7 @@ abstract class TestCase extends \Orchestra\Testbench\TestCase
     {
         $ddlFile = __DIR__ . '/test.ddl';
         return collect(explode(';', file_get_contents($ddlFile) ?: ''))
-            ->map(trim(...))
+            ->map(static fn($ddl) => trim($ddl))
             ->filter()
             ->all();
     }
