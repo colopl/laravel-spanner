@@ -498,6 +498,7 @@ class Grammar extends BaseGrammar
     protected function addPrimaryKeys(Blueprint $blueprint)
     {
         if (!is_null($primary = $this->getCommandByName($blueprint, 'primary'))) {
+            /** @var IndexDefinition $primary */
             return "primary key ({$this->columnize($primary->columns)})";
         }
         return '';
