@@ -67,7 +67,7 @@ trait ManagesSessionPool
     public function warmupSessionPool(): int
     {
         $sessionPool = $this->getSpannerDatabase()->sessionPool();
-        if($sessionPool !== null && method_exists($sessionPool, 'warmup')) {
+        if ($sessionPool !== null && method_exists($sessionPool, 'warmup')) {
             return $sessionPool->warmup();
         }
         return 0;

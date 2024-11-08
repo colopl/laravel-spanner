@@ -42,13 +42,13 @@ class Builder extends BaseBuilder
 
     /**
      * @inheritDoc Adds a parent key, for tracking interleaving
-     * 
+     *
      * @return list<array{ name: string, type: string, parent: string }>
      */
     public function getTables()
     {
         return $this->connection->select(
-            $this->grammar->compileTables()
+            $this->grammar->compileTables(),
         );
     }
 
@@ -71,7 +71,7 @@ class Builder extends BaseBuilder
      */
     public function dropIndexIfExist($table, $name)
     {
-        if(in_array($name, $this->getIndexes($table), true)) {
+        if (in_array($name, $this->getIndexes($table), true)) {
             $blueprint = $this->createBlueprint($table);
             $blueprint->dropIndex($name);
             $this->build($blueprint);
@@ -97,25 +97,25 @@ class Builder extends BaseBuilder
         $connection = $this->connection;
         $tables = $this->getTables();
 
-        if(count($tables) === 0) {
+        if (count($tables) === 0) {
             return;
         }
-        
+
         $sortedTables = [];
 
         // add parents counter
         foreach ($tables as $table) {
-           $sortedTables[$table['name']] = ['parents' => 0, ...$table];
+            $sortedTables[$table['name']] = ['parents' => 0, ...$table];
         }
 
         // loop through all tables and count how many parents they have
         foreach ($sortedTables as $key => $table) {
-            if(!$table['parent']) {
+            if (!$table['parent']) {
                 continue;
             }
 
             $current = $table;
-            while($current['parent']) {
+            while ($current['parent']) {
                 $table['parents'] += 1;
                 $current = $sortedTables[$current['parent']];
             }
@@ -145,7 +145,7 @@ class Builder extends BaseBuilder
             $indexes = $this->getIndexes($tableName);
             $blueprint = $this->createBlueprint($tableName);
             foreach ($indexes as $index) {
-                if($index === 'PRIMARY_KEY') {
+                if ($index === 'PRIMARY_KEY') {
                     continue;
                 }
                 $blueprint->dropIndex($index);

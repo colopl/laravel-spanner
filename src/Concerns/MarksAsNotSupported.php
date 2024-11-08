@@ -27,6 +27,6 @@ trait MarksAsNotSupported
      */
     protected function markAsNotSupported(string $methodName)
     {
-        throw new BadMethodCallException('Cloud Spanner does not support '.$methodName);
+        throw new BadMethodCallException('Cloud Spanner does not support ' . $methodName);
     }
 }

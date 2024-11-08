@@ -47,15 +47,12 @@ class Parameterizer
             $result = null;
             if ($binding === null) {
                 $result = 'NULL';
-            }
-            else if (is_array($binding) && empty($binding)) {
+            } elseif (is_array($binding) && empty($binding)) {
                 $result = '[]';
-            }
-            else if (is_string($binding) && self::hasLikeWildcard($query, $binding)) {
+            } elseif (is_string($binding) && self::hasLikeWildcard($query, $binding)) {
                 $result = self::createLikeClause($binding);
-            }
-            else {
-                $placeHolder = 'p'.$i;
+            } else {
+                $placeHolder = 'p' . $i;
                 $newBindings[$placeHolder] = $binding;
                 $result = "@$placeHolder";
             }
@@ -85,8 +82,8 @@ class Parameterizer
     private static function createLikeClause(string $value)
     {
         if (Str::contains($value, "\n")) {
-            return "'''".addslashes($value)."'''";
+            return "'''" . addslashes($value) . "'''";
         }
-        return "'".addslashes($value)."'";
+        return "'" . addslashes($value) . "'";
     }
 }

@@ -39,7 +39,7 @@ class ManagesDataDefinitionsTest extends TestCase
         $this->assertSame($statement, $conn->getQueryLog()[0]['query']);
         $this->assertCount(1, $conn->getQueryLog());
         Event::assertDispatchedTimes(QueryExecuted::class, 1);
-        $this->assertContains($newTable, array_map(fn ($d) => $d['name'], $conn->getSchemaBuilder()->getTables()));
+        $this->assertContains($newTable, array_map(fn($d) => $d['name'], $conn->getSchemaBuilder()->getTables()));
     }
 
     public function test_runDdlBatch_within_pretend(): void
@@ -86,13 +86,13 @@ class ManagesDataDefinitionsTest extends TestCase
         if (!empty(getenv('SPANNER_EMULATOR_HOST'))) {
             $this->setUpEmulatorInstance($conn);
         }
-        $this->beforeApplicationDestroyed(static fn () => $conn->clearSessionPool());
+        $this->beforeApplicationDestroyed(static fn() => $conn->clearSessionPool());
 
         $conn->setEventDispatcher($events);
         $conn->enableQueryLog();
 
         $statements = array_map(
-            static fn () => "create table " . 'createDatabase_' . md5(uniqid('', true)) . " (id int64) primary key (id)",
+            static fn() => "create table " . 'createDatabase_' . md5(uniqid('', true)) . " (id int64) primary key (id)",
             range(0, 1),
         );
         $conn->createDatabase($statements);

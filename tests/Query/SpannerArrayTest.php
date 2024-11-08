@@ -51,7 +51,7 @@ class SpannerArrayTest extends TestCase
         $insertValues = [];
         for ($i = 0; $i < $testDataCount; $i++) {
             $row = $this->generateArrayTestRow();
-            $row['int64Array'] = [$i, $i+1, $i+2];
+            $row['int64Array'] = [$i, $i + 1, $i + 2];
             $insertValues[] = $row;
         }
         $qb = $conn->table($tableName);

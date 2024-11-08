@@ -126,7 +126,7 @@ abstract class TestCase extends \Orchestra\Testbench\TestCase
     {
         $spanner = new SpannerClient((array)$conn->getConfig('client'));
         $name = (string)$conn->getConfig('instance');
-        if (! $spanner->instance($name)->exists()) {
+        if (!$spanner->instance($name)->exists()) {
             $config = $spanner->instanceConfiguration('emulator-config');
             $spanner->createInstance($config, $name)->pollUntilComplete();
             logger()?->debug('Created Spanner Emulator Instance: ' . $name);
@@ -145,7 +145,7 @@ abstract class TestCase extends \Orchestra\Testbench\TestCase
         if (!$conn->databaseExists()) {
             $conn->createDatabase($this->getTestDatabaseDDLs());
         }
-        $this->beforeApplicationDestroyed(fn () => $this->cleanupDatabase($conn));
+        $this->beforeApplicationDestroyed(fn() => $this->cleanupDatabase($conn));
     }
 
     /**
@@ -167,7 +167,7 @@ abstract class TestCase extends \Orchestra\Testbench\TestCase
     {
         $ddlFile = __DIR__ . '/test.ddl';
         return collect(explode(';', file_get_contents($ddlFile) ?: ''))
-            ->map(function($ddl) { return trim($ddl); })
+            ->map(static fn($ddl) => trim($ddl))
             ->filter()
             ->all();
     }

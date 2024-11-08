@@ -242,7 +242,7 @@ class ModelTest extends TestCase
         $this->assertDatabaseHas($user->getTable(), ['userId' => $user->userId, 'name' => $user->name]);
 
         // update
-        $afterName = 'after update '.$user->name;
+        $afterName = 'after update ' . $user->name;
         $user->name = $afterName;
         $user->save();
         $this->assertDatabaseHas($user->getTable(), ['userId' => $user->userId, 'name' => $afterName]);
@@ -427,7 +427,7 @@ class ModelTest extends TestCase
             return response()->noContent(200);
         });
 
-        $this->get('/b/'.$record->id)
+        $this->get('/b/' . $record->id)
             ->assertOk();
 
         $this->assertSame($record->id, $result->id);
@@ -454,7 +454,7 @@ class ModelTest extends TestCase
             return response()->noContent(200);
         });
 
-        $this->get('/p/'.$parentRecord->id.'/c/'.$childRecord->childId)
+        $this->get('/p/' . $parentRecord->id . '/c/' . $childRecord->childId)
             ->assertOk();
 
         $this->assertSame($parentRecord->id, $results[0]->id);
@@ -477,7 +477,7 @@ class ModelTest extends TestCase
         $this->assertStringContainsString('`userId`', $queryLogs[0]['query']);
         $this->assertSame(
             [$user->getKey(), $userInfo->getKey()],
-            $queryLogs[0]['bindings']
+            $queryLogs[0]['bindings'],
         );
 
         DB::flushQueryLog();
@@ -490,7 +490,7 @@ class ModelTest extends TestCase
         $this->assertStringContainsString('`userId`', $queryLogs[0]['query']);
         $this->assertSame(
             [$user->getKey(), $userInfo->getKey()],
-            $queryLogs[0]['bindings']
+            $queryLogs[0]['bindings'],
         );
     }
 }

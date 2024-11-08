@@ -102,7 +102,7 @@ class BlueprintTest extends TestCase
                 '`id` string(36) not null default (generate_uuid())',
                 '`name` string(255) not null',
             ]) . ') primary key (`id`)',
-            $queries[0]
+            $queries[0],
         );
 
         $conn->runDdlBatch($queries);
@@ -251,7 +251,7 @@ class BlueprintTest extends TestCase
 
         $statements = $blueprint->toSql($conn, new Grammar());
         $this->assertSame([
-            "create table `{$tableName}` (`id` string(36) not null, `number` int64 not null, `name` string(255) not null) primary key (`id`, `number`)"
+            "create table `{$tableName}` (`id` string(36) not null, `number` int64 not null, `name` string(255) not null) primary key (`id`, `number`)",
         ], $statements);
     }
 
@@ -287,7 +287,7 @@ class BlueprintTest extends TestCase
 
         $statements = $blueprint->toSql($conn, new Grammar());
         $this->assertSame([
-            "create table `{$childTableName}` (`id` string(36) not null, `pid` string(36) not null, `name` string(255) not null) primary key (`pid`), interleave in parent `{$parentTableName}` on delete cascade"
+            "create table `{$childTableName}` (`id` string(36) not null, `pid` string(36) not null, `name` string(255) not null) primary key (`pid`), interleave in parent `{$parentTableName}` on delete cascade",
         ], $statements);
     }
 
@@ -538,7 +538,7 @@ class BlueprintTest extends TestCase
 
         $blueprint = new Blueprint('_', fn(Blueprint $table) => $table->createChangeStream($name)
             ->for(self::TABLE_NAME_TEST)
-            ->for(self::TABLE_NAME_USER)
+            ->for(self::TABLE_NAME_USER),
         );
         $blueprint->build($conn, $grammar);
 
@@ -736,7 +736,7 @@ class BlueprintTest extends TestCase
                 '`date_array` array<date> not null default ([date "2022-01-01"])',
                 '`timestamp_array` array<timestamp> not null default ([timestamp "2022-01-01T00:00:00.000000+00:00"])',
             ]) . ') primary key (`id`)'
-        , $statements[2]);
+            , $statements[2]);
 
         $blueprint->build($conn, $grammar);
         $query = $conn->table($tableName);
@@ -808,7 +808,7 @@ class BlueprintTest extends TestCase
             $blueprint->create();
             $this->assertSame(
                 ['create table `' . $table . '` (`id` string(36) not null default (generate_uuid())) primary key (`id`)'],
-                $blueprint->toSql($conn, $grammar)
+                $blueprint->toSql($conn, $grammar),
             );
         }
 
@@ -836,9 +836,9 @@ class BlueprintTest extends TestCase
 
         $statements = $blueprint->toSql($conn, new Grammar());
         $this->assertSame([
-                'create index `useritem_userid_createdat_index` on `UserItem` (`userId`, `createdAt`), interleave in `User`',
-            ],
-            $statements
+            'create index `useritem_userid_createdat_index` on `UserItem` (`userId`, `createdAt`), interleave in `User`',
+        ],
+            $statements,
         );
     }
 
@@ -865,7 +865,7 @@ class BlueprintTest extends TestCase
 
         $statements = $blueprint->toSql($conn, new Grammar());
         $this->assertSame([
-            'create null_filtered index `useritem_userid_index` on `UserItem` (`userId`)'
+            'create null_filtered index `useritem_userid_index` on `UserItem` (`userId`)',
         ], $statements);
     }
 }

@@ -19,8 +19,8 @@ namespace Colopl\Spanner\Schema;
 
 use Colopl\Spanner\Concerns\SharedGrammarCalls;
 use DateTimeInterface;
-use Illuminate\Database\Connection;
 use Illuminate\Contracts\Database\Query\Expression as ExpressionContract;
+use Illuminate\Database\Connection;
 use Illuminate\Database\Query\Expression;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Schema\Grammars\Grammar as BaseGrammar;
@@ -53,35 +53,35 @@ class Grammar extends BaseGrammar
     /**
      * Compile the query to determine the list of indexes.
      *
-     * @param  string  $table
+     * @param string $table
      * @return string
      */
     public function compileIndexes($table)
     {
         return sprintf(
             'select index_name as `index_name` from information_schema.indexes where table_schema = \'\' and table_name = %s',
-            $this->quoteString($table)
+            $this->quoteString($table),
         );
     }
 
     /**
      * Compile the query to determine the list of foreign keys.
      *
-     * @param  string  $table
+     * @param string $table
      * @return string
      */
     public function compileForeignKeys($table)
     {
         return sprintf(
             'select constraint_name as `key_name` from information_schema.table_constraints where constraint_type = "FOREIGN KEY" and table_schema = \'\' and table_name = %s',
-            $this->quoteString($table)
+            $this->quoteString($table),
         );
     }
 
     /**
      * Compile the query to determine the columns.
      *
-     * @param  string  $table
+     * @param string $table
      * @return string
      */
     public function compileColumns($table)
@@ -95,8 +95,8 @@ class Grammar extends BaseGrammar
     /**
      * Compile a create table command.
      *
-     * @param  Blueprint  $blueprint
-     * @param  Fluent<string, mixed> $command
+     * @param Blueprint $blueprint
+     * @param Fluent<string, mixed> $command
      * @return string
      */
     public function compileCreate(Blueprint $blueprint, Fluent $command)
@@ -106,15 +106,15 @@ class Grammar extends BaseGrammar
             implode(', ', $this->getColumns($blueprint)),
             $this->addPrimaryKeys($blueprint),
             $this->addInterleaveToTable($blueprint),
-            $this->addRowDeletionPolicy($blueprint)
+            $this->addRowDeletionPolicy($blueprint),
         );
     }
 
     /**
      * Compile an add column command.
      *
-     * @param  Blueprint  $blueprint
-     * @param  Fluent<string, mixed>&object{ column: ColumnDefinition } $command
+     * @param Blueprint  $blueprint
+     * @param Fluent<string, mixed>&object{ column: ColumnDefinition } $command
      * @return list<string>|string
      */
     public function compileAdd(Blueprint $blueprint, Fluent $command)
@@ -133,9 +133,9 @@ class Grammar extends BaseGrammar
     /**
      * Compile a change column command into a series of SQL statements.
      *
-     * @param  Blueprint  $blueprint
-     * @param  Fluent<string, mixed>&object{ column: ColumnDefinition } $command
-     * @param  Connection $connection
+     * @param Blueprint $blueprint
+     * @param Fluent<string, mixed>&object{ column: ColumnDefinition } $command
+     * @param Connection $connection
      * @return list<string>|string
      */
     public function compileChange(Blueprint $blueprint, Fluent $command, Connection $connection)
@@ -154,15 +154,15 @@ class Grammar extends BaseGrammar
     /**
      * Compile a drop column command.
      *
-     * @param  Blueprint  $blueprint
-     * @param  Fluent<string, mixed>&object{ columns: list<string> } $command
+     * @param Blueprint $blueprint
+     * @param Fluent<string, mixed>&object{ columns: list<string> } $command
      * @return string[]
      */
     public function compileDropColumn(Blueprint $blueprint, Fluent $command)
     {
         return $this->prefixArray(
-            'alter table '.$this->wrapTable($blueprint).' drop column',
-            $this->wrapArray($command->columns)
+            'alter table ' . $this->wrapTable($blueprint) . ' drop column',
+            $this->wrapArray($command->columns),
         );
     }
 
@@ -174,7 +174,7 @@ class Grammar extends BaseGrammar
     public function compileAddRowDeletionPolicy(Blueprint $blueprint, Fluent $command)
     {
         if ($command->policy !== 'olderThan') {
-            throw new RuntimeException('Unknown deletion policy:'.$command->policy);
+            throw new RuntimeException('Unknown deletion policy:' . $command->policy);
         }
         $table = $this->wrapTable($blueprint);
         $column = $this->wrap($command->column);
@@ -189,7 +189,7 @@ class Grammar extends BaseGrammar
     public function compileReplaceRowDeletionPolicy(Blueprint $blueprint, Fluent $command)
     {
         if ($command->policy !== 'olderThan') {
-            throw new RuntimeException('Unknown deletion policy:'.$command->policy);
+            throw new RuntimeException('Unknown deletion policy:' . $command->policy);
         }
         $table = $this->wrapTable($blueprint);
         $column = $this->wrap($command->column);
@@ -203,7 +203,7 @@ class Grammar extends BaseGrammar
      */
     public function compileDropRowDeletionPolicy(Blueprint $blueprint, Fluent $command)
     {
-        return 'alter table '.$this->wrapTable($blueprint).' drop row deletion policy';
+        return 'alter table ' . $this->wrapTable($blueprint) . ' drop row deletion policy';
     }
 
     /**
@@ -353,10 +353,10 @@ class Grammar extends BaseGrammar
      */
     protected function addInterleaveToTable(Blueprint $blueprint)
     {
-        if (! is_null($command = $this->getCommandByName($blueprint, 'interleaveInParent'))) {
+        if (!is_null($command = $this->getCommandByName($blueprint, 'interleaveInParent'))) {
             assert($command instanceof InterleaveDefinition);
             $schema = ", interleave in parent {$this->wrap($command->table)}";
-            if (! is_null($command->onDelete)) {
+            if (!is_null($command->onDelete)) {
                 $schema .= " on delete {$command->onDelete}";
             }
             return $schema;
@@ -371,12 +371,12 @@ class Grammar extends BaseGrammar
      */
     protected function addRowDeletionPolicy(Blueprint $blueprint)
     {
-        if (! is_null($command = $this->getCommandByName($blueprint, 'rowDeletionPolicy'))) {
+        if (!is_null($command = $this->getCommandByName($blueprint, 'rowDeletionPolicy'))) {
             /** @var RowDeletionPolicyDefinition $command */
             if ($command->policy === 'olderThan') {
-                return ', row deletion policy (older_than('.$command->column.', interval '.$command->days.' day))';
+                return ', row deletion policy (older_than(' . $command->column . ', interval ' . $command->days . ' day))';
             }
-            throw new RuntimeException('Unknown deletion policy:'.$command->policy);
+            throw new RuntimeException('Unknown deletion policy:' . $command->policy);
         }
         return '';
     }
@@ -384,8 +384,8 @@ class Grammar extends BaseGrammar
     /**
      * Compile a unique key command.
      *
-     * @param  Blueprint  $blueprint
-     * @param  IndexDefinition $command
+     * @param Blueprint $blueprint
+     * @param IndexDefinition $command
      * @return string
      */
     public function compileUnique(Blueprint $blueprint, Fluent $command)
@@ -397,7 +397,7 @@ class Grammar extends BaseGrammar
     /**
      * Compile a plain index key command.
      *
-     * @param Blueprint  $blueprint
+     * @param Blueprint $blueprint
      * @param IndexDefinition $command
      * @return string
      * @see https://cloud.google.com/spanner/docs/data-definition-language?hl=en#create_index
@@ -414,13 +414,13 @@ class Grammar extends BaseGrammar
         }
 
         return sprintf('create %s%sindex %s on %s (%s)%s%s',
-            empty($command->indexType) ? '' : trim($command->indexType).' ',
-            empty($command->nullFiltered) ? '' :'null_filtered ',
+            empty($command->indexType) ? '' : trim($command->indexType) . ' ',
+            empty($command->nullFiltered) ? '' : 'null_filtered ',
             $this->wrap($command->index),
             $this->wrapTable($blueprint),
             implode(', ', $columns),
             $this->addStoringToIndex($command),
-            $this->addInterleaveToIndex($command)
+            $this->addInterleaveToIndex($command),
         );
     }
 
@@ -448,7 +448,7 @@ class Grammar extends BaseGrammar
         foreach ($indexCommand->storing as $value) {
             $storings[] = $this->wrap($value);
         }
-        return ' storing ('.implode(', ', $storings).')';
+        return ' storing (' . implode(', ', $storings) . ')';
     }
 
     /**
@@ -460,7 +460,7 @@ class Grammar extends BaseGrammar
     public function compileDropIndex(Blueprint $blueprint, Fluent $command)
     {
         return sprintf('drop index %s',
-            $this->wrap($command->index)
+            $this->wrap($command->index),
         );
     }
 
@@ -478,7 +478,7 @@ class Grammar extends BaseGrammar
     /**
      * Compile a drop foreign key command.
      *
-     * @param  Blueprint  $blueprint
+     * @param Blueprint $blueprint
      * @param IndexDefinition $command
      * @return string
      */
@@ -492,12 +492,12 @@ class Grammar extends BaseGrammar
     /**
      * Get the primary key syntax for a table creation statement.
      *
-     * @param  Blueprint  $blueprint
+     * @param Blueprint $blueprint
      * @return string
      */
     protected function addPrimaryKeys(Blueprint $blueprint)
     {
-        if (! is_null($primary = $this->getCommandByName($blueprint, 'primary'))) {
+        if (!is_null($primary = $this->getCommandByName($blueprint, 'primary'))) {
             /** @var IndexDefinition $primary */
             return "primary key ({$this->columnize($primary->columns)})";
         }
@@ -508,26 +508,26 @@ class Grammar extends BaseGrammar
      * Compile a drop table command.
      * Note: you can't drop a table if there are indexes over it, or if there are any tables or indexes interleaved within it.
      *
-     * @param  Blueprint  $blueprint
-     * @param  Fluent<string, mixed> $command
+     * @param Blueprint $blueprint
+     * @param Fluent<string, mixed> $command
      * @return string
      * @see https://cloud.google.com/spanner/docs/data-definition-language?hl=en#drop_table
      */
     public function compileDrop(Blueprint $blueprint, Fluent $command)
     {
-        return 'drop table '.$this->wrapTable($blueprint);
+        return 'drop table ' . $this->wrapTable($blueprint);
     }
 
     /**
      * Compile a drop table (if exists) command.
      *
-     * @param  Blueprint  $blueprint
-     * @param  Fluent<string, mixed> $command
+     * @param Blueprint $blueprint
+     * @param Fluent<string, mixed> $command
      * @return string
      */
     public function compileDropIfExists(Blueprint $blueprint, Fluent $command)
     {
-        return 'drop table if exists '.$this->wrapTable($blueprint);
+        return 'drop table if exists ' . $this->wrapTable($blueprint);
     }
 
     /**
@@ -768,7 +768,7 @@ class Grammar extends BaseGrammar
     protected function getArrayInnerType(Fluent $column): string
     {
         assert($column->arrayType !== null);
-        return $this->{'type'.ucfirst($column->arrayType)}($column);
+        return $this->{'type' . ucfirst($column->arrayType)}($column);
     }
 
     /**
@@ -929,7 +929,7 @@ class Grammar extends BaseGrammar
             // Each of the column types have their own compiler functions which are tasked
             // with turning the column definition into its SQL format for this platform
             // used by the connection. The column's modifiers are compiled and added.
-            $sql = $this->wrap($column).' '.$this->getType($column);
+            $sql = $this->wrap($column) . ' ' . $this->getType($column);
 
             $columns[] = $this->addModifiers($sql, $blueprint, $column);
         }

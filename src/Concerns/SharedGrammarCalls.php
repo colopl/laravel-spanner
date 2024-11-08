@@ -39,7 +39,7 @@ trait SharedGrammarCalls
             return $value;
         }
 
-        return '`'.str_replace('`', '``', $value).'`';
+        return '`' . str_replace('`', '``', $value) . '`';
     }
 
 }
