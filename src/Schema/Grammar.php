@@ -780,13 +780,10 @@ class Grammar extends BaseGrammar
      */
     protected function typeTokenList(Fluent $column): string
     {
-        return 'tokenlist as (' . implode(' ', array_filter([
-            $column->function->value,
-            '(',
+        return 'tokenlist as (' . $column->function->value . '(' . implode(', ', array_filter([
             $this->wrap($column->target),
             $this->formatOptions($column->options, ' => '),
-            ')',
-        ])) . ')';
+        ])) . '))';
     }
 
     /**
