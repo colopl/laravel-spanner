@@ -17,7 +17,10 @@
 
 namespace Colopl\Spanner\Concerns;
 
+use BackedEnum;
 use Illuminate\Database\Grammar;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 
 trait SharedGrammarCalls
 {
@@ -42,4 +45,30 @@ trait SharedGrammarCalls
         return '`' . str_replace('`', '``', $value) . '`';
     }
 
+    /**
+     * @param array<string, scalar|BackedEnum> $options
+     * @param string $delimiter
+     * @return string
+     */
+    protected function formatOptions(array $options, string $delimiter = '='): string
+    {
+        $mapped = Arr::map($options, function (mixed $v, string $k) use ($delimiter): string {
+            return Str::snake($k) . $delimiter . $this->formatOptionValue($v);
+        });
+        return implode(', ', $mapped);
+    }
+
+    /**
+     * @param scalar|BackedEnum $value
+     * @return string
+     */
+    protected function formatOptionValue(mixed $value): string
+    {
+        return match (true) {
+            is_bool($value) => $value ? 'true' : 'false',
+            is_string($value) => $this->quoteString($value),
+            $value instanceof BackedEnum => $this->formatOptionValue($value->value),
+            default => (string) $value,
+        };
+    }
 }
