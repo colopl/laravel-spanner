@@ -298,7 +298,7 @@ class Blueprint extends BaseBlueprint
 
         $this->commands[] = $command = new SearchIndexDefinition([
             'name' => $type,
-            'index' => $name ?: $this->createIndexName($type, $columns),
+            'index' => $name ?? $this->createIndexName($type, $columns),
             'columns' => $columns,
             'algorithm' => $algorithm,
         ]);
