@@ -255,6 +255,30 @@ class BlueprintTest extends TestCase
         ], $statements);
     }
 
+    public function test_invisible_columns(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $grammar = new Grammar();
+        $tableName = $this->generateTableName('Invisible');
+
+        $blueprint = new Blueprint($tableName, function (Blueprint $table) {
+            $table->create();
+            $table->integer('id')->primary();
+            $table->string('name')->nullable()->invisible();
+        });
+
+        $this->assertSame([
+            "create table `{$tableName}` (`id` int64 not null, `name` string(255) hidden) primary key (`id`)",
+        ], $blueprint->toSql($conn, $grammar));
+
+        $blueprint->build($conn, $grammar);
+
+        $conn->table($tableName)->insert(['id' => 1, 'name' => 'test']);
+        $row = $conn->table($tableName)->first();
+        $this->assertArrayHasKey('id', $row);
+        $this->assertArrayNotHasKey('name', $row);
+    }
+
     public function test_interleaving(): void
     {
         $conn = $this->getDefaultConnection();
