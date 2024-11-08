@@ -22,7 +22,6 @@ use Colopl\Spanner\Concerns\SharedGrammarCalls;
 use Illuminate\Contracts\Database\Query\Expression;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Database\Query\Grammars\Grammar as BaseGrammar;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use RuntimeException;
 
