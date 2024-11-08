@@ -52,7 +52,7 @@ trait SharedGrammarCalls
      */
     protected function formatOptions(array $options, string $delimiter = '='): string
     {
-        $mapped = Arr::map($options, function (mixed $v, string $k) use ($delimiter): string {
+        $mapped = Arr::map($options, function (int|float|bool|string|BackedEnum $v, string $k) use ($delimiter): string {
             return Str::snake($k) . $delimiter . $this->formatOptionValue($v);
         });
         return implode(', ', $mapped);
