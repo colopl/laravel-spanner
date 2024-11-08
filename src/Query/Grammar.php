@@ -182,11 +182,11 @@ class Grammar extends BaseGrammar
         $tokens = $this->wrap($where['tokens']);
         $rawQuery = $where['query'];
         $options = $where['options'];
-        return $function . '(' . implode(', ', [
+        return $function . '(' . implode(', ', array_filter([
             $tokens,
             $this->quoteString($rawQuery),
-            ...Arr::map($options, fn($v, $k) => "$k => {$this->formatOptionValue($v)}"),
-        ]) . ')';
+            $this->formatOptions($options, ' => '),
+        ])) . ')';
     }
 
     /**

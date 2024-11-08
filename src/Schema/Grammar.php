@@ -201,7 +201,7 @@ class Grammar extends BaseGrammar
         $schema .= $this->addInterleaveToIndex($command);
 
         $schema .= $command->getOptions() !== []
-            ? ' ' . $this->formatOptions($command->getOptions())
+            ? ' options (' . $this->formatOptions($command->getOptions()) . ')'
             : '';
 
         return $schema;
@@ -780,16 +780,13 @@ class Grammar extends BaseGrammar
      */
     protected function typeTokenList(Fluent $column): string
     {
-        $args = [];
-        $args[] = $this->wrap($column->target);
-        foreach ($column->options as $key => $value) {
-            $args[] = "{$key} => {$this->formatOptionValue($value)}";
-        }
-
-        $function = $column->function;
-        assert($function instanceof TokenizerFunction);
-
-        return 'tokenlist as (' . $function->value . '(' . implode(', ', $args) . '))';
+        return 'tokenlist as (' . implode(' ', array_filter([
+            $column->function->value,
+            '(',
+            $this->wrap($column->target),
+            $this->formatOptions($column->options, ' => '),
+            ')',
+        ])) . ')';
     }
 
     /**
