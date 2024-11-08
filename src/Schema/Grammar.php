@@ -262,10 +262,7 @@ class Grammar extends BaseGrammar
      */
     protected function formatSequenceOptions(mixed $definition): string
     {
-        $optionAsStrings = Arr::map($definition->getOptions(), function (mixed $v, string $k): string {
-            return Str::snake($k) . '=' . (is_string($v) ? $this->quoteString($v) : $v);
-        });
-        return 'options (' . implode(', ', $optionAsStrings) . ')';
+        return 'options (' . $this->formatOptions($definition->getOptions()) . ')';
     }
 
     /**
@@ -330,20 +327,9 @@ class Grammar extends BaseGrammar
     {
         $options = $definition->getOptions();
 
-        if ($options === []) {
-            return '';
-        }
-
-        $optionAsStrings = Arr::map($options, function (mixed $v, string $k): string {
-            return Str::snake($k) . '=' . match (true) {
-                $v === true => 'true',
-                $v === false => 'false',
-                is_string($v) => $this->quoteString($v),
-                $v instanceof ChangeStreamValueCaptureType => $this->quoteString($v->value),
-                default => throw new LogicException('Unsupported option value: ' . $v),
-            };
-        });
-        return 'options (' . implode(', ', $optionAsStrings) . ')';
+        return $options !== []
+            ? 'options (' . $this->formatOptions($options) . ')'
+            : '';
     }
 
     /**

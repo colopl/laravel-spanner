@@ -1,5 +1,6 @@
-# v8.3.0 (2024-09-02)
+# v8.3.0 (2024-11-08)
 
+- consolidate schema options formatting (#241)
 - add support for invisible columns (#240)
 - add support for change streams using Blueprint (#230)
 - add support for snapshot queries (#215)
