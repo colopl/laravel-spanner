@@ -22,6 +22,7 @@ use Colopl\Spanner\Concerns\SharedGrammarCalls;
 use Illuminate\Contracts\Database\Query\Expression;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Database\Query\Grammars\Grammar as BaseGrammar;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use RuntimeException;
 
@@ -139,6 +140,53 @@ class Grammar extends BaseGrammar
         return $this->wrap($where['column'])
             . ($where['not'] ? ' not' : '')
             . ' in unnest(?)';
+    }
+
+    /**
+     * @param Builder $query
+     * @param array{ tokens: string, query: string, options: array<string, scalar> } $where
+     * @return string
+     */
+    protected function whereSearchFullText(Builder $query, array $where): string
+    {
+        return $this->buildSearchFunction('search', $where);
+    }
+
+    /**
+     * @param Builder $query
+     * @param array{ tokens: string, query: string, options: array<string, scalar> } $where
+     * @return string
+     */
+    protected function whereSearchNgrams(Builder $query, array $where): string
+    {
+        return $this->buildSearchFunction('search_ngrams', $where);
+    }
+
+    /**
+     * @param Builder $query
+     * @param array{ tokens: string, query: string, options: array<string, scalar> } $where
+     * @return string
+     */
+    protected function whereSearchSubstring(Builder $query, array $where): string
+    {
+        return $this->buildSearchFunction('search_substring', $where);
+    }
+
+    /**
+     * @param string $function
+     * @param array{ tokens: string, query: string, options: array<string, scalar> } $where
+     * @return string
+     */
+    protected function buildSearchFunction(string $function, array $where): string
+    {
+        $tokens = $this->wrap($where['tokens']);
+        $rawQuery = $where['query'];
+        $options = $where['options'];
+        return $function . '(' . implode(', ', [
+            $tokens,
+            $this->quoteString($rawQuery),
+            ...Arr::map($options, fn($v, $k) => "$k => {$this->formatOptionValue($v)}"),
+        ]) . ')';
     }
 
     /**

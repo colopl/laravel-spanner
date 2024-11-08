@@ -20,6 +20,8 @@ namespace Colopl\Spanner\Tests\Query;
 use BadMethodCallException;
 use Colopl\Spanner\Query\Builder;
 use Colopl\Spanner\Schema\Blueprint;
+use Colopl\Spanner\Schema\Grammar;
+use Colopl\Spanner\Schema\TokenizerFunction;
 use Colopl\Spanner\Tests\TestCase;
 use Colopl\Spanner\TimestampBound\ExactStaleness;
 use Google\Cloud\Spanner\Bytes;
@@ -1099,5 +1101,101 @@ class BuilderTest extends TestCase
         config()->set('database.connections.main.parameter_unnest_threshold', false);
         $query = $this->getDefaultConnection()->table(self::TABLE_NAME_USER);
         $query->whereIn('userId', array_map(Uuid::uuid4()->toString(...), range(1, 1000)))->get();
+    }
+
+    public function test_search(): void
+    {
+        $tableName = $this->generateTableName('FTS_Search');
+        $conn = $this->getDefaultConnection();
+        $grammar = new Grammar();
+        $blueprint = new Blueprint($tableName, function (Blueprint $table) {
+            $table->create();
+            $table->uuid('id')->primary();
+            $table->string('name');
+            $table->tokenList('nameTokens', TokenizerFunction::FullText, 'name');
+            $table->fullText('nameTokens');
+        });
+        $blueprint->build($conn, $grammar);
+
+        $conn->table($tableName)->insert([
+            ['id' => $this->generateUuid(), 'name' => 'test1'],
+            ['id' => $this->generateUuid(), 'name' => 'test2'],
+        ]);
+
+        $query = $conn->table($tableName)->searchFullText('nameTokens', 'test0 OR test1 OR test2');
+        $this->assertSame("select * from `{$tableName}` where search(`nameTokens`, 'test0 OR test1 OR test2')", $query->toRawSql());
+        $this->assertSame(['test1', 'test2'], $query->pluck('name')->sort()->values()->all());
+    }
+
+    public function test_search_with_options(): void
+    {
+        $tableName = $this->generateTableName('FTS_Search');
+        $conn = $this->getDefaultConnection();
+        $grammar = new Grammar();
+        $blueprint = new Blueprint($tableName, function (Blueprint $table) {
+            $table->create();
+            $table->uuid('id')->primary();
+            $table->string('name');
+            $table->tokenList('nameTokens', TokenizerFunction::FullText, 'name');
+            $table->fullText('nameTokens');
+        });
+        $blueprint->build($conn, $grammar);
+
+        $conn->table($tableName)->insert([
+            ['id' => $this->generateUuid(), 'name' => 'test1'],
+            ['id' => $this->generateUuid(), 'name' => 'test2'],
+        ]);
+
+        $query = $conn->table($tableName)->searchFullText('nameTokens', 'test1', ['enhance_query' => true]);
+        $this->assertSame("select * from `{$tableName}` where search(`nameTokens`, 'test1', enhance_query => true)", $query->toRawSql());
+        $this->assertSame(['test1'], $query->pluck('name')->sort()->values()->all());
+    }
+
+    public function test_searchNgrams(): void
+    {
+        $tableName = $this->generateTableName('FTS_Search_Ngrams');
+        $conn = $this->getDefaultConnection();
+        $grammar = new Grammar();
+        $blueprint = new Blueprint($tableName, function (Blueprint $table) {
+            $table->create();
+            $table->uuid('id')->primary();
+            $table->string('name');
+            $table->tokenList('nameTokens', TokenizerFunction::Ngrams, 'name');
+            $table->fullText('nameTokens');
+        });
+        $blueprint->build($conn, $grammar);
+
+        $conn->table($tableName)->insert([
+            ['id' => $this->generateUuid(), 'name' => 'test1'],
+            ['id' => $this->generateUuid(), 'name' => 'test2'],
+        ]);
+
+        $query = $conn->table($tableName)->searchNgrams('nameTokens', 't1', ['min_ngrams' => 3]);
+        $this->assertSame("select * from `{$tableName}` where search_ngrams(`nameTokens`, 't1', min_ngrams => 3)", $query->toRawSql());
+        $this->assertSame(['test1'], $query->pluck('name')->sort()->values()->all());
+    }
+
+    public function test_searchSubstring(): void
+    {
+        $tableName = $this->generateTableName('FTS_Search_Substring');
+        $conn = $this->getDefaultConnection();
+        $grammar = new Grammar();
+        $blueprint = new Blueprint($tableName, function (Blueprint $table) {
+            $table->create();
+            $table->uuid('id')->primary();
+            $table->string('name');
+            $table->tokenList('nameTokens', TokenizerFunction::Substring, 'name');
+            $table->fullText('nameTokens');
+        });
+        $blueprint->build($conn, $grammar);
+
+        $conn->table($tableName)->insert([
+            ['id' => $this->generateUuid(), 'name' => 'test1'],
+            ['id' => $this->generateUuid(), 'name' => 'test2'],
+        ]);
+
+        $query = $conn->table($tableName)->searchSubstring('nameTokens', 't1');
+        $this->assertSame("select * from `{$tableName}` where search_substring(`nameTokens`, 't1')", $query->toRawSql());
+        $this->assertSame(['test1'], $query->pluck('name')->sort()->values()->all());
     }
 }

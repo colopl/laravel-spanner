@@ -17,6 +17,7 @@
 
 namespace Colopl\Spanner\Schema;
 
+use BackedEnum;
 use Colopl\Spanner\Concerns\SharedGrammarCalls;
 use DateTimeInterface;
 use Illuminate\Contracts\Database\Query\Expression as ExpressionContract;
@@ -163,6 +164,60 @@ class Grammar extends BaseGrammar
         return $this->prefixArray(
             'alter table ' . $this->wrapTable($blueprint) . ' drop column',
             $this->wrapArray($command->columns),
+        );
+    }
+
+    /**
+     * Compile a fulltext index key command.
+     *
+     * @param Blueprint $blueprint
+     * @param SearchIndexDefinition $command
+     * @return string
+     */
+    public function compileFullText(Blueprint $blueprint, Fluent $command): string
+    {
+        $schema = sprintf('create search index %s on %s(%s)',
+            $this->wrap($command->index),
+            $this->wrapTable($blueprint),
+            $this->columnize($command->columns),
+        );
+
+        $schema .= $this->addStoringToIndex($command);
+
+        $partitionBy = (array) $command->partitionBy;
+        if (count($partitionBy) > 0) {
+            $schema .= ' partition by ' . $this->columnize($partitionBy);
+        }
+
+        if (isset($command->orderBy)) {
+            $schema .= ' order by ';
+            foreach ($command->orderBy as $column => $order) {
+                $schema .= is_string($column)
+                    ? $this->wrap($column) . ' ' . $order
+                    : $this->wrap($order);
+            }
+        }
+
+        $schema .= $this->addInterleaveToIndex($command);
+
+        $schema .= $command->getOptions() !== []
+            ? ' ' . $this->formatOptions($command->getOptions())
+            : '';
+
+        return $schema;
+    }
+
+    /**
+     * Compile a drop fulltext index command.
+     *
+     * @param Blueprint $blueprint
+     * @param Fluent<string, mixed>&object{ index: string } $command
+     * @return string
+     */
+    public function compileDropFullText(Blueprint $blueprint, Fluent $command): string
+    {
+        return sprintf('drop search index %s',
+            $this->wrap($command->index),
         );
     }
 
@@ -717,6 +772,24 @@ class Grammar extends BaseGrammar
     protected function typeBoolean(Fluent $column)
     {
         return 'bool';
+    }
+
+    /**
+     * @param Fluent<string, mixed>&object{ function: TokenizerFunction, target: string, options: array<string, scalar> } $column
+     * @return string
+     */
+    protected function typeTokenList(Fluent $column): string
+    {
+        $args = [];
+        $args[] = $this->wrap($column->target);
+        foreach ($column->options as $key => $value) {
+            $args[] = "{$key} => {$this->formatOptionValue($value)}";
+        }
+
+        $function = $column->function;
+        assert($function instanceof TokenizerFunction);
+
+        return 'tokenlist as (' . $function->value . '(' . implode(', ', $args) . '))';
     }
 
     /**

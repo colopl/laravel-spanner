@@ -29,6 +29,7 @@ class Builder extends BaseBuilder
 {
     use Concerns\SetsRequestTimeouts;
     use Concerns\UsesDataBoost;
+    use Concerns\UsesFullTextSearch;
     use Concerns\UsesMutations;
     use Concerns\UsesPartitionedDml;
     use Concerns\UsesStaleReads;
