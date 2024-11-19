@@ -164,12 +164,12 @@ class SessionNotFoundTest extends TestCase
         $passes = 0;
 
         $conn->transaction(function () use ($conn, &$passes) {
-            $cursor = $conn->cursor('SELECT 12345');
-
             if ($passes === 0) {
                 $this->deleteSession($conn);
                 $passes++;
             }
+
+            $cursor = $conn->cursor('SELECT 12345');
 
             $this->assertEquals([12345], $cursor->current());
 
