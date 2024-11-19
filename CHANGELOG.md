@@ -1,7 +1,7 @@
-# v5.4.0 (2024-11-xx)
+# v5.4.0 (Unreleased)
 
-Changed
-- [Breaking] SessionNotFoundErrorMode was removed and will always run clear session pool. (#132) (#130)
+Fixed
+- Match internals so that it lines up with laravel 10.34.0. (#242)
 
 # v5.3.0 (2023-11-17)
 
