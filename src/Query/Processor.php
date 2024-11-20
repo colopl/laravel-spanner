@@ -53,6 +53,27 @@ class Processor extends BaseProcessor
     }
 
     /**
+     * Process the results of a columns query.
+     *
+     * @inheritDoc
+     */
+    public function processColumns($results)
+    {
+        return array_map(static function (array $result) {
+            return [
+                'name' => $result['COLUMN_NAME'],
+                'type_name' => preg_replace("/\([^)]+\)/", "", $result['SPANNER_TYPE']),
+                'type' => $result['SPANNER_TYPE'],
+                'collation' => null,
+                'nullable' => $result['IS_NULLABLE'] !== 'NO',
+                'default' => $result['COLUMN_DEFAULT'],
+                'auto_increment' => false,
+                'comment' => null,
+            ];
+        }, $results);
+    }
+
+    /**
      * @param array $results
      * @return array
      */

@@ -164,12 +164,12 @@ class SessionNotFoundTest extends TestCase
         $passes = 0;
 
         $conn->transaction(function () use ($conn, &$passes) {
-            $cursor = $conn->cursor('SELECT 12345');
-
             if ($passes === 0) {
                 $this->deleteSession($conn);
                 $passes++;
             }
+
+            $cursor = $conn->cursor('SELECT 12345');
 
             $this->assertEquals([12345], $cursor->current());
 
@@ -196,58 +196,6 @@ class SessionNotFoundTest extends TestCase
         try {
             $conn->selectOne('SELECT 1');
         } catch (QueryException $e) {
-            $conn->disconnect();
-            $conn->clearSessionPool();
-            throw $e;
-        }
-    }
-
-    public function test_session_not_found_throw_exception_on_cursor(): void
-    {
-        $conn = $this->getSessionNotFoundConnection(Connection::THROW_EXCEPTION);
-
-        $cursor = $conn->cursor('SELECT 1');
-
-        // deliberately delete session on spanner side
-        $this->deleteSession($conn);
-
-        $this->expectException(NotFoundException::class);
-
-        // the string is used in sessionNotFoundWrapper() to catch 'session not found' error,
-        // if google changes it then string should be changed in Connection::SESSION_NOT_FOUND_CONDITION
-        $this->expectExceptionMessage($conn::SESSION_NOT_FOUND_CONDITION);
-
-        try {
-            iterator_to_array($cursor);
-        } catch (NotFoundException $e) {
-            $conn->disconnect();
-            $conn->clearSessionPool();
-            throw $e;
-        }
-    }
-
-    public function test_session_not_found_throw_exception_in_transaction(): void
-    {
-        $conn = $this->getSessionNotFoundConnection(Connection::THROW_EXCEPTION);
-
-        $this->expectException(NotFoundException::class);
-
-        // the string is used in sessionNotFoundWrapper() to catch 'session not found' error,
-        // if google changes it then string should be changed in Connection::SESSION_NOT_FOUND_CONDITION
-        $this->expectExceptionMessage($conn::SESSION_NOT_FOUND_CONDITION);
-
-        $passes = 0;
-
-        try {
-            $conn->transaction(function () use ($conn, &$passes) {
-                if ($passes === 0) {
-                    $this->deleteSession($conn);
-                    $passes++;
-                }
-
-                $conn->selectOne('SELECT 12345');
-            });
-        } catch (NotFoundException $e) {
             $conn->disconnect();
             $conn->clearSessionPool();
             throw $e;

@@ -1,3 +1,8 @@
+# v5.4.0 (2024-11-20)
+
+Fixed
+- Match internals so that it lines up with laravel 10.34.0. (#242)
+
 # v5.3.0 (2023-11-17)
 
 Fixed
