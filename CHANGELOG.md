@@ -1,5 +1,6 @@
 # v8.3.0 (2024-11-08)
 
+- add support for IDENTITY columns (#243)
 - consolidate schema options formatting (#241)
 - add support for invisible columns (#240)
 - add support for change streams using Blueprint (#230)
