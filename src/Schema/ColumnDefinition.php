@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace Colopl\Spanner\Schema;
 
+use Illuminate\Database\Query\Expression;
 use Illuminate\Database\Schema\ColumnDefinition as BaseColumnDefinition;
 
 /**
@@ -33,6 +34,7 @@ use Illuminate\Database\Schema\ColumnDefinition as BaseColumnDefinition;
  * @property int|null $precision
  * @property int|null $scale
  * @property bool|null $useCurrent
+ * @property string|Expression|true|null $generatedAs
  * @property string|null $virtualAs
  * @property bool|null $storedAs
  */

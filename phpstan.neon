@@ -9,13 +9,13 @@ parameters:
           path: src/Concerns/ManagesPartitionedDml.php
         - message: '#^Unable to resolve the template type TKey in call to function collect$#'
           path: src/Concerns/ManagesSessionPool.php
-        - message: "#^Strict comparison using \\=\\=\\= between Illuminate\\\\Database\\\\Query\\\\IndexHint and null will always evaluate to false\\.$#"
-          count: 1
-          path: src/Query/Builder.php
         - message: '#^Parameter \#1 \$pdo of method Illuminate\\Database\\Connection::__construct\(\) expects Closure|PDO, null given\.$#'
           path: src/Connection.php
         - message: '#^Method Colopl\\Spanner\\Connection::selectWithOptions\(\) should return array<int, array> but returns mixed\.$#'
           path: src/Connection.php
+        - message: "#^Method Colopl\\\\Spanner\\\\Connection\\:\\:cursor\\(\\) should return Generator\\<int, stdClass, mixed, mixed\\> but returns Generator\\<int, array, mixed, mixed\\>\\.$#"
+          path: src/Connection.php
+          count: 1
         - message: '#^Generator expects value type array, mixed given.$#'
           path: src/Connection.php
           count: 1
