@@ -245,6 +245,22 @@ class Blueprint extends BaseBlueprint
     }
 
     /**
+     * @param string $column
+     * @param TokenizerFunction $function
+     * @param string $target
+     * @param array $options
+     * @return ColumnDefinition
+     */
+    public function tokenList(string $column, TokenizerFunction $function, string $target, array $options = []): ColumnDefinition
+    {
+        return $this->addColumn('tokenList', $column, [
+            'function' => $function,
+            'target' => $target,
+            'options' => $options,
+        ])->invisible()->nullable();
+    }
+
+    /**
      * @deprecated use interleaveInParent instead.
      * @param string $parentTableName
      * @return InterleaveDefinition
@@ -265,6 +281,27 @@ class Blueprint extends BaseBlueprint
         );
 
         $this->commands[count($this->commands) - 1] = $command;
+
+        return $command;
+    }
+
+    /**
+     * @param string|list<string> $columns
+     * @param string|null $name
+     * @param string|null $algorithm
+     * @return SearchIndexDefinition
+     */
+    public function fullText($columns, $name = null, $algorithm = null)
+    {
+        $type = 'fullText';
+        $columns = (array) $columns;
+
+        $this->commands[] = $command = new SearchIndexDefinition([
+            'name' => $type,
+            'index' => $name ?? $this->createIndexName($type, $columns),
+            'columns' => $columns,
+            'algorithm' => $algorithm,
+        ]);
 
         return $command;
     }

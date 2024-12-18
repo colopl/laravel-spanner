@@ -349,6 +349,31 @@ $schemaBuilder->create('user_items', function (Blueprint $table) {
 });
 ```
 
+### Full Text Search
+
+Spanner supports [Full Text Search](https://cloud.google.com/spanner/docs/full-text-search) which allows you to search for text in columns.
+
+You can define a token list column and a search index for the column as below.
+
+```php
+$schemaBuilder->create('user', function (Blueprint $table) {
+    $table->uuid('id')->primary();
+    $table->string('name');
+    // adds an invisible column for full text search
+    $table->tokenList('UserNameTokens', TokenizerFunction::FullText, 'name', ['language_tag' => 'en']);
+    
+    // adds a SEARCH INDEX
+    $table->fullText(['UserNameTokens']);
+});
+```
+
+Once the schema has been applied, you can use the search methods in the query builder to search for text in the columns as below.
+
+```php
+User::query()->searchFullText('UserNameTokens', 'John OR Kevin', ['enhance_query' => true])->get();
+```
+
+The methods available are `searchFullText`, `searchSubstring`, and `searchNgrams`.
 
 ### Secondary Index Options
 

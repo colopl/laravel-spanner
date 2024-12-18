@@ -142,6 +142,53 @@ class Grammar extends BaseGrammar
     }
 
     /**
+     * @param Builder $query
+     * @param array{ tokens: string, query: string, options: array<string, scalar> } $where
+     * @return string
+     */
+    protected function whereSearchFullText(Builder $query, array $where): string
+    {
+        return $this->buildSearchFunction('search', $where);
+    }
+
+    /**
+     * @param Builder $query
+     * @param array{ tokens: string, query: string, options: array<string, scalar> } $where
+     * @return string
+     */
+    protected function whereSearchNgrams(Builder $query, array $where): string
+    {
+        return $this->buildSearchFunction('search_ngrams', $where);
+    }
+
+    /**
+     * @param Builder $query
+     * @param array{ tokens: string, query: string, options: array<string, scalar> } $where
+     * @return string
+     */
+    protected function whereSearchSubstring(Builder $query, array $where): string
+    {
+        return $this->buildSearchFunction('search_substring', $where);
+    }
+
+    /**
+     * @param string $function
+     * @param array{ tokens: string, query: string, options: array<string, scalar> } $where
+     * @return string
+     */
+    protected function buildSearchFunction(string $function, array $where): string
+    {
+        $tokens = $this->wrap($where['tokens']);
+        $rawQuery = $where['query'];
+        $options = $where['options'];
+        return $function . '(' . implode(', ', array_filter([
+            $tokens,
+            $this->quoteString($rawQuery),
+            $this->formatOptions($options, ' => '),
+        ])) . ')';
+    }
+
+    /**
      * @inheritDoc
      */
     public function supportsSavepoints()

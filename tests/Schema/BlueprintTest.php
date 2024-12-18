@@ -20,6 +20,7 @@ namespace Colopl\Spanner\Tests\Schema;
 use Colopl\Spanner\Schema\Blueprint;
 use Colopl\Spanner\Schema\ChangeStreamValueCaptureType;
 use Colopl\Spanner\Schema\Grammar;
+use Colopl\Spanner\Schema\TokenizerFunction;
 use Colopl\Spanner\Tests\TestCase;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
@@ -55,6 +56,7 @@ class BlueprintTest extends TestCase
             $table->stringArray('string_array_max', 'max')->nullable();
             $table->timestampArray('timestamp_array')->nullable();
             $table->timestamps();
+            $table->tokenList('text_tokens', TokenizerFunction::Substring, 'text', ['language_tag' => 'ja']);
         });
         $blueprint->create();
 
@@ -82,6 +84,7 @@ class BlueprintTest extends TestCase
                 '`string_array_max` array<string(max)>',
                 '`timestamp_array` array<timestamp>',
                 '`created_at` timestamp, `updated_at` timestamp',
+                '`text_tokens` tokenlist as (tokenize_substring(`text`, language_tag => \'ja\')) hidden'
             ]) . ') primary key (`id`)',
         ], $statements);
     }
@@ -277,6 +280,56 @@ class BlueprintTest extends TestCase
         $row = $conn->table($tableName)->first();
         $this->assertArrayHasKey('id', $row);
         $this->assertArrayNotHasKey('name', $row);
+    }
+
+    public function test_tokenList_and_search_index(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $grammar = new Grammar();
+        $parentTableName = $this->generateTableName('Parent');
+        $childTableName = $this->generateTableName('Child');
+
+        $blueprint = new Blueprint($parentTableName, function (Blueprint $table) {
+            $table->create();
+            $table->uuid('pid')->primary();
+        });
+        $blueprint->build($conn, $grammar);
+
+        $blueprint = new Blueprint($childTableName, function (Blueprint $table) use ($parentTableName) {
+            $table->create();
+            $table->uuid('id');
+            $table->uuid('pid');
+            $table->string('name');
+            $table->tokenList('nameTokens', TokenizerFunction::Substring, 'name', ['language_tag' => 'en']);
+            $table->integer('number');
+            $table->interleaveInParent($parentTableName);
+            $table->primary(['pid', 'id']);
+
+            $table->fullText(['nameTokens'])
+                ->storing(['name'])
+                ->interleaveIn($parentTableName)
+                ->partitionBy('pid')
+                ->orderBy(['number' => 'desc'])
+                ->sortOrderSharding()
+                ->disableAutomaticUidColumn();
+        });
+
+        $statements = $blueprint->toSql($conn, $grammar);
+
+        $indexPrefix = Str::snake($childTableName);
+        $this->assertSame([
+            "create table `{$childTableName}` (`id` string(36) not null, `pid` string(36) not null, `name` string(255) not null, `nameTokens` tokenlist as (tokenize_substring(`name`, language_tag => 'en')) hidden, `number` int64 not null) primary key (`pid`, `id`), interleave in parent `{$parentTableName}`",
+            "create search index `{$indexPrefix}_nametokens_fulltext` on `{$childTableName}`(`nameTokens`) storing (`name`) partition by `pid` order by `number` desc, interleave in `{$parentTableName}` options (sort_order_sharding=true, disable_automatic_uid_column=true)",
+        ], $statements);
+
+        // TODO remove this block when the bug is fixed
+        if (getenv('SPANNER_EMULATOR_HOST')) {
+            $this->markTestSkipped('Cannot test FULLTEXT on emulator due to a bug: https://github.com/GoogleCloudPlatform/cloud-spanner-emulator/issues/197.');
+        }
+
+        foreach ($statements as $statement) {
+            $conn->statement($statement);
+        }
     }
 
     public function test_interleaving(): void
