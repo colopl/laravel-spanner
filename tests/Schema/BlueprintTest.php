@@ -305,10 +305,10 @@ class BlueprintTest extends TestCase
             $table->interleaveInParent($parentTableName);
             $table->primary(['pid', 'id']);
 
-            $table->fullText(['pid', 'nameTokens'])
-                ->storing(['name', 'number'])
+            $table->fullText(['nameTokens'])
+                ->storing(['name'])
                 ->interleaveIn($parentTableName)
-                ->partitionBy('name')
+                ->partitionBy('pid')
                 ->orderBy(['number' => 'desc'])
                 ->sortOrderSharding()
                 ->disableAutomaticUidColumn();
@@ -319,8 +319,12 @@ class BlueprintTest extends TestCase
         $indexPrefix = Str::snake($childTableName);
         $this->assertSame([
             "create table `{$childTableName}` (`id` string(36) not null, `pid` string(36) not null, `name` string(255) not null, `nameTokens` tokenlist as (tokenize_substring(`name`, language_tag => 'en')) hidden, `number` int64 not null) primary key (`pid`, `id`), interleave in parent `{$parentTableName}`",
-            "create search index `{$indexPrefix}_pid_nametokens_fulltext` on `{$childTableName}`(`pid`, `nameTokens`) storing (`name`, `number`) partition by `name` order by `number` desc, interleave in `{$parentTableName}` options (sort_order_sharding=true, disable_automatic_uid_column=true)",
+            "create search index `{$indexPrefix}_nametokens_fulltext` on `{$childTableName}`(`nameTokens`) storing (`name`) partition by `pid` order by `number` desc, interleave in `{$parentTableName}` options (sort_order_sharding=true, disable_automatic_uid_column=true)",
         ], $statements);
+
+        if (getenv('SPANNER_EMULATOR_HOST')) {
+            $this->markTestSkipped('Cannot test FULLTEXT on emulator due to a bug: https://github.com/GoogleCloudPlatform/cloud-spanner-emulator/issues/197.');
+        }
 
         foreach ($statements as $statement) {
             $conn->statement($statement);
