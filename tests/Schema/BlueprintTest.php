@@ -322,6 +322,7 @@ class BlueprintTest extends TestCase
             "create search index `{$indexPrefix}_nametokens_fulltext` on `{$childTableName}`(`nameTokens`) storing (`name`) partition by `pid` order by `number` desc, interleave in `{$parentTableName}` options (sort_order_sharding=true, disable_automatic_uid_column=true)",
         ], $statements);
 
+        // TODO remove this block when the bug is fixed
         if (getenv('SPANNER_EMULATOR_HOST')) {
             $this->markTestSkipped('Cannot test FULLTEXT on emulator due to a bug: https://github.com/GoogleCloudPlatform/cloud-spanner-emulator/issues/197.');
         }
