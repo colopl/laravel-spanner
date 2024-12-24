@@ -252,7 +252,8 @@ class Connection extends BaseConnection
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
+     * @return Generator<int, array<array-key, mixed>>
      */
     public function cursor($query, $bindings = [], $useReadPdo = true): Generator
     {
