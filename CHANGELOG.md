@@ -1,3 +1,6 @@
+# v8.3.1 (2024-12-24)
+- improve PHPStan support (#244)
+
 # v8.3.0 (2024-11-08)
 
 - add support for full text search (#235)
