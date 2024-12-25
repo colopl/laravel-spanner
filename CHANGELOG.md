@@ -1,7 +1,4 @@
-# v8.3.1 (2024-12-24)
-- improve PHPStan support (#244)
-
-# v8.3.0 (2024-11-08)
+# v8.3.0 (2024-12-25)
 
 - add support for full text search (#235)
 - add support for IDENTITY columns (#243)
@@ -13,6 +10,7 @@
 - add support for `Query\Builder::whereNotInUnnest(...)` (#225)
 - `Query\Builder::whereIn` will now wrap values in `UNNEST` if the number of values exceeds the limit (950). (#226)
 - Commit options can now be set through config or through `Connection::setCommitOptions(...)` (#229)
+- improve PHPStan support (#244)
 
 # v8.2.0 (2024-08-05)
 
