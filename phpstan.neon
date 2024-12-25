@@ -13,9 +13,9 @@ parameters:
           path: src/Connection.php
         - message: '#^Method Colopl\\Spanner\\Connection::selectWithOptions\(\) should return array<int, array> but returns mixed\.$#'
           path: src/Connection.php
-        - message: "#^Method Colopl\\\\Spanner\\\\Connection\\:\\:cursor\\(\\) should return Generator\\<int, stdClass, mixed, mixed\\> but returns Generator\\<int, array, mixed, mixed\\>\\.$#"
-          path: src/Connection.php
+        - message: "#^Return type \\(Generator\\<int, array, mixed, mixed\\>\\) of method Colopl\\\\Spanner\\\\Connection\\:\\:cursor\\(\\) should be compatible with return type \\(Generator\\<int, stdClass, mixed, mixed\\>\\) of method Illuminate\\\\Database\\\\Connection\\:\\:cursor\\(\\)$#"
           count: 1
+          path: src/Connection.php
         - message: '#^Generator expects value type array, mixed given.$#'
           path: src/Connection.php
           count: 1

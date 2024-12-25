@@ -23,8 +23,12 @@ use Illuminate\Contracts\Database\Query\Expression;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Query\Builder as BaseBuilder;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use LogicException;
 
+/**
+ * @method Collection<int, array<array-key, mixed>> get($columns = ['*'])
+ */
 class Builder extends BaseBuilder
 {
     use Concerns\SetsRequestTimeouts;
