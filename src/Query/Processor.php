@@ -27,7 +27,8 @@ use Illuminate\Support\Carbon;
 class Processor extends BaseProcessor
 {
     /**
-     * @inheritDoc
+     * {@inheritDoc}
+     * @phpstan-ignore-next-line missingType.iterableValue
      */
     public function processSelect(Builder $query, $results): array
     {
@@ -65,7 +66,8 @@ class Processor extends BaseProcessor
     /**
      * Process the results of a columns query.
      *
-     * @inheritDoc
+     * {@inheritDoc}
+     * @phpstan-ignore-next-line missingType.iterableValue
      */
     public function processColumns($results)
     {
@@ -84,8 +86,8 @@ class Processor extends BaseProcessor
     }
 
     /**
-     * @param array $results
-     * @return array
+     * {@inheritDoc}
+     * @phpstan-ignore-next-line missingType.iterableValue
      */
     public function processIndexes($results)
     {
@@ -95,8 +97,8 @@ class Processor extends BaseProcessor
     }
 
     /**
-     * @param array $results
-     * @return array
+     * {@inheritDoc}
+     * @phpstan-ignore-next-line missingType.iterableValue
      */
     public function processForeignKeys($results)
     {

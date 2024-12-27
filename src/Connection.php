@@ -38,6 +38,7 @@ use Google\Cloud\Spanner\Timestamp;
 use Google\Cloud\Spanner\Transaction;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Connection as BaseConnection;
+use Illuminate\Database\Query\Expression;
 use Illuminate\Database\Query\Grammars\Grammar as BaseQueryGrammar;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Arr;
@@ -101,6 +102,7 @@ class Connection extends BaseConnection
         $this->instanceId = $instanceId;
         $this->authCache = $authCache;
         $this->sessionPool = $sessionPool;
+        /** @phpstan-ignore-next-line argument.type */
         parent::__construct(null, $database, $tablePrefix, $config);
     }
 
@@ -227,7 +229,12 @@ class Connection extends BaseConnection
     }
 
     /**
-     * @inheritDoc OVERRIDDEN for return type change
+     * OVERRIDDEN for return type change
+     *
+     * {@inheritDoc}
+     *
+     * @param Closure|QueryBuilder<Connection>|Expression|string $table
+     * @return QueryBuilder<Connection>
      */
     public function table($table, $as = null): QueryBuilder
     {
@@ -236,7 +243,7 @@ class Connection extends BaseConnection
 
     /**
      * @inheritDoc OVERRIDDEN for return type change
-     * @return QueryBuilder
+     * @return QueryBuilder<Connection>
      */
     public function query(): QueryBuilder
     {
@@ -244,7 +251,8 @@ class Connection extends BaseConnection
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
+     * @phpstan-ignore-next-line missingType.iterableValue
      */
     public function select($query, $bindings = [], $useReadPdo = true): array
     {
@@ -254,6 +262,7 @@ class Connection extends BaseConnection
     /**
      * {@inheritDoc}
      * @return Generator<int, array<array-key, mixed>>
+     * @phpstan-ignore-next-line missingType.iterableValue
      */
     public function cursor($query, $bindings = [], $useReadPdo = true): Generator
     {
@@ -268,6 +277,7 @@ class Connection extends BaseConnection
      */
     public function selectWithOptions(string $query, array $bindings, array $options): array
     {
+        /** @var array<int, array<array-key, mixed>> */
         return $this->run($query, $bindings, function ($query, $bindings) use ($options): array {
             return !$this->pretending()
                 ? iterator_to_array($this->executeQuery($query, $bindings, $options))
@@ -291,20 +301,21 @@ class Connection extends BaseConnection
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
+     * @phpstan-ignore-next-line missingType.iterableValue
      */
     public function statement($query, $bindings = []): bool
     {
         // is SELECT query
         if (0 === stripos(ltrim($query), 'select')) {
-            return $this->select($query, $bindings) !== null;
+            return true;
         }
 
         // is DML query
         if (0 === stripos(ltrim($query), 'insert') ||
             0 === stripos(ltrim($query), 'update') ||
             0 === stripos(ltrim($query), 'delete')) {
-            return $this->affectingStatement($query, $bindings) !== null;
+            return true;
         }
 
         // is DDL Query
@@ -312,7 +323,8 @@ class Connection extends BaseConnection
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
+     * @phpstan-ignore-next-line missingType.iterableValue
      */
     public function affectingStatement($query, $bindings = []): int
     {
@@ -365,8 +377,8 @@ class Connection extends BaseConnection
 
     /**
      * @internal
-     * @inheritDoc
-     * @return void
+     * {@inheritDoc}
+     * @return never
      */
     public function setDatabaseName($database)
     {
@@ -375,9 +387,8 @@ class Connection extends BaseConnection
 
     /**
      * @internal
-     * @inheritDoc
-     * @return void
-     * @internal
+     * {@inheritDoc}
+     * @return never
      */
     public function getPdo()
     {
@@ -386,9 +397,8 @@ class Connection extends BaseConnection
 
     /**
      * @internal
-     * @inheritDoc
-     * @return void
-     * @internal
+     * {@inheritDoc}
+     * @return never
      */
     public function getReadPdo()
     {
@@ -397,8 +407,8 @@ class Connection extends BaseConnection
 
     /**
      * @internal
-     * @inheritDoc
-     * @return void
+     * {@inheritDoc}
+     * @return never
      */
     public function getDoctrineConnection()
     {
@@ -406,7 +416,8 @@ class Connection extends BaseConnection
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
+     * @phpstan-ignore-next-line missingType.iterableValue
      */
     public function prepareBindings(array $bindings)
     {
@@ -444,7 +455,7 @@ class Connection extends BaseConnection
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      * @param scalar|list<mixed>|null $value
      */
     public function escape($value, $binary = false)
@@ -492,6 +503,7 @@ class Connection extends BaseConnection
 
     /**
      * @inheritDoc
+     * @phpstan-ignore-next-line missingType.iterableValue
      */
     protected function runQueryCallback($query, $bindings, Closure $callback)
     {
@@ -578,8 +590,7 @@ class Connection extends BaseConnection
 
         $tag = $this->getRequestTag();
         if ($tag !== null) {
-            $options['requestOptions'] ??= [];
-            $options['requestOptions']['requestTag'] = $tag;
+            $options['requestOptions'] ??= ['requestTag' => $tag];
         }
 
         if ($this->inSnapshot()) {
@@ -606,6 +617,7 @@ class Connection extends BaseConnection
 
         foreach ($snapshot->partitionQuery($query, $options) as $partition) {
             foreach ($snapshot->executePartition($partition) as $row) {
+                assert(is_array($row));
                 yield $row;
             }
         }
@@ -658,7 +670,7 @@ class Connection extends BaseConnection
             );
         }
 
-        $rowCount = array_sum($result->rowCounts() ?? []);
+        $rowCount = array_sum($result->rowCounts());
         $this->recordsHaveBeenModified($rowCount > 0);
         return $rowCount;
     }
@@ -725,5 +737,4 @@ class Connection extends BaseConnection
         return ($e instanceof NotFoundException)
             && str_contains($e->getMessage(), 'Session does not exist');
     }
-
 }

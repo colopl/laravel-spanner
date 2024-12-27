@@ -18,6 +18,7 @@
 namespace Colopl\Spanner\Concerns;
 
 use Colopl\Spanner\Session\SessionInfo;
+use Generator;
 use Google\Auth\FetchAuthTokenInterface;
 use Google\Cloud\Core\EmulatorTrait;
 use Google\Cloud\Spanner\Connection\ConnectionInterface;
@@ -87,7 +88,10 @@ trait ManagesSessionPool
 
         $response = (new ProtobufSpannerClient($config))->listSessions($databaseName);
 
-        return collect($response->iterateAllElements())->map(function ($session) {
+        /** @var Generator<array-key, mixed> $generator */
+        $generator = $response->iterateAllElements();
+
+        return collect($generator)->map(function ($session) {
             assert($session instanceof ProtobufSpannerSession);
             return new SessionInfo($session);
         });
@@ -106,24 +110,20 @@ trait ManagesSessionPool
         /** @var FetchAuthTokenInterface|null $credentialFetcher */
         $credentialFetcher = null;
         $internalConnectionProperty = (new ReflectionObject($this->getSpannerClient()))->getProperty('connection');
-        if ($internalConnectionProperty !== null) {
-            $internalConnectionProperty->setAccessible(true);
-            /** @var ConnectionInterface $internalConnection */
-            $internalConnection = $internalConnectionProperty->getValue($this->spannerClient);
-            if ($internalConnection instanceof Grpc) {
-                $requestWrapper = $internalConnection->requestWrapper();
-                $credentialFetcher = $requestWrapper?->getCredentialsFetcher();
-            }
+        $internalConnectionProperty->setAccessible(true);
+        /** @var ConnectionInterface $internalConnection */
+        $internalConnection = $internalConnectionProperty->getValue($this->spannerClient);
+        if ($internalConnection instanceof Grpc) {
+            $requestWrapper = $internalConnection->requestWrapper();
+            $credentialFetcher = $requestWrapper?->getCredentialsFetcher();
         }
 
         $spannerDatabase = $this->spannerDatabase;
         if ($spannerDatabase !== null) {
             $sessionProperty = (new ReflectionObject($spannerDatabase))->getProperty('session');
-            if ($sessionProperty !== null) {
-                $sessionProperty->setAccessible(true);
-                /** @var CloudSpannerSession $session */
-                $session = $sessionProperty->getValue($spannerDatabase);
-            }
+            $sessionProperty->setAccessible(true);
+            $session = $sessionProperty->getValue($spannerDatabase);
+            assert($session instanceof CloudSpannerSession);
         }
 
         return [
@@ -133,5 +133,4 @@ trait ManagesSessionPool
             'credentialFetcher' => $credentialFetcher,
         ];
     }
-
 }
