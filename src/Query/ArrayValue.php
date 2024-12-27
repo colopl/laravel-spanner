@@ -22,6 +22,9 @@ namespace Colopl\Spanner\Query;
  */
 final readonly class ArrayValue
 {
+    /**
+     * @param array<array-key, mixed> $value
+     */
     public function __construct(
         public array $value,
     )

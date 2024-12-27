@@ -31,7 +31,8 @@ class Grammar extends BaseGrammar
     use SharedGrammarCalls;
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
+     * @phpstan-ignore-next-line missingType.iterableValue
      */
     public function compileInsertOrIgnore(Builder $query, array $values)
     {
@@ -39,7 +40,8 @@ class Grammar extends BaseGrammar
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
+     * @phpstan-ignore-next-line missingType.iterableValue
      */
     public function compileUpsert(Builder $query, array $values, array $uniqueBy, array $update)
     {
@@ -47,7 +49,8 @@ class Grammar extends BaseGrammar
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
+     * @phpstan-ignore-next-line missingType.iterableValue
      */
     public function compileInsertGetId(Builder $query, $values, $sequence)
     {
@@ -55,7 +58,8 @@ class Grammar extends BaseGrammar
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
+     * @return ''
      */
     protected function compileLock(Builder $query, $value)
     {
@@ -64,6 +68,7 @@ class Grammar extends BaseGrammar
 
     /**
      * @inheritDoc
+     * @phpstan-ignore-next-line missingType.iterableValue
      */
     public function prepareBindingsForUpdate(array $bindings, array $values)
     {
@@ -77,7 +82,8 @@ class Grammar extends BaseGrammar
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
+     * @phpstan-ignore-next-line missingType.iterableValue
      */
     public function compileTruncate(Builder $query)
     {
@@ -85,11 +91,11 @@ class Grammar extends BaseGrammar
     }
 
     /**
-     * @param Builder $query
+     * @param Builder $_
      * @param IndexHint $indexHint
      * @return string
      */
-    protected function compileIndexHint(Builder $query, $indexHint)
+    protected function compileIndexHint(Builder $_, $indexHint)
     {
         if ($indexHint->index === null) {
             return '';
@@ -110,24 +116,25 @@ class Grammar extends BaseGrammar
     }
 
     /**
-     * @param Builder $query
+     * @param Builder $_
      * @param array<string, Expression|string> $where
      * @return string
      */
-    protected function whereInArray(Builder $query, $where)
+    protected function whereInArray(Builder $_, $where)
     {
         return '? in unnest(' . $this->wrap($where['column']) . ')';
     }
 
     /**
-     * @param Builder $query
-     * @param array $where{ values: Nested, column: string, not: bool }
+     * @param Builder $_
+     * @param array{ values: Nested, column: string, not: bool } $where
      * @return string
      */
-    protected function whereInUnnest(Builder $query, $where)
+    protected function whereInUnnest(Builder $_, $where)
     {
         $values = $where['values'];
 
+        /** @phpstan-ignore-next-line instanceof.alwaysTrue */
         if (!($values instanceof Nested)) {
             throw new RuntimeException('Invalid Type:' . get_class($values) . ' given. ' . Nested::class . ' expected.');
         }
@@ -142,31 +149,31 @@ class Grammar extends BaseGrammar
     }
 
     /**
-     * @param Builder $query
+     * @param Builder $_
      * @param array{ tokens: string, query: string, options: array<string, scalar> } $where
      * @return string
      */
-    protected function whereSearchFullText(Builder $query, array $where): string
+    protected function whereSearchFullText(Builder $_, array $where): string
     {
         return $this->buildSearchFunction('search', $where);
     }
 
     /**
-     * @param Builder $query
+     * @param Builder $_
      * @param array{ tokens: string, query: string, options: array<string, scalar> } $where
      * @return string
      */
-    protected function whereSearchNgrams(Builder $query, array $where): string
+    protected function whereSearchNgrams(Builder $_, array $where): string
     {
         return $this->buildSearchFunction('search_ngrams', $where);
     }
 
     /**
-     * @param Builder $query
+     * @param Builder $_
      * @param array{ tokens: string, query: string, options: array<string, scalar> } $where
      * @return string
      */
-    protected function whereSearchSubstring(Builder $query, array $where): string
+    protected function whereSearchSubstring(Builder $_, array $where): string
     {
         return $this->buildSearchFunction('search_substring', $where);
     }
@@ -189,7 +196,8 @@ class Grammar extends BaseGrammar
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
+     * @return false
      */
     public function supportsSavepoints()
     {

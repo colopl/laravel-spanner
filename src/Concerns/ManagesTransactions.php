@@ -40,7 +40,7 @@ trait ManagesTransactions
     protected ?int $maxAttempts = null;
 
     /**
-     * @var array|null $commitOptions
+     * @var array<string, mixed>|null $commitOptions
      */
     protected ?array $commitOptions = null;
 
@@ -84,7 +84,7 @@ trait ManagesTransactions
                     $this->transactions++;
 
                     $this->transactionsManager?->begin(
-                        $this->getName(), $this->transactions,
+                        $this->getNameOrFail(), $this->transactions,
                     );
 
                     $this->fireConnectionEvent('beganTransaction');
@@ -176,7 +176,7 @@ trait ManagesTransactions
         }
 
         $this->transactionsManager?->commit(
-            $this->getName(),
+            $this->getNameOrFail(),
             $levelBeingCommitted,
             $this->transactions,
         );
@@ -280,6 +280,7 @@ trait ManagesTransactions
 
         $options = $this->getConfig('commit') ?? [];
         assert(is_array($options));
+        /** @var array<string, mixed> $options */
         return $this->commitOptions = $options;
     }
 
@@ -290,5 +291,12 @@ trait ManagesTransactions
     public function setCommitOptions(array $options): void
     {
         $this->commitOptions = $options;
+    }
+
+    private function getNameOrFail(): string
+    {
+        $name = $this->getName();
+        assert(is_string($name));
+        return $name;
     }
 }

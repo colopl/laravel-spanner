@@ -82,6 +82,6 @@ class ChangeStreamDefinition extends Fluent
             'excludeInsert' => $this->excludeInsert,
             'excludeUpdate' => $this->excludeUpdate,
             'excludeDelete' => $this->excludeDelete,
-        ], static fn($v) => $v !== null);
+        ]);
     }
 }

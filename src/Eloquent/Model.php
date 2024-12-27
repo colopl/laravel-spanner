@@ -32,7 +32,7 @@ class Model extends BaseModel
         Concerns\DoesNotAutoIncrement;
 
     /**
-     * @var string[]
+     * @var list<string>
      */
     protected $interleaveKeys = [];
 
@@ -43,7 +43,7 @@ class Model extends BaseModel
 
     /**
      * @param BaseModel|Relation<BaseModel, $this, BaseModel> $query
-     * @param mixed $value
+     * @param scalar $value
      * @param string|null $field
      * @return BuilderContract
      */
@@ -57,7 +57,7 @@ class Model extends BaseModel
 
     /**
      * @param string $childType
-     * @param mixed $value
+     * @param scalar $value
      * @param string|null $field
      * @return Relation<BaseModel, $this, *>
      */
@@ -70,7 +70,7 @@ class Model extends BaseModel
 
     /**
      * @param string $key
-     * @param mixed $value
+     * @param scalar $value
      * @return mixed
      */
     protected function tryCastAttribute(string $key, $value)
