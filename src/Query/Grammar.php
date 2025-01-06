@@ -195,17 +195,4 @@ class Grammar extends BaseGrammar
     {
         return false;
     }
-
-    /**
-     * @inheritDoc
-     */
-    public function substituteBindingsIntoRawSql($sql, $bindings)
-    {
-        $bindings = array_map(
-            static fn(mixed $binding): mixed => $binding instanceof Nested ? $binding->toArray() : $binding,
-            $bindings
-        );
-
-        return parent::substituteBindingsIntoRawSql($sql, $bindings);
-    }
 }
