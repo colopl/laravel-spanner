@@ -21,6 +21,7 @@ use Colopl\Spanner\Tests\TestCase;
 
 class UnnestTest extends TestCase
 {
+    /** @see https://cloud.google.com/spanner/quotas#query_limits */
     public const SPANNER_PARAMETERS_LIMIT = 950;
 
     public function test_whereInUnnest(): void
@@ -127,7 +128,7 @@ class UnnestTest extends TestCase
         $logSecond = $logs[1];
 
         $this->assertSame(
-            "delete from `{$tableName}` where `{$keyName}` = \"$normalId\"",
+            "delete from `{$tableName}` where `{$keyName}` = \"{$normalId}\"",
             $grammar->substituteBindingsIntoRawSql($logFirst['query'], $logFirst['bindings'])
         );
 
