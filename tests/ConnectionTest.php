@@ -19,6 +19,7 @@ namespace Colopl\Spanner\Tests;
 
 use Colopl\Spanner\Connection;
 use Colopl\Spanner\Events\MutatingData;
+use Colopl\Spanner\Query\Nested;
 use Colopl\Spanner\Session\SessionInfo;
 use Colopl\Spanner\TimestampBound\ExactStaleness;
 use Colopl\Spanner\TimestampBound\MaxStaleness;
@@ -598,6 +599,15 @@ class ConnectionTest extends TestCase
 
         $conn = $this->getDefaultConnection();
         $this->assertSame('[]', $conn->escape([[]]));
+    }
+
+    public function test_escape_nested_object(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $this->assertSame(
+            "[false, true, 0, 1, \"a\", 1.1]",
+            $conn->escape(new Nested([false, true, 0, 1, "a", 1.1]))
+        );
     }
 
     public function test_getTablePrefix(): void
