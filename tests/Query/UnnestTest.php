@@ -21,6 +21,8 @@ use Colopl\Spanner\Tests\TestCase;
 
 class UnnestTest extends TestCase
 {
+    public const SPANNER_PARAMETERS_LIMIT = 950;
+
     public function test_whereInUnnest(): void
     {
         $conn = $this->getDefaultConnection();
@@ -65,7 +67,7 @@ class UnnestTest extends TestCase
         $qb = $conn->table($tableName);
         $id1 = $this->generateUuid();
         $id2 = $this->generateUuid();
-        $dummyIds = array_map($this->generateUuid(...), range(0, 950));
+        $dummyIds = array_map($this->generateUuid(...), range(0, self::SPANNER_PARAMETERS_LIMIT));
 
         $qb->insert([['userId' => $id1, 'name' => 't1'], ['userId' => $id2, 'name' => 't2']]);
         $given = $qb->whereInUnnest('userId', [$id1, $id2, ...$dummyIds])->pluck('userId')->sort()->values()->all();
@@ -98,4 +100,41 @@ class UnnestTest extends TestCase
         $this->assertSame($ids->skip(1)->values()->all(), $results->all());
     }
 
+    public function test_substituteBindingsIntoRawSql(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $grammar = $conn->getQueryGrammar();
+        $tableName = self::TABLE_NAME_USER;
+        $keyName = 'userId';
+
+        $normalId = $this->generateUuid();
+        $unnestIds = array_map($this->generateUuid(...), range(0, self::SPANNER_PARAMETERS_LIMIT));
+
+        foreach ([$normalId, ...$unnestIds] as $i => $id) {
+            $conn->table($tableName)->insert([[$keyName => $id, 'name' => "user" . $i]]);
+        }
+
+        $conn->enableQueryLog();
+
+        $conn->table($tableName)->where($keyName, $normalId)->delete();
+        $conn->table($tableName)->whereIn($keyName, $unnestIds)->delete();
+
+        $logs = $conn->getQueryLog();
+
+        $this->assertCount(2, $logs);
+
+        $logFirst = $logs[0];
+        $logSecond = $logs[1];
+
+        $this->assertSame(
+            "delete from `{$tableName}` where `{$keyName}` = \"$normalId\"",
+            $grammar->substituteBindingsIntoRawSql($logFirst['query'], $logFirst['bindings'])
+        );
+
+        $whereInIds = collect($unnestIds)->map(static fn($userId): string => "\"{$userId}\"")->join(', ');
+        $this->assertSame(
+            "delete from `{$tableName}` where `{$keyName}` in unnest([{$whereInIds}])",
+            $grammar->substituteBindingsIntoRawSql($logSecond['query'], $logSecond['bindings'])
+        );
+    }
 }
