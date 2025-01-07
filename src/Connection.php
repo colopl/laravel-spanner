@@ -20,6 +20,7 @@ namespace Colopl\Spanner;
 use Closure;
 use Colopl\Spanner\Query\Builder as QueryBuilder;
 use Colopl\Spanner\Query\Grammar as QueryGrammar;
+use Colopl\Spanner\Query\Nested;
 use Colopl\Spanner\Query\Parameterizer as QueryParameterizer;
 use Colopl\Spanner\Query\Processor as QueryProcessor;
 use Colopl\Spanner\Schema\Builder as SchemaBuilder;
@@ -445,10 +446,14 @@ class Connection extends BaseConnection
 
     /**
      * @inheritDoc
-     * @param scalar|list<mixed>|null $value
+     * @param scalar|list<mixed>|Nested|null $value
      */
     public function escape($value, $binary = false)
     {
+        if ($value instanceof Nested) {
+            $value = $value->toArray();
+        }
+
         return is_array($value)
             ? $this->escapeArray($value, $binary)
             : parent::escape($value, $binary);

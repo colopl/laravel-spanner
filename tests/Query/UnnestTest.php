@@ -21,6 +21,9 @@ use Colopl\Spanner\Tests\TestCase;
 
 class UnnestTest extends TestCase
 {
+    /** @see https://cloud.google.com/spanner/quotas#query_limits */
+    public const SPANNER_PARAMETERS_LIMIT = 950;
+
     public function test_whereInUnnest(): void
     {
         $conn = $this->getDefaultConnection();
@@ -65,7 +68,7 @@ class UnnestTest extends TestCase
         $qb = $conn->table($tableName);
         $id1 = $this->generateUuid();
         $id2 = $this->generateUuid();
-        $dummyIds = array_map($this->generateUuid(...), range(0, 950));
+        $dummyIds = array_map($this->generateUuid(...), range(0, self::SPANNER_PARAMETERS_LIMIT));
 
         $qb->insert([['userId' => $id1, 'name' => 't1'], ['userId' => $id2, 'name' => 't2']]);
         $given = $qb->whereInUnnest('userId', [$id1, $id2, ...$dummyIds])->pluck('userId')->sort()->values()->all();
@@ -97,5 +100,4 @@ class UnnestTest extends TestCase
         $this->assertCount(2, $results);
         $this->assertSame($ids->skip(1)->values()->all(), $results->all());
     }
-
 }
