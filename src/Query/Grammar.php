@@ -60,8 +60,7 @@ class Grammar extends BaseGrammar
     }
 
     /**
-     * {@inheritDoc}
-     * @return ''
+     * @inheritDoc
      */
     protected function compileLock(Builder $query, $value)
     {
