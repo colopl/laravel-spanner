@@ -97,8 +97,14 @@ class Connection extends BaseConnection
      * @param CacheItemPoolInterface|null $authCache
      * @param SessionPoolInterface|null $sessionPool
      */
-    public function __construct(string $instanceId, string $database, $tablePrefix = '', array $config = [], CacheItemPoolInterface $authCache = null, SessionPoolInterface $sessionPool = null)
-    {
+    public function __construct(
+        string $instanceId,
+        string $database,
+        $tablePrefix = '',
+        array $config = [],
+        ?CacheItemPoolInterface $authCache = null,
+        ?SessionPoolInterface $sessionPool = null,
+    ) {
         $this->instanceId = $instanceId;
         $this->authCache = $authCache;
         $this->sessionPool = $sessionPool;

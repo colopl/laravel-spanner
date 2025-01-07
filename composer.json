@@ -8,7 +8,7 @@
     {"name": "Takayasu Oyama", "email": "t-oyama@colopl.co.jp"}
   ],
   "require": {
-    "php": "^8.2",
+    "php": "^8.2|^8.3|^8.4",
     "ext-grpc": "*",
     "ext-json": "*",
     "laravel/framework": "^11.15.0",
@@ -52,4 +52,3 @@
     "ext-sysvshm": "Can use SemaphoreLock for session handling. Will use FileLock if not present."
   }
 }
-
