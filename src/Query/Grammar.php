@@ -98,7 +98,7 @@ class Grammar extends BaseGrammar
      * @param IndexHint $indexHint
      * @return string
      */
-    protected function compileIndexHint(Builder $builder, $indexHint)
+    protected function compileIndexHint(Builder $query, $indexHint)
     {
         if ($indexHint->index === null) {
             return '';
@@ -122,7 +122,7 @@ class Grammar extends BaseGrammar
      * @param array<string, Expression|string> $where
      * @return string
      */
-    protected function whereInArray(Builder $builder, $where)
+    protected function whereInArray(Builder $query, $where)
     {
         return '? in unnest(' . $this->wrap($where['column']) . ')';
     }
@@ -131,7 +131,7 @@ class Grammar extends BaseGrammar
      * @param array{ values: Nested, column: string, not: bool } $where
      * @return string
      */
-    protected function whereInUnnest(Builder $builder, $where)
+    protected function whereInUnnest(Builder $query, $where)
     {
         $values = $where['values'];
 
@@ -152,7 +152,7 @@ class Grammar extends BaseGrammar
     /**
      * @param array{ tokens: string, query: string, options: array<string, scalar> } $where
      */
-    protected function whereSearchFullText(Builder $builder, array $where): string
+    protected function whereSearchFullText(Builder $query, array $where): string
     {
         return $this->buildSearchFunction('search', $where);
     }
@@ -160,7 +160,7 @@ class Grammar extends BaseGrammar
     /**
      * @param array{ tokens: string, query: string, options: array<string, scalar> } $where
      */
-    protected function whereSearchNgrams(Builder $builder, array $where): string
+    protected function whereSearchNgrams(Builder $query, array $where): string
     {
         return $this->buildSearchFunction('search_ngrams', $where);
     }
@@ -168,7 +168,7 @@ class Grammar extends BaseGrammar
     /**
      * @param array{ tokens: string, query: string, options: array<string, scalar> } $where
      */
-    protected function whereSearchSubstring(Builder $builder, array $where): string
+    protected function whereSearchSubstring(Builder $query, array $where): string
     {
         return $this->buildSearchFunction('search_substring', $where);
     }
