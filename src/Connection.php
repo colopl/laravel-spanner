@@ -108,7 +108,13 @@ class Connection extends BaseConnection
         $this->instanceId = $instanceId;
         $this->authCache = $authCache;
         $this->sessionPool = $sessionPool;
-        parent::__construct(null, $database, $tablePrefix, $config);
+        parent::__construct(
+            // TODO: throw error after v9
+            static fn() => null,
+            $database,
+            $tablePrefix,
+            $config,
+        );
     }
 
     /**
