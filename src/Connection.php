@@ -271,10 +271,11 @@ class Connection extends BaseConnection
      * @param string $query
      * @param array<array-key, mixed> $bindings
      * @param array<string, mixed> $options
-     * @return array<int, array<array-key, mixed>>
+     * @return list<array<array-key, mixed>>
      */
     public function selectWithOptions(string $query, array $bindings, array $options): array
     {
+        /** @var list<array<array-key, mixed>> */
         return $this->run($query, $bindings, function ($query, $bindings) use ($options): array {
             return !$this->pretending()
                 ? iterator_to_array($this->executeQuery($query, $bindings, $options))
@@ -403,9 +404,9 @@ class Connection extends BaseConnection
     }
 
     /**
-     * @internal
-     * @inheritDoc
-     * @return void
+     * TODO: Remove in v9
+     * @deprecated Parent method no longer exists. This will be removed in v9.
+     * @return never
      */
     public function getDoctrineConnection()
     {
