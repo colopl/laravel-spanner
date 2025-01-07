@@ -17,6 +17,9 @@
 
 namespace Colopl\Spanner\TimestampBound;
 
+use Google\Cloud\Spanner\Duration;
+use Google\Cloud\Spanner\Timestamp;
+
 /**
  * TimestampBound defines how Cloud Spanner will choose a timestamp for a single read/query or read-only transaction.
  */
@@ -26,7 +29,15 @@ interface TimestampBoundInterface
      * transactionOptions is used for $options on read/query or read-only transaction (ex. Database::snapshot)
      *
      * @see https://cloud.google.com/spanner/docs/reference/rpc/google.spanner.v1#google.spanner.v1.TransactionOptions
-     * @return array
+     * 
+     * @return array{
+     *     returnReadTimestamp?: bool,
+     *     strong?: bool,
+     *     minReadTimestamp?: Timestamp,
+     *     maxStaleness?: Duration,
+     *     readTimestamp?: Timestamp,
+     *     exactStaleness?: Duration,
+     * }
      */
     public function transactionOptions(): array;
 }
