@@ -81,7 +81,7 @@ class Builder extends BaseBuilder
     /**
      * @inheritDoc
      */
-    protected function createBlueprint($table, Closure $callback = null)
+    protected function createBlueprint($table, ?Closure $callback = null)
     {
         return isset($this->resolver)
             ? ($this->resolver)($table, $callback)
