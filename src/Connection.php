@@ -612,7 +612,9 @@ class Connection extends BaseConnection
 
         $tag = $this->getRequestTag();
         if ($tag !== null) {
-            $options['requestOptions'] ??= ['requestTag' => $tag];
+            $options['requestOptions'] ??= [];
+            assert(is_array($options['requestOptions']));
+            $options['requestOptions']['requestTag'] = $tag;
         }
 
         if ($this->inSnapshot()) {
