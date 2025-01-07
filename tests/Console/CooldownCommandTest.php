@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace Console;
+namespace Colopl\Spanner\Tests\Console;
 
 use Colopl\Spanner\Connection;
 use Colopl\Spanner\Tests\Console\TestCase;

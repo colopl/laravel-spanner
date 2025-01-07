@@ -87,10 +87,12 @@ trait ManagesSessionPool
 
         $response = (new ProtobufSpannerClient($config))->listSessions($databaseName);
 
-        return collect($response->iterateAllElements())->map(function ($session) {
+        $sessions = [];
+        foreach ($response->iterateAllElements() as $session) {
             assert($session instanceof ProtobufSpannerSession);
-            return new SessionInfo($session);
-        });
+            $sessions[] = new SessionInfo($session);
+        }
+        return new Collection($sessions);
     }
 
     /**
