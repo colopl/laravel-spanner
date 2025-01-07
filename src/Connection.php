@@ -403,9 +403,9 @@ class Connection extends BaseConnection
     }
 
     /**
-     * @internal
-     * @inheritDoc
-     * @return void
+     * TODO: Remove in v9
+     * @deprecated Parent method no longer exists. This will be removed in v9.
+     * @return never
      */
     public function getDoctrineConnection()
     {
