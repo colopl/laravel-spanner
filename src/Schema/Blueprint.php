@@ -61,7 +61,7 @@ class Blueprint extends BaseBlueprint
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      * @param string|array<array-key, mixed>|null $index
      * @return never
      */
