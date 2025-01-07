@@ -189,8 +189,7 @@ class Grammar extends BaseGrammar
     }
 
     /**
-     * {@inheritDoc}
-     * @return false
+     * @inheritDoc
      */
     public function supportsSavepoints()
     {
