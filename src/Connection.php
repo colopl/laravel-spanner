@@ -245,8 +245,8 @@ class Connection extends BaseConnection
      *
      * {@inheritDoc}
      *
-     * @param Closure|QueryBuilder<Connection>|Expression|string $table
-     * @return QueryBuilder<Connection>
+     * @param Closure|QueryBuilder<self>|Expression|string $table
+     * @return QueryBuilder<self>
      */
     public function table($table, $as = null): QueryBuilder
     {
@@ -254,8 +254,11 @@ class Connection extends BaseConnection
     }
 
     /**
-     * @inheritDoc OVERRIDDEN for return type change
-     * @return QueryBuilder<Connection>
+     * OVERRIDDEN for return type change
+     *
+     * {@inheritDoc}
+     *
+     * @return QueryBuilder<self>
      */
     public function query(): QueryBuilder
     {
