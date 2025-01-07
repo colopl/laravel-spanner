@@ -114,7 +114,7 @@ class Grammar extends BaseGrammar
      *
      * @param Blueprint  $blueprint
      * @param Fluent<string, mixed>&object{ column: ColumnDefinition } $command
-     * @return list<string>|string
+     * @return string
      */
     public function compileAdd(Blueprint $blueprint, Fluent $command)
     {
@@ -135,7 +135,7 @@ class Grammar extends BaseGrammar
      * @param Blueprint $blueprint
      * @param Fluent<string, mixed>&object{ column: ColumnDefinition } $command
      * @param Connection $connection
-     * @return list<string>|string
+     * @return string
      */
     public function compileChange(Blueprint $blueprint, Fluent $command, Connection $connection)
     {

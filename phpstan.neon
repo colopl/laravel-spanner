@@ -7,8 +7,6 @@ parameters:
         - '#^Return type \(void\) of method .*? should be compatible with return type \(.*?\) of method .*?$#'
         - message: '#^Method Colopl\\Spanner\\Connection::runPartitionedDml\(\) should return int but returns mixed\.$#'
           path: src/Concerns/ManagesPartitionedDml.php
-        - message: '#^Unable to resolve the template type TKey in call to function collect$#'
-          path: src/Concerns/ManagesSessionPool.php
         - message: '#^Parameter \#1 \$pdo of method Illuminate\\Database\\Connection::__construct\(\) expects Closure|PDO, null given\.$#'
           path: src/Connection.php
         - message: '#^Method Colopl\\Spanner\\Connection::selectWithOptions\(\) should return array<int, array> but returns mixed\.$#'
