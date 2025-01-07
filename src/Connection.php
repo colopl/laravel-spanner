@@ -271,11 +271,10 @@ class Connection extends BaseConnection
      * @param string $query
      * @param array<array-key, mixed> $bindings
      * @param array<string, mixed> $options
-     * @return list<array<array-key, mixed>>
+     * @return array<int, array<array-key, mixed>>
      */
     public function selectWithOptions(string $query, array $bindings, array $options): array
     {
-        /** @var list<array<array-key, mixed>> */
         return $this->run($query, $bindings, function ($query, $bindings) use ($options): array {
             return !$this->pretending()
                 ? iterator_to_array($this->executeQuery($query, $bindings, $options))
