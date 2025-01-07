@@ -15,7 +15,6 @@
     "google/cloud-spanner": "^1.58.4",
     "grpc/grpc": "^1.42",
     "symfony/cache": "~7",
-    "symfony/deprecation-contracts": "~2",
     "symfony/lock": "~7"
   },
   "require-dev": {
