@@ -103,7 +103,6 @@ class SpannerServiceProvider extends ServiceProvider
             'name' => $name,
             'cache_path' => null,
             'session_pool' => [],
-            'useGapicBackoffs' => true,
         ];
     }
 
