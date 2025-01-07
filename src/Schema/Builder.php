@@ -47,6 +47,7 @@ class Builder extends BaseBuilder
      */
     public function getTables()
     {
+        /** @var list<array{ name: string, type: string, parent: string }> */
         return $this->connection->select(
             $this->grammar->compileTables(),
         );
@@ -83,6 +84,7 @@ class Builder extends BaseBuilder
      */
     protected function createBlueprint($table, ?Closure $callback = null)
     {
+        /** @phpstan-ignore isset.property */
         return isset($this->resolver)
             ? ($this->resolver)($table, $callback)
             : new Blueprint($table, $callback);
@@ -93,7 +95,6 @@ class Builder extends BaseBuilder
      */
     public function dropAllTables()
     {
-        /** @var Connection $connection */
         $connection = $this->connection;
         $tables = $this->getTables();
 
@@ -136,6 +137,7 @@ class Builder extends BaseBuilder
             }
             array_push($queries, ...$blueprint->toSql($connection, $this->grammar));
         }
+        /** @var Connection $connection */
         $connection->runDdlBatch($queries);
 
         // drop indexes and tables

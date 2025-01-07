@@ -23,11 +23,10 @@ use Illuminate\Contracts\Database\Query\Expression;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Query\Builder as BaseBuilder;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Collection;
 use LogicException;
 
 /**
- * @method Collection<int, array<array-key, mixed>> get($columns = ['*'])
+ * @template TConnection of Connection
  */
 class Builder extends BaseBuilder
 {
@@ -35,6 +34,7 @@ class Builder extends BaseBuilder
     use Concerns\UsesDataBoost;
     use Concerns\UsesFullTextSearch;
     use Concerns\UsesMutations;
+    /** @use Concerns\UsesPartitionedDml<TConnection> */
     use Concerns\UsesPartitionedDml;
     use Concerns\UsesStaleReads;
 
@@ -42,12 +42,13 @@ class Builder extends BaseBuilder
     public const DEFAULT_UNNEST_THRESHOLD = 900;
 
     /**
-     * @var Connection
+     * @var TConnection
      */
     public $connection;
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
+     * @param array<array-key, mixed> $values
      */
     public function insert(array $values)
     {
@@ -55,7 +56,8 @@ class Builder extends BaseBuilder
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
+     * @param array<array-key, mixed> $values
      */
     public function update(array $values)
     {
@@ -69,7 +71,9 @@ class Builder extends BaseBuilder
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
+     * @param array<array-key, mixed> $attributes
+     * @param array<array-key, mixed>|callable(bool): mixed $values
      */
     public function updateOrInsert(array $attributes, array|callable $values = [])
     {
@@ -91,7 +95,10 @@ class Builder extends BaseBuilder
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
+     * @param array<array-key, mixed> $values
+     * @param list<string> $uniqueBy
+     * @param array<array-key, mixed>|null $update
      */
     public function upsert(array $values, $uniqueBy = [], $update = null)
     {
@@ -130,7 +137,8 @@ class Builder extends BaseBuilder
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
+     * @param array<int, mixed>|Arrayable<int, mixed> $values
      */
     public function whereIn($column, $values, $boolean = 'and', $not = false)
     {
@@ -171,7 +179,7 @@ class Builder extends BaseBuilder
 
     /**
      * @param string|Expression $column
-     * @param mixed $values
+     * @param array<int, mixed>|Arrayable<int, mixed> $values
      * @param string $boolean
      * @param bool $not
      * @return $this
@@ -219,7 +227,8 @@ class Builder extends BaseBuilder
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
+     * @return array<int, array<array-key, mixed>>
      */
     protected function runSelect()
     {

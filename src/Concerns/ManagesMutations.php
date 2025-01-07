@@ -28,6 +28,9 @@ use Illuminate\Database\Events\TransactionCommitted;
 use Illuminate\Support\Arr;
 use InvalidArgumentException;
 
+/**
+ * @phpstan-type TDataSet list<array<string, array<array-key, mixed>>>|array<string, array<array-key, mixed>>
+ */
 trait ManagesMutations
 {
     /**
@@ -37,7 +40,7 @@ trait ManagesMutations
 
     /**
      * @param string $table
-     * @param list<array<string, mixed>>|array<string, mixed> $dataSet
+     * @param TDataSet $dataSet
      * @return void
      */
     public function insertUsingMutation(string $table, array $dataSet)
@@ -51,7 +54,7 @@ trait ManagesMutations
 
     /**
      * @param string $table
-     * @param list<array<string, mixed>>|array<string, mixed> $dataSet
+     * @param TDataSet $dataSet
      * @return void
      */
     public function updateUsingMutation(string $table, array $dataSet)
@@ -65,7 +68,7 @@ trait ManagesMutations
 
     /**
      * @param string $table
-     * @param list<array<string, mixed>>|array<string, mixed> $dataSet
+     * @param TDataSet $dataSet
      * @return void
      */
     public function insertOrUpdateUsingMutation(string $table, array $dataSet)
@@ -117,8 +120,8 @@ trait ManagesMutations
     }
 
     /**
-     * @param list<array<string, mixed>>|array<string, mixed> $dataSet
-     * @return list<array<string, mixed>>
+     * @param TDataSet $dataSet
+     * @return array<array-key, iterable<array-key, mixed>>
      */
     protected function prepareForMutation(array $dataSet): array
     {
@@ -130,7 +133,6 @@ trait ManagesMutations
             $dataSet = [$dataSet];
         }
 
-        /** @var list<array<string, mixed>> $dataSet */
         foreach ($dataSet as $index => $values) {
             foreach ($values as $name => $value) {
                 if ($value instanceof DateTimeInterface) {

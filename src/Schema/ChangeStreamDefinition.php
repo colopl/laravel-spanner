@@ -23,12 +23,12 @@ namespace Colopl\Spanner\Schema;
 use Illuminate\Support\Fluent;
 
 /**
- * @property string $retentionPeriod
- * @property ChangeStreamValueCaptureType $valueCaptureType
- * @property bool $excludeTtlDeletes
- * @property bool $excludeInsert
- * @property bool $excludeUpdate
- * @property bool $excludeDelete
+ * @property string|null $retentionPeriod
+ * @property ChangeStreamValueCaptureType|null $valueCaptureType
+ * @property bool|null $excludeTtlDeletes
+ * @property bool|null $excludeInsert
+ * @property bool|null $excludeUpdate
+ * @property bool|null $excludeDelete
  * @method $this retentionPeriod(string $retentionPeriod)
  * @method $this valueCaptureType(ChangeStreamValueCaptureType $valueCaptureType)
  * @method $this excludeTtlDeletes(bool $excludeTtlDeletes)

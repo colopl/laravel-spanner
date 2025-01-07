@@ -35,6 +35,7 @@ trait ManagesPartitionedDml
      */
     public function runPartitionedDml($query, $bindings = [])
     {
+        /** @var int */
         return $this->run($query, $bindings, function ($query, $bindings) {
             if ($this->pretending()) {
                 return 0;

@@ -60,7 +60,9 @@ class SessionInfo
         if (($approximateLastUseTime = $protobufSession->getApproximateLastUseTime()) !== null) {
             $this->lastUsedAt = Carbon::instance($approximateLastUseTime->toDateTime());
         }
-        $this->labels = iterator_to_array($protobufSession->getLabels());
+        /** @var array<string, string> $labels */
+        $labels = iterator_to_array($protobufSession->getLabels());
+        $this->labels = $labels;
     }
 
     /**

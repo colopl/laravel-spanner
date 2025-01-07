@@ -35,8 +35,8 @@ class Parameterizer
      * @see https://googlecloudplatform.github.io/google-cloud-php/#/docs/google-cloud/latest/spanner/database?method=execute
      *
      * @param string $query
-     * @param array $bindings
-     * @return array [0]: converted SQL, [1]: spanner execute options
+     * @param array<array-key, mixed> $bindings
+     * @return array{ 0: string, 1: array<array-key, mixed> }
      */
     public function parameterizeQuery(string $query, array $bindings): array
     {
@@ -59,6 +59,8 @@ class Parameterizer
             $i += 1;
             return $result;
         }, $query);
+
+        assert(is_string($newQuery));
 
         return [$newQuery, $newBindings];
     }
