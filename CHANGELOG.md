@@ -1,3 +1,7 @@
+# v8.3.1 (2025-01-07)
+
+- Fix Grammar::substituteBindingsIntoRawSql fails during unnesting (#246)
+
 # v8.3.0 (2024-12-25)
 
 - add support for full text search (#235)
