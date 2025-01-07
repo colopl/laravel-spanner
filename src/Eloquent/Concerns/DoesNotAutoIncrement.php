@@ -47,8 +47,8 @@ trait DoesNotAutoIncrement
 
     /**
      * {@inheritDoc}
+     * @param array<array-key, mixed> $attributes
      * @return never
-     * @phpstan-ignore missingType.iterableValue
      */
     protected function insertAndSetId(Builder $query, $attributes): void
     {
