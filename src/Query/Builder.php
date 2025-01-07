@@ -34,7 +34,6 @@ class Builder extends BaseBuilder
     use Concerns\UsesDataBoost;
     use Concerns\UsesFullTextSearch;
     use Concerns\UsesMutations;
-    /** @use Concerns\UsesPartitionedDml<TConnection> */
     use Concerns\UsesPartitionedDml;
     use Concerns\UsesStaleReads;
 

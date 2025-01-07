@@ -21,9 +21,7 @@ use Colopl\Spanner\Connection;
 use Illuminate\Database\Query\Grammars\Grammar;
 
 /**
- * @template TConnection of Connection
- *
- * @property TConnection $connection
+ * @property Connection $connection
  * @property Grammar $grammar
  */
 trait UsesPartitionedDml
