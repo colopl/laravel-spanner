@@ -94,6 +94,7 @@ class Grammar extends BaseGrammar
     }
 
     /**
+     * @param Builder $query
      * @param IndexHint $indexHint
      * @return string
      */
@@ -118,6 +119,7 @@ class Grammar extends BaseGrammar
     }
 
     /**
+     * @param Builder $query
      * @param array<string, Expression|string> $where
      * @return string
      */
@@ -127,6 +129,7 @@ class Grammar extends BaseGrammar
     }
 
     /**
+     * @param Builder $query
      * @param array{ values: Nested, column: string, not: bool } $where
      * @return string
      */
@@ -134,7 +137,10 @@ class Grammar extends BaseGrammar
     {
         $values = $where['values'];
 
-        /** @phpstan-ignore instanceof.alwaysTrue */
+        /**
+         * Note: Additional inspection due to inability to constrain language level.
+         * @phpstan-ignore instanceof.alwaysTrue
+         */
         if (!($values instanceof Nested)) {
             throw new RuntimeException('Invalid Type:' . get_class($values) . ' given. ' . Nested::class . ' expected.');
         }
@@ -149,7 +155,9 @@ class Grammar extends BaseGrammar
     }
 
     /**
+     * @param Builder $query
      * @param array{ tokens: string, query: string, options: array<string, scalar> } $where
+     * @return string
      */
     protected function whereSearchFullText(Builder $query, array $where): string
     {
@@ -157,7 +165,9 @@ class Grammar extends BaseGrammar
     }
 
     /**
+     * @param Builder $query
      * @param array{ tokens: string, query: string, options: array<string, scalar> } $where
+     * @return string
      */
     protected function whereSearchNgrams(Builder $query, array $where): string
     {
@@ -165,7 +175,9 @@ class Grammar extends BaseGrammar
     }
 
     /**
+     * @param Builder $query
      * @param array{ tokens: string, query: string, options: array<string, scalar> } $where
+     * @return string
      */
     protected function whereSearchSubstring(Builder $query, array $where): string
     {
@@ -173,7 +185,9 @@ class Grammar extends BaseGrammar
     }
 
     /**
+     * @param string $function
      * @param array{ tokens: string, query: string, options: array<string, scalar> } $where
+     * @return string
      */
     protected function buildSearchFunction(string $function, array $where): string
     {
