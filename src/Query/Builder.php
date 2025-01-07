@@ -62,6 +62,7 @@ class Builder extends BaseBuilder
     {
         foreach ($values as $key => $value) {
             if (is_array($value)) {
+                assert(array_is_list($value));
                 $values[$key] = new ArrayValue($value);
             }
         }
