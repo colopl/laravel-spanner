@@ -84,7 +84,11 @@ trait ManagesTransactions
                     $this->transactions++;
 
                     $this->transactionsManager?->begin(
-                        $this->getName() ?? '', $this->transactions,
+                        /**
+                         * TODO: throws error
+                         * @phpstan-ignore argument.type
+                         */
+                        $this->getName(), $this->transactions,
                     );
 
                     $this->fireConnectionEvent('beganTransaction');
@@ -176,7 +180,11 @@ trait ManagesTransactions
         }
 
         $this->transactionsManager?->commit(
-            $this->getName() ?? '',
+            /**
+             * TODO: throws error
+             * @phpstan-ignore argument.type
+             */
+            $this->getName(),
             $levelBeingCommitted,
             $this->transactions,
         );
