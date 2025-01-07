@@ -103,7 +103,7 @@ class Processor extends BaseProcessor
 
     /**
      * {@inheritDoc}
-     * @param array{index_name: string}&array<string, mixed> $results
+     * @param array{ index_name: string }&array<string, mixed> $results
      * @return array<array-key, string>
      */
     public function processIndexes($results)
