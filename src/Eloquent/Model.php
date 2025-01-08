@@ -28,8 +28,7 @@ use Illuminate\Support\Str;
  */
 class Model extends BaseModel
 {
-    use Concerns\InterleaveKeySupport,
-        Concerns\DoesNotAutoIncrement;
+    use Concerns\InterleaveKeySupport;
 
     /**
      * @var list<string>
