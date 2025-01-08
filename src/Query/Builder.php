@@ -25,9 +25,6 @@ use Illuminate\Database\Query\Builder as BaseBuilder;
 use Illuminate\Support\Arr;
 use LogicException;
 
-/**
- * @template TConnection of Connection
- */
 class Builder extends BaseBuilder
 {
     use Concerns\SetsRequestTimeouts;
@@ -41,7 +38,7 @@ class Builder extends BaseBuilder
     public const DEFAULT_UNNEST_THRESHOLD = 900;
 
     /**
-     * @var TConnection
+     * @var Connection
      */
     public $connection;
 
