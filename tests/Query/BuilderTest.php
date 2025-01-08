@@ -22,6 +22,7 @@ use Colopl\Spanner\Query\Builder;
 use Colopl\Spanner\Schema\Blueprint;
 use Colopl\Spanner\Schema\Grammar;
 use Colopl\Spanner\Schema\TokenizerFunction;
+use Colopl\Spanner\Tests\Eloquent\IdentityTest;
 use Colopl\Spanner\Tests\TestCase;
 use Colopl\Spanner\TimestampBound\ExactStaleness;
 use Google\Cloud\Spanner\Bytes;
@@ -981,12 +982,11 @@ class BuilderTest extends TestCase
 
     public function test_insertGetId(): void
     {
-        $this->expectException(BadMethodCallException::class);
-        $this->expectExceptionMessage('Cloud Spanner does not support insertGetId');
-
         $conn = $this->getDefaultConnection();
-        $qb = $conn->table(self::TABLE_NAME_USER);
-        $qb->insertGetId(['userId' => $this->generateUuid(), 'name' => 'first']);
+
+        $id = $conn->query()->from('IdentityTest')->insertGetId(['name' => 'foobar'], 'identityTestId');
+
+        $this->assertSame(4611686018427387904, $id);
     }
 
     public function test_lock(): void

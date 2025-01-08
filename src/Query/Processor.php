@@ -17,12 +17,14 @@
 
 namespace Colopl\Spanner\Query;
 
+use Colopl\Spanner\Connection;
 use Google\Cloud\Spanner\Numeric;
 use Google\Cloud\Spanner\Timestamp;
 use Google\Cloud\Spanner\ValueInterface;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Database\Query\Processors\Processor as BaseProcessor;
 use Illuminate\Support\Carbon;
+use LogicException;
 
 class Processor extends BaseProcessor
 {
@@ -37,13 +39,23 @@ class Processor extends BaseProcessor
 
         $connection->recordsHaveBeenModified();
 
-        $result = $connection->select($sql, $values)[0];
+        $queryCall = static fn() => $connection->selectOne($sql, $values);
+
+        $result = $connection->transactionLevel() > 0
+            ? $queryCall()
+            : $connection->transaction($queryCall);
 
         $sequence ??= 'id';
 
-        return is_object($result)
-            ? $result->{$sequence}
-            : $result[$sequence];
+        $id = match(true) {
+            is_object($result) => $result->{$sequence},
+            is_array($result) => $result[$sequence],
+            default => throw new LogicException('Unknown result type : ' . gettype($result)),
+        };
+
+        assert(is_int($id));
+
+        return $id;
     }
 
     /**
