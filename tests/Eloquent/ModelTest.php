@@ -508,6 +508,6 @@ class ModelTest extends TestCase
         $test->name = 'test';
         $test->saveOrFail();
         $this->assertIsInt($test->getKey());
-        $this->assertTrue(1000000000000000000 > $test->getKey());
+        $this->assertTrue($test->getKey() > 1000000000000000000);
     }
 }
