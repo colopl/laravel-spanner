@@ -17,7 +17,6 @@
 
 namespace Colopl\Spanner\Query;
 
-use Colopl\Spanner\Connection;
 use Google\Cloud\Spanner\Numeric;
 use Google\Cloud\Spanner\Timestamp;
 use Google\Cloud\Spanner\ValueInterface;
@@ -30,8 +29,7 @@ class Processor extends BaseProcessor
 {
     /**
      * {@inheritDoc}
-     * @param array<array-key, array<array-key, mixed>> $results
-     * @return array<array-key, array<array-key, mixed>>
+     * @param array<array-key, mixed> $values
      */
     public function processInsertGetId(Builder $query, $sql, $values, $sequence = null)
     {
@@ -60,6 +58,8 @@ class Processor extends BaseProcessor
 
     /**
      * @inheritDoc
+     * @param array<array-key, array<array-key, mixed>> $results
+     * @return array<array-key, array<array-key, mixed>>
      */
     public function processSelect(Builder $query, $results): array
     {
