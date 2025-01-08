@@ -23,12 +23,8 @@ use Illuminate\Contracts\Database\Query\Expression;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Query\Builder as BaseBuilder;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Collection;
 use LogicException;
 
-/**
- * @method Collection<int, array<array-key, mixed>> get($columns = ['*'])
- */
 class Builder extends BaseBuilder
 {
     use Concerns\SetsRequestTimeouts;
@@ -47,7 +43,8 @@ class Builder extends BaseBuilder
     public $connection;
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
+     * @param array<array-key, mixed> $values
      */
     public function insert(array $values)
     {
@@ -55,12 +52,14 @@ class Builder extends BaseBuilder
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
+     * @param array<array-key, mixed> $values
      */
     public function update(array $values)
     {
         foreach ($values as $key => $value) {
             if (is_array($value)) {
+                assert(array_is_list($value));
                 $values[$key] = new ArrayValue($value);
             }
         }
@@ -69,7 +68,9 @@ class Builder extends BaseBuilder
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
+     * @param array<array-key, mixed> $attributes
+     * @param array<array-key, mixed>|callable(bool): mixed $values
      */
     public function updateOrInsert(array $attributes, array|callable $values = [])
     {
@@ -91,7 +92,10 @@ class Builder extends BaseBuilder
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
+     * @param array<array-key, mixed> $values
+     * @param list<string> $uniqueBy
+     * @param array<array-key, mixed>|null $update
      */
     public function upsert(array $values, $uniqueBy = [], $update = null)
     {
@@ -130,7 +134,8 @@ class Builder extends BaseBuilder
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
+     * @param array<int, mixed>|Arrayable<int, mixed> $values
      */
     public function whereIn($column, $values, $boolean = 'and', $not = false)
     {
@@ -171,7 +176,7 @@ class Builder extends BaseBuilder
 
     /**
      * @param string|Expression $column
-     * @param mixed $values
+     * @param array<int, mixed>|Arrayable<int, mixed> $values
      * @param string $boolean
      * @param bool $not
      * @return $this
@@ -219,7 +224,8 @@ class Builder extends BaseBuilder
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
+     * @return array<int, array<array-key, mixed>>
      */
     protected function runSelect()
     {

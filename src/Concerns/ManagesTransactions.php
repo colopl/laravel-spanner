@@ -40,7 +40,7 @@ trait ManagesTransactions
     protected ?int $maxAttempts = null;
 
     /**
-     * @var array|null $commitOptions
+     * @var array<string, mixed>|null $commitOptions
      */
     protected ?array $commitOptions = null;
 
@@ -84,6 +84,10 @@ trait ManagesTransactions
                     $this->transactions++;
 
                     $this->transactionsManager?->begin(
+                        /**
+                         * TODO: throws error
+                         * @phpstan-ignore argument.type
+                         */
                         $this->getName(), $this->transactions,
                     );
 
@@ -176,6 +180,10 @@ trait ManagesTransactions
         }
 
         $this->transactionsManager?->commit(
+            /**
+             * TODO: throws error
+             * @phpstan-ignore argument.type
+             */
             $this->getName(),
             $levelBeingCommitted,
             $this->transactions,
@@ -280,6 +288,7 @@ trait ManagesTransactions
 
         $options = $this->getConfig('commit') ?? [];
         assert(is_array($options));
+        /** @var array<string, mixed> $options */
         return $this->commitOptions = $options;
     }
 

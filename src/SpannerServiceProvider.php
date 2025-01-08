@@ -30,6 +30,16 @@ use LogicException;
 use Symfony\Component\Cache\Adapter\AdapterInterface;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 
+/**
+ * @phpstan-type TConfig array{
+ *   name: string,
+ *   instance: string,
+ *   database: string,
+ *   prefix: string,
+ *   cache_path: string|null,
+ *   session_pool: array<string, mixed>,
+ * }
+ */
 class SpannerServiceProvider extends ServiceProvider
 {
     /**
@@ -58,14 +68,7 @@ class SpannerServiceProvider extends ServiceProvider
     }
 
     /**
-     * @param array{
-     *      name: string,
-     *      instance: string,
-     *      database: string,
-     *      prefix: string,
-     *      cache_path: string|null,
-     *      session_pool: array<string, mixed>,
-     * } $config
+     * @param TConfig $config
      * @return Connection
      */
     protected function createSpannerConnection(array $config): Connection
@@ -82,15 +85,7 @@ class SpannerServiceProvider extends ServiceProvider
 
     /**
      * @param array<string, mixed> $config
-     * @param string $name
-     * @return array{
-     *       name: string,
-     *       instance: string,
-     *       database: string,
-     *       prefix: string,
-     *       cache_path: string|null,
-     *       session_pool: array<string, mixed>,
-     *  } $config
+     * @return TConfig
      */
     protected function parseConfig(array $config, string $name): array
     {
@@ -98,6 +93,9 @@ class SpannerServiceProvider extends ServiceProvider
             throw new LogicException('Connection name "_auth" is reserved.');
         }
 
+        /**
+         * @var TConfig
+         */
         return $config + [
             'prefix' => '',
             'name' => $name,

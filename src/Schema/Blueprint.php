@@ -61,7 +61,8 @@ class Blueprint extends BaseBlueprint
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
+     * @param string|array<array-key, mixed>|null $index
      * @return never
      */
     public function dropPrimary($index = null)
@@ -117,6 +118,7 @@ class Blueprint extends BaseBlueprint
      */
     public function string($column, $length = null)
     {
+        /** @phpstan-ignore argument.type */
         return parent::string($column, $length);
     }
 
@@ -248,7 +250,7 @@ class Blueprint extends BaseBlueprint
      * @param string $column
      * @param TokenizerFunction $function
      * @param string $target
-     * @param array $options
+     * @param array<array-key, mixed> $options
      * @return ColumnDefinition
      */
     public function tokenList(string $column, TokenizerFunction $function, string $target, array $options = []): ColumnDefinition

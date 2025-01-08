@@ -18,7 +18,7 @@
 namespace Colopl\Spanner\Query\Concerns;
 
 use Colopl\Spanner\Connection;
-use Colopl\Spanner\Query\Grammar;
+use Illuminate\Database\Query\Grammars\Grammar;
 
 /**
  * @property Connection $connection
@@ -27,7 +27,7 @@ use Colopl\Spanner\Query\Grammar;
 trait UsesPartitionedDml
 {
     /**
-     * @param array $values
+     * @param array<string, mixed> $values
      * @return int affected rows count
      */
     public function partitionedUpdate(array $values)

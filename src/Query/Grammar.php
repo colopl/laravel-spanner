@@ -31,7 +31,8 @@ class Grammar extends BaseGrammar
     use SharedGrammarCalls;
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
+     * @param array<array-key, mixed> $values
      */
     public function compileInsertOrIgnore(Builder $query, array $values)
     {
@@ -39,7 +40,10 @@ class Grammar extends BaseGrammar
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
+     * @param array<array-key, mixed> $values
+     * @param list<string> $uniqueBy
+     * @param array<array-key, mixed> $update
      */
     public function compileUpsert(Builder $query, array $values, array $uniqueBy, array $update)
     {
@@ -47,7 +51,8 @@ class Grammar extends BaseGrammar
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
+     * @param array<array-key, mixed> $values
      */
     public function compileInsertGetId(Builder $query, $values, $sequence)
     {
@@ -63,7 +68,10 @@ class Grammar extends BaseGrammar
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
+     * @param array<array-key, mixed> $bindings
+     * @param array<array-key, mixed> $values
+     * @return array<array-key, mixed>
      */
     public function prepareBindingsForUpdate(array $bindings, array $values)
     {
@@ -77,7 +85,8 @@ class Grammar extends BaseGrammar
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
+     * @return non-empty-array<string, array>
      */
     public function compileTruncate(Builder $query)
     {
@@ -121,13 +130,17 @@ class Grammar extends BaseGrammar
 
     /**
      * @param Builder $query
-     * @param array $where{ values: Nested, column: string, not: bool }
+     * @param array{ values: Nested, column: string, not: bool } $where
      * @return string
      */
     protected function whereInUnnest(Builder $query, $where)
     {
         $values = $where['values'];
 
+        /**
+         * Note: Additional inspection due to inability to constrain language level.
+         * @phpstan-ignore instanceof.alwaysTrue
+         */
         if (!($values instanceof Nested)) {
             throw new RuntimeException('Invalid Type:' . get_class($values) . ' given. ' . Nested::class . ' expected.');
         }

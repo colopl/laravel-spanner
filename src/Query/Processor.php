@@ -27,7 +27,9 @@ use Illuminate\Support\Carbon;
 class Processor extends BaseProcessor
 {
     /**
-     * @inheritDoc
+     * {@inheritDoc}
+     * @param array<array-key, array<array-key, mixed>> $results
+     * @return array<array-key, array<array-key, mixed>>
      */
     public function processSelect(Builder $query, $results): array
     {
@@ -49,6 +51,11 @@ class Processor extends BaseProcessor
         return $results;
     }
 
+    /**
+     * @template TValue of mixed
+     * @param TValue $value
+     * @return ($value is Timestamp ? Carbon : ($value is Numeric ? string : TValue))
+     */
     protected function processColumn(mixed $value): mixed
     {
         if ($value instanceof Timestamp) {
@@ -65,7 +72,18 @@ class Processor extends BaseProcessor
     /**
      * Process the results of a columns query.
      *
-     * @inheritDoc
+     * {@inheritDoc}
+     * @param array<array-key, array<array-key, mixed>> $results
+     * @return array<array-key, array{
+     *     name: string,
+     *     type_name: string,
+     *     type: string,
+     *     collation: null,
+     *     nullable: bool,
+     *     default: scalar,
+     *     auto_increment: false,
+     *     comment: null
+     * }>
      */
     public function processColumns($results)
     {
@@ -84,8 +102,9 @@ class Processor extends BaseProcessor
     }
 
     /**
-     * @param array $results
-     * @return array
+     * {@inheritDoc}
+     * @param array{ index_name: string }&array<string, mixed> $results
+     * @return array<array-key, string>
      */
     public function processIndexes($results)
     {
@@ -95,8 +114,9 @@ class Processor extends BaseProcessor
     }
 
     /**
-     * @param array $results
-     * @return array
+     * {@inheritDoc}
+     * @param array{key_name: string}&array<string, mixed> $results
+     * @return array<array-key, string>
      */
     public function processForeignKeys($results)
     {

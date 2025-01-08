@@ -37,7 +37,8 @@ trait DoesNotAutoIncrement
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
+     * @return never
      */
     public function setIncrementing($value)
     {
@@ -45,7 +46,9 @@ trait DoesNotAutoIncrement
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
+     * @param array<array-key, mixed> $attributes
+     * @return never
      */
     protected function insertAndSetId(Builder $query, $attributes): void
     {

@@ -17,16 +17,19 @@
 
 namespace Colopl\Spanner\Query\Concerns;
 
+use Colopl\Spanner\Concerns\ManagesMutations;
 use Colopl\Spanner\Connection;
 use Google\Cloud\Spanner\KeySet;
 
 /**
+ * @phpstan-import-type TDataSet from ManagesMutations
+ *
  * @property Connection $connection
  */
 trait UsesMutations
 {
     /**
-     * @param list<array<string, mixed>>|array<string, mixed> $values
+     * @param TDataSet $values
      * @return void
      */
     public function insertUsingMutation(array $values)
@@ -35,7 +38,7 @@ trait UsesMutations
     }
 
     /**
-     * @param list<array<string, mixed>>|array<string, mixed> $values
+     * @param TDataSet $values
      * @return void
      */
     public function updateUsingMutation(array $values)
@@ -44,7 +47,7 @@ trait UsesMutations
     }
 
     /**
-     * @param list<array<string, mixed>>|array<string, mixed> $values
+     * @param TDataSet $values
      * @return void
      */
     public function insertOrUpdateUsingMutation(array $values)
