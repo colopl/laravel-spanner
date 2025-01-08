@@ -39,7 +39,7 @@ class Processor extends BaseProcessor
 
         $result = $connection->select($sql, $values)[0];
 
-        $sequence = $sequence ?: 'id';
+        $sequence ??= 'id';
 
         return is_object($result)
             ? $result->{$sequence}
