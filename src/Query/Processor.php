@@ -31,6 +31,24 @@ class Processor extends BaseProcessor
      * @param array<array-key, array<array-key, mixed>> $results
      * @return array<array-key, array<array-key, mixed>>
      */
+    public function processInsertGetId(Builder $query, $sql, $values, $sequence = null)
+    {
+        $connection = $query->getConnection();
+
+        $connection->recordsHaveBeenModified();
+
+        $result = $connection->select($sql, $values)[0];
+
+        $sequence = $sequence ?: 'id';
+
+        return is_object($result)
+            ? $result->{$sequence}
+            : $result[$sequence];
+    }
+
+    /**
+     * @inheritDoc
+     */
     public function processSelect(Builder $query, $results): array
     {
         foreach ($results as $index => $result) {

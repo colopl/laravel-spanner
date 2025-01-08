@@ -175,6 +175,14 @@ class BindingChild extends Model
     public $timestamps = false;
 }
 
+class IdentityTest extends Model
+{
+    protected $table = 'IdentityTest';
+    protected $primaryKey = 'identityTestId';
+    public $incrementing = true;
+    public $timestamps = false;
+}
+
 class ModelTest extends TestCase
 {
     protected function setUp(): void
@@ -492,5 +500,13 @@ class ModelTest extends TestCase
             [$user->getKey(), $userInfo->getKey()],
             $queryLogs[0]['bindings'],
         );
+    }
+
+    public function test_insertAndSetId(): void
+    {
+        $test = new IdentityTest();
+        $test->name = 'test';
+        $test->saveOrFail();
+        $this->assertSame(4611686018427387904, $test->getKey());
     }
 }

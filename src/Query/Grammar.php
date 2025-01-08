@@ -56,7 +56,7 @@ class Grammar extends BaseGrammar
      */
     public function compileInsertGetId(Builder $query, $values, $sequence)
     {
-        $this->markAsNotSupported('insertGetId');
+        return $this->compileInsert($query, $values).' then return '.$this->wrap($sequence ?: 'id');
     }
 
     /**

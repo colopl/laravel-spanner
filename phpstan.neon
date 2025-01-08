@@ -2,3 +2,7 @@ parameters:
     level: 9
     paths:
         - src
+    ignoreErrors:
+        - message: "#^Call to an undefined method Illuminate\\\\Database\\\\ConnectionInterface\\:\\:recordsHaveBeenModified\\(\\)\\.$#"
+          count: 1
+          path: src/Query/Processor.php
