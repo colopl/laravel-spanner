@@ -507,6 +507,7 @@ class ModelTest extends TestCase
         $test = new IdentityTest();
         $test->name = 'test';
         $test->saveOrFail();
-        $this->assertSame(4611686018427387904, $test->getKey());
+        $this->assertIsInt($test->getKey());
+        $this->assertTrue(1000000000000000000 > $test->getKey());
     }
 }

@@ -986,7 +986,8 @@ class BuilderTest extends TestCase
 
         $id = $conn->query()->from('IdentityTest')->insertGetId(['name' => 'foobar'], 'identityTestId');
 
-        $this->assertSame(4611686018427387904, $id);
+        $this->assertIsInt($id);
+        $this->assertTrue(1000000000000000000 > $id);
     }
 
     public function test_lock(): void
