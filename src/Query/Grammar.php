@@ -53,10 +53,11 @@ class Grammar extends BaseGrammar
     /**
      * {@inheritDoc}
      * @param array<array-key, mixed> $values
+     * @param string|null $sequence
      */
     public function compileInsertGetId(Builder $query, $values, $sequence)
     {
-        $this->markAsNotSupported('insertGetId');
+        return $this->compileInsert($query, $values) . ' then return ' . $this->wrap($sequence ?? 'id');
     }
 
     /**
