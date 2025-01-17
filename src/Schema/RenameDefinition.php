@@ -23,7 +23,7 @@ use Illuminate\Support\Fluent;
 /**
  * @property string $name
  * @property string $to
- * @property string|null $synonym
+ * @property string|true $synonym
  * @method $this synonym(string|null $name = null)
  * @extends Fluent<string, mixed>
  */

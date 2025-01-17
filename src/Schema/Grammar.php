@@ -229,8 +229,11 @@ class Grammar extends BaseGrammar
         $from = $this->wrapTable($blueprint);
         $to = $this->wrapTable($command->to);
         $schema = "alter table {$from} rename to {$to}";
-        if ($command->synonym !== null) {
-            $schema .= " add synonym {$this->wrapTable($command->synonym)}";
+        if (isset($command->synonym)) {
+            $synonym = is_string($command->synonym)
+                ? $this->wrapTable($command->synonym)
+                : $from;
+            $schema .= ", add synonym {$synonym}";
         }
         return $schema;
     }

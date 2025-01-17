@@ -368,6 +368,115 @@ class BlueprintTest extends TestCase
         ], $statements);
     }
 
+    public function test_rename_table(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $conn->useDefaultSchemaGrammar();
+        $grammar = $conn->getSchemaGrammar();
+        $tableName = $this->generateTableName();
+        $blueprint = new Blueprint($tableName);
+        $blueprint->id();
+        $blueprint->create();
+        $blueprint->build($conn, $grammar);
+
+        $blueprint = new Blueprint($tableName);
+        $blueprint->rename($tableName . '_v2');
+        $blueprint->build($conn, $grammar);
+
+        $statements = $blueprint->toSql($conn, $grammar);
+        $this->assertSame([
+            "alter table `{$tableName}` rename to `{$tableName}_v2`",
+        ], $statements);
+    }
+
+    public function test_rename_table_with_synonym(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $conn->useDefaultSchemaGrammar();
+        $grammar = $conn->getSchemaGrammar();
+        $tableName = $this->generateTableName();
+        $blueprint = new Blueprint($tableName);
+        $blueprint->id();
+        $blueprint->create();
+        $blueprint->build($conn, $grammar);
+
+        $blueprint = new Blueprint($tableName);
+        $blueprint->rename($tableName . '_v2')->synonym();
+        $blueprint->build($conn, $grammar);
+
+        $statements = $blueprint->toSql($conn, $grammar);
+        $this->assertSame([
+            "alter table `{$tableName}` rename to `{$tableName}_v2`, add synonym `{$tableName}`",
+        ], $statements);
+    }
+
+    public function test_rename_table_with_synonym_custom_name(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $conn->useDefaultSchemaGrammar();
+        $grammar = $conn->getSchemaGrammar();
+        $tableName = $this->generateTableName();
+        $blueprint = new Blueprint($tableName);
+        $blueprint->id();
+        $blueprint->create();
+        $blueprint->build($conn, $grammar);
+
+        $blueprint = new Blueprint($tableName);
+        $blueprint->rename($tableName . '_v2')->synonym($tableName . '_v1');
+        $blueprint->build($conn, $grammar);
+
+        $statements = $blueprint->toSql($conn, $grammar);
+        $this->assertSame([
+            "alter table `{$tableName}` rename to `{$tableName}_v2`, add synonym `{$tableName}_v1`",
+        ], $statements);
+    }
+
+    public function test_rename_table_add_synonym(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $conn->useDefaultSchemaGrammar();
+        $grammar = $conn->getSchemaGrammar();
+        $tableName = $this->generateTableName();
+        $blueprint = new Blueprint($tableName);
+        $blueprint->id();
+        $blueprint->create();
+        $blueprint->build($conn, $grammar);
+
+        $blueprint = new Blueprint($tableName);
+        $blueprint->addSynonym($tableName . '_v1');
+        $blueprint->build($conn, $grammar);
+
+        $statements = $blueprint->toSql($conn, $grammar);
+        $this->assertSame([
+            "alter table `{$tableName}` add synonym `{$tableName}_v1`",
+        ], $statements);
+    }
+
+    public function test_rename_table_drop_synonym(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $conn->useDefaultSchemaGrammar();
+        $grammar = $conn->getSchemaGrammar();
+        $tableName = $this->generateTableName();
+        $blueprint = new Blueprint($tableName);
+        $blueprint->id();
+        $blueprint->create();
+        $blueprint->build($conn, $grammar);
+
+        $blueprint = new Blueprint($tableName);
+        $blueprint->addSynonym($tableName . '_v1');
+        $blueprint->build($conn, $grammar);
+
+        $blueprint = new Blueprint($tableName);
+        $blueprint->dropSynonym($tableName . '_v1');
+        $blueprint->build($conn, $grammar);
+
+        $statements = $blueprint->toSql($conn, $grammar);
+        $this->assertSame([
+            "alter table `{$tableName}` drop synonym `{$tableName}_v1`",
+        ], $statements);
+    }
+
     public function test_create_with_row_deletion_policy(): void
     {
         $conn = $this->getDefaultConnection();
