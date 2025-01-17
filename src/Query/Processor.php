@@ -23,11 +23,41 @@ use Google\Cloud\Spanner\ValueInterface;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Database\Query\Processors\Processor as BaseProcessor;
 use Illuminate\Support\Carbon;
+use LogicException;
 
 class Processor extends BaseProcessor
 {
     /**
      * {@inheritDoc}
+     * @param array<array-key, mixed> $values
+     */
+    public function processInsertGetId(Builder $query, $sql, $values, $sequence = null)
+    {
+        $connection = $query->getConnection();
+
+        $connection->recordsHaveBeenModified();
+
+        $queryCall = static fn() => $connection->selectOne($sql, $values);
+
+        $result = $connection->transactionLevel() > 0
+            ? $queryCall()
+            : $connection->transaction($queryCall);
+
+        $sequence ??= 'id';
+
+        $id = match(true) {
+            is_object($result) => $result->{$sequence},
+            is_array($result) => $result[$sequence],
+            default => throw new LogicException('Unknown result type : ' . gettype($result)),
+        };
+
+        assert(is_int($id));
+
+        return $id;
+    }
+
+    /**
+     * @inheritDoc
      * @param array<array-key, array<array-key, mixed>> $results
      * @return array<array-key, array<array-key, mixed>>
      */
