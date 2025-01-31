@@ -309,6 +309,36 @@ class Blueprint extends BaseBlueprint
     }
 
     /**
+     * {@inheritdoc}
+     * @return RenameDefinition
+     */
+    public function rename($to): RenameDefinition
+    {
+        $this->commands[] = $command = new RenameDefinition(__FUNCTION__, $to);
+        return $command;
+    }
+
+    /**
+     * @param string $name
+     * @return RenameDefinition
+     */
+    public function addSynonym(string $name): RenameDefinition
+    {
+        $this->commands[] = $command = (new RenameDefinition(__FUNCTION__, ''))->synonym($name);
+        return $command;
+    }
+
+    /**
+     * @param string $name
+     * @return RenameDefinition
+     */
+    public function dropSynonym(string $name): RenameDefinition
+    {
+        $this->commands[] = $command = (new RenameDefinition(__FUNCTION__, ''))->synonym($name);
+        return $command;
+    }
+
+    /**
      * @see https://cloud.google.com/spanner/docs/ttl#defining_a_row_deletion_policy
      * @param string $column
      * @param int $days

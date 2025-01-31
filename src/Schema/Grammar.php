@@ -221,6 +221,49 @@ class Grammar extends BaseGrammar
 
     /**
      * @param Blueprint $blueprint
+     * @param RenameDefinition $command
+     * @return string
+     */
+    public function compileRename(Blueprint $blueprint, Fluent $command)
+    {
+        $from = $this->wrapTable($blueprint);
+        $to = $this->wrapTable($command->to);
+        $schema = "alter table {$from} rename to {$to}";
+        if (isset($command->synonym)) {
+            $synonym = is_string($command->synonym)
+                ? $this->wrapTable($command->synonym)
+                : $from;
+            $schema .= ", add synonym {$synonym}";
+        }
+        return $schema;
+    }
+
+    /**
+     * @param Blueprint $blueprint
+     * @param RenameDefinition $command
+     * @return string
+     */
+    public function compileAddSynonym(Blueprint $blueprint, Fluent $command)
+    {
+        $table = $this->wrapTable($blueprint);
+        $synonym = $this->wrapTable($command->synonym);
+        return "alter table {$table} add synonym {$synonym}";
+    }
+
+    /**
+     * @param Blueprint $blueprint
+     * @param RenameDefinition $command
+     * @return string
+     */
+    public function compileDropSynonym(Blueprint $blueprint, Fluent $command)
+    {
+        $table = $this->wrapTable($blueprint);
+        $synonym = $this->wrapTable($command->synonym);
+        return "alter table {$table} drop synonym {$synonym}";
+    }
+
+    /**
+     * @param Blueprint $blueprint
      * @param RowDeletionPolicyDefinition $command
      * @return string
      */
