@@ -858,7 +858,7 @@ class Grammar extends BaseGrammar
 
         $expression = match (true) {
             $as === true => 'bit_reversed_positive',
-            $as instanceof Expression => $this->getValue($as),
+            $as instanceof ExpressionContract => $this->getValue($as),
             default => $as,
         };
 
