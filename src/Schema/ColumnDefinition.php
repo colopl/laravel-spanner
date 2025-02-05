@@ -20,7 +20,7 @@ declare(strict_types=1);
 
 namespace Colopl\Spanner\Schema;
 
-use Illuminate\Database\Query\Expression;
+use Illuminate\Contracts\Database\Query\Expression;
 use Illuminate\Database\Schema\ColumnDefinition as BaseColumnDefinition;
 
 /**
