@@ -90,7 +90,6 @@ Please note that the following are not required, but are strongly recommended fo
 
 - STRUCT data types
 - Inserting/Updating JSON data types
-- Explicit Read-only transaction (snapshot)
 
 ## Limitations
 
