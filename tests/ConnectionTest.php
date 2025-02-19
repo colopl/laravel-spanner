@@ -631,4 +631,12 @@ class ConnectionTest extends TestCase
         $conn->useDefaultSchemaGrammar();
         $this->assertSame('test_', $conn->getSchemaGrammar()->getTablePrefix());
     }
+
+    public function test_binding_mutable_carbon_doesnt_change_timezone(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $now = now()->setTimezone('Asia/Tokyo');
+        $conn->select('SELECT ?', [$now]);
+        $this->assertSame('Asia/Tokyo', $now->getTimezone()->getName());
+    }
 }
