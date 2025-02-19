@@ -24,6 +24,7 @@ use Colopl\Spanner\Query\Parameterizer as QueryParameterizer;
 use Colopl\Spanner\Query\Processor as QueryProcessor;
 use Colopl\Spanner\Schema\Builder as SchemaBuilder;
 use Colopl\Spanner\Schema\Grammar as SchemaGrammar;
+use DateTimeImmutable;
 use DateTimeInterface;
 use Exception;
 use Generator;
@@ -425,7 +426,11 @@ class Connection extends BaseConnection
         // date string. Each query grammar maintains its own date string format
         // so we'll just ask the grammar for the format to get from the date.
         if ($value instanceof DateTimeInterface) {
-            return new Timestamp($value);
+            // Since Timestamp::__toString calls setTimezone() on the DateTime object,
+            // we need to clone the DateTime object to avoid changing the original object.
+            return ($value instanceof DateTimeImmutable)
+                ? new Timestamp($value)
+                : new Timestamp(DateTimeImmutable::createFromInterface($value));
         }
 
         if (is_array($value)) {
