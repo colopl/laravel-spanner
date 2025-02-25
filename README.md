@@ -241,7 +241,7 @@ In order to use JSON columns, use the provided Cast on your model as below
 ```php
 use Colopl\Spanner\Casts\SpannerJson;
 
-$casts = [
+protected $casts = [
     'json_column_name' => SpannerJson::class,
 ]
 ```
