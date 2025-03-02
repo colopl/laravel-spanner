@@ -59,6 +59,7 @@ class SnapshotTest extends TestCase
         $result = $conn->table(self::TABLE_NAME_USER)->snapshot(new StrongRead())->first();
 
         $this->assertFalse($conn->inSnapshot());
+        $this->assertNotNull($result);
         $this->assertSame('t', $result->name);
     }
 
