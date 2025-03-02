@@ -24,7 +24,7 @@ trait UsesSnapshots
     /**
      * @var TimestampBoundInterface
      */
-    protected $snapshotTimestampBound;
+    protected ?TimestampBoundInterface $snapshotTimestampBound;
 
     /**
      * @param TimestampBoundInterface $timestamp
