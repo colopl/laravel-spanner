@@ -1,28 +1,38 @@
 <?php
 
-namespace Colopl\Spanner\Casts;
+namespace App\Casts;
 
-use Google\Cloud\Spanner\PgJsonb;
-use Google\Cloud\Spanner\V1\TypeAnnotationCode;
 use Illuminate\Contracts\Database\Eloquent\CastsAttributes;
+use JsonSerializable;
 
+/**
+ * @implements CastsAttributes<array|null, array>
+ */
 class SpannerJson implements CastsAttributes
 {
-	public function get($model, $key, $value, $attributes)
-	{
-		return json_decode((string) $value, true);
-	}
+    public function get($model, $key, $value, $attributes): array|null
+    {
+        if ($value === null) {
+            return null;
+        }
 
-	public function set($model, $key, $value, $attributes)
-	{
-		return [$key => new SpannerJsonType($value)];
-	}
-}
+        if(is_array($value)) {
+            return $value;
+        }
 
-class SpannerJsonType extends PgJsonb
-{
-	public function typeAnnotation()
-	{
-		return TypeAnnotationCode::TYPE_ANNOTATION_CODE_UNSPECIFIED;
-	}
+        if(!is_string($value)) {
+            throw new \InvalidArgumentException('The given value must be an array, string or null.');
+        }
+
+        return json_decode($value, true);
+    }
+
+    public function set($model, $key, $value, $attributes): array
+    {
+        if (!is_array($value) && !$value instanceof JsonSerializable && $value !== null && !is_string($value)) {
+            throw new \InvalidArgumentException('The given value must be an array, JsonSerializable, string or null.');
+        }
+
+        return [$key => new SpannerJsonType($value)];
+    }
 }
