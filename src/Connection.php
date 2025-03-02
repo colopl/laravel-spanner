@@ -626,7 +626,9 @@ class Connection extends BaseConnection
         }
 
         if (isset($options['snapshotEnabled'])) {
-            return $this->snapshot($options['snapshotTimestampBound'], fn() => $this->executeSnapshotQuery($query, $options));
+            $timestamp = $options['snapshotTimestampBound'];
+            assert($timestamp instanceof TimestampBoundInterface);
+            return $this->snapshot($timestamp, fn() => $this->executeSnapshotQuery($query, $options));
         }
 
         if ($this->inSnapshot()) {
