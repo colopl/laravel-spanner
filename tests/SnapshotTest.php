@@ -60,7 +60,7 @@ class SnapshotTest extends TestCase
 
         $this->assertFalse($conn->inSnapshot());
         $this->assertNotNull($result);
-        $this->assertSame('t', $result->name);
+        $this->assertSame('t', $result['name']);
     }
 
     public function test_snapshot_with_staleness(): void
