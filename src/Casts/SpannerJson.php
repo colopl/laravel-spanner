@@ -2,6 +2,8 @@
 
 namespace Colopl\Spanner\Casts;
 
+use Google\Cloud\Spanner\PgJsonb;
+use Google\Cloud\Spanner\V1\TypeAnnotationCode;
 use Illuminate\Contracts\Database\Eloquent\CastsAttributes;
 use JsonSerializable;
 
@@ -16,11 +18,11 @@ class SpannerJson implements CastsAttributes
             return null;
         }
 
-        if(is_array($value)) {
+        if (is_array($value)) {
             return $value;
         }
 
-        if(!is_string($value)) {
+        if (!is_string($value)) {
             throw new \InvalidArgumentException('The given value must be an array, string or null.');
         }
 
@@ -34,5 +36,14 @@ class SpannerJson implements CastsAttributes
         }
 
         return [$key => new SpannerJsonType($value)];
+    }
+}
+
+
+class SpannerJsonType extends PgJsonb
+{
+    public function typeAnnotation(): int
+    {
+        return TypeAnnotationCode::TYPE_ANNOTATION_CODE_UNSPECIFIED;
     }
 }
