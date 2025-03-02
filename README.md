@@ -183,6 +183,32 @@ $queryBuilder
 
 Stale reads always runs as read-only transaction with `singleUse` option. So you can not run as read-write transaction.
 
+### Snapshot reads
+
+You can use expilicit Snapshot reads, either on `Connection`, or on `Model` or `Builder` instances. When running `snapshot()` on `Connection`, you pass a `Closure` that you can use to run multiple reads from within the same Snapshot.
+
+```php
+$timestampBound = new ExactStaleness(10);
+
+// by Connection
+$connection->snapshot($timestampBound, function() use ($connection) {
+    $result1 = $connection->table('foo')->get();
+    $result2 = $connection->table('bar')->get();
+
+    return [$result1, $result2];
+);
+
+// by Model
+User::where('foo', 'bar')
+    ->snapshot($timestampBound)
+    ->get();
+
+// by Query Builder
+$queryBuilder
+    ->snapshot($timestampBound)
+    ->get();
+```
+
 ### Data Boost
 
 Data boost creates snapshot and runs the query in parallel without affecting existing workloads.
