@@ -32,6 +32,7 @@ class Builder extends BaseBuilder
     use Concerns\UsesFullTextSearch;
     use Concerns\UsesMutations;
     use Concerns\UsesPartitionedDml;
+    use Concerns\UsesSnapshots;
     use Concerns\UsesStaleReads;
 
     public const PARAMETER_LIMIT = 950;
@@ -240,6 +241,11 @@ class Builder extends BaseBuilder
 
         if ($this->dataBoostEnabled()) {
             $options['dataBoostEnabled'] = true;
+        }
+
+        if ($this->snapshotEnabled()) {
+            $options['snapshotEnabled'] = $this->snapshotEnabled();
+            $options['snapshotTimestampBound'] = $this->snapshotTimestampBound();
         }
 
         if ($this->timestampBound !== null) {
