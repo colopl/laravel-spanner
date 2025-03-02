@@ -625,6 +625,10 @@ class Connection extends BaseConnection
             $options['requestOptions']['requestTag'] = $tag;
         }
 
+        if (isset($options['snapshotEnabled'])) {
+            return $this->snapshot($options['snapshotTimestampBound'], fn() => $this->executeSnapshotQuery($query, $options));
+        }
+
         if ($this->inSnapshot()) {
             return $this->executeSnapshotQuery($query, $options);
         }
