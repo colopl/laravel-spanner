@@ -185,7 +185,7 @@ Stale reads always runs as read-only transaction with `singleUse` option. So you
 
 ### Snapshot reads
 
-You can use expilicit Snapshot reads, either on `Connection`, or on `Model` or `Builder` instances. When running `snapshot()` on `Connection`, you pass a `Closure` that you can use to run multiple reads from within the same Snapshot.
+You can use explicit Snapshot reads, either on `Connection`, or on `Model` or `Builder` instances. When running `snapshot()` on `Connection`, you pass a `Closure` that you can use to run multiple reads from within the same Snapshot.
 
 ```php
 $timestampBound = new ExactStaleness(10);
