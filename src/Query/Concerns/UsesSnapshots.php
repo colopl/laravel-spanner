@@ -27,7 +27,7 @@ trait UsesSnapshots
     protected $snapshotTimestampBound;
 
     /**
-     * @param bool $toggle
+     * @param TimestampBoundInterface $timestamp
      * @return $this
      */
     public function snapshot(TimestampBoundInterface $timestamp): static
