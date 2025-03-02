@@ -5,14 +5,15 @@ namespace Colopl\Spanner\Casts;
 use Google\Cloud\Spanner\PgJsonb;
 use Google\Cloud\Spanner\V1\TypeAnnotationCode;
 use Illuminate\Contracts\Database\Eloquent\CastsAttributes;
+use Illuminate\Database\Eloquent\Model;
 use JsonSerializable;
 
-/**
- * @implements CastsAttributes<array|null, array>
- */
+/** 
+ * @implements CastsAttributes<mixed, mixed> 
+ * */
 class SpannerJson implements CastsAttributes
 {
-    public function get($model, $key, $value, $attributes): array|null
+    public function get(Model $model, string $key, mixed $value, array $attributes)
     {
         if ($value === null) {
             return null;
@@ -29,9 +30,14 @@ class SpannerJson implements CastsAttributes
         return json_decode($value, true);
     }
 
-    public function set($model, $key, $value, $attributes): array
+    public function set(Model $model, string $key, mixed $value, array $attributes)
     {
-        if (!is_array($value) && !$value instanceof JsonSerializable && $value !== null && !is_string($value)) {
+        if (
+            !is_array($value) && 
+            !$value instanceof JsonSerializable && 
+            $value !== null && 
+            !is_string($value)
+        ) {
             throw new \InvalidArgumentException('The given value must be an array, JsonSerializable, string or null.');
         }
 
