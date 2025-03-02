@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Casts;
+namespace Colopl\Spanner\Casts;
 
 use Illuminate\Contracts\Database\Eloquent\CastsAttributes;
 use JsonSerializable;
