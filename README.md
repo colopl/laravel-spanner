@@ -243,7 +243,7 @@ use Colopl\Spanner\Casts\SpannerJson;
 
 protected $casts = [
     'json_column_name' => SpannerJson::class,
-]
+];
 ```
 
 
