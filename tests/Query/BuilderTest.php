@@ -1085,7 +1085,7 @@ class BuilderTest extends TestCase
         });
 
         $this->assertFalse($conn->inSnapshot());
-        $query = $conn->table(self::TABLE_NAME_USER)->snapshot(new ExactStaleness(5))
+        $query = $conn->table(self::TABLE_NAME_USER)->snapshot(new ExactStaleness(5));
         $result = $query->first();
 
         $this->assertTrue($query->snapshotEnabled());
