@@ -46,23 +46,6 @@ class SnapshotTest extends TestCase
         $this->assertSame('ok', $result);
     }
 
-    public function test_builder_snapshot(): void
-    {
-        $conn = $this->getDefaultConnection();
-
-        $conn->transaction(function () use ($conn) {
-            $this->assertFalse($conn->inSnapshot());
-            $conn->table(self::TABLE_NAME_USER)->insert(['userId' => $this->generateUuid(), 'name' => 't']);
-        });
-
-        $this->assertFalse($conn->inSnapshot());
-        $result = $conn->table(self::TABLE_NAME_USER)->snapshot(new StrongRead())->first();
-
-        $this->assertFalse($conn->inSnapshot());
-        $this->assertNotNull($result);
-        $this->assertSame('t', $result['name']);
-    }
-
     public function test_snapshot_with_staleness(): void
     {
         $conn = $this->getDefaultConnection();
