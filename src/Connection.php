@@ -25,6 +25,7 @@ use Colopl\Spanner\Query\Parameterizer as QueryParameterizer;
 use Colopl\Spanner\Query\Processor as QueryProcessor;
 use Colopl\Spanner\Schema\Builder as SchemaBuilder;
 use Colopl\Spanner\Schema\Grammar as SchemaGrammar;
+use Colopl\Spanner\TimestampBound\TimestampBoundInterface;
 use DateTimeImmutable;
 use DateTimeInterface;
 use Exception;
@@ -623,6 +624,12 @@ class Connection extends BaseConnection
             $options['requestOptions'] ??= [];
             assert(is_array($options['requestOptions']));
             $options['requestOptions']['requestTag'] = $tag;
+        }
+
+        if (isset($options['snapshotEnabled'])) {
+            $timestamp = $options['snapshotTimestampBound'];
+            assert($timestamp instanceof TimestampBoundInterface);
+            return $this->snapshot($timestamp, fn() => $this->executeSnapshotQuery($query, $options));
         }
 
         if ($this->inSnapshot()) {

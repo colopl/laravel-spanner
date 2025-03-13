@@ -24,6 +24,7 @@ use Colopl\Spanner\Schema\Grammar;
 use Colopl\Spanner\Schema\TokenizerFunction;
 use Colopl\Spanner\Tests\TestCase;
 use Colopl\Spanner\TimestampBound\ExactStaleness;
+use Colopl\Spanner\TimestampBound\StrongRead;
 use Google\Cloud\Spanner\Bytes;
 use Google\Cloud\Spanner\Duration;
 use Illuminate\Database\QueryException;
@@ -1072,6 +1073,34 @@ class BuilderTest extends TestCase
     {
         $query = $this->getDefaultConnection()->table('t')->useDataBoost(false);
         $this->assertFalse($query->dataBoostEnabled());
+    }
+
+    public function test_snapshot(): void
+    {
+        $conn = $this->getDefaultConnection();
+
+        $conn->transaction(function () use ($conn) {
+            $this->assertFalse($conn->inSnapshot());
+            $conn->table(self::TABLE_NAME_USER)->insert(['userId' => $this->generateUuid(), 'name' => 't']);
+        });
+
+        $this->assertFalse($conn->inSnapshot());
+        $query = $conn->table(self::TABLE_NAME_USER)->snapshot(new ExactStaleness(5));
+        $result = $query->first();
+
+        $this->assertTrue($query->snapshotEnabled());
+        $this->assertInstanceOf(ExactStaleness::class, $query->snapshotTimestampBound());
+        $this->assertFalse($conn->inSnapshot());
+        $this->assertNull($result);
+
+        $query = $conn->table(self::TABLE_NAME_USER)->snapshot(new StrongRead());
+        $result = $query->first();
+
+        $this->assertTrue($query->snapshotEnabled());
+        $this->assertInstanceOf(StrongRead::class, $query->snapshotTimestampBound());
+        $this->assertFalse($conn->inSnapshot());
+        $this->assertNotNull($result);
+        $this->assertSame('t', $result['name']);
     }
 
     public function test_setRequestTimeoutSeconds(): void
