@@ -25,6 +25,7 @@ use Colopl\Spanner\Schema\TokenizerFunction;
 use Colopl\Spanner\Tests\Eloquent\IdentityTest;
 use Colopl\Spanner\Tests\TestCase;
 use Colopl\Spanner\TimestampBound\ExactStaleness;
+use Colopl\Spanner\TimestampBound\StrongRead;
 use Google\Cloud\Spanner\Bytes;
 use Google\Cloud\Spanner\Duration;
 use Illuminate\Database\QueryException;
@@ -1090,6 +1091,14 @@ class BuilderTest extends TestCase
 
         $this->assertTrue($query->snapshotEnabled());
         $this->assertInstanceOf(ExactStaleness::class, $query->snapshotTimestampBound());
+        $this->assertFalse($conn->inSnapshot());
+        $this->assertNull($result);
+
+        $query = $conn->table(self::TABLE_NAME_USER)->snapshot(new StrongRead());
+        $result = $query->first();
+
+        $this->assertTrue($query->snapshotEnabled());
+        $this->assertInstanceOf(StrongRead::class, $query->snapshotTimestampBound());
         $this->assertFalse($conn->inSnapshot());
         $this->assertNotNull($result);
         $this->assertSame('t', $result['name']);
