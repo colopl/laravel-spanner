@@ -41,15 +41,16 @@ class Builder extends BaseBuilder
     public static $defaultMorphKeyType = 'uuid';
 
     /**
+     * @param null $schema
      * @inheritDoc Adds a parent key, for tracking interleaving
      *
      * @return list<array{ name: string, type: string, parent: string }>
      */
-    public function getTables()
+    public function getTables($schema = null)
     {
         /** @var list<array{ name: string, type: string, parent: string }> */
         return $this->connection->select(
-            $this->grammar->compileTables(),
+            $this->grammar->compileTables(null),
         );
     }
 
@@ -87,7 +88,7 @@ class Builder extends BaseBuilder
         /** @phpstan-ignore isset.property */
         return isset($this->resolver)
             ? ($this->resolver)($table, $callback)
-            : new Blueprint($table, $callback);
+            : new Blueprint($this->connection, $table, $callback);
     }
 
     /**
@@ -135,7 +136,7 @@ class Builder extends BaseBuilder
             foreach ($foreigns as $foreign) {
                 $blueprint->dropForeign($foreign);
             }
-            array_push($queries, ...$blueprint->toSql($connection, $this->grammar));
+            array_push($queries, ...$blueprint->toSql());
         }
         /** @var Connection $connection */
         $connection->runDdlBatch($queries);
@@ -153,7 +154,7 @@ class Builder extends BaseBuilder
                 $blueprint->dropIndex($index);
             }
             $blueprint->drop();
-            array_push($queries, ...$blueprint->toSql($connection, $this->grammar));
+            array_push($queries, ...$blueprint->toSql());
         }
         $connection->runDdlBatch($queries);
     }

@@ -42,9 +42,10 @@ class Grammar extends BaseGrammar
     /**
      * Compile the query to determine the tables.
      *
+     * @param $schema
      * @return string
      */
-    public function compileTables()
+    public function compileTables($schema)
     {
         return 'select `table_name` as name, `table_type` as type, `parent_table_name` as parent from information_schema.tables where table_schema = \'\' and table_type = \'BASE TABLE\'';
     }
@@ -52,10 +53,11 @@ class Grammar extends BaseGrammar
     /**
      * Compile the query to determine the list of indexes.
      *
-     * @param string $table
+     * @param string|null $schema
+     * @param $table
      * @return string
      */
-    public function compileIndexes($table)
+    public function compileIndexes($schema, $table)
     {
         return sprintf(
             'select index_name as `index_name` from information_schema.indexes where table_schema = \'\' and table_name = %s',
@@ -66,10 +68,11 @@ class Grammar extends BaseGrammar
     /**
      * Compile the query to determine the list of foreign keys.
      *
-     * @param string $table
+     * @param string|null $schema
+     * @param $table
      * @return string
      */
-    public function compileForeignKeys($table)
+    public function compileForeignKeys($schema, $table)
     {
         return sprintf(
             'select constraint_name as `key_name` from information_schema.table_constraints where constraint_type = "FOREIGN KEY" and table_schema = \'\' and table_name = %s',
@@ -80,10 +83,11 @@ class Grammar extends BaseGrammar
     /**
      * Compile the query to determine the columns.
      *
-     * @param string $table
+     * @param string|null $schema
+     * @param $table
      * @return string
      */
-    public function compileColumns($table)
+    public function compileColumns($schema, $table)
     {
         return sprintf(
             'select * from information_schema.columns where table_schema = \'\' and table_name = %s',
@@ -134,10 +138,9 @@ class Grammar extends BaseGrammar
      *
      * @param Blueprint $blueprint
      * @param Fluent<string, mixed>&object{ column: ColumnDefinition } $command
-     * @param Connection $connection
      * @return string
      */
-    public function compileChange(Blueprint $blueprint, Fluent $command, Connection $connection)
+    public function compileChange(Blueprint $blueprint, Fluent $command)
     {
         $column = $command->column;
 
