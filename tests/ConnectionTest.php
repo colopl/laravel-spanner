@@ -20,6 +20,7 @@ namespace Colopl\Spanner\Tests;
 use Colopl\Spanner\Connection;
 use Colopl\Spanner\Events\MutatingData;
 use Colopl\Spanner\Query\Nested;
+use Colopl\Spanner\Schema\Grammar;
 use Colopl\Spanner\Session\SessionInfo;
 use Colopl\Spanner\TimestampBound\ExactStaleness;
 use Colopl\Spanner\TimestampBound\MaxStaleness;
@@ -619,17 +620,15 @@ class ConnectionTest extends TestCase
 
     public function test_getQueryGrammar(): void
     {
-        config()->set('database.connections.main.prefix', 'test_');
         $conn = $this->getConnection('main');
-        $this->assertSame('test_', $conn->getQueryGrammar()->getTablePrefix());
+        $this->assertInstanceOf(\Colopl\Spanner\Query\Grammar::class, $conn->getQueryGrammar());
     }
 
     public function test_getSchemaGrammar(): void
     {
-        config()->set('database.connections.main.prefix', 'test_');
         $conn = $this->getConnection('main');
         $conn->useDefaultSchemaGrammar();
-        $this->assertSame('test_', $conn->getSchemaGrammar()->getTablePrefix());
+        $this->assertInstanceOf(Grammar::class, $conn->getSchemaGrammar());
     }
 
     public function test_binding_mutable_carbon_doesnt_change_timezone(): void
