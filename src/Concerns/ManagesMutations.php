@@ -29,7 +29,7 @@ use Illuminate\Support\Arr;
 use InvalidArgumentException;
 
 /**
- * @phpstan-type TDataSet list<array<string, array<array-key, mixed>>>|array<string, array<array-key, mixed>>
+ * @phpstan-type TDataSet list<array<string, mixed>>|array<string, mixed>
  */
 trait ManagesMutations
 {
