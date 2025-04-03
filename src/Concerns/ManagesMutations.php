@@ -129,7 +129,7 @@ trait ManagesMutations
             return [];
         }
 
-        if (Arr::isAssoc($dataSet)) {
+        if (!array_is_list($dataSet)) {
             $dataSet = [$dataSet];
         }
 
