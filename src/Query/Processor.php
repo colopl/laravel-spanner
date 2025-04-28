@@ -82,6 +82,27 @@ class Processor extends BaseProcessor
     }
 
     /**
+     * @inheritDoc
+     */
+    public function processTables($results)
+    {
+        return array_map(function ($result) {
+            $result = (object) $result;
+
+            return [
+                'name' => $result->name,
+                'schema' => $result->schema === '' ? $result->schema : null,
+                'schema_qualified_name' => $result->schema !== '' ? $result->schema.'.'.$result->name : $result->name,
+                'size' => isset($result->size) ? (int) $result->size : null,
+                'comment' => null,
+                'collation' => null,
+                'engine' => null,
+                'parent' => $result->parent,
+            ];
+        }, $results);
+    }
+
+    /**
      * @template TValue of mixed
      * @param TValue $value
      * @return ($value is Timestamp ? Carbon : ($value is Numeric ? string : TValue))
