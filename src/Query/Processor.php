@@ -141,9 +141,7 @@ class Processor extends BaseProcessor
     }
 
     /**
-     * {@inheritDoc}
-     * @param array{ index_name: string }&array<string, mixed> $results
-     * @return array<array-key, string>
+     * @inheritDoc
      */
     public function processIndexes($results)
     {
@@ -152,10 +150,8 @@ class Processor extends BaseProcessor
         }, $results);
     }
 
-    /***
-     * {@inheritDoc}
-     * @param array{key_name: string}&array<string, mixed> $results
-     * @return array<array-key, string>
+    /**
+     * @inheritDoc
      */
     public function processForeignKeys($results)
     {
