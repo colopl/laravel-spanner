@@ -54,7 +54,7 @@ class Grammar extends BaseGrammar
         return
             'select `table_name` as name, `table_type` as type, `parent_table_name` as parent `table_schema` as `schema` ' .
             'from information_schema.tables where table_type = \'BASE TABLE\'' .
-            'table_schema in (' . $this->quoteString($schema) . ')';
+            'and table_schema in (' . $this->quoteString($schema) . ')';
     }
 
     /**
