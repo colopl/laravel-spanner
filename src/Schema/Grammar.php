@@ -452,7 +452,6 @@ class Grammar extends BaseGrammar
             }
             return $schema;
         }
-
         return '';
     }
 

@@ -264,6 +264,15 @@ class Blueprint extends BaseBlueprint
 
     /**
      * @param string $table
+     * @return InterleaveDefinition
+     */
+    public function interleaveInParent(string $table): InterleaveDefinition
+    {
+        return $this->interleaveIn($table, true);
+    }
+
+    /**
+     * @param string $table
      * @param bool $parent
      * @return InterleaveDefinition
      */
@@ -275,15 +284,6 @@ class Blueprint extends BaseBlueprint
                 'inParent' => $parent,
             ])->getAttributes(),
         );
-    }
-
-    /**
-     * @param string $table
-     * @return InterleaveDefinition
-     */
-    public function interleaveInParent(string $table): InterleaveDefinition
-    {
-        return $this->interleaveIn($table, true);
     }
 
     /**
