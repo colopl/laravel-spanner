@@ -1053,28 +1053,4 @@ class Grammar extends BaseGrammar
         }
         return 'timestamp "' . $value->format($this->getDateFormat()) . '"';
     }
-
-    /**
-     * Compile the blueprint's column definitions.
-     *
-     * @deprecated Not used anymore. Will be deleted in 9.x.
-     *
-     * @param  Blueprint $blueprint
-     * @return array<int, string>
-     */
-    protected function getChangedColumns(Blueprint $blueprint)
-    {
-        $columns = [];
-
-        foreach ($blueprint->getChangedColumns() as $column) {
-            // Each of the column types have their own compiler functions which are tasked
-            // with turning the column definition into its SQL format for this platform
-            // used by the connection. The column's modifiers are compiled and added.
-            $sql = $this->wrap($column) . ' ' . $this->getType($column);
-
-            $columns[] = $this->addModifiers($sql, $blueprint, $column);
-        }
-
-        return $columns;
-    }
 }

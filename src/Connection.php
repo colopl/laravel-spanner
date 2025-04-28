@@ -422,16 +422,6 @@ class Connection extends BaseConnection
     }
 
     /**
-     * TODO: Remove in v9
-     * @deprecated Parent method no longer exists. This will be removed in v9.
-     * @return never
-     */
-    public function getDoctrineConnection()
-    {
-        $this->markAsNotSupported('Doctrine');
-    }
-
-    /**
      * {@inheritDoc}
      * @param array<array-key, mixed> $bindings
      * @return array<array-key, mixed>
