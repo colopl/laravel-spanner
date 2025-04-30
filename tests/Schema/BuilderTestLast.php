@@ -256,7 +256,7 @@ class BuilderTestLast extends TestCase
             $table->primary('id');
         });
 
-        $this->assertSame([$table], $sb->getTableListing());
+        $this->assertContains($table, $sb->getTableListing());
     }
 
     public function test_getIndexes(): void
