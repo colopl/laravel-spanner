@@ -57,10 +57,20 @@ class Grammar extends BaseGrammar
      */
     public function compileIndexes($table)
     {
-        return sprintf(
-            'select index_name as `index_name` from information_schema.indexes where table_schema = \'\' and table_name = %s',
-            $this->quoteString($table),
-        );
+        return implode(' ', [
+            'select',
+            implode(', ', [
+                'i.index_name as `name`',
+                'string_agg(c.column_name, \',\') as `columns`',
+                'i.index_type as `type`',
+                'i.is_unique as `unique`',
+            ]),
+            'from information_schema.indexes as i',
+            'join information_schema.index_columns as c on i.table_schema = c.table_schema and i.table_name = c.table_name and i.index_name = c.index_name',
+            'where i.table_schema = ' . $this->quoteString(''),
+            'and i.table_name = ' . $this->quoteString($table),
+            'group by i.index_name, i.index_type, i.is_unique',
+        ]);
     }
 
     /**
