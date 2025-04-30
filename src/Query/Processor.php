@@ -123,8 +123,8 @@ class Processor extends BaseProcessor
 
     /**
      * {@inheritDoc}
-     * @param list<array<string, mixed>> $results
-     * @return list<array{name: string, columns: list<string>, foreign_schema: string, foreign_table: string, foreign_columns: list<string>, on_update: string, on_delete: string}>
+     * @param array{key_name: string}&array<string, mixed> $results
+     * @return array<array-key, string>
      */
     public function processForeignKeys($results)
     {
