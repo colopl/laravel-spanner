@@ -144,7 +144,7 @@ class Builder extends BaseBuilder
         $queries = [];
         foreach ($sortedTables as $tableData) {
             $tableName = $tableData['name'];
-            $indexes = $this->getIndexes($tableName);
+            $indexes = $this->getIndexListing($tableName);
             $blueprint = $this->createBlueprint($tableName);
             foreach ($indexes as $index) {
                 if ($index === 'PRIMARY_KEY') {

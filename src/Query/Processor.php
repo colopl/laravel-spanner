@@ -103,13 +103,21 @@ class Processor extends BaseProcessor
 
     /**
      * {@inheritDoc}
-     * @param array{ index_name: string }&array<string, mixed> $results
-     * @return array<array-key, string>
+     * @param list<array<string, mixed>> $results
+     * @return list<array{name: string, columns: list<string>, type: string, unique: bool, primary: bool}>
      */
     public function processIndexes($results)
     {
         return array_map(function ($result) {
-            return ((object) $result)->index_name;
+            $result = (object) $result;
+
+            return [
+                'name' => $name = $result->name,
+                'columns' => $result->columns ? explode(',', $result->columns) : [],
+                'type' => strtolower($result->type),
+                'unique' => (bool) $result->unique,
+                'primary' => $name === 'PRIMARY_KEY',
+            ];
         }, $results);
     }
 
