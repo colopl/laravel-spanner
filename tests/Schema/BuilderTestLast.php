@@ -305,6 +305,36 @@ class BuilderTestLast extends TestCase
         ], $sb->getIndexListing($table));
     }
 
+    public function test_getForeignKeys(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $sb = $conn->getSchemaBuilder();
+        $table1 = $this->generateTableName(class_basename(__CLASS__). '_1');
+        $sb->create($table1, function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('something');
+            $table->index('something');
+        });
+
+        $table2 = $this->generateTableName(class_basename(__CLASS__). '_2');
+        $sb->create($table2, function (Blueprint $table) use ($table1) {
+            $table->uuid('table2_id')->primary();
+            $table->uuid('other_id');
+            $table->index('other_id');
+            $table->foreign('other_id')->references('id')->on($table1);
+        });
+
+        $this->assertSame([[
+            'name' => strtolower($table2) . '_other_id_foreign',
+            'columns' => ['other_id'],
+            'foreign_schema' => '',
+            'foreign_table' => $table1,
+            'foreign_columns' => ['id'],
+            'on_update' => "no action",
+            'on_delete' => "no action",
+        ]], $sb->getForeignKeys($table2));
+    }
+
     public function test_dropAllTables(): void
     {
         $conn = $this->getDefaultConnection();

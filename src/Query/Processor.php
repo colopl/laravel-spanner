@@ -122,14 +122,22 @@ class Processor extends BaseProcessor
     }
 
     /**
-     * {@inheritDoc}
-     * @param array{key_name: string}&array<string, mixed> $results
-     * @return array<array-key, string>
+     * @inheritDoc
      */
     public function processForeignKeys($results)
     {
         return array_map(function ($result) {
-            return ((object) $result)->key_name;
+            $result = (object) $result;
+
+            return [
+                'name' => $result->name,
+                'columns' => explode(',', $result->columns),
+                'foreign_schema' => $result->foreign_schema,
+                'foreign_table' => $result->foreign_table,
+                'foreign_columns' => explode(',', $result->foreign_columns),
+                'on_update' => strtolower($result->on_update),
+                'on_delete' => strtolower($result->on_delete),
+            ];
         }, $results);
     }
 }

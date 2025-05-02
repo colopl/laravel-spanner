@@ -81,10 +81,26 @@ class Grammar extends BaseGrammar
      */
     public function compileForeignKeys($table)
     {
-        return sprintf(
-            'select constraint_name as `key_name` from information_schema.table_constraints where constraint_type = "FOREIGN KEY" and table_schema = \'\' and table_name = %s',
-            $this->quoteString($table),
-        );
+        $schema ??= '';
+
+        return implode(' ', [
+            'select',
+            implode(', ', [
+                'kc.constraint_name as `name`',
+                'string_agg(kc.column_name) as `columns`',
+                'cc.table_schema as `foreign_schema`',
+                'cc.table_name as `foreign_table`',
+                'string_agg(cc.column_name) as `foreign_columns`',
+                'rc.update_rule as `on_update`',
+                'rc.delete_rule as `on_delete`',
+            ]),
+            'from information_schema.key_column_usage kc',
+            'join information_schema.referential_constraints rc on kc.constraint_name = rc.constraint_name',
+            'join information_schema.constraint_column_usage cc on kc.constraint_name = cc.constraint_name',
+            'where kc.table_schema = "' . $schema . '"',
+            'and kc.table_name = ' . $this->quoteString($table),
+            'group by kc.constraint_name, cc.table_schema, cc.table_name, rc.update_rule, rc.delete_rule'
+        ]);
     }
 
     /**
