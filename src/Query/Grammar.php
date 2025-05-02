@@ -65,7 +65,7 @@ class Grammar extends BaseGrammar
      */
     protected function compileLock(Builder $query, $value)
     {
-        return '';
+        return $value === true ? 'for update' : '';
     }
 
     /**

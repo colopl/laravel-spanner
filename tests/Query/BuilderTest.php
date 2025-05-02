@@ -994,7 +994,7 @@ class BuilderTest extends TestCase
         $conn = $this->getDefaultConnection();
         $qb = $conn->table(self::TABLE_NAME_USER);
         $sql = $qb->lock()->toRawSql();
-        $this->assertSame('select * from `User`', $sql);
+        $this->assertSame('select * from `User` for update', $sql);
     }
 
     public function test_lockForUpdate(): void
@@ -1002,7 +1002,7 @@ class BuilderTest extends TestCase
         $conn = $this->getDefaultConnection();
         $qb = $conn->table(self::TABLE_NAME_USER);
         $sql = $qb->lockForUpdate()->toRawSql();
-        $this->assertSame('select * from `User`', $sql);
+        $this->assertSame('select * from `User` for update', $sql);
     }
 
     public function test_sharedLock(): void

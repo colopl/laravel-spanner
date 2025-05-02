@@ -146,7 +146,15 @@ class Processor extends BaseProcessor
     public function processIndexes($results)
     {
         return array_map(function ($result) {
-            return ((object) $result)->index_name;
+            $result = (object) $result;
+
+            return [
+                'name' => $name = $result->name,
+                'columns' => $result->columns ? explode(',', $result->columns) : [],
+                'type' => strtolower($result->type),
+                'unique' => (bool) $result->unique,
+                'primary' => $name === 'PRIMARY_KEY',
+            ];
         }, $results);
     }
 

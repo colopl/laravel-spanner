@@ -245,7 +245,7 @@ class BuilderTestLast extends TestCase
         ], Arr::first($sb->getColumns($table)));
     }
 
-    public function test_getAllTables(): void
+    public function test_getTableListing(): void
     {
         $conn = $this->getDefaultConnection();
         $sb = $conn->getSchemaBuilder();
@@ -256,14 +256,53 @@ class BuilderTestLast extends TestCase
             $table->primary('id');
         });
 
-        /** @var array{ name: string, type: string } $row */
-        $row = Arr::first(
-            $sb->getTables(),
-            static fn(array $row): bool => $row['name'] === $table,
-        );
+        $this->assertContains($table, $sb->getTableListing());
+    }
 
-        $this->assertSame($table, $row['name']);
-        $this->assertSame('BASE TABLE', $row['type']);
+    public function test_getIndexes(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $sb = $conn->getSchemaBuilder();
+        $table = $this->generateTableName(class_basename(__CLASS__));
+        $sb->create($table, function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('something');
+            $table->index('something');
+        });
+
+        $this->assertSame([
+            [
+                'name' => strtolower($table) . '_something_index',
+                'columns' => ['something'],
+                'type' => 'index',
+                'unique' => false,
+                'primary' => false,
+            ],
+            [
+                'name' => 'PRIMARY_KEY',
+                'columns' => ['id'],
+                'type' => 'primary_key',
+                'unique' => true,
+                'primary' => true,
+            ],
+        ], $sb->getIndexes($table));
+    }
+
+    public function test_getIndexListing(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $sb = $conn->getSchemaBuilder();
+        $table = $this->generateTableName(class_basename(__CLASS__));
+        $sb->create($table, function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('something');
+            $table->index('something');
+        });
+
+        $this->assertSame([
+            strtolower($table) . '_something_index',
+            'PRIMARY_KEY',
+        ], $sb->getIndexListing($table));
     }
 
     public function test_dropAllTables(): void
