@@ -235,12 +235,12 @@ class BuilderTestLast extends TestCase
 
         $this->assertSame([
             'name' => 'id',
-            'type_name' => 'STRING',
             'type' => 'STRING(36)',
-            'collation' => null,
+            'type_name' => 'STRING',
             'nullable' => false,
             'default' => null,
             'auto_increment' => false,
+            'generation' => null,
             'comment' => null,
         ], Arr::first($sb->getColumns($table)));
     }

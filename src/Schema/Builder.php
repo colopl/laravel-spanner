@@ -19,6 +19,7 @@ namespace Colopl\Spanner\Schema;
 
 use Closure;
 use Colopl\Spanner\Connection;
+use Colopl\Spanner\Query\Processor;
 use Illuminate\Database\Schema\Builder as BaseBuilder;
 
 /**
@@ -41,17 +42,15 @@ class Builder extends BaseBuilder
     public static $defaultMorphKeyType = 'uuid';
 
     /**
-     * @param null $schema
      * @inheritDoc Adds a parent key, for tracking interleaving
-     *
-     * @return list<array{ name: string, type: string, parent: string }>
+     * @return list<array{name: string, schema: string|null, schema_qualified_name: string, size: int|null, comment: string|null, collation: string|null, engine: string|null, parent: string}>
      */
     public function getTables($schema = null)
     {
-        /** @var list<array{ name: string, type: string, parent: string }> */
-        return $this->connection->select(
-            $this->grammar->compileTables(null),
-        );
+        $results = $this->connection->select($this->grammar->compileTables($schema));
+        assert(array_is_list($results));
+        /** @phpstan-ignore return.type */
+        return $this->connection->getPostProcessor()->processTables($results);
     }
 
     /**
@@ -73,7 +72,7 @@ class Builder extends BaseBuilder
      */
     public function dropIndexIfExist($table, $name)
     {
-        if (in_array($name, $this->getIndexes($table), true)) {
+        if (in_array($name, $this->getIndexListing($table), true)) {
             $blueprint = $this->createBlueprint($table);
             $blueprint->dropIndex($name);
             $this->build($blueprint);

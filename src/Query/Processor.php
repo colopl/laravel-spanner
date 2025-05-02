@@ -82,6 +82,27 @@ class Processor extends BaseProcessor
     }
 
     /**
+     * @inheritDoc
+     */
+    public function processTables($results)
+    {
+        return array_map(function ($result) {
+            $result = (object) $result;
+
+            return [
+                'name' => $result->name,
+                'schema' => $result->schema === '' ? $result->schema : null,
+                'schema_qualified_name' => $result->schema !== '' ? $result->schema.'.'.$result->name : $result->name,
+                'size' => isset($result->size) ? (int) $result->size : null,
+                'comment' => null,
+                'collation' => null,
+                'engine' => null,
+                'parent' => $result->parent,
+            ];
+        }, $results);
+    }
+
+    /**
      * @template TValue of mixed
      * @param TValue $value
      * @return ($value is Timestamp ? Carbon : ($value is Numeric ? string : TValue))
@@ -100,41 +121,27 @@ class Processor extends BaseProcessor
     }
 
     /**
-     * Process the results of a columns query.
-     *
      * {@inheritDoc}
-     * @param array<array-key, array<array-key, mixed>> $results
-     * @return array<array-key, array{
-     *     name: string,
-     *     type_name: string,
-     *     type: string,
-     *     collation: null,
-     *     nullable: bool,
-     *     default: scalar,
-     *     auto_increment: false,
-     *     comment: null
-     * }>
+     * @param list<array{COLUMN_NAME: string, SPANNER_TYPE: string, IS_NULLABLE: string, COLUMN_DEFAULT: mixed}> $results
      */
     public function processColumns($results)
     {
         return array_map(static function (array $result) {
             return [
                 'name' => $result['COLUMN_NAME'],
-                'type_name' => preg_replace("/\([^)]+\)/", "", $result['SPANNER_TYPE']),
                 'type' => $result['SPANNER_TYPE'],
-                'collation' => null,
+                'type_name' => (string) preg_replace("/\([^)]+\)/", "", $result['SPANNER_TYPE']),
                 'nullable' => $result['IS_NULLABLE'] !== 'NO',
                 'default' => $result['COLUMN_DEFAULT'],
                 'auto_increment' => false,
+                'generation' => null,
                 'comment' => null,
             ];
         }, $results);
     }
 
     /**
-     * {@inheritDoc}
-     * @param list<array<string, mixed>> $results
-     * @return list<array{name: string, columns: list<string>, type: string, unique: bool, primary: bool}>
+     * @inheritDoc
      */
     public function processIndexes($results)
     {
@@ -152,9 +159,7 @@ class Processor extends BaseProcessor
     }
 
     /**
-     * {@inheritDoc}
-     * @param array{key_name: string}&array<string, mixed> $results
-     * @return array<array-key, string>
+     * @inheritDoc
      */
     public function processForeignKeys($results)
     {
