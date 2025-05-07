@@ -133,7 +133,7 @@ class Builder extends BaseBuilder
             $foreigns = $this->getForeignKeys($tableName);
             $blueprint = $this->createBlueprint($tableName);
             foreach ($foreigns as $foreign) {
-                $blueprint->dropForeign($foreign);
+                $blueprint->dropForeign($foreign['name']);
             }
             array_push($queries, ...$blueprint->toSql($connection, $this->grammar));
         }
