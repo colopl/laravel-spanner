@@ -81,8 +81,6 @@ class Grammar extends BaseGrammar
      */
     public function compileForeignKeys($table)
     {
-        $schema ??= '';
-
         return implode(' ', [
             'select',
             implode(', ', [
@@ -97,7 +95,7 @@ class Grammar extends BaseGrammar
             'from information_schema.key_column_usage kc',
             'join information_schema.referential_constraints rc on kc.constraint_name = rc.constraint_name',
             'join information_schema.constraint_column_usage cc on kc.constraint_name = cc.constraint_name',
-            'where kc.table_schema = "' . $schema . '"',
+            'where kc.table_schema = ""',
             'and kc.table_name = ' . $this->quoteString($table),
             'group by kc.constraint_name, cc.table_schema, cc.table_name, rc.update_rule, rc.delete_rule'
         ]);
