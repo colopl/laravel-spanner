@@ -17,13 +17,9 @@
 
 namespace Colopl\Spanner\Schema;
 
-use Closure;
 use Colopl\Spanner\Connection;
 use Illuminate\Database\Schema\Builder as BaseBuilder;
 
-/**
- * @property Grammar $grammar
- */
 class Builder extends BaseBuilder
 {
     /**
@@ -78,17 +74,6 @@ class Builder extends BaseBuilder
             $blueprint->dropIndex($name);
             $this->build($blueprint);
         }
-    }
-
-    /**
-     * @inheritDoc
-     */
-    protected function createBlueprint($table, ?Closure $callback = null)
-    {
-        /** @phpstan-ignore isset.property */
-        return isset($this->resolver)
-            ? ($this->resolver)($table, $callback)
-            : new Blueprint($this->connection, $table, $callback);
     }
 
     /**
