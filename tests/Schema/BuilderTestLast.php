@@ -218,11 +218,11 @@ class BuilderTestLast extends TestCase
         $this->assertSame([
             'name' => $table,
             'schema' => null,
+            'parent' => null,
             'size' => null,
             'comment' => null,
             'collation' => null,
             'engine' => null,
-            'parent' => null,
         ], $row);
     }
 
