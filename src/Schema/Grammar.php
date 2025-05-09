@@ -50,6 +50,28 @@ class Grammar extends BaseGrammar
     }
 
     /**
+     * Compile the query to determine the columns.
+     *
+     * @param string $table
+     * @return string
+     */
+    public function compileColumns($table)
+    {
+        return implode(' ', [
+            'select',
+            implode(', ', [
+                'column_name as `name`',
+                'spanner_type as `type`',
+                'is_nullable as `nullable`',
+                'column_default as `default`',
+                'is_identity as `auto_increment`',
+            ]),
+            'from information_schema.columns',
+            'where table_name = ' . $this->quoteString($table),
+        ]);
+    }
+
+    /**
      * Compile the query to determine the list of indexes.
      *
      * @param string $table
@@ -83,20 +105,6 @@ class Grammar extends BaseGrammar
     {
         return sprintf(
             'select constraint_name as `key_name` from information_schema.table_constraints where constraint_type = "FOREIGN KEY" and table_schema = \'\' and table_name = %s',
-            $this->quoteString($table),
-        );
-    }
-
-    /**
-     * Compile the query to determine the columns.
-     *
-     * @param string $table
-     * @return string
-     */
-    public function compileColumns($table)
-    {
-        return sprintf(
-            'select * from information_schema.columns where table_schema = \'\' and table_name = %s',
             $this->quoteString($table),
         );
     }

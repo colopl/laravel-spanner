@@ -222,26 +222,72 @@ class BuilderTestLast extends TestCase
         $this->assertSame($table, $row['name']);
     }
 
-    public function test_getColumns(): void
+    public function test_getColumns_with_nullable(): void
     {
         $conn = $this->getDefaultConnection();
         $sb = $conn->getSchemaBuilder();
         $table = $this->generateTableName(class_basename(__CLASS__));
 
         $sb->create($table, function (Blueprint $table) {
-            $table->uuid('id');
-            $table->primary('id');
+            $table->integer('id')->nullable()->primary();
+        });
+
+        $this->assertSame([
+            'name' => 'id',
+            'type_name' => 'INT64',
+            'type' => 'INT64',
+            'nullable' => true,
+            'collation' => null,
+            'default' => null,
+            'auto_increment' => false,
+            'comment' => null,
+            'generation' => null,
+        ], Arr::first($sb->getColumns($table)));
+    }
+
+    public function test_getColumns_with_default(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $sb = $conn->getSchemaBuilder();
+        $table = $this->generateTableName(class_basename(__CLASS__));
+
+        $sb->create($table, function (Blueprint $table) {
+            $table->string('id', 1)->default('a')->primary();
         });
 
         $this->assertSame([
             'name' => 'id',
             'type_name' => 'STRING',
-            'type' => 'STRING(36)',
-            'collation' => null,
+            'type' => 'STRING(1)',
             'nullable' => false,
-            'default' => null,
+            'collation' => null,
+            'default' => '"a"',
             'auto_increment' => false,
             'comment' => null,
+            'generation' => null,
+        ], Arr::first($sb->getColumns($table)));
+    }
+
+    public function test_getColumns_with_auto_increment(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $sb = $conn->getSchemaBuilder();
+        $table = $this->generateTableName(class_basename(__CLASS__));
+
+        $sb->create($table, function (Blueprint $table) {
+            $table->bigInteger('id')->generatedAs()->primary();
+        });
+
+        $this->assertSame([
+            'name' => 'id',
+            'type_name' => 'INT64',
+            'type' => 'INT64',
+            'nullable' => false,
+            'collation' => null,
+            'default' => null,
+            'auto_increment' => true,
+            'comment' => null,
+            'generation' => null,
         ], Arr::first($sb->getColumns($table)));
     }
 
