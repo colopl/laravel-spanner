@@ -55,6 +55,8 @@ class Builder extends BaseBuilder
     }
 
     /**
+     * @deprecated Use Blueprint::dropIndex() instead. Will be removed in v10.0.
+     *
      * @param string $table
      * @param string $name
      * @return void
@@ -67,6 +69,8 @@ class Builder extends BaseBuilder
     }
 
     /**
+     * @deprecated Use Blueprint::dropIndex() instead. Will be removed in v10.0.
+     *
      * @param string $table
      * @param string $name
      * @return void
