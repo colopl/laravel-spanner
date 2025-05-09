@@ -46,7 +46,17 @@ class Grammar extends BaseGrammar
      */
     public function compileTables()
     {
-        return 'select `table_name` as name, `table_type` as type, `parent_table_name` as parent from information_schema.tables where table_schema = \'\' and table_type = \'BASE TABLE\'';
+        return implode(' ', [
+            'select',
+            implode(', ', [
+                'table_name as name',
+                'table_schema as `schema`',
+                'parent_table_name as parent',
+            ]),
+            'from information_schema.tables',
+            'where table_type = \'BASE TABLE\'',
+            'and table_schema = \'\'',
+        ]);
     }
 
     /**
