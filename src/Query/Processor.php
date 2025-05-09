@@ -88,7 +88,8 @@ class Processor extends BaseProcessor
                 'collation' => null,
                 'nullable' => $result->nullable === 'YES',
                 'default' => $result->default,
-                'auto_increment' => $result->auto_increment === 'YES',
+                // TODO check IS_IDENTITY and set auto_increment accordingly
+                'auto_increment' => false,
                 'comment' => null,
                 'generation' => null,
             ];

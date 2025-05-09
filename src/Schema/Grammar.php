@@ -64,7 +64,6 @@ class Grammar extends BaseGrammar
                 'spanner_type as `type`',
                 'is_nullable as `nullable`',
                 'column_default as `default`',
-                'is_identity as `auto_increment`',
             ]),
             'from information_schema.columns',
             'where table_name = ' . $this->quoteString($table),
