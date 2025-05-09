@@ -20,9 +20,11 @@ namespace Colopl\Spanner;
 use Colopl\Spanner\Console\CooldownCommand;
 use Colopl\Spanner\Console\SessionsCommand;
 use Colopl\Spanner\Console\WarmupCommand;
+use Colopl\Spanner\Schema\Blueprint;
 use Google\Cloud\Spanner\Session\CacheSessionPool;
 use Google\Cloud\Spanner\Session\SessionPoolInterface;
 use Illuminate\Database\DatabaseManager;
+use Illuminate\Database\Schema\Blueprint as BaseBlueprint;
 use Illuminate\Queue\QueueManager;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
@@ -52,6 +54,11 @@ class SpannerServiceProvider extends ServiceProvider
                 return $this->createSpannerConnection($this->parseConfig($config, $name));
             });
         });
+
+        $this->app->bind(
+            BaseBlueprint::class,
+            static fn ($app, array $parameters = []) => new Blueprint(...$parameters),
+        );
 
         if ($this->app->runningInConsole()) {
             $this->commands([
