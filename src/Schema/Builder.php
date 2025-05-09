@@ -41,19 +41,6 @@ class Builder extends BaseBuilder
     public static $defaultMorphKeyType = 'uuid';
 
     /**
-     * @inheritDoc Adds a parent key, for tracking interleaving
-     *
-     * @return list<array{ name: string, type: string, parent: string }>
-     */
-    public function getTables()
-    {
-        /** @var list<array{ name: string, type: string, parent: string }> */
-        return $this->connection->select(
-            $this->grammar->compileTables(),
-        );
-    }
-
-    /**
      * @param string $table
      * @param string $name
      * @return void

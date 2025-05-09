@@ -213,13 +213,17 @@ class BuilderTestLast extends TestCase
             $table->primary('id');
         });
 
-        /** @var array{ name: string, type: string } $row */
-        $row = Arr::first(
-            $sb->getTables(),
-            static fn(array $row): bool => $row['name'] === $table,
-        );
+        $row = Arr::first($sb->getTables(), fn ($row) => $row['name'] === $table);
 
-        $this->assertSame($table, $row['name']);
+        $this->assertSame([
+            'name' => $table,
+            'schema' => null,
+            'size' => null,
+            'comment' => null,
+            'collation' => null,
+            'engine' => null,
+            'parent' => null,
+        ], $row);
     }
 
     public function test_getColumns(): void
