@@ -82,11 +82,11 @@ class Processor extends BaseProcessor
             return [
                 'name' => $result->name,
                 'schema' => $result->schema !== '' ? $result->schema : null,
-                'size' => isset($result->size) ? (int) $result->size : null,
+                'parent' => $result->parent,
+                'size' => null,
                 'comment' => null,
                 'collation' => null,
                 'engine' => null,
-                'parent' => $result->parent,
             ];
         }, $results);
     }

@@ -50,9 +50,8 @@ class Grammar extends BaseGrammar
             'select',
             implode(', ', [
                 'table_name as name',
-                'table_type as type',
-                'parent_table_name as parent',
                 'table_schema as `schema`',
+                'parent_table_name as parent',
             ]),
             'from information_schema.tables',
             'where table_type = \'BASE TABLE\'',
