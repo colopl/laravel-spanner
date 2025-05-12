@@ -70,6 +70,28 @@ class Processor extends BaseProcessor
     }
 
     /**
+     * {@inheritDoc}
+     * @param list<array<string, mixed>> $results
+     * @return list<array{name: string, schema: string|null, size: int|null, comment: string|null, collation: string|null, engine: string|null, parent: string|null}>
+     */
+    public function processTables($results)
+    {
+        return array_map(function ($result) {
+            $result = (object) $result;
+
+            return [
+                'name' => $result->name,
+                'schema' => $result->schema !== '' ? $result->schema : null,
+                'parent' => $result->parent,
+                'size' => null,
+                'comment' => null,
+                'collation' => null,
+                'engine' => null,
+            ];
+        }, $results);
+    }
+
+    /**
      * Process the results of a columns query.
      *
      * {@inheritDoc}
