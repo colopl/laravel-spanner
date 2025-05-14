@@ -41,19 +41,6 @@ class Builder extends BaseBuilder
     public static $defaultMorphKeyType = 'uuid';
 
     /**
-     * @inheritDoc Adds a parent key, for tracking interleaving
-     *
-     * @return list<array{ name: string, type: string, parent: string }>
-     */
-    public function getTables()
-    {
-        /** @var list<array{ name: string, type: string, parent: string }> */
-        return $this->connection->select(
-            $this->grammar->compileTables(),
-        );
-    }
-
-    /**
      * @param string $table
      * @param string $name
      * @return void
@@ -133,7 +120,7 @@ class Builder extends BaseBuilder
             $foreigns = $this->getForeignKeys($tableName);
             $blueprint = $this->createBlueprint($tableName);
             foreach ($foreigns as $foreign) {
-                $blueprint->dropForeign($foreign);
+                $blueprint->dropForeign($foreign['name']);
             }
             array_push($queries, ...$blueprint->toSql($connection, $this->grammar));
         }

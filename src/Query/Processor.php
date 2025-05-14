@@ -70,6 +70,28 @@ class Processor extends BaseProcessor
     }
 
     /**
+     * {@inheritDoc}
+     * @param list<array<string, mixed>> $results
+     * @return list<array{name: string, schema: string|null, size: int|null, comment: string|null, collation: string|null, engine: string|null, parent: string|null}>
+     */
+    public function processTables($results)
+    {
+        return array_map(function ($result) {
+            $result = (object) $result;
+
+            return [
+                'name' => $result->name,
+                'schema' => $result->schema !== '' ? $result->schema : null,
+                'parent' => $result->parent,
+                'size' => null,
+                'comment' => null,
+                'collation' => null,
+                'engine' => null,
+            ];
+        }, $results);
+    }
+
+    /**
      * Process the results of a columns query.
      *
      * {@inheritDoc}
@@ -118,13 +140,23 @@ class Processor extends BaseProcessor
 
     /**
      * {@inheritDoc}
-     * @param array{key_name: string}&array<string, mixed> $results
-     * @return array<array-key, string>
+     * @param list<array<string, mixed>> $results
+     * @return list<array{name: string, columns: list<string>, foreign_schema: string, foreign_table: string, foreign_columns: list<string>, on_update: string, on_delete: string}>
      */
     public function processForeignKeys($results)
     {
         return array_map(function ($result) {
-            return ((object) $result)->key_name;
+            $result = (object) $result;
+
+            return [
+                'name' => $result->name,
+                'columns' => explode(',', $result->columns),
+                'foreign_schema' => $result->foreign_schema,
+                'foreign_table' => $result->foreign_table,
+                'foreign_columns' => explode(',', $result->foreign_columns),
+                'on_update' => strtolower($result->on_update),
+                'on_delete' => strtolower($result->on_delete),
+            ];
         }, $results);
     }
 }
