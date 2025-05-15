@@ -96,7 +96,7 @@ class Processor extends BaseProcessor
      *
      * {@inheritDoc}
      * @param list<array<string, mixed>> $results
-     * @return list<array{name: string, type: string, type_name: string, nullable: bool, collation: null, default: mixed, auto_increment: bool, comment: null, generation: null|null}>
+     * @return list<array{name: string, type: string, type_name: string, nullable: bool, collation: null, default: mixed, auto_increment: false, comment: null, generation: null}>
      */
     public function processColumns($results)
     {
