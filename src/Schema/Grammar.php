@@ -60,6 +60,27 @@ class Grammar extends BaseGrammar
     }
 
     /**
+     * Compile the query to determine the columns.
+     *
+     * @param string $table
+     * @return string
+     */
+    public function compileColumns($table)
+    {
+        return implode(' ', [
+            'select',
+            implode(', ', [
+                'column_name as `name`',
+                'spanner_type as `type`',
+                'is_nullable as `nullable`',
+                'column_default as `default`',
+            ]),
+            'from information_schema.columns',
+            'where table_name = ' . $this->quoteString($table),
+        ]);
+    }
+
+    /**
      * Compile the query to determine the list of indexes.
      *
      * @param string $table
@@ -109,20 +130,6 @@ class Grammar extends BaseGrammar
             'and kc.table_name = ' . $this->quoteString($table),
             'group by kc.constraint_name, cc.table_schema, cc.table_name, rc.update_rule, rc.delete_rule'
         ]);
-    }
-
-    /**
-     * Compile the query to determine the columns.
-     *
-     * @param string $table
-     * @return string
-     */
-    public function compileColumns($table)
-    {
-        return sprintf(
-            'select * from information_schema.columns where table_schema = \'\' and table_name = %s',
-            $this->quoteString($table),
-        );
     }
 
     /**

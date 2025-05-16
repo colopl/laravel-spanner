@@ -95,30 +95,25 @@ class Processor extends BaseProcessor
      * Process the results of a columns query.
      *
      * {@inheritDoc}
-     * @param array<array-key, array<array-key, mixed>> $results
-     * @return array<array-key, array{
-     *     name: string,
-     *     type_name: string,
-     *     type: string,
-     *     collation: null,
-     *     nullable: bool,
-     *     default: scalar,
-     *     auto_increment: false,
-     *     comment: null
-     * }>
+     * @param list<array<string, mixed>> $results
+     * @return list<array{name: string, type: string, type_name: string, nullable: bool, collation: null, default: mixed, auto_increment: false, comment: null, generation: null}>
      */
     public function processColumns($results)
     {
         return array_map(static function (array $result) {
+            $result = (object) $result;
+
             return [
-                'name' => $result['COLUMN_NAME'],
-                'type_name' => preg_replace("/\([^)]+\)/", "", $result['SPANNER_TYPE']),
-                'type' => $result['SPANNER_TYPE'],
+                'name' => $result->name,
+                'type_name' => (string) preg_replace("/\([^)]+\)/", "", $result->type),
+                'type' => $result->type,
                 'collation' => null,
-                'nullable' => $result['IS_NULLABLE'] !== 'NO',
-                'default' => $result['COLUMN_DEFAULT'],
+                'nullable' => $result->nullable === 'YES',
+                'default' => $result->default,
+                // TODO check IS_IDENTITY and set auto_increment accordingly
                 'auto_increment' => false,
                 'comment' => null,
+                'generation' => null,
             ];
         }, $results);
     }

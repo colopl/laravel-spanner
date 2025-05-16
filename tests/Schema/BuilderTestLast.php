@@ -226,26 +226,49 @@ class BuilderTestLast extends TestCase
         ], $row);
     }
 
-    public function test_getColumns(): void
+    public function test_getColumns_with_nullable(): void
     {
         $conn = $this->getDefaultConnection();
         $sb = $conn->getSchemaBuilder();
         $table = $this->generateTableName(class_basename(__CLASS__));
 
         $sb->create($table, function (Blueprint $table) {
-            $table->uuid('id');
-            $table->primary('id');
+            $table->integer('id')->nullable()->primary();
+        });
+
+        $this->assertSame([
+            'name' => 'id',
+            'type_name' => 'INT64',
+            'type' => 'INT64',
+            'collation' => null,
+            'nullable' => true,
+            'default' => null,
+            'auto_increment' => false,
+            'comment' => null,
+            'generation' => null,
+        ], Arr::first($sb->getColumns($table)));
+    }
+
+    public function test_getColumns_with_default(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $sb = $conn->getSchemaBuilder();
+        $table = $this->generateTableName(class_basename(__CLASS__));
+
+        $sb->create($table, function (Blueprint $table) {
+            $table->string('id', 1)->default('a')->primary();
         });
 
         $this->assertSame([
             'name' => 'id',
             'type_name' => 'STRING',
-            'type' => 'STRING(36)',
+            'type' => 'STRING(1)',
             'collation' => null,
             'nullable' => false,
-            'default' => null,
+            'default' => '"a"',
             'auto_increment' => false,
             'comment' => null,
+            'generation' => null,
         ], Arr::first($sb->getColumns($table)));
     }
 
