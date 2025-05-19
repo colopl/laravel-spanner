@@ -59,7 +59,7 @@ class Builder extends BaseBuilder
      */
     public function dropIndexIfExist($table, $name)
     {
-        if (in_array($name, $this->getIndexes($table), true)) {
+        if (in_array($name, $this->getIndexListing($table), true)) {
             $blueprint = $this->createBlueprint($table);
             $blueprint->dropIndex($name);
             $this->build($blueprint);
@@ -71,7 +71,6 @@ class Builder extends BaseBuilder
      */
     protected function createBlueprint($table, ?Closure $callback = null)
     {
-        /** @phpstan-ignore isset.property */
         return isset($this->resolver)
             ? ($this->resolver)($table, $callback)
             : new Blueprint($this->connection, $table, $callback);
@@ -83,6 +82,17 @@ class Builder extends BaseBuilder
     public function dropAllTables()
     {
         $connection = $this->connection;
+        /** @var list<array{
+         *     name: string,
+         *     schema: string|null,
+         *     schema_qualified_name: string,
+         *     size: int|null,
+         *     comment: string|null,
+         *     collation: string|null,
+         *     engine: string|null,
+         *     parent: string|null
+         * }> $tables
+         */
         $tables = $this->getTables();
 
         if (count($tables) === 0) {

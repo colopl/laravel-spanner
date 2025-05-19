@@ -100,9 +100,7 @@ class Processor extends BaseProcessor
     }
 
     /**
-     * {@inheritDoc}
-     * @param list<array<string, mixed>> $results
-     * @return list<array{name: string, schema: string|null, size: int|null, comment: string|null, collation: string|null, engine: string|null, parent: string|null}>
+     * @inheritDoc
      */
     public function processTables($results)
     {
@@ -112,6 +110,9 @@ class Processor extends BaseProcessor
             return [
                 'name' => $result->name,
                 'schema' => $result->schema !== '' ? $result->schema : null,
+                'schema_qualified_name' => $result->schema !== ''
+                    ? $result->schema . '.' . $result->name
+                    : $result->name,
                 'parent' => $result->parent,
                 'size' => null,
                 'comment' => null,
@@ -122,11 +123,7 @@ class Processor extends BaseProcessor
     }
 
     /**
-     * Process the results of a columns query.
-     *
-     * {@inheritDoc}
-     * @param list<array<string, mixed>> $results
-     * @return list<array{name: string, type: string, type_name: string, nullable: bool, collation: null, default: mixed, auto_increment: false, comment: null, generation: null}>
+     * @inheritDoc
      */
     public function processColumns($results)
     {
@@ -149,9 +146,7 @@ class Processor extends BaseProcessor
     }
 
     /**
-     * {@inheritDoc}
-     * @param list<array<string, mixed>> $results
-     * @return list<array{name: string, columns: list<string>, type: string, unique: bool, primary: bool}>
+     * @inheritDoc
      */
     public function processIndexes($results)
     {
@@ -169,9 +164,7 @@ class Processor extends BaseProcessor
     }
 
     /**
-     * {@inheritDoc}
-     * @param list<array<string, mixed>> $results
-     * @return list<array{name: string, columns: list<string>, foreign_schema: string, foreign_table: string, foreign_columns: list<string>, on_update: string, on_delete: string}>
+     * @inheritDoc
      */
     public function processForeignKeys($results)
     {
