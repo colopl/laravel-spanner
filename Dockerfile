@@ -34,7 +34,7 @@ RUN pecl_mt_install() { \
   && apk add --no-cache bash gmp libxml2 libstdc++ \
   && apk add --no-cache --virtual=.build-deps autoconf curl-dev gcc gmp-dev g++ libxml2-dev linux-headers make pcre-dev tzdata \
   && docker-php-ext-install -j$(nproc) bcmath gmp \
-  && pecl_mt_install protobuf \
+  && pecl_mt_install protobuf-4.30.2 \
   && pecl_mt_install grpc \
   && pecl_mt_install pcov \
   && docker-php-ext-enable grpc opcache protobuf \

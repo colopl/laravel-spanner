@@ -47,7 +47,38 @@ class Grammar extends BaseGrammar
      */
     public function compileTables($schema)
     {
-        return 'select `table_name` as name, `table_type` as type, `parent_table_name` as parent from information_schema.tables where table_schema = \'\' and table_type = \'BASE TABLE\'';
+        return implode(' ', [
+            'select',
+            implode(', ', [
+                'table_name as name',
+                'table_schema as `schema`',
+                'parent_table_name as parent',
+            ]),
+            'from information_schema.tables',
+            'where table_type = \'BASE TABLE\'',
+            'and table_schema = \'\'',
+        ]);
+    }
+
+    /**
+     * Compile the query to determine the columns.
+     *
+     * @param string $table
+     * @return string
+     */
+    public function compileColumns($schema, $table)
+    {
+        return implode(' ', [
+            'select',
+            implode(', ', [
+                'column_name as `name`',
+                'spanner_type as `type`',
+                'is_nullable as `nullable`',
+                'column_default as `default`',
+            ]),
+            'from information_schema.columns',
+            'where table_name = ' . $this->quoteString($table),
+        ]);
     }
 
     /**
@@ -59,10 +90,20 @@ class Grammar extends BaseGrammar
      */
     public function compileIndexes($schema, $table)
     {
-        return sprintf(
-            'select index_name as `index_name` from information_schema.indexes where table_schema = \'\' and table_name = %s',
-            $this->quoteString($table),
-        );
+        return implode(' ', [
+            'select',
+            implode(', ', [
+                'i.index_name as `name`',
+                'string_agg(c.column_name, \',\') as `columns`',
+                'i.index_type as `type`',
+                'i.is_unique as `unique`',
+            ]),
+            'from information_schema.indexes as i',
+            'join information_schema.index_columns as c on i.table_schema = c.table_schema and i.table_name = c.table_name and i.index_name = c.index_name',
+            'where i.table_schema = ' . $this->quoteString(''),
+            'and i.table_name = ' . $this->quoteString($table),
+            'group by i.index_name, i.index_type, i.is_unique',
+        ]);
     }
 
     /**
@@ -74,25 +115,24 @@ class Grammar extends BaseGrammar
      */
     public function compileForeignKeys($schema, $table)
     {
-        return sprintf(
-            'select constraint_name as `key_name` from information_schema.table_constraints where constraint_type = "FOREIGN KEY" and table_schema = \'\' and table_name = %s',
-            $this->quoteString($table),
-        );
-    }
-
-    /**
-     * Compile the query to determine the columns.
-     *
-     * @param string|null $schema
-     * @param $table
-     * @return string
-     */
-    public function compileColumns($schema, $table)
-    {
-        return sprintf(
-            'select * from information_schema.columns where table_schema = \'\' and table_name = %s',
-            $this->quoteString($table),
-        );
+        return implode(' ', [
+            'select',
+            implode(', ', [
+                'kc.constraint_name as `name`',
+                'string_agg(kc.column_name) as `columns`',
+                'cc.table_schema as `foreign_schema`',
+                'cc.table_name as `foreign_table`',
+                'string_agg(cc.column_name) as `foreign_columns`',
+                'rc.update_rule as `on_update`',
+                'rc.delete_rule as `on_delete`',
+            ]),
+            'from information_schema.key_column_usage kc',
+            'join information_schema.referential_constraints rc on kc.constraint_name = rc.constraint_name',
+            'join information_schema.constraint_column_usage cc on kc.constraint_name = cc.constraint_name',
+            'where kc.table_schema = ""',
+            'and kc.table_name = ' . $this->quoteString($table),
+            'group by kc.constraint_name, cc.table_schema, cc.table_name, rc.update_rule, rc.delete_rule'
+        ]);
     }
 
     /**

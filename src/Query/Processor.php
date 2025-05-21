@@ -100,58 +100,86 @@ class Processor extends BaseProcessor
     }
 
     /**
-     * Process the results of a columns query.
-     *
-     * {@inheritDoc}
-     * @param array<array-key, array<array-key, mixed>> $results
-     * @return array<array-key, array{
-     *     name: string,
-     *     type_name: string,
-     *     type: string,
-     *     collation: null,
-     *     nullable: bool,
-     *     default: scalar,
-     *     auto_increment: false,
-     *     comment: null
-     * }>
+     * @inheritDoc
      */
-    public function processColumns($results)
+    public function processTables($results)
     {
-        return array_map(static function (array $result) {
+        return array_map(function ($result) {
+            $result = (object) $result;
+
             return [
-                'name' => $result['COLUMN_NAME'],
-                'type_name' => preg_replace("/\([^)]+\)/", "", $result['SPANNER_TYPE']),
-                'type' => $result['SPANNER_TYPE'],
-                'collation' => null,
-                'nullable' => $result['IS_NULLABLE'] !== 'NO',
-                'default' => $result['COLUMN_DEFAULT'],
-                'auto_increment' => false,
+                'name' => $result->name,
+                'schema' => $result->schema !== '' ? $result->schema : null,
+                'schema_qualified_name' => $result->schema !== ''
+                    ? $result->schema . '.' . $result->name
+                    : $result->name,
+                'parent' => $result->parent,
+                'size' => null,
                 'comment' => null,
+                'collation' => null,
+                'engine' => null,
             ];
         }, $results);
     }
 
     /**
-     * {@inheritDoc}
-     * @param array{ index_name: string }&array<string, mixed> $results
-     * @return array<array-key, string>
+     * @inheritDoc
      */
-    public function processIndexes($results)
+    public function processColumns($results)
     {
-        return array_map(function ($result) {
-            return ((object) $result)->index_name;
+        return array_map(static function (array $result) {
+            $result = (object) $result;
+
+            return [
+                'name' => $result->name,
+                'type_name' => (string) preg_replace("/\([^)]+\)/", "", $result->type),
+                'type' => $result->type,
+                'collation' => null,
+                'nullable' => $result->nullable === 'YES',
+                'default' => $result->default,
+                // TODO check IS_IDENTITY and set auto_increment accordingly
+                'auto_increment' => false,
+                'comment' => null,
+                'generation' => null,
+            ];
         }, $results);
     }
 
     /**
-     * {@inheritDoc}
-     * @param array{key_name: string}&array<string, mixed> $results
-     * @return array<array-key, string>
+     * @inheritDoc
+     */
+    public function processIndexes($results)
+    {
+        return array_map(function ($result) {
+            $result = (object) $result;
+
+            return [
+                'name' => $name = $result->name,
+                'columns' => $result->columns ? explode(',', $result->columns) : [],
+                'type' => strtolower($result->type),
+                'unique' => (bool) $result->unique,
+                'primary' => $name === 'PRIMARY_KEY',
+            ];
+        }, $results);
+    }
+
+    /**
+     * @inheritDoc
      */
     public function processForeignKeys($results)
     {
         return array_map(function ($result) {
-            return ((object) $result)->key_name;
+            $result = (object) $result;
+
+            return [
+                'name' => $result->name,
+                'columns' => explode(',', $result->columns),
+                'foreign_schema' => $result->foreign_schema,
+                'foreign_table' => $result->foreign_table,
+                'foreign_columns' => explode(',', $result->foreign_columns),
+                'on_update' => strtolower($result->on_update),
+                'on_delete' => strtolower($result->on_delete),
+            ];
         }, $results);
     }
 }
