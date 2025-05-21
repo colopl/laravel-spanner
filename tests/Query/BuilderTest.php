@@ -20,7 +20,6 @@ namespace Colopl\Spanner\Tests\Query;
 use BadMethodCallException;
 use Colopl\Spanner\Query\Builder;
 use Colopl\Spanner\Schema\Blueprint;
-use Colopl\Spanner\Schema\Grammar;
 use Colopl\Spanner\Schema\TokenizerFunction;
 use Colopl\Spanner\Tests\TestCase;
 use Colopl\Spanner\TimestampBound\ExactStaleness;
@@ -982,12 +981,12 @@ class BuilderTest extends TestCase
 
     public function test_insertGetId(): void
     {
-        $this->expectException(BadMethodCallException::class);
-        $this->expectExceptionMessage('Cloud Spanner does not support insertGetId');
-
         $conn = $this->getDefaultConnection();
-        $qb = $conn->table(self::TABLE_NAME_USER);
-        $qb->insertGetId(['userId' => $this->generateUuid(), 'name' => 'first']);
+
+        $id = $conn->query()->from('IdentityTest')->insertGetId(['name' => 'foobar'], 'identityTestId');
+
+        $this->assertIsInt($id);
+        $this->assertTrue($id > 1000000000000000000);
     }
 
     public function test_lock(): void
@@ -1136,15 +1135,15 @@ class BuilderTest extends TestCase
     {
         $tableName = $this->generateTableName('FTS_Search');
         $conn = $this->getDefaultConnection();
-        $grammar = new Grammar();
-        $blueprint = new Blueprint($tableName, function (Blueprint $table) {
+        $conn->useDefaultSchemaGrammar();
+        $blueprint = new Blueprint($conn, $tableName, function (Blueprint $table) {
             $table->create();
             $table->uuid('id')->primary();
             $table->string('name');
             $table->tokenList('nameTokens', TokenizerFunction::FullText, 'name');
             $table->fullText('nameTokens');
         });
-        $blueprint->build($conn, $grammar);
+        $blueprint->build();
 
         $conn->table($tableName)->insert([
             ['id' => $this->generateUuid(), 'name' => 'test1'],
@@ -1160,15 +1159,15 @@ class BuilderTest extends TestCase
     {
         $tableName = $this->generateTableName('FTS_Search');
         $conn = $this->getDefaultConnection();
-        $grammar = new Grammar();
-        $blueprint = new Blueprint($tableName, function (Blueprint $table) {
+        $conn->useDefaultSchemaGrammar();
+        $blueprint = new Blueprint($conn, $tableName, function (Blueprint $table) {
             $table->create();
             $table->uuid('id')->primary();
             $table->string('name');
             $table->tokenList('nameTokens', TokenizerFunction::FullText, 'name');
             $table->fullText('nameTokens');
         });
-        $blueprint->build($conn, $grammar);
+        $blueprint->build();
 
         $conn->table($tableName)->insert([
             ['id' => $this->generateUuid(), 'name' => 'test1'],
@@ -1184,15 +1183,15 @@ class BuilderTest extends TestCase
     {
         $tableName = $this->generateTableName('FTS_Search_Ngrams');
         $conn = $this->getDefaultConnection();
-        $grammar = new Grammar();
-        $blueprint = new Blueprint($tableName, function (Blueprint $table) {
+        $conn->useDefaultSchemaGrammar();
+        $blueprint = new Blueprint($conn, $tableName, function (Blueprint $table) {
             $table->create();
             $table->uuid('id')->primary();
             $table->string('name');
             $table->tokenList('nameTokens', TokenizerFunction::Ngrams, 'name');
             $table->fullText('nameTokens');
         });
-        $blueprint->build($conn, $grammar);
+        $blueprint->build();
 
         $conn->table($tableName)->insert([
             ['id' => $this->generateUuid(), 'name' => 'test1'],
@@ -1208,15 +1207,15 @@ class BuilderTest extends TestCase
     {
         $tableName = $this->generateTableName('FTS_Search_Substring');
         $conn = $this->getDefaultConnection();
-        $grammar = new Grammar();
-        $blueprint = new Blueprint($tableName, function (Blueprint $table) {
+        $conn->useDefaultSchemaGrammar();
+        $blueprint = new Blueprint($conn, $tableName, function (Blueprint $table) {
             $table->create();
             $table->uuid('id')->primary();
             $table->string('name');
             $table->tokenList('nameTokens', TokenizerFunction::Substring, 'name');
             $table->fullText('nameTokens');
         });
-        $blueprint->build($conn, $grammar);
+        $blueprint->build();
 
         $conn->table($tableName)->insert([
             ['id' => $this->generateUuid(), 'name' => 'test1'],

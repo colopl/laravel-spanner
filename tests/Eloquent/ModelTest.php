@@ -124,7 +124,7 @@ class Tag extends Model
     protected $keyType = 'string';
     public $timestamps = false;
 
-    public function items()
+    public function items(): BelongsToMany
     {
         return $this->belongsToMany(Item::class, 'ItemTag', 'itemId', 'tagId');
     }
@@ -172,6 +172,14 @@ class BindingChild extends Model
     protected $table = 'BindingChild';
     protected $primaryKey = 'childId';
     protected $interleaveKeys = ['id', 'childId'];
+    public $timestamps = false;
+}
+
+class IdentityTest extends Model
+{
+    protected $table = 'IdentityTest';
+    protected $primaryKey = 'identityTestId';
+    public $incrementing = true;
     public $timestamps = false;
 }
 
@@ -236,7 +244,6 @@ class ModelTest extends TestCase
     public function testCRUD(): void
     {
         // create
-        /** @var User $user */
         $user = $this->createTestUser();
         $user->save();
         $this->assertDatabaseHas($user->getTable(), ['userId' => $user->userId, 'name' => $user->name]);
@@ -254,13 +261,11 @@ class ModelTest extends TestCase
 
     public function testBelongsTo(): void
     {
-        /** @var User $user */
         $user = $this->createTestUser();
         $user->save();
 
         $itemId = $this->generateUuid();
         $itemCount = 99;
-        /** @var UserItem $userItem */
         $userItem = $this->createTestUserItem($user->userId, $itemId, $itemCount);
         $userItem->save();
 
@@ -492,5 +497,14 @@ class ModelTest extends TestCase
             [$user->getKey(), $userInfo->getKey()],
             $queryLogs[0]['bindings'],
         );
+    }
+
+    public function test_insertAndSetId(): void
+    {
+        $test = new IdentityTest();
+        $test->name = 'test';
+        $test->saveOrFail();
+        $this->assertIsInt($test->getKey());
+        $this->assertTrue($test->getKey() > 1000000000000000000);
     }
 }

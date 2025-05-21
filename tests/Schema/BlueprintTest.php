@@ -17,9 +17,9 @@
 
 namespace Colopl\Spanner\Tests\Schema;
 
+use Colopl\Spanner\Connection;
 use Colopl\Spanner\Schema\Blueprint;
 use Colopl\Spanner\Schema\ChangeStreamValueCaptureType;
-use Colopl\Spanner\Schema\Grammar;
 use Colopl\Spanner\Schema\TokenizerFunction;
 use Colopl\Spanner\Tests\TestCase;
 use Illuminate\Support\Arr;
@@ -30,11 +30,18 @@ use Ramsey\Uuid\Uuid;
 
 class BlueprintTest extends TestCase
 {
+    protected function getDefaultConnection(): Connection
+    {
+        $conn = parent::getDefaultConnection();
+        $conn->useDefaultSchemaGrammar();
+        return $conn;
+    }
+
     public function test_create_with_all_valid_types(): void
     {
         $conn = $this->getDefaultConnection();
         $tableName = $this->generateTableName();
-        $blueprint = new Blueprint($tableName, function (Blueprint $table) {
+        $blueprint = new Blueprint($conn, $tableName, function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->integer('int');
             $table->float('float');
@@ -60,7 +67,7 @@ class BlueprintTest extends TestCase
         });
         $blueprint->create();
 
-        $statements = $blueprint->toSql($conn, new Grammar());
+        $statements = $blueprint->toSql();
         $this->assertSame([
             "create table `{$tableName}` (" . implode(', ', [
                 '`id` string(36) not null',
@@ -93,13 +100,13 @@ class BlueprintTest extends TestCase
     {
         $conn = $this->getDefaultConnection();
         $tableName = $this->generateTableName();
-        $blueprint = new Blueprint($tableName, function (Blueprint $table) {
+        $blueprint = new Blueprint($conn, $tableName, function (Blueprint $table) {
             $table->uuid('id')->primary()->generateUuid();
             $table->string('name');
         });
         $blueprint->create();
 
-        $queries = $blueprint->toSql($conn, new Grammar());
+        $queries = $blueprint->toSql();
         $this->assertSame(
             'create table `' . $tableName . '` (' . implode(', ', [
                 '`id` string(36) not null default (generate_uuid())',
@@ -119,11 +126,11 @@ class BlueprintTest extends TestCase
     {
         $conn = $this->getDefaultConnection();
         $tableName = $this->generateTableName();
-        $blueprint = new Blueprint($tableName, function (Blueprint $table) {
+        $blueprint = new Blueprint($conn, $tableName, function (Blueprint $table) {
             $table->drop();
         });
 
-        $statements = $blueprint->toSql($conn, new Grammar());
+        $statements = $blueprint->toSql();
         $this->assertSame([
             "drop table `{$tableName}`",
         ], $statements);
@@ -133,11 +140,11 @@ class BlueprintTest extends TestCase
     {
         $conn = $this->getDefaultConnection();
         $tableName = $this->generateTableName();
-        $blueprint = new Blueprint($tableName, function (Blueprint $table) {
+        $blueprint = new Blueprint($conn, $tableName, function (Blueprint $table) {
             $table->dropIfExists();
         });
 
-        $statements = $blueprint->toSql($conn, new Grammar());
+        $statements = $blueprint->toSql();
         $this->assertSame([
             "drop table if exists `{$tableName}`",
         ], $statements);
@@ -149,12 +156,12 @@ class BlueprintTest extends TestCase
     {
         $conn = $this->getDefaultConnection();
         $tableName = $this->generateTableName();
-        $blueprint = new Blueprint($tableName, function (Blueprint $table) {
+        $blueprint = new Blueprint($conn, $tableName, function (Blueprint $table) {
             $table->string('description', 255);
             $table->integer('value');
         });
 
-        $statements = $blueprint->toSql($conn, new Grammar());
+        $statements = $blueprint->toSql();
         $this->assertSame([
             "alter table `{$tableName}` add column `description` string(255) not null",
             "alter table `{$tableName}` add column `value` int64 not null",
@@ -165,12 +172,12 @@ class BlueprintTest extends TestCase
     {
         $conn = $this->getDefaultConnection();
         $tableName = $this->generateTableName();
-        $blueprint = new Blueprint($tableName, function (Blueprint $table) {
+        $blueprint = new Blueprint($conn, $tableName, function (Blueprint $table) {
             $table->string('description', 512)->change();
             $table->float('value')->change();
         });
 
-        $statements = $blueprint->toSql($conn, new Grammar());
+        $statements = $blueprint->toSql();
         $this->assertSame([
             "alter table `{$tableName}` alter column `description` string(512) not null",
             "alter table `{$tableName}` alter column `value` float64 not null",
@@ -181,11 +188,11 @@ class BlueprintTest extends TestCase
     {
         $conn = $this->getDefaultConnection();
         $tableName = $this->generateTableName();
-        $blueprint = new Blueprint($tableName, function (Blueprint $table) {
+        $blueprint = new Blueprint($conn, $tableName, function (Blueprint $table) {
             $table->dropColumn('description');
         });
 
-        $statements = $blueprint->toSql($conn, new Grammar());
+        $statements = $blueprint->toSql();
         $this->assertSame([
             "alter table `{$tableName}` drop column `description`",
         ], $statements);
@@ -196,12 +203,12 @@ class BlueprintTest extends TestCase
         $conn = $this->getDefaultConnection();
         $tableName = $this->generateTableName();
         $indexPrefix = Str::snake($tableName);
-        $blueprint = new Blueprint($tableName, function (Blueprint $table) {
+        $blueprint = new Blueprint($conn, $tableName, function (Blueprint $table) {
             $table->unique('name');
             $table->index('createdAt');
         });
 
-        $statements = $blueprint->toSql($conn, new Grammar());
+        $statements = $blueprint->toSql();
         $this->assertSame([
             "create unique index `{$indexPrefix}_name_unique` on `{$tableName}` (`name`)",
             "create index `{$indexPrefix}_createdat_index` on `{$tableName}` (`createdAt`)",
@@ -213,12 +220,12 @@ class BlueprintTest extends TestCase
         $conn = $this->getDefaultConnection();
         $tableName = $this->generateTableName();
         $indexPrefix = Str::snake($tableName);
-        $blueprint = new Blueprint($tableName, function (Blueprint $table) use ($indexPrefix) {
+        $blueprint = new Blueprint($conn, $tableName, function (Blueprint $table) use ($indexPrefix) {
             $table->dropUnique($indexPrefix . '_name_unique');
             $table->dropIndex($indexPrefix . '_createdat_index');
         });
 
-        $statements = $blueprint->toSql($conn, new Grammar());
+        $statements = $blueprint->toSql();
         $this->assertSame([
             "drop index `{$indexPrefix}_name_unique`",
             "drop index `{$indexPrefix}_createdat_index`",
@@ -230,11 +237,11 @@ class BlueprintTest extends TestCase
         $conn = $this->getDefaultConnection();
         $tableName = $this->generateTableName();
         $foreignPrefix = Str::snake($tableName);
-        $blueprint = new Blueprint($tableName, function (Blueprint $table) use ($foreignPrefix) {
+        $blueprint = new Blueprint($conn, $tableName, function (Blueprint $table) use ($foreignPrefix) {
             $table->dropForeign('fk_' . $foreignPrefix);
         });
 
-        $statements = $blueprint->toSql($conn, new Grammar());
+        $statements = $blueprint->toSql();
         $this->assertSame([
             "alter table `{$tableName}` drop constraint `fk_{$foreignPrefix}`",
         ], $statements);
@@ -244,7 +251,7 @@ class BlueprintTest extends TestCase
     {
         $conn = $this->getDefaultConnection();
         $tableName = $this->generateTableName();
-        $blueprint = new Blueprint($tableName, function (Blueprint $table) {
+        $blueprint = new Blueprint($conn, $tableName, function (Blueprint $table) {
             $table->uuid('id');
             $table->integer('number');
             $table->string('name');
@@ -252,7 +259,7 @@ class BlueprintTest extends TestCase
         });
         $blueprint->create();
 
-        $statements = $blueprint->toSql($conn, new Grammar());
+        $statements = $blueprint->toSql();
         $this->assertSame([
             "create table `{$tableName}` (`id` string(36) not null, `number` int64 not null, `name` string(255) not null) primary key (`id`, `number`)",
         ], $statements);
@@ -261,10 +268,9 @@ class BlueprintTest extends TestCase
     public function test_invisible_columns(): void
     {
         $conn = $this->getDefaultConnection();
-        $grammar = new Grammar();
         $tableName = $this->generateTableName('Invisible');
 
-        $blueprint = new Blueprint($tableName, function (Blueprint $table) {
+        $blueprint = new Blueprint($conn, $tableName, function (Blueprint $table) {
             $table->create();
             $table->integer('id')->primary();
             $table->string('name')->nullable()->invisible();
@@ -272,9 +278,9 @@ class BlueprintTest extends TestCase
 
         $this->assertSame([
             "create table `{$tableName}` (`id` int64 not null, `name` string(255) hidden) primary key (`id`)",
-        ], $blueprint->toSql($conn, $grammar));
+        ], $blueprint->toSql());
 
-        $blueprint->build($conn, $grammar);
+        $blueprint->build();
 
         $conn->table($tableName)->insert(['id' => 1, 'name' => 'test']);
         $row = $conn->table($tableName)->first();
@@ -285,17 +291,16 @@ class BlueprintTest extends TestCase
     public function test_tokenList_and_search_index(): void
     {
         $conn = $this->getDefaultConnection();
-        $grammar = new Grammar();
         $parentTableName = $this->generateTableName('Parent');
         $childTableName = $this->generateTableName('Child');
 
-        $blueprint = new Blueprint($parentTableName, function (Blueprint $table) {
+        $blueprint = new Blueprint($conn, $parentTableName, function (Blueprint $table) {
             $table->create();
             $table->uuid('pid')->primary();
         });
-        $blueprint->build($conn, $grammar);
+        $blueprint->build();
 
-        $blueprint = new Blueprint($childTableName, function (Blueprint $table) use ($parentTableName) {
+        $blueprint = new Blueprint($conn, $childTableName, function (Blueprint $table) use ($parentTableName) {
             $table->create();
             $table->uuid('id');
             $table->uuid('pid');
@@ -314,7 +319,7 @@ class BlueprintTest extends TestCase
                 ->disableAutomaticUidColumn();
         });
 
-        $statements = $blueprint->toSql($conn, $grammar);
+        $statements = $blueprint->toSql();
 
         $indexPrefix = Str::snake($childTableName);
         $this->assertSame([
@@ -338,7 +343,7 @@ class BlueprintTest extends TestCase
         $parentTableName = $this->generateTableName('Parent');
         $childTableName = $this->generateTableName('Child');
 
-        $blueprint = new Blueprint($childTableName, function (Blueprint $table) use ($parentTableName) {
+        $blueprint = new Blueprint($conn, $childTableName, function (Blueprint $table) use ($parentTableName) {
             $table->uuid('id');
             $table->uuid('pid');
             $table->string('name');
@@ -347,12 +352,12 @@ class BlueprintTest extends TestCase
         });
         $blueprint->create();
 
-        $statements = $blueprint->toSql($conn, new Grammar());
+        $statements = $blueprint->toSql();
         $this->assertSame([
             "create table `{$childTableName}` (`id` string(36) not null, `pid` string(36) not null, `name` string(255) not null) primary key (`pid`), interleave in parent `{$parentTableName}`",
         ], $statements);
 
-        $blueprint = new Blueprint($childTableName, function (Blueprint $table) use ($parentTableName) {
+        $blueprint = new Blueprint($conn, $childTableName, function (Blueprint $table) use ($parentTableName) {
             $table->uuid('id');
             $table->uuid('pid');
             $table->string('name');
@@ -362,7 +367,7 @@ class BlueprintTest extends TestCase
         });
         $blueprint->create();
 
-        $statements = $blueprint->toSql($conn, new Grammar());
+        $statements = $blueprint->toSql();
         $this->assertSame([
             "create table `{$childTableName}` (`id` string(36) not null, `pid` string(36) not null, `name` string(255) not null) primary key (`pid`), interleave in parent `{$parentTableName}` on delete cascade",
         ], $statements);
@@ -372,18 +377,17 @@ class BlueprintTest extends TestCase
     {
         $conn = $this->getDefaultConnection();
         $conn->useDefaultSchemaGrammar();
-        $grammar = $conn->getSchemaGrammar();
         $tableName = $this->generateTableName();
-        $blueprint = new Blueprint($tableName);
+        $blueprint = new Blueprint($conn, $tableName);
         $blueprint->id();
         $blueprint->create();
-        $blueprint->build($conn, $grammar);
+        $blueprint->build();
 
-        $blueprint = new Blueprint($tableName);
+        $blueprint = new Blueprint($conn, $tableName);
         $blueprint->rename($tableName . '_v2');
-        $blueprint->build($conn, $grammar);
+        $blueprint->build();
 
-        $statements = $blueprint->toSql($conn, $grammar);
+        $statements = $blueprint->toSql();
         $this->assertSame([
             "alter table `{$tableName}` rename to `{$tableName}_v2`",
         ], $statements);
@@ -393,18 +397,17 @@ class BlueprintTest extends TestCase
     {
         $conn = $this->getDefaultConnection();
         $conn->useDefaultSchemaGrammar();
-        $grammar = $conn->getSchemaGrammar();
         $tableName = $this->generateTableName();
-        $blueprint = new Blueprint($tableName);
+        $blueprint = new Blueprint($conn, $tableName);
         $blueprint->id();
         $blueprint->create();
-        $blueprint->build($conn, $grammar);
+        $blueprint->build();
 
-        $blueprint = new Blueprint($tableName);
+        $blueprint = new Blueprint($conn, $tableName);
         $blueprint->rename($tableName . '_v2')->synonym();
-        $blueprint->build($conn, $grammar);
+        $blueprint->build();
 
-        $statements = $blueprint->toSql($conn, $grammar);
+        $statements = $blueprint->toSql();
         $this->assertSame([
             "alter table `{$tableName}` rename to `{$tableName}_v2`, add synonym `{$tableName}`",
         ], $statements);
@@ -414,18 +417,17 @@ class BlueprintTest extends TestCase
     {
         $conn = $this->getDefaultConnection();
         $conn->useDefaultSchemaGrammar();
-        $grammar = $conn->getSchemaGrammar();
         $tableName = $this->generateTableName();
-        $blueprint = new Blueprint($tableName);
+        $blueprint = new Blueprint($conn, $tableName);
         $blueprint->id();
         $blueprint->create();
-        $blueprint->build($conn, $grammar);
+        $blueprint->build();
 
-        $blueprint = new Blueprint($tableName);
+        $blueprint = new Blueprint($conn, $tableName);
         $blueprint->rename($tableName . '_v2')->synonym($tableName . '_v1');
-        $blueprint->build($conn, $grammar);
+        $blueprint->build();
 
-        $statements = $blueprint->toSql($conn, $grammar);
+        $statements = $blueprint->toSql();
         $this->assertSame([
             "alter table `{$tableName}` rename to `{$tableName}_v2`, add synonym `{$tableName}_v1`",
         ], $statements);
@@ -435,18 +437,17 @@ class BlueprintTest extends TestCase
     {
         $conn = $this->getDefaultConnection();
         $conn->useDefaultSchemaGrammar();
-        $grammar = $conn->getSchemaGrammar();
         $tableName = $this->generateTableName();
-        $blueprint = new Blueprint($tableName);
+        $blueprint = new Blueprint($conn, $tableName);
         $blueprint->id();
         $blueprint->create();
-        $blueprint->build($conn, $grammar);
+        $blueprint->build();
 
-        $blueprint = new Blueprint($tableName);
+        $blueprint = new Blueprint($conn, $tableName);
         $blueprint->addSynonym($tableName . '_v1');
-        $blueprint->build($conn, $grammar);
+        $blueprint->build();
 
-        $statements = $blueprint->toSql($conn, $grammar);
+        $statements = $blueprint->toSql();
         $this->assertSame([
             "alter table `{$tableName}` add synonym `{$tableName}_v1`",
         ], $statements);
@@ -456,22 +457,21 @@ class BlueprintTest extends TestCase
     {
         $conn = $this->getDefaultConnection();
         $conn->useDefaultSchemaGrammar();
-        $grammar = $conn->getSchemaGrammar();
         $tableName = $this->generateTableName();
-        $blueprint = new Blueprint($tableName);
+        $blueprint = new Blueprint($conn, $tableName);
         $blueprint->id();
         $blueprint->create();
-        $blueprint->build($conn, $grammar);
+        $blueprint->build();
 
-        $blueprint = new Blueprint($tableName);
+        $blueprint = new Blueprint($conn, $tableName);
         $blueprint->addSynonym($tableName . '_v1');
-        $blueprint->build($conn, $grammar);
+        $blueprint->build();
 
-        $blueprint = new Blueprint($tableName);
+        $blueprint = new Blueprint($conn, $tableName);
         $blueprint->dropSynonym($tableName . '_v1');
-        $blueprint->build($conn, $grammar);
+        $blueprint->build();
 
-        $statements = $blueprint->toSql($conn, $grammar);
+        $statements = $blueprint->toSql();
         $this->assertSame([
             "alter table `{$tableName}` drop synonym `{$tableName}_v1`",
         ], $statements);
@@ -481,18 +481,17 @@ class BlueprintTest extends TestCase
     {
         $conn = $this->getDefaultConnection();
         $conn->useDefaultSchemaGrammar();
-        $grammar = $conn->getSchemaGrammar();
         $tableName = $this->generateTableName();
-        $blueprint = new Blueprint($tableName, function (Blueprint $table) {
+        $blueprint = new Blueprint($conn, $tableName, function (Blueprint $table) {
             $table->uuid('id');
             $table->primary('id');
             $table->dateTime('t')->nullable();
             $table->deleteRowsOlderThan('t', 100);
         });
         $blueprint->create();
-        $blueprint->build($conn, $grammar);
+        $blueprint->build();
 
-        $statements = $blueprint->toSql($conn, $grammar);
+        $statements = $blueprint->toSql();
         $this->assertSame([
             "create table `{$tableName}` (`id` string(36) not null, `t` timestamp) primary key (`id`), row deletion policy (older_than(t, interval 100 day))",
         ], $statements);
@@ -502,21 +501,20 @@ class BlueprintTest extends TestCase
     {
         $conn = $this->getDefaultConnection();
         $conn->useDefaultSchemaGrammar();
-        $grammar = $conn->getSchemaGrammar();
         $tableName = $this->generateTableName();
-        $blueprint1 = new Blueprint($tableName, function (Blueprint $table) {
+        $blueprint1 = new Blueprint($conn, $tableName, function (Blueprint $table) {
             $table->create();
             $table->uuid('id');
             $table->primary('id');
             $table->dateTime('t')->nullable();
         });
-        $blueprint1->build($conn, $grammar);
-        $blueprint2 = new Blueprint($tableName, function (Blueprint $table) {
+        $blueprint1->build();
+        $blueprint2 = new Blueprint($conn, $tableName, function (Blueprint $table) {
             $table->addRowDeletionPolicy('t', 200);
         });
-        $blueprint2->build($conn, $grammar);
+        $blueprint2->build();
 
-        $statements = $blueprint2->toSql($conn, $grammar);
+        $statements = $blueprint2->toSql();
         $this->assertSame([
             "alter table `{$tableName}` add row deletion policy (older_than(`t`, interval 200 day))",
         ], $statements);
@@ -526,22 +524,21 @@ class BlueprintTest extends TestCase
     {
         $conn = $this->getDefaultConnection();
         $conn->useDefaultSchemaGrammar();
-        $grammar = $conn->getSchemaGrammar();
         $tableName = $this->generateTableName();
-        $blueprint1 = new Blueprint($tableName, function (Blueprint $table) {
+        $blueprint1 = new Blueprint($conn, $tableName, function (Blueprint $table) {
             $table->create();
             $table->uuid('id');
             $table->primary('id');
             $table->dateTime('t')->nullable();
             $table->deleteRowsOlderThan('t', 100);
         });
-        $blueprint1->build($conn, $grammar);
-        $blueprint2 = new Blueprint($tableName, function (Blueprint $table) {
+        $blueprint1->build();
+        $blueprint2 = new Blueprint($conn, $tableName, function (Blueprint $table) {
             $table->replaceRowDeletionPolicy('t', 200);
         });
-        $blueprint2->build($conn, $grammar);
+        $blueprint2->build();
 
-        $statements = $blueprint2->toSql($conn, $grammar);
+        $statements = $blueprint2->toSql();
         $this->assertSame([
             "alter table `{$tableName}` replace row deletion policy (older_than(`t`, interval 200 day))",
         ], $statements);
@@ -551,22 +548,21 @@ class BlueprintTest extends TestCase
     {
         $conn = $this->getDefaultConnection();
         $conn->useDefaultSchemaGrammar();
-        $grammar = $conn->getSchemaGrammar();
         $tableName = $this->generateTableName();
-        $blueprint1 = new Blueprint($tableName, function (Blueprint $table) {
+        $blueprint1 = new Blueprint($conn, $tableName, function (Blueprint $table) {
             $table->create();
             $table->uuid('id');
             $table->primary('id');
             $table->dateTime('created_at')->nullable();
             $table->deleteRowsOlderThan('created_at', 100);
         });
-        $blueprint1->build($conn, $grammar);
-        $blueprint2 = new Blueprint($tableName, function (Blueprint $table) {
+        $blueprint1->build();
+        $blueprint2 = new Blueprint($conn, $tableName, function (Blueprint $table) {
             $table->dropRowDeletionPolicy();
         });
-        $blueprint2->build($conn, $grammar);
+        $blueprint2->build();
 
-        $statements = $blueprint2->toSql($conn, $grammar);
+        $statements = $blueprint2->toSql();
         $this->assertSame([
             "alter table `{$tableName}` drop row deletion policy",
         ], $statements);
@@ -576,16 +572,15 @@ class BlueprintTest extends TestCase
     {
         $conn = $this->getDefaultConnection();
         $conn->useDefaultSchemaGrammar();
-        $grammar = $conn->getSchemaGrammar();
         $seqName = $this->generateTableName('seq');
-        $blueprint = new Blueprint('_', function (Blueprint $table) use ($seqName) {
+        $blueprint = new Blueprint($conn, '_', function (Blueprint $table) use ($seqName) {
             $table->createSequence($seqName);
         });
-        $blueprint->build($conn, $grammar);
+        $blueprint->build();
 
         $this->assertSame([
             "create sequence `{$seqName}` options (sequence_kind='bit_reversed_positive')",
-        ], $blueprint->toSql($conn, $grammar));
+        ], $blueprint->toSql());
         $this->assertContains(
             $seqName,
             Arr::pluck($conn->select('SELECT NAME FROM INFORMATION_SCHEMA.SEQUENCES'), 'NAME'),
@@ -596,19 +591,18 @@ class BlueprintTest extends TestCase
     {
         $conn = $this->getDefaultConnection();
         $conn->useDefaultSchemaGrammar();
-        $grammar = $conn->getSchemaGrammar();
         $seqName = $this->generateTableName('seq');
-        $blueprint = new Blueprint('_', function (Blueprint $table) use ($seqName) {
+        $blueprint = new Blueprint($conn, '_', function (Blueprint $table) use ($seqName) {
             $table->createSequence($seqName)
                 ->skipRangeMin(1)
                 ->skipRangeMax(10)
                 ->startWithCounter(5);
         });
-        $blueprint->build($conn, $grammar);
+        $blueprint->build();
 
         $this->assertSame([
             "create sequence `{$seqName}` options (sequence_kind='bit_reversed_positive', start_with_counter=5, skip_range_min=1, skip_range_max=10)",
-        ], $blueprint->toSql($conn, $grammar));
+        ], $blueprint->toSql());
         $this->assertContains(
             $seqName,
             Arr::pluck($conn->select('SELECT NAME FROM INFORMATION_SCHEMA.SEQUENCES'), 'NAME'),
@@ -619,16 +613,15 @@ class BlueprintTest extends TestCase
     {
         $conn = $this->getDefaultConnection();
         $conn->useDefaultSchemaGrammar();
-        $grammar = $conn->getSchemaGrammar();
         $seqName = $this->generateTableName('seq');
-        $blueprint = new Blueprint('_', static fn(Blueprint $table) => $table->createSequenceIfNotExists($seqName));
-        $blueprint->build($conn, $grammar);
+        $blueprint = new Blueprint($conn, '_', static fn(Blueprint $table) => $table->createSequenceIfNotExists($seqName));
+        $blueprint->build();
         $count = count($conn->select('SELECT * FROM INFORMATION_SCHEMA.SEQUENCES'));
-        $blueprint = new Blueprint('_', static fn(Blueprint $table) => $table->createSequenceIfNotExists($seqName));
-        $blueprint->build($conn, $grammar);
+        $blueprint = new Blueprint($conn, '_', static fn(Blueprint $table) => $table->createSequenceIfNotExists($seqName));
+        $blueprint->build();
         $this->assertSame([
             "create sequence if not exists `{$seqName}` options (sequence_kind='bit_reversed_positive')",
-        ], $blueprint->toSql($conn, $grammar));
+        ], $blueprint->toSql());
         $this->assertCount($count, $conn->select('SELECT * FROM INFORMATION_SCHEMA.SEQUENCES'));
     }
 
@@ -636,20 +629,19 @@ class BlueprintTest extends TestCase
     {
         $conn = $this->getDefaultConnection();
         $conn->useDefaultSchemaGrammar();
-        $grammar = $conn->getSchemaGrammar();
         $seqName = $this->generateTableName('seq');
 
-        $blueprint = new Blueprint('_', fn(Blueprint $table) => $table->createSequence($seqName));
-        $blueprint->build($conn, $grammar);
+        $blueprint = new Blueprint($conn, '_', fn(Blueprint $table) => $table->createSequence($seqName));
+        $blueprint->build();
 
-        $blueprint = new Blueprint('_', function (Blueprint $table) use ($seqName) {
+        $blueprint = new Blueprint($conn, '_', function (Blueprint $table) use ($seqName) {
             $table->alterSequence($seqName)->startWithCounter(5);
         });
-        $blueprint->build($conn, $grammar);
+        $blueprint->build();
 
         $this->assertSame([
             "alter sequence `{$seqName}` set options (sequence_kind='bit_reversed_positive', start_with_counter=5)",
-        ], $blueprint->toSql($conn, $grammar));
+        ], $blueprint->toSql());
         $this->assertContains(
             $seqName,
             Arr::pluck($conn->select('SELECT NAME FROM INFORMATION_SCHEMA.SEQUENCES'), 'NAME'),
@@ -660,16 +652,15 @@ class BlueprintTest extends TestCase
     {
         $conn = $this->getDefaultConnection();
         $conn->useDefaultSchemaGrammar();
-        $grammar = $conn->getSchemaGrammar();
         $seqName = $this->generateTableName('seq');
 
-        $blueprint = new Blueprint('_', static fn(Blueprint $table) => $table->createSequence($seqName));
-        $blueprint->build($conn, $grammar);
+        $blueprint = new Blueprint($conn, '_', static fn(Blueprint $table) => $table->createSequence($seqName));
+        $blueprint->build();
 
-        $blueprint = new Blueprint('_', static fn(Blueprint $table) => $table->dropSequence($seqName));
-        $blueprint->build($conn, $grammar);
+        $blueprint = new Blueprint($conn, '_', static fn(Blueprint $table) => $table->dropSequence($seqName));
+        $blueprint->build();
 
-        $this->assertSame(["drop sequence `{$seqName}`"], $blueprint->toSql($conn, $grammar));
+        $this->assertSame(["drop sequence `{$seqName}`"], $blueprint->toSql());
         $this->assertNotContains(
             $seqName,
             Arr::pluck($conn->select('SELECT NAME FROM INFORMATION_SCHEMA.SEQUENCES'), 'NAME'),
@@ -680,38 +671,36 @@ class BlueprintTest extends TestCase
     {
         $conn = $this->getDefaultConnection();
         $conn->useDefaultSchemaGrammar();
-        $grammar = $conn->getSchemaGrammar();
         $seqName = $this->generateTableName('seq');
 
-        $blueprint = new Blueprint('_', fn(Blueprint $table) => $table->createSequence($seqName));
-        $blueprint->build($conn, $grammar);
+        $blueprint = new Blueprint($conn, '_', fn(Blueprint $table) => $table->createSequence($seqName));
+        $blueprint->build();
 
-        $blueprint = new Blueprint('_', static fn(Blueprint $table) => $table->dropSequenceIfExists($seqName));
-        $blueprint->build($conn, $grammar);
+        $blueprint = new Blueprint($conn, '_', static fn(Blueprint $table) => $table->dropSequenceIfExists($seqName));
+        $blueprint->build();
 
-        $this->assertSame(["drop sequence if exists `{$seqName}`"], $blueprint->toSql($conn, $grammar));
+        $this->assertSame(["drop sequence if exists `{$seqName}`"], $blueprint->toSql());
         $this->assertNotContains(
             $seqName,
             Arr::pluck($conn->select('SELECT NAME FROM INFORMATION_SCHEMA.SEQUENCES'), 'NAME'),
         );
 
         // No error should be thrown
-        $blueprint = new Blueprint('_', static fn(Blueprint $table) => $table->dropSequenceIfExists($seqName));
-        $blueprint->build($conn, $grammar);
+        $blueprint = new Blueprint($conn, '_', static fn(Blueprint $table) => $table->dropSequenceIfExists($seqName));
+        $blueprint->build();
     }
 
     public function test_createChangeStream_for_all(): void
     {
         $conn = $this->getDefaultConnection();
         $conn->useDefaultSchemaGrammar();
-        $grammar = $conn->getSchemaGrammar();
         $name = __FUNCTION__ . Uuid::uuid4()->toString();
 
-        $blueprint = new Blueprint('_', fn(Blueprint $table) => $table->createChangeStream($name));
-        $blueprint->build($conn, $grammar);
+        $blueprint = new Blueprint($conn, '_', fn(Blueprint $table) => $table->createChangeStream($name));
+        $blueprint->build();
         $this->beforeApplicationDestroyed(fn() => $blueprint->dropChangeStream($name));
 
-        $this->assertSame(["create change stream `$name` for all"], $blueprint->toSql($conn, $grammar));
+        $this->assertSame(["create change stream `$name` for all"], $blueprint->toSql());
         $this->assertContains($name, Arr::pluck($conn->select('SELECT * FROM INFORMATION_SCHEMA.CHANGE_STREAMS'), 'CHANGE_STREAM_NAME'));
     }
 
@@ -719,50 +708,47 @@ class BlueprintTest extends TestCase
     {
         $conn = $this->getDefaultConnection();
         $conn->useDefaultSchemaGrammar();
-        $grammar = $conn->getSchemaGrammar();
         $name = __FUNCTION__ . Uuid::uuid4()->toString();
 
-        $blueprint = new Blueprint('_', fn(Blueprint $table) => $table->createChangeStream($name)
+        $blueprint = new Blueprint($conn, '_', fn(Blueprint $table) => $table->createChangeStream($name)
             ->for(self::TABLE_NAME_TEST)
             ->for(self::TABLE_NAME_USER),
         );
-        $blueprint->build($conn, $grammar);
+        $blueprint->build();
 
-        $this->assertSame(["create change stream `{$name}` for `Test`, `User`"], $blueprint->toSql($conn, $grammar));
+        $this->assertSame(["create change stream `{$name}` for `Test`, `User`"], $blueprint->toSql());
 
-        $blueprint = new Blueprint('');
+        $blueprint = new Blueprint($conn, '');
         $blueprint->dropChangeStream($name);
-        $blueprint->build($conn, $grammar);
+        $blueprint->build();
     }
 
     public function test_createChangeStream_for_table_columns(): void
     {
         $conn = $this->getDefaultConnection();
         $conn->useDefaultSchemaGrammar();
-        $grammar = $conn->getSchemaGrammar();
         $name = __FUNCTION__ . Uuid::uuid4()->toString();
 
-        $blueprint = new Blueprint('');
+        $blueprint = new Blueprint($conn, '');
         $blueprint->createChangeStream($name)->for(self::TABLE_NAME_TEST, ['stringTest', 'intTest']);
-        $blueprint->build($conn, $grammar);
+        $blueprint->build();
 
-        $this->assertSame(["create change stream `$name` for `Test`(`stringTest`, `intTest`)"], $blueprint->toSql($conn, $grammar));
+        $this->assertSame(["create change stream `$name` for `Test`(`stringTest`, `intTest`)"], $blueprint->toSql());
 
-        $blueprint = new Blueprint('');
+        $blueprint = new Blueprint($conn, '');
         $blueprint->dropChangeStream($name);
-        $blueprint->build($conn, $grammar);
+        $blueprint->build();
     }
 
     public function test_createChangeStream_for_with_options(): void
     {
         $conn = $this->getDefaultConnection();
         $conn->useDefaultSchemaGrammar();
-        $grammar = $conn->getSchemaGrammar();
         $uuid = Uuid::uuid4()->toString();
         $tableName = self::TABLE_NAME_TEST . $uuid;
         $streamName = __FUNCTION__ . $uuid;
 
-        $blueprint = new Blueprint($tableName);
+        $blueprint = new Blueprint($conn, $tableName);
         $blueprint->uuid('id')->primary();
         $blueprint->create();
         $blueprint->createChangeStream($streamName)
@@ -773,7 +759,7 @@ class BlueprintTest extends TestCase
             ->excludeDelete(true)
             ->valueCaptureType(ChangeStreamValueCaptureType::NewRow)
             ->retentionPeriod('1d');
-        $blueprint->build($conn, $grammar);
+        $blueprint->build();
 
         $this->assertSame([
             "create table `$tableName` (`id` string(36) not null) primary key (`id`)",
@@ -785,64 +771,62 @@ class BlueprintTest extends TestCase
                 "exclude_update=true",
                 "exclude_delete=true",
             ]) . ")",
-        ], $blueprint->toSql($conn, $grammar));
+        ], $blueprint->toSql());
 
-        $blueprint = new Blueprint('');
+        $blueprint = new Blueprint($conn, '');
         $blueprint->dropChangeStream($streamName);
-        $blueprint->build($conn, $grammar);
+        $blueprint->build();
     }
 
     public function test_alterChangeStream(): void
     {
         $conn = $this->getDefaultConnection();
         $conn->useDefaultSchemaGrammar();
-        $grammar = $conn->getSchemaGrammar();
         $uuid = Uuid::uuid4()->toString();
         $tableName = self::TABLE_NAME_TEST . '_' . $uuid;
         $streamName = __FUNCTION__ . '_' . $uuid;
 
-        $blueprint = new Blueprint($tableName);
+        $blueprint = new Blueprint($conn, $tableName);
         $blueprint->uuid('id')->primary();
         $blueprint->create();
         $blueprint->createChangeStream($streamName)->for($blueprint->getTable())->excludeTtlDeletes(true);
-        $blueprint->build($conn, $grammar);
+        $blueprint->build();
 
-        $blueprint = new Blueprint('');
+        $blueprint = new Blueprint($conn, '');
         $blueprint->alterChangeStream($streamName)
             ->excludeTtlDeletes(false)
             ->retentionPeriod('7d');
-        $blueprint->build($conn, $grammar);
+        $blueprint->build();
 
         $this->assertSame([
             "alter change stream `$streamName` set options (retention_period='7d', exclude_ttl_deletes=false)",
-        ], $blueprint->toSql($conn, $grammar));
+        ], $blueprint->toSql());
 
-        $blueprint = new Blueprint('');
+        $blueprint = new Blueprint($conn, '');
         $blueprint->dropChangeStream($streamName);
-        $blueprint->build($conn, $grammar);
+        $blueprint->build();
     }
 
     public function test_dropChangeStream(): void
     {
         $conn = $this->getDefaultConnection();
         $conn->useDefaultSchemaGrammar();
-        $grammar = $conn->getSchemaGrammar();
         $uuid = Uuid::uuid4()->toString();
         $streamName = __FUNCTION__ . '_' . $uuid;
 
-        $blueprint = new Blueprint(self::TABLE_NAME_TEST . '_' . $uuid);
+        $blueprint = new Blueprint($conn, self::TABLE_NAME_TEST . '_' . $uuid);
         $blueprint->uuid('id')->primary();
         $blueprint->create();
         $blueprint->createChangeStream($streamName)->for($blueprint->getTable());
-        $blueprint->build($conn, $grammar);
+        $blueprint->build();
 
-        $blueprint = new Blueprint('');
+        $blueprint = new Blueprint($conn, '');
         $blueprint->dropChangeStream($streamName);
-        $blueprint->build($conn, $grammar);
+        $blueprint->build();
 
         $this->assertSame([
             "drop change stream `$streamName`",
-        ], $blueprint->toSql($conn, $grammar));
+        ], $blueprint->toSql());
     }
 
     public function test_default_values(): void
@@ -852,7 +836,7 @@ class BlueprintTest extends TestCase
         $grammar = $conn->getSchemaGrammar();
         $tableName = $this->generateTableName();
 
-        $blueprint = new Blueprint($tableName, function (Blueprint $table) {
+        $blueprint = new Blueprint($conn, $tableName, function (Blueprint $table) {
             $table->uuid('id');
             $table->integer('null')->default(null)->nullable();
             $table->integer('int')->default(1);
@@ -889,7 +873,7 @@ class BlueprintTest extends TestCase
         });
         $blueprint->create();
 
-        $statements = $blueprint->toSql($conn, $grammar);
+        $statements = $blueprint->toSql();
 
         $this->assertStringStartsWith("create sequence `{$tableName}_int_seq_sequence` options (sequence_kind='bit_reversed_positive', start_with_counter=", $statements[0]);
         $this->assertStringStartsWith("create sequence `{$tableName}_bigint_seq_sequence` options (sequence_kind='bit_reversed_positive', start_with_counter=", $statements[1]);
@@ -930,7 +914,7 @@ class BlueprintTest extends TestCase
             ]) . ') primary key (`id`)'
             , $statements[2]);
 
-        $blueprint->build($conn, $grammar);
+        $blueprint->build();
         $query = $conn->table($tableName);
         $query->insert(['id' => Uuid::uuid4()->toString()]);
         /** @var array<string, mixed> $result */
@@ -969,15 +953,14 @@ class BlueprintTest extends TestCase
     {
         $conn = $this->getDefaultConnection();
         $conn->useDefaultSchemaGrammar();
-        $grammar = $conn->getSchemaGrammar();
         $tableName = $this->generateTableName();
 
-        $blueprint = new Blueprint($tableName, function (Blueprint $table) {
+        $blueprint = new Blueprint($conn, $tableName, function (Blueprint $table) {
             $table->createSequence('seq');
             $table->integer('id')->primary()->useSequence('seq');
         });
         $blueprint->create();
-        $statements = $blueprint->toSql($conn, $grammar);
+        $statements = $blueprint->toSql();
         $this->assertSame([
             "create sequence `seq` options (sequence_kind='bit_reversed_positive')",
             "create table `{$tableName}` (`id` int64 not null default (get_next_sequence_value(sequence `seq`))) primary key (`id`)",
@@ -987,7 +970,6 @@ class BlueprintTest extends TestCase
     public function test_increments(): void
     {
         $conn = $this->getDefaultConnection();
-        $grammar = new Grammar();
 
         $incrementTypeCalls = [
             fn(Blueprint $t) => $t->id(),
@@ -999,21 +981,21 @@ class BlueprintTest extends TestCase
 
         foreach ($incrementTypeCalls as $typeCalls) {
             $table = $this->generateTableName(class_basename(__CLASS__));
-            $blueprint = new Blueprint($table, $typeCalls);
+            $blueprint = new Blueprint($conn, $table, $typeCalls);
             $blueprint->create();
             $this->assertSame(
                 ['create table `' . $table . '` (`id` string(36) not null default (generate_uuid())) primary key (`id`)'],
-                $blueprint->toSql($conn, $grammar),
+                $blueprint->toSql(),
             );
         }
 
         $table = $this->generateTableName(class_basename(__CLASS__));
-        $blueprint = new Blueprint($table, function (Blueprint $table) {
+        $blueprint = new Blueprint($conn, $table, function (Blueprint $table) {
             $table->id();
             $table->string('name');
         });
         $blueprint->create();
-        $statements = $blueprint->toSql($conn, $grammar);
+        $statements = $blueprint->toSql();
 
         $conn->runDdlBatch($statements);
         $conn->table($table)->insert(['name' => 't']);
@@ -1025,11 +1007,11 @@ class BlueprintTest extends TestCase
     public function test_index_with_interleave(): void
     {
         $conn = $this->getDefaultConnection();
-        $blueprint = new Blueprint('UserItem', function (Blueprint $table) {
+        $blueprint = new Blueprint($conn, 'UserItem', function (Blueprint $table) {
             $table->index(['userId', 'createdAt'])->interleaveIn('User');
         });
 
-        $statements = $blueprint->toSql($conn, new Grammar());
+        $statements = $blueprint->toSql();
         $this->assertSame([
             'create index `useritem_userid_createdat_index` on `UserItem` (`userId`, `createdAt`), interleave in `User`',
         ],
@@ -1041,11 +1023,11 @@ class BlueprintTest extends TestCase
     {
         $conn = $this->getDefaultConnection();
 
-        $blueprint = new Blueprint('UserItem', function (Blueprint $table) {
+        $blueprint = new Blueprint($conn, 'UserItem', function (Blueprint $table) {
             $table->index(['userId', 'createdAt'])->storing(['itemId', 'count']);
         });
 
-        $statements = $blueprint->toSql($conn, new Grammar());
+        $statements = $blueprint->toSql();
         $this->assertSame([
             'create index `useritem_userid_createdat_index` on `UserItem` (`userId`, `createdAt`) storing (`itemId`, `count`)',
         ], $statements);
@@ -1054,11 +1036,11 @@ class BlueprintTest extends TestCase
     public function test_null_filtered_index(): void
     {
         $conn = $this->getDefaultConnection();
-        $blueprint = new Blueprint('UserItem', function (Blueprint $table) {
+        $blueprint = new Blueprint($conn, 'UserItem', function (Blueprint $table) {
             $table->index(['userId'])->nullFiltered();
         });
 
-        $statements = $blueprint->toSql($conn, new Grammar());
+        $statements = $blueprint->toSql();
         $this->assertSame([
             'create null_filtered index `useritem_userid_index` on `UserItem` (`userId`)',
         ], $statements);

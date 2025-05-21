@@ -34,13 +34,4 @@ use LogicException;
  */
 class IndexDefinition extends BaseIndexDefinition
 {
-    /**
-     * @deprecated use interleaveIn instead.
-     * @param string $table
-     * @return $this
-     */
-    public function interleave(string $table)
-    {
-        throw new LogicException('This method is not longer valid. Use interleaveIn() instead.');
-    }
 }

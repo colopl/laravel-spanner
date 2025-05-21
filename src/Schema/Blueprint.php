@@ -263,16 +263,6 @@ class Blueprint extends BaseBlueprint
     }
 
     /**
-     * @deprecated use interleaveInParent instead.
-     * @param string $parentTableName
-     * @return InterleaveDefinition
-     */
-    public function interleave(string $parentTableName)
-    {
-        throw new LogicException('This method is not longer valid. Use interleaveInParent() instead.');
-    }
-
-    /**
      * @param string $table
      * @return InterleaveDefinition
      */

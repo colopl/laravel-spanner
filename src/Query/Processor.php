@@ -23,11 +23,41 @@ use Google\Cloud\Spanner\ValueInterface;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Database\Query\Processors\Processor as BaseProcessor;
 use Illuminate\Support\Carbon;
+use LogicException;
 
 class Processor extends BaseProcessor
 {
     /**
      * {@inheritDoc}
+     * @param array<array-key, mixed> $values
+     */
+    public function processInsertGetId(Builder $query, $sql, $values, $sequence = null)
+    {
+        $connection = $query->getConnection();
+
+        $connection->recordsHaveBeenModified();
+
+        $queryCall = static fn() => $connection->selectOne($sql, $values);
+
+        $result = $connection->transactionLevel() > 0
+            ? $queryCall()
+            : $connection->transaction($queryCall);
+
+        $sequence ??= 'id';
+
+        $id = match(true) {
+            is_object($result) => $result->{$sequence},
+            is_array($result) => $result[$sequence],
+            default => throw new LogicException('Unknown result type : ' . gettype($result)),
+        };
+
+        assert(is_int($id));
+
+        return $id;
+    }
+
+    /**
+     * @inheritDoc
      * @param array<array-key, array<array-key, mixed>> $results
      * @return array<array-key, array<array-key, mixed>>
      */
@@ -70,41 +100,53 @@ class Processor extends BaseProcessor
     }
 
     /**
-     * Process the results of a columns query.
-     *
-     * {@inheritDoc}
-     * @param array<array-key, array<array-key, mixed>> $results
-     * @return array<array-key, array{
-     *     name: string,
-     *     type_name: string,
-     *     type: string,
-     *     collation: null,
-     *     nullable: bool,
-     *     default: scalar,
-     *     auto_increment: false,
-     *     comment: null
-     * }>
+     * @inheritDoc
      */
-    public function processColumns($results)
+    public function processTables($results)
     {
-        return array_map(static function (array $result) {
+        return array_map(function ($result) {
+            $result = (object) $result;
+
             return [
-                'name' => $result['COLUMN_NAME'],
-                'type_name' => preg_replace("/\([^)]+\)/", "", $result['SPANNER_TYPE']),
-                'type' => $result['SPANNER_TYPE'],
-                'collation' => null,
-                'nullable' => $result['IS_NULLABLE'] !== 'NO',
-                'default' => $result['COLUMN_DEFAULT'],
-                'auto_increment' => false,
+                'name' => $result->name,
+                'schema' => $result->schema !== '' ? $result->schema : null,
+                'schema_qualified_name' => $result->schema !== ''
+                    ? $result->schema . '.' . $result->name
+                    : $result->name,
+                'parent' => $result->parent,
+                'size' => null,
                 'comment' => null,
+                'collation' => null,
+                'engine' => null,
             ];
         }, $results);
     }
 
     /**
-     * {@inheritDoc}
-     * @param list<array<string, mixed>> $results
-     * @return list<array{name: string, columns: list<string>, type: string, unique: bool, primary: bool}>
+     * @inheritDoc
+     */
+    public function processColumns($results)
+    {
+        return array_map(static function (array $result) {
+            $result = (object) $result;
+
+            return [
+                'name' => $result->name,
+                'type_name' => (string) preg_replace("/\([^)]+\)/", "", $result->type),
+                'type' => $result->type,
+                'collation' => null,
+                'nullable' => $result->nullable === 'YES',
+                'default' => $result->default,
+                // TODO check IS_IDENTITY and set auto_increment accordingly
+                'auto_increment' => false,
+                'comment' => null,
+                'generation' => null,
+            ];
+        }, $results);
+    }
+
+    /**
+     * @inheritDoc
      */
     public function processIndexes($results)
     {
@@ -122,14 +164,22 @@ class Processor extends BaseProcessor
     }
 
     /**
-     * {@inheritDoc}
-     * @param array{key_name: string}&array<string, mixed> $results
-     * @return array<array-key, string>
+     * @inheritDoc
      */
     public function processForeignKeys($results)
     {
         return array_map(function ($result) {
-            return ((object) $result)->key_name;
+            $result = (object) $result;
+
+            return [
+                'name' => $result->name,
+                'columns' => explode(',', $result->columns),
+                'foreign_schema' => $result->foreign_schema,
+                'foreign_table' => $result->foreign_table,
+                'foreign_columns' => explode(',', $result->foreign_columns),
+                'on_update' => strtolower($result->on_update),
+                'on_delete' => strtolower($result->on_delete),
+            ];
         }, $results);
     }
 }
