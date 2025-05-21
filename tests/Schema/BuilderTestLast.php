@@ -213,35 +213,63 @@ class BuilderTestLast extends TestCase
             $table->primary('id');
         });
 
-        /** @var array{ name: string, type: string } $row */
-        $row = Arr::first(
-            $sb->getTables(),
-            static fn(array $row): bool => $row['name'] === $table,
-        );
+        $row = Arr::first($sb->getTables(), fn ($row) => $row['name'] === $table);
 
-        $this->assertSame($table, $row['name']);
+        $this->assertSame([
+            'name' => $table,
+            'schema' => null,
+            'schema_qualified_name' => $table,
+            'parent' => null,
+            'size' => null,
+            'comment' => null,
+            'collation' => null,
+            'engine' => null,
+        ], $row);
     }
 
-    public function test_getColumns(): void
+    public function test_getColumns_with_nullable(): void
     {
         $conn = $this->getDefaultConnection();
         $sb = $conn->getSchemaBuilder();
         $table = $this->generateTableName(class_basename(__CLASS__));
 
         $sb->create($table, function (Blueprint $table) {
-            $table->uuid('id');
-            $table->primary('id');
+            $table->integer('id')->nullable()->primary();
+        });
+
+        $this->assertSame([
+            'name' => 'id',
+            'type_name' => 'INT64',
+            'type' => 'INT64',
+            'collation' => null,
+            'nullable' => true,
+            'default' => null,
+            'auto_increment' => false,
+            'comment' => null,
+            'generation' => null,
+        ], Arr::first($sb->getColumns($table)));
+    }
+
+    public function test_getColumns_with_default(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $sb = $conn->getSchemaBuilder();
+        $table = $this->generateTableName(class_basename(__CLASS__));
+
+        $sb->create($table, function (Blueprint $table) {
+            $table->string('id', 1)->default('a')->primary();
         });
 
         $this->assertSame([
             'name' => 'id',
             'type_name' => 'STRING',
-            'type' => 'STRING(36)',
+            'type' => 'STRING(1)',
             'collation' => null,
             'nullable' => false,
-            'default' => null,
+            'default' => '"a"',
             'auto_increment' => false,
             'comment' => null,
+            'generation' => null,
         ], Arr::first($sb->getColumns($table)));
     }
 
@@ -303,6 +331,36 @@ class BuilderTestLast extends TestCase
             strtolower($table) . '_something_index',
             'PRIMARY_KEY',
         ], $sb->getIndexListing($table));
+    }
+
+    public function test_getForeignKeys(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $sb = $conn->getSchemaBuilder();
+        $table1 = $this->generateTableName(class_basename(__CLASS__). '_1');
+        $sb->create($table1, function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('something');
+            $table->index('something');
+        });
+
+        $table2 = $this->generateTableName(class_basename(__CLASS__). '_2');
+        $sb->create($table2, function (Blueprint $table) use ($table1) {
+            $table->uuid('table2_id')->primary();
+            $table->uuid('other_id');
+            $table->index('other_id');
+            $table->foreign('other_id')->references('id')->on($table1);
+        });
+
+        $this->assertSame([[
+            'name' => strtolower($table2) . '_other_id_foreign',
+            'columns' => ['other_id'],
+            'foreign_schema' => '',
+            'foreign_table' => $table1,
+            'foreign_columns' => ['id'],
+            'on_update' => "no action",
+            'on_delete' => "no action",
+        ]], $sb->getForeignKeys($table2));
     }
 
     public function test_dropAllTables(): void
