@@ -145,6 +145,11 @@ abstract class TestCase extends \Orchestra\Testbench\TestCase
         if (!$conn->databaseExists()) {
             $conn->createDatabase($this->getTestDatabaseDDLs());
         }
+
+        $conn->getSchemaBuilder()->setDatabaseOptions([
+            'default_sequence_kind' => 'bit_reversed_positive',
+        ]);
+
         $this->beforeApplicationDestroyed(fn() => $this->cleanupDatabase($conn));
     }
 

@@ -101,10 +101,6 @@ class BlueprintTest extends TestCase
         $conn = $this->getDefaultConnection();
         $tableName = $this->generateTableName();
 
-        $conn->getSchemaBuilder()->setDatabaseOptions([
-            'default_sequence_kind' => 'bit_reversed_positive',
-        ]);
-
         $blueprint = new Blueprint($conn, $tableName, function (Blueprint $table) {
             $table->bigInteger('id', true)->primary();
             $table->string('name');
