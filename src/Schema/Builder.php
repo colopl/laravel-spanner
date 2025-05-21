@@ -37,20 +37,6 @@ class Builder extends BaseBuilder
     public static $defaultMorphKeyType = 'uuid';
 
     /**
-     * @param null $schema
-     * @inheritDoc Adds a parent key, for tracking interleaving
-     *
-     * @return list<array{ name: string, type: string, parent: string }>
-     */
-    public function getTables($schema = null)
-    {
-        /** @var list<array{ name: string, type: string, parent: string }> */
-        return $this->connection->select(
-            $this->grammar->compileTables(null),
-        );
-    }
-
-    /**
      * @param string $table
      * @param string $name
      * @return void
@@ -69,7 +55,7 @@ class Builder extends BaseBuilder
      */
     public function dropIndexIfExist($table, $name)
     {
-        if (in_array($name, $this->getIndexes($table), true)) {
+        if (in_array($name, $this->getIndexListing($table), true)) {
             $blueprint = $this->createBlueprint($table);
             $blueprint->dropIndex($name);
             $this->build($blueprint);
@@ -82,6 +68,17 @@ class Builder extends BaseBuilder
     public function dropAllTables()
     {
         $connection = $this->connection;
+        /** @var list<array{
+         *     name: string,
+         *     schema: string|null,
+         *     schema_qualified_name: string,
+         *     size: int|null,
+         *     comment: string|null,
+         *     collation: string|null,
+         *     engine: string|null,
+         *     parent: string|null
+         * }> $tables
+         */
         $tables = $this->getTables();
 
         if (count($tables) === 0) {
@@ -119,7 +116,7 @@ class Builder extends BaseBuilder
             $foreigns = $this->getForeignKeys($tableName);
             $blueprint = $this->createBlueprint($tableName);
             foreach ($foreigns as $foreign) {
-                $blueprint->dropForeign($foreign);
+                $blueprint->dropForeign($foreign['name']);
             }
             array_push($queries, ...$blueprint->toSql());
         }

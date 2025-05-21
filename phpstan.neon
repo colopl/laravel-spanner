@@ -6,3 +6,14 @@ parameters:
         - message: "#^Call to an undefined method Illuminate\\\\Database\\\\ConnectionInterface\\:\\:recordsHaveBeenModified\\(\\)\\.$#"
           count: 1
           path: src/Query/Processor.php
+        -
+            message: '#^Closure invoked with 2 parameters, 3 required\.$#'
+            identifier: arguments.count
+            count: 1
+            path: src/Schema/Builder.php
+
+        -
+            message: '#^Parameter \#2 of closure expects Closure, Closure\|null given\.$#'
+            identifier: argument.type
+            count: 1
+            path: src/Schema/Builder.php
