@@ -279,7 +279,7 @@ class Blueprint extends BaseBlueprint
     public function interleaveIn(string $table, bool $parent = false): InterleaveDefinition
     {
         return $this->commands[] = new InterleaveDefinition(
-            $this->createCommand('interleaveInParent', [
+            $this->createCommand('interleaveIn', [
                 'table' => $table,
                 'inParent' => $parent,
             ])->getAttributes(),

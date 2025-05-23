@@ -478,7 +478,7 @@ class Grammar extends BaseGrammar
      */
     protected function addInterleaveToTable(Blueprint $blueprint)
     {
-        $command = $this->getCommandByName($blueprint, 'interleaveInParent');
+        $command = $this->getCommandByName($blueprint, 'interleaveIn');
         if ($command !== null) {
             assert($command instanceof InterleaveDefinition);
 
