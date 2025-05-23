@@ -20,6 +20,8 @@ namespace Colopl\Spanner\Schema;
 use Closure;
 use Colopl\Spanner\Connection;
 use Illuminate\Database\Schema\Builder as BaseBuilder;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 
 /**
  * @property Grammar $grammar
@@ -39,6 +41,23 @@ class Builder extends BaseBuilder
      * @var string
      */
     public static $defaultMorphKeyType = 'uuid';
+
+    /**
+     * @param array<string, scalar|null> $options
+     * @return void
+     */
+    public function setDatabaseOptions(array $options): void
+    {
+        $connection = $this->connection;
+        $name = Str::afterLast($connection->getDatabaseName(), '/');
+        $line = implode(', ', Arr::map($options, fn($v, $k) => "$k = " . match (true) {
+            is_null($v) => 'null',
+            is_bool($v) => $v ? 'true' : 'false',
+            is_string($v) => $this->grammar->quoteString($v),
+            default => $v,
+        }));
+        $connection->statement("ALTER DATABASE `{$name}` SET OPTIONS ({$line})");
+    }
 
     /**
      * @deprecated Use Blueprint::dropIndex() instead. Will be removed in v10.0.

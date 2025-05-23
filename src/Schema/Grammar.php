@@ -20,7 +20,6 @@ namespace Colopl\Spanner\Schema;
 use Colopl\Spanner\Concerns\SharedGrammarCalls;
 use DateTimeInterface;
 use Illuminate\Contracts\Database\Query\Expression as ExpressionContract;
-use Illuminate\Database\Connection;
 use Illuminate\Database\Query\Expression;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Schema\Grammars\Grammar as BaseGrammar;
@@ -37,7 +36,7 @@ class Grammar extends BaseGrammar
     /**
      * @inheritdoc
      */
-    protected $modifiers = ['Nullable', 'Default', 'GeneratedAs', 'Invisible', 'UseSequence'];
+    protected $modifiers = ['Nullable', 'Default', 'GeneratedAs', 'Invisible', 'Increment', 'UseSequence'];
 
     /**
      * Compile the query to determine the tables.
@@ -882,6 +881,24 @@ class Grammar extends BaseGrammar
         return $column->invisible !== null
             ? ' hidden'
             : null;
+    }
+
+    /**
+     * @param Blueprint $blueprint
+     * @param ColumnDefinition $column
+     * @return string|null
+     */
+    protected function modifyIncrement(Blueprint $blueprint, Fluent $column)
+    {
+        if ($column->type !== 'bigInteger') {
+            return null;
+        }
+
+        if ($column->autoIncrement !== true) {
+            return null;
+        }
+
+        return ' auto_increment';
     }
 
     /**
