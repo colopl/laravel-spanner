@@ -110,9 +110,15 @@ For more detailed instructions, see `Colopl\Spanner\Tests\Eloquent\ModelTest`.
 
 ### Migrations
 
-Since Cloud Spanner does not support AUTO_INCREMENT attribute, `Blueprint::increments` (and all of its variants) will 
-create a column of type `STRING(36) DEFAULT (GENERATE_UUID())` to generate and fill the column with a UUID
-and flag it as a primary key.
+Since Spanner recommends using UUID as a primary key, `Blueprint::increments` (and all of its variants) will create a 
+column of type `STRING(36) DEFAULT (GENERATE_UUID())` to generate and fill the column with a UUID
+and flag it as a primary key. If you want to use `AUTO_INCREMENT`, you can do so by specifying it directly like this:
+
+```php
+$schemaBuilder->create('user', function (Blueprint $table) {
+    $table->integer('id')->primary()->autoIncrement();
+});
+```
 
 ### Transactions
 Google Cloud Spanner sometimes requests transaction retries (e.g. `UNAVAILABLE`, and `ABORTED`), even if the logic is correct. For that reason, please do not manage transactions manually.
