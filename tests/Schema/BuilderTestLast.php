@@ -422,4 +422,21 @@ class BuilderTestLast extends TestCase
         $tables = $sb->getTables();
         $this->assertEmpty($tables);
     }
+
+    public function test_setDatabaseOptions(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $sb = $conn->getSchemaBuilder();
+
+        $sb->setDatabaseOptions([
+            'default_sequence_kind' => 'bit_reversed_positive',
+        ]);
+
+        $result = $conn->select('SELECT * FROM information_schema.database_options');
+        $options = [];
+        foreach ($result as $row) {
+            $options[$row['OPTION_NAME']] = $row['OPTION_VALUE'];
+        }
+        $this->assertSame('bit_reversed_positive', $options['default_sequence_kind']);
+    }
 }
