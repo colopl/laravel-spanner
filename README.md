@@ -115,6 +115,11 @@ column of type `STRING(36) DEFAULT (GENERATE_UUID())` to generate and fill the c
 and flag it as a primary key. If you want to use `AUTO_INCREMENT`, you can do so by specifying it directly like this:
 
 ```php
+// `default_sequence_kind` must be set in order to use auto increment
+$schemaBuilder->setDatabaseOptions([
+    'default_sequence_kind' => 'bit_reversed_positive',
+]);
+
 $schemaBuilder->create('user', function (Blueprint $table) {
     $table->integer('id')->primary()->autoIncrement();
 });
