@@ -22,6 +22,7 @@ use Illuminate\Support\Fluent;
 
 /**
  * @property string $table
+ * @property bool $inParent
  * @property string|null $onDelete
  * @method $this onDelete(string $action) Add an ON DELETE action
  * @extends Fluent<string, mixed>
