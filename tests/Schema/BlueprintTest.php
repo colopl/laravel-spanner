@@ -398,6 +398,21 @@ class BlueprintTest extends TestCase
         $this->assertSame([
             "create table `{$childTableName}` (`id` string(36) not null, `pid` string(36) not null, `name` string(255) not null) primary key (`pid`), interleave in parent `{$parentTableName}` on delete cascade",
         ], $statements);
+
+        $blueprint = new Blueprint($conn, $childTableName, function (Blueprint $table) use ($parentTableName) {
+            $table->uuid('id');
+            $table->uuid('pid');
+            $table->string('name');
+
+            $table->primary('pid');
+            $table->interleaveIn($parentTableName);
+        });
+        $blueprint->create();
+
+        $statements = $blueprint->toSql();
+        $this->assertSame([
+            "create table `{$childTableName}` (`id` string(36) not null, `pid` string(36) not null, `name` string(255) not null) primary key (`pid`), interleave in `{$parentTableName}`",
+        ], $statements);
     }
 
     public function test_rename_table(): void
