@@ -34,10 +34,13 @@ use Illuminate\Database\Schema\ColumnDefinition as BaseColumnDefinition;
  * @property int|null $precision
  * @property int|null $scale
  * @property bool|null $useCurrent
+ * @property bool|null $autoIncrement
  * @property string|Expression|true|null $generatedAs
  * @property string|null $virtualAs
  * @property bool|null $storedAs
  * @property int|null $startingValue
+ * @property bool|null $primary
+ * @property bool|null $change
  */
 class ColumnDefinition extends BaseColumnDefinition
 {

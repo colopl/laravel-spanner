@@ -20,8 +20,6 @@ declare(strict_types=1);
 
 namespace Colopl\Spanner\Schema;
 
-use Illuminate\Database\Schema\ColumnDefinition;
-
 /**
  * @property string $name
  * @property string|null $useSequence

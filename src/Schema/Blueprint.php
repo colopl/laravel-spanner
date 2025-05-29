@@ -21,7 +21,6 @@ use Colopl\Spanner\Concerns\MarksAsNotSupported;
 use Illuminate\Database\Schema\Blueprint as BaseBlueprint;
 use Illuminate\Database\Schema\ColumnDefinition;
 use Illuminate\Support\Fluent;
-use LogicException;
 
 /**
  * @method IndexDefinition index(string|string[] $columns, string|null $name = null)
@@ -37,7 +36,7 @@ class Blueprint extends BaseBlueprint
      */
     public function bigInteger($column, $autoIncrement = false, $unsigned = false): IntColumnDefinition
     {
-        $definition = new IntColumnDefinition($this, ['type' => __FUNCTION__, 'name' => $column]);
+        $definition = new IntColumnDefinition($this, ['type' => __FUNCTION__, 'name' => $column, 'autoIncrement' => $autoIncrement]);
         $this->addColumnDefinition($definition);
         return $definition;
     }

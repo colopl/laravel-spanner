@@ -96,6 +96,33 @@ class BlueprintTest extends TestCase
         ], $statements);
     }
 
+    public function test_create_with_autoIncrement(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $tableName = $this->generateTableName();
+
+        $blueprint = new Blueprint($conn, $tableName, function (Blueprint $table) {
+            $table->bigInteger('id', true)->primary();
+            $table->string('name');
+        });
+        $blueprint->create();
+
+        $queries = $blueprint->toSql();
+        $this->assertSame(
+            'create table `' . $tableName . '` (' . implode(', ', [
+                '`id` int64 not null auto_increment',
+                '`name` string(255) not null',
+            ]) . ') primary key (`id`)',
+            $queries[0],
+        );
+
+        $conn->runDdlBatch($queries);
+        $conn->table($tableName)->insert(['name' => 't']);
+        $row = $conn->table($tableName)->first();
+        $this->assertIsInt($row['id']);
+        $this->assertSame('t', $row['name']);
+    }
+
     public function test_create_with_generateUuid(): void
     {
         $conn = $this->getDefaultConnection();
