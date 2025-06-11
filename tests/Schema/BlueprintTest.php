@@ -831,16 +831,20 @@ class BlueprintTest extends TestCase
         $blueprint = new Blueprint($conn, $tableName);
         $blueprint->uuid('id')->primary();
         $blueprint->create();
-        $blueprint->createChangeStream($streamName)->for($blueprint->getTable())->excludeTtlDeletes(true);
+        $blueprint->createChangeStream($streamName)
+            ->for($blueprint->getTable())
+            ->excludeTtlDeletes(true);
         $blueprint->build();
 
         $blueprint = new Blueprint($conn, '');
         $blueprint->alterChangeStream($streamName)
+            ->for($tableName)
             ->excludeTtlDeletes(false)
             ->retentionPeriod('7d');
         $blueprint->build();
 
         $this->assertSame([
+            "alter change stream `$streamName` set for `{$tableName}`",
             "alter change stream `$streamName` set options (retention_period='7d', exclude_ttl_deletes=false)",
         ], $blueprint->toSql());
 
