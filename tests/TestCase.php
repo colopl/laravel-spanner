@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright 2019 Colopl Inc. All Rights Reserved.
  *
@@ -124,8 +125,8 @@ abstract class TestCase extends \Orchestra\Testbench\TestCase
      */
     protected function setUpEmulatorInstance(Connection $conn): void
     {
-        $spanner = new SpannerClient((array)$conn->getConfig('client'));
-        $name = (string)$conn->getConfig('instance');
+        $spanner = new SpannerClient((array) $conn->getConfig('client'));
+        $name = (string) $conn->getConfig('instance');
         if (!$spanner->instance($name)->exists()) {
             $config = $spanner->instanceConfiguration('emulator-config');
             $spanner->createInstance($config, $name)->pollUntilComplete();

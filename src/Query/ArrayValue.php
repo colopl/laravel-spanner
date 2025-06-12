@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright 2019 Colopl Inc. All Rights Reserved.
  *
@@ -27,7 +28,6 @@ final readonly class ArrayValue
      */
     public function __construct(
         public array $value,
-    )
-    {
+    ) {
     }
 }

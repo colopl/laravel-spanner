@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright 2019 Colopl Inc. All Rights Reserved.
  *
@@ -29,9 +30,9 @@ class CooldownCommand extends Command
 
     public function handle(DatabaseManager $db): void
     {
-        $connectionNames = (array)$this->argument('connections');
+        $connectionNames = (array) $this->argument('connections');
         if (count($connectionNames) === 0) {
-            $connectionNames = array_keys((array)config('database.connections'));
+            $connectionNames = array_keys((array) config('database.connections'));
         }
 
         $spannerConnectionNames = array_filter(

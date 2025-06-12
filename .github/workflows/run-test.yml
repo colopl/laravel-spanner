@@ -1,7 +1,7 @@
 name: Run tests
 on:
   push:
-    branches: [ master, 5.x ]
+    branches: [ master ]
   pull_request:
 jobs:
   Run-PHPUnit:

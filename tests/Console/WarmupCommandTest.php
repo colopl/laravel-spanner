@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright 2019 Colopl Inc. All Rights Reserved.
  *
@@ -21,8 +22,7 @@ use Colopl\Spanner\Connection;
 use Google\Cloud\Core\Exception\NotFoundException;
 use Illuminate\Support\Facades\DB;
 
-class
-WarmupCommandTest extends TestCase
+class WarmupCommandTest extends TestCase
 {
     public function test_no_args(): void
     {

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright 2019 Colopl Inc. All Rights Reserved.
  *
@@ -213,7 +214,7 @@ class BuilderTestLast extends TestCase
             $table->primary('id');
         });
 
-        $row = Arr::first($sb->getTables(), fn ($row) => $row['name'] === $table);
+        $row = Arr::first($sb->getTables(), fn($row) => $row['name'] === $table);
 
         $this->assertSame([
             'name' => $table,
@@ -337,14 +338,14 @@ class BuilderTestLast extends TestCase
     {
         $conn = $this->getDefaultConnection();
         $sb = $conn->getSchemaBuilder();
-        $table1 = $this->generateTableName(class_basename(__CLASS__). '_1');
+        $table1 = $this->generateTableName(class_basename(__CLASS__) . '_1');
         $sb->create($table1, function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('something');
             $table->index('something');
         });
 
-        $table2 = $this->generateTableName(class_basename(__CLASS__). '_2');
+        $table2 = $this->generateTableName(class_basename(__CLASS__) . '_2');
         $sb->create($table2, function (Blueprint $table) use ($table1) {
             $table->uuid('table2_id')->primary();
             $table->uuid('other_id');

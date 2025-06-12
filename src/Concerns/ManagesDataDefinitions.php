@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright 2019 Colopl Inc. All Rights Reserved.
  *
@@ -20,6 +21,7 @@ namespace Colopl\Spanner\Concerns;
 use Google\Cloud\Core\LongRunning\LongRunningOperation;
 use Google\Cloud\Spanner\Database;
 use RuntimeException;
+
 use function json_encode;
 
 trait ManagesDataDefinitions
@@ -56,7 +58,7 @@ trait ManagesDataDefinitions
     }
 
     /**
-     * @param string[] $statements Additional DDL statements
+     * @param array<string> $statements Additional DDL statements
      * @return void
      */
     public function createDatabase(array $statements = [])
@@ -96,7 +98,7 @@ trait ManagesDataDefinitions
     {
         $result = $operation->pollUntilComplete(['maxPollingDurationSeconds' => 0.0]);
         if ($operation->error() !== null) {
-            throw new RuntimeException((string)json_encode($operation->error()));
+            throw new RuntimeException((string) json_encode($operation->error()));
         }
         return $result;
     }

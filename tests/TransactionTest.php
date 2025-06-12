@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright 2019 Colopl Inc. All Rights Reserved.
  *
@@ -422,7 +423,7 @@ class TransactionTest extends TestCase
         $base = $this->getDefaultConnection();
         $aborted = false;
 
-        $conn = new class($base) extends Connection {
+        $conn = new class ($base) extends Connection {
             public function __construct(Connection $base)
             {
                 parent::__construct(

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright 2019 Colopl Inc. All Rights Reserved.
  *
@@ -30,6 +31,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Support\Carbon;
 use LogicException;
 use Ramsey\Uuid\Uuid;
+
 use const Grpc\STATUS_ALREADY_EXISTS;
 
 class BuilderTest extends TestCase
@@ -327,9 +329,15 @@ class BuilderTest extends TestCase
         });
 
         $this->assertSame(
-            sprintf('select * from `%s` where exists (select 1 from `%s` where %s.userId = %s.userId)',
-                $tableNameParent, $tableNameChild, $tableNameChild, $tableNameParent),
-            $qb->toSql());
+            sprintf(
+                'select * from `%s` where exists (select 1 from `%s` where %s.userId = %s.userId)',
+                $tableNameParent,
+                $tableNameChild,
+                $tableNameChild,
+                $tableNameParent,
+            ),
+            $qb->toSql(),
+        );
         $this->assertCount(1, $qb->get());
         $this->assertSame($userId1, $qb->get()->first()['userId']);
     }
@@ -620,7 +628,7 @@ class BuilderTest extends TestCase
         $this->assertSame(1, $query->upsert(['id' => 1, 's' => 'a']));
         $this->assertSame(1, $query->upsert(['id' => 1, 's' => 'b']));
 
-        $this->assertSame(['id' => 1, 's' => 'b'], (array)$query->sole());
+        $this->assertSame(['id' => 1, 's' => 'b'], (array) $query->sole());
     }
 
     public function test_upsert_multi_row(): void
@@ -749,7 +757,7 @@ class BuilderTest extends TestCase
         $res2 = $conn->table($tableName)->updateOrInsert(['testId' => $row['testId']], $row);
         $this->assertTrue($res2);
 
-        $record = (array)$conn->table($tableName)->where('testId', $row['testId'])->first();
+        $record = (array) $conn->table($tableName)->where('testId', $row['testId'])->first();
         $this->assertSame('updated', $record['stringTest']);
     }
 

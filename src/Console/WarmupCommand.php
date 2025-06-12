@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright 2019 Colopl Inc. All Rights Reserved.
  *
@@ -35,9 +36,9 @@ class WarmupCommand extends Command
      */
     public function handle(DatabaseManager $db): void
     {
-        $connectionNames = (array)$this->argument('connections');
+        $connectionNames = (array) $this->argument('connections');
         if (count($connectionNames) === 0) {
-            $connectionNames = array_keys((array)config('database.connections'));
+            $connectionNames = array_keys((array) config('database.connections'));
         }
 
         $spannerConnectionNames = array_filter(
@@ -45,8 +46,8 @@ class WarmupCommand extends Command
             static fn(string $name): bool => config("database.connections.{$name}.driver") === 'spanner',
         );
 
-        $refresh = (bool)($this->option('refresh') ?? false);
-        $skipOnError = (bool)($this->option('skip-on-error') ?? false);
+        $refresh = (bool) ($this->option('refresh') ?? false);
+        $skipOnError = (bool) ($this->option('skip-on-error') ?? false);
 
         foreach ($spannerConnectionNames as $name) {
             $connection = $db->connection($name);

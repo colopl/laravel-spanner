@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright 2019 Colopl Inc. All Rights Reserved.
  *
@@ -31,8 +32,7 @@ trait UsesFullTextSearch
         string $query,
         array $options = [],
         string $boolean = 'and',
-    ): static
-    {
+    ): static {
         $this->addSearchCondition('SearchFullText', $tokens, $query, $options, $boolean);
         return $this;
     }
@@ -49,8 +49,7 @@ trait UsesFullTextSearch
         string $query,
         array $options = [],
         string $boolean = 'and',
-    ): static
-    {
+    ): static {
         $this->addSearchCondition('SearchNgrams', $tokens, $query, $options, $boolean);
         return $this;
     }
@@ -67,8 +66,7 @@ trait UsesFullTextSearch
         string $query,
         array $options = [],
         string $boolean = 'and',
-    ): static
-    {
+    ): static {
         $this->addSearchCondition('SearchSubstring', $tokens, $query, $options, $boolean);
         return $this;
     }
@@ -87,8 +85,7 @@ trait UsesFullTextSearch
         string $query,
         array $options = [],
         string $boolean = 'and',
-    ): void
-    {
+    ): void {
         $this->wheres[] = [
             'type' => $type,
             'tokens' => $tokens,

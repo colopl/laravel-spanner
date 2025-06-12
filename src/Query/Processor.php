@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright 2019 Colopl Inc. All Rights Reserved.
  *
@@ -45,7 +46,7 @@ class Processor extends BaseProcessor
 
         $sequence ??= 'id';
 
-        $id = match(true) {
+        $id = match (true) {
             is_object($result) => $result->{$sequence},
             is_array($result) => $result[$sequence],
             default => throw new LogicException('Unknown result type : ' . gettype($result)),

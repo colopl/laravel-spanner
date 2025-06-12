@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright 2019 Colopl Inc. All Rights Reserved.
  *
@@ -42,6 +43,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Event;
 use LogicException;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
+
 use function dirname;
 use function fileperms;
 use function sprintf;
@@ -607,7 +609,7 @@ class ConnectionTest extends TestCase
         $conn = $this->getDefaultConnection();
         $this->assertSame(
             "[false, true, 0, 1, \"a\", 1.1]",
-            $conn->escape(new Nested([false, true, 0, 1, "a", 1.1]))
+            $conn->escape(new Nested([false, true, 0, 1, "a", 1.1])),
         );
     }
 
