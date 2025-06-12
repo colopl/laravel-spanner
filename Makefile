@@ -19,6 +19,3 @@ bash:
 
 down:
 	$(BASE_COMMAND) down --remove-orphans
-
-ci-fix:
-	$(BASE_COMMAND) run --no-deps --rm test composer fix -- --dry-run --diff
