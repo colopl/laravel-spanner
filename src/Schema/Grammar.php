@@ -420,16 +420,18 @@ class Grammar extends BaseGrammar
     /**
      * @param Blueprint $blueprint
      * @param ChangeStreamDefinition $command
-     * @return string
+     * @return list<string>
      */
-    public function compileAlterChangeStream(Blueprint $blueprint, ChangeStreamDefinition $command): string
+    public function compileAlterChangeStream(Blueprint $blueprint, ChangeStreamDefinition $command): array
     {
         $parts = [];
-        $parts[] = "alter change stream {$this->wrap($command->stream)}";
-        if ($command->getOptions() !== []) {
-            $parts[] = 'set ' . $this->formatChangeStreamOptions($command);
+        if ($command->tables !== []) {
+            $parts[] = "alter change stream {$this->wrap($command->stream)} set {$this->formatChangeStreamTables($command)}";
         }
-        return implode(' ', $parts);
+        if ($command->getOptions() !== []) {
+            $parts[] = "alter change stream {$this->wrap($command->stream)} set {$this->formatChangeStreamOptions($command)}";
+        }
+        return $parts;
     }
 
     /**
