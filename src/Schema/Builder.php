@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright 2019 Colopl Inc. All Rights Reserved.
  *
@@ -143,7 +144,7 @@ class Builder extends BaseBuilder
             $sortedTables[$key] = $table;
         }
 
-        // sort tables desc based on parent count 
+        // sort tables desc based on parent count
         usort($sortedTables, static fn($a, $b) => $b['parents'] <=> $a['parents']);
 
         // drop foreign keys first (otherwise index queries will include them)

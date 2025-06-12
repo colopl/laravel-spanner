@@ -1,7 +1,7 @@
 name: Run tests
 on:
   push:
-    branches: [ master, 5.x ]
+    branches: [ master ]
   pull_request:
 jobs:
   Run-PHPUnit:
@@ -13,6 +13,8 @@ jobs:
       - run: echo "🖥️ The workflow is now ready to test your code on the runner."
       - name: Build docker image
         run: make build
+      - name: Run cs-fixer
+        run: make ci-fix
       - name: Run test
         run: make test
       - name: Show failed container logs

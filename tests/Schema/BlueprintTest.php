@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright 2019 Colopl Inc. All Rights Reserved.
  *
@@ -91,7 +92,7 @@ class BlueprintTest extends TestCase
                 '`string_array_max` array<string(max)>',
                 '`timestamp_array` array<timestamp>',
                 '`created_at` timestamp, `updated_at` timestamp',
-                '`text_tokens` tokenlist as (tokenize_substring(`text`, language_tag => \'ja\')) hidden'
+                '`text_tokens` tokenlist as (tokenize_substring(`text`, language_tag => \'ja\')) hidden',
             ]) . ') primary key (`id`)',
         ], $statements);
     }
@@ -752,7 +753,10 @@ class BlueprintTest extends TestCase
         $conn->useDefaultSchemaGrammar();
         $name = __FUNCTION__ . Uuid::uuid4()->toString();
 
-        $blueprint = new Blueprint($conn, '_', fn(Blueprint $table) => $table->createChangeStream($name)
+        $blueprint = new Blueprint(
+            $conn,
+            '_',
+            fn(Blueprint $table) => $table->createChangeStream($name)
             ->for(self::TABLE_NAME_TEST)
             ->for(self::TABLE_NAME_USER),
         );
@@ -953,8 +957,9 @@ class BlueprintTest extends TestCase
                 '`string_array` array<string(1)> not null default (["a", "b"])',
                 '`date_array` array<date> not null default ([date "2022-01-01"])',
                 '`timestamp_array` array<timestamp> not null default ([timestamp "2022-01-01T00:00:00.000000+00:00"])',
-            ]) . ') primary key (`id`)'
-            , $statements[2]);
+            ]) . ') primary key (`id`)',
+            $statements[2],
+        );
 
         $blueprint->build();
         $query = $conn->table($tableName);
@@ -1054,9 +1059,10 @@ class BlueprintTest extends TestCase
         });
 
         $statements = $blueprint->toSql();
-        $this->assertSame([
-            'create index `useritem_userid_createdat_index` on `UserItem` (`userId`, `createdAt`), interleave in `User`',
-        ],
+        $this->assertSame(
+            [
+                'create index `useritem_userid_createdat_index` on `UserItem` (`userId`, `createdAt`), interleave in `User`',
+            ],
             $statements,
         );
     }

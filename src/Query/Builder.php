@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright 2019 Colopl Inc. All Rights Reserved.
  *
@@ -89,7 +90,7 @@ class Builder extends BaseBuilder
             return true;
         }
 
-        return (bool)$this->limit(1)->update(Arr::except($values, array_keys($attributes)));
+        return (bool) $this->limit(1)->update(Arr::except($values, array_keys($attributes)));
     }
 
     /**

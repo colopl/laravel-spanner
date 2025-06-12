@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright 2019 Colopl Inc. All Rights Reserved.
  *
@@ -130,7 +131,7 @@ class Grammar extends BaseGrammar
             'join information_schema.constraint_column_usage cc on kc.constraint_name = cc.constraint_name',
             'where kc.table_schema = ""',
             'and kc.table_name = ' . $this->quoteString($table),
-            'group by kc.constraint_name, cc.table_schema, cc.table_name, rc.update_rule, rc.delete_rule'
+            'group by kc.constraint_name, cc.table_schema, cc.table_name, rc.update_rule, rc.delete_rule',
         ]);
     }
 
@@ -143,7 +144,8 @@ class Grammar extends BaseGrammar
      */
     public function compileCreate(Blueprint $blueprint, Fluent $command)
     {
-        return sprintf('create table %s (%s) %s%s%s',
+        return sprintf(
+            'create table %s (%s) %s%s%s',
             $this->wrapTable($blueprint),
             implode(', ', $this->getColumns($blueprint)),
             $this->addPrimaryKeys($blueprint),
@@ -163,7 +165,8 @@ class Grammar extends BaseGrammar
     {
         $column = $command->column;
 
-        $sql = sprintf('alter table %s add column %s %s',
+        $sql = sprintf(
+            'alter table %s add column %s %s',
             $this->wrapTable($blueprint),
             $this->wrap($column),
             $this->getType($column),
@@ -183,7 +186,8 @@ class Grammar extends BaseGrammar
     {
         $column = $command->column;
 
-        $sql = sprintf('alter table %s alter column %s %s',
+        $sql = sprintf(
+            'alter table %s alter column %s %s',
             $this->wrapTable($blueprint),
             $this->wrap($column),
             $this->getType($column),
@@ -197,7 +201,7 @@ class Grammar extends BaseGrammar
      *
      * @param Blueprint $blueprint
      * @param Fluent<string, mixed>&object{ columns: list<string> } $command
-     * @return string[]
+     * @return array<string>
      */
     public function compileDropColumn(Blueprint $blueprint, Fluent $command)
     {
@@ -216,7 +220,8 @@ class Grammar extends BaseGrammar
      */
     public function compileFullText(Blueprint $blueprint, Fluent $command): string
     {
-        $schema = sprintf('create search index %s on %s(%s)',
+        $schema = sprintf(
+            'create search index %s on %s(%s)',
             $this->wrap($command->index),
             $this->wrapTable($blueprint),
             $this->columnize($command->columns),
@@ -256,7 +261,8 @@ class Grammar extends BaseGrammar
      */
     public function compileDropFullText(Blueprint $blueprint, Fluent $command): string
     {
-        return sprintf('drop search index %s',
+        return sprintf(
+            'drop search index %s',
             $this->wrap($command->index),
         );
     }
@@ -543,7 +549,8 @@ class Grammar extends BaseGrammar
                 : $this->wrap($order);
         }
 
-        return sprintf('create %s%sindex %s on %s (%s)%s%s',
+        return sprintf(
+            'create %s%sindex %s on %s (%s)%s%s',
             empty($command->indexType) ? '' : trim($command->indexType) . ' ',
             empty($command->nullFiltered) ? '' : 'null_filtered ',
             $this->wrap($command->index),
@@ -589,7 +596,8 @@ class Grammar extends BaseGrammar
      */
     public function compileDropIndex(Blueprint $blueprint, Fluent $command)
     {
-        return sprintf('drop index %s',
+        return sprintf(
+            'drop index %s',
             $this->wrap($command->index),
         );
     }
@@ -1067,7 +1075,7 @@ class Grammar extends BaseGrammar
     protected function formatFloatValue(Fluent $column, mixed $value): string
     {
         assert(is_float($value));
-        return (string)$value;
+        return (string) $value;
     }
 
     /**
@@ -1078,7 +1086,7 @@ class Grammar extends BaseGrammar
     protected function formatNumericValue(Fluent $column, mixed $value): string
     {
         assert(is_numeric($value));
-        return (string)$value;
+        return (string) $value;
     }
 
     /**
@@ -1089,7 +1097,7 @@ class Grammar extends BaseGrammar
     protected function formatIntValue(Fluent $column, mixed $value): string
     {
         assert(is_int($value));
-        return (string)$value;
+        return (string) $value;
     }
 
     /**
