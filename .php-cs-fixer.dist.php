@@ -10,7 +10,7 @@ $finder = (new PhpCsFixer\Finder())
 return (new PhpCsFixer\Config())
     ->setRules([
         '@PER-CS2.0' => true,
-        // 自動生成で生じる空ブロックをそのまま複数行の形で許したい
+        // Preserve the multi-line format for auto-generated empty blocks.
         'single_line_empty_body' => false,
     ])
     ->setFinder($finder)
