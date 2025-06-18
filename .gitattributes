@@ -1,6 +1,7 @@
 * text=auto
 
 /.github/ export-ignore
+/.php-cs-fixer.cache
 /tests export-ignore
 .env.sample export-ignore
 .gitattributes export-ignore

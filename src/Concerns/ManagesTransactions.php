@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright 2019 Colopl Inc. All Rights Reserved.
  *
@@ -88,7 +89,8 @@ trait ManagesTransactions
                          * TODO: throws error
                          * @phpstan-ignore argument.type
                          */
-                        $this->getName(), $this->transactions,
+                        $this->getName(),
+                        $this->transactions,
                     );
 
                     $this->fireConnectionEvent('beganTransaction');

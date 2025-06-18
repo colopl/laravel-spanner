@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright 2019 Colopl Inc. All Rights Reserved.
  *
@@ -53,14 +54,14 @@ use Throwable;
 
 class Connection extends BaseConnection
 {
-    use Concerns\ManagesDataDefinitions,
-        Concerns\ManagesMutations,
-        Concerns\ManagesPartitionedDml,
-        Concerns\ManagesSessionPool,
-        Concerns\ManagesSnapshots,
-        Concerns\ManagesTagging,
-        Concerns\ManagesTransactions,
-        Concerns\MarksAsNotSupported;
+    use Concerns\ManagesDataDefinitions;
+    use Concerns\ManagesMutations;
+    use Concerns\ManagesPartitionedDml;
+    use Concerns\ManagesSessionPool;
+    use Concerns\ManagesSnapshots;
+    use Concerns\ManagesTagging;
+    use Concerns\ManagesTransactions;
+    use Concerns\MarksAsNotSupported;
 
     /**
      * @var string

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright 2019 Colopl Inc. All Rights Reserved.
  *
@@ -31,8 +32,7 @@ class SessionNotFoundTest extends TestCase
 
     private function getSessionNotFoundConnection(
         bool $useSessionPool = true,
-    ): Connection
-    {
+    ): Connection {
         $config = $this->app['config']->get('database.connections.main');
 
         $sessionPool = $useSessionPool
