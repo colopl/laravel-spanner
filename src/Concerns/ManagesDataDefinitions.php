@@ -97,7 +97,6 @@ trait ManagesDataDefinitions
     protected function waitForOperation(LongRunningOperation $operation): mixed
     {
         $options = [];
-        $options['maxPollingDurationSeconds'] = 0.0;
 
         if (getenv('SPANNER_EMULATOR_HOST')) {
             $options['pollingIntervalSeconds'] = 0.001;
