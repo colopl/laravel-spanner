@@ -474,6 +474,42 @@ class BuilderTest extends TestCase
         $this->assertSame([], $qb->get()->all());
     }
 
+    public function test_disableEmulatorNullFilteredIndexCheck_with_toggle_as_true(): void
+    {
+        $conn = $this->getDefaultConnection();
+
+        $tableName = $this->createTempTable(function (Blueprint $blueprint): void {
+            $blueprint->uuid('id')->primary();
+            $blueprint->string('name');
+            $blueprint->index(['name'], 'test_index_name')->nullFiltered();
+        });
+
+        $qb = $conn->table($tableName)
+            ->forceIndex('test_index_name')
+            ->disableEmulatorNullFilteredIndexCheck(true);
+
+        $hint = '@{FORCE_INDEX=test_index_name,spanner_emulator.disable_query_null_filtered_index_check=true}';
+        $this->assertSame("select * from `{$tableName}` {$hint}", $qb->toSql());
+    }
+
+    public function test_disableEmulatorNullFilteredIndexCheck_with_toggle_as_false(): void
+    {
+        $conn = $this->getDefaultConnection();
+
+        $tableName = $this->createTempTable(function (Blueprint $blueprint): void {
+            $blueprint->uuid('id')->primary();
+            $blueprint->string('name');
+            $blueprint->index(['name'], 'test_index_name')->nullFiltered();
+        });
+
+        $qb = $conn->table($tableName)
+            ->forceIndex('test_index_name')
+            ->disableEmulatorNullFilteredIndexCheck(false);
+
+        $hint = '@{FORCE_INDEX=test_index_name}';
+        $this->assertSame("select * from `{$tableName}` {$hint}", $qb->toSql());
+    }
+
     public function test_disableEmulatorNullFilteredIndexCheck_without_calling_force_index(): void
     {
         $this->expectExceptionMessage('Force index must be set before disabling null filter index check');
