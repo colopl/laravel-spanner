@@ -477,12 +477,7 @@ class BuilderTest extends TestCase
     public function test_disableEmulatorNullFilteredIndexCheck_with_toggle_as_true(): void
     {
         $conn = $this->getDefaultConnection();
-
-        $tableName = $this->createTempTable(function (Blueprint $blueprint): void {
-            $blueprint->uuid('id')->primary();
-            $blueprint->string('name');
-            $blueprint->index(['name'], 'test_index_name')->nullFiltered();
-        });
+        $tableName = 'Test';
 
         $qb = $conn->table($tableName)
             ->forceIndex('test_index_name')
@@ -495,12 +490,7 @@ class BuilderTest extends TestCase
     public function test_disableEmulatorNullFilteredIndexCheck_with_toggle_as_false(): void
     {
         $conn = $this->getDefaultConnection();
-
-        $tableName = $this->createTempTable(function (Blueprint $blueprint): void {
-            $blueprint->uuid('id')->primary();
-            $blueprint->string('name');
-            $blueprint->index(['name'], 'test_index_name')->nullFiltered();
-        });
+        $tableName = 'Test';
 
         $qb = $conn->table($tableName)
             ->forceIndex('test_index_name')
