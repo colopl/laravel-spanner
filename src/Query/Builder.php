@@ -268,7 +268,7 @@ class Builder extends BaseBuilder
     }
 
     /**
-     * @param bool $toggle
+     * @param bool $toggle  checking disabled when true, enabled when false
      * @return $this
      */
     public function disableEmulatorNullFilteredIndexCheck(bool $toggle = true): static
