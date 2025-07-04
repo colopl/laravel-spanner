@@ -268,9 +268,10 @@ class Builder extends BaseBuilder
     }
 
     /**
+     * @param bool $toggle  checking disabled when true, enabled when false
      * @return $this
      */
-    public function disableEmulatorNullFilteredIndexCheck(): static
+    public function disableEmulatorNullFilteredIndexCheck(bool $toggle = true): static
     {
         $indexHint = $this->indexHint;
 
@@ -279,7 +280,7 @@ class Builder extends BaseBuilder
         }
 
         assert($indexHint instanceof IndexHint);
-        $indexHint->disableEmulatorNullFilteredIndexCheck = true;
+        $indexHint->disableEmulatorNullFilteredIndexCheck = $toggle;
 
         return $this;
     }
