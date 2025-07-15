@@ -138,7 +138,7 @@ class Builder extends BaseBuilder
 
         // add parents counter
         foreach ($tables as $table) {
-            $sortedTables[$table['name']] = ['parents' => 0, ...$table];
+            $sortedTables[$table['schema_qualified_name']] = ['parents' => 0, ...$table];
         }
 
         // loop through all tables and count how many parents they have
@@ -161,9 +161,9 @@ class Builder extends BaseBuilder
         // drop foreign keys first (otherwise index queries will include them)
         $queries = [];
         foreach ($sortedTables as $tableData) {
-            $tableName = $tableData['name'];
-            $foreigns = $this->getForeignKeys($tableName);
-            $blueprint = $this->createBlueprint($tableName);
+            $sqn = $tableData['schema_qualified_name'];
+            $foreigns = $this->getForeignKeys($sqn);
+            $blueprint = $this->createBlueprint($sqn);
             foreach ($foreigns as $foreign) {
                 $blueprint->dropForeign($foreign['name']);
             }
@@ -175,18 +175,23 @@ class Builder extends BaseBuilder
         // drop indexes and tables
         $queries = [];
         foreach ($sortedTables as $tableData) {
-            $tableName = $tableData['name'];
-            $indexes = $this->getIndexListing($tableName);
-            $blueprint = $this->createBlueprint($tableName);
+            $schema = $tableData['schema'] ?? null;
+            $sqn = $tableData['schema_qualified_name'];
+            $indexes = $this->getIndexListing($sqn);
+            $blueprint = $this->createBlueprint($sqn);
             foreach ($indexes as $index) {
                 if ($index === 'PRIMARY_KEY') {
                     continue;
+                }
+                if ($schema !== null) {
+                    $index = $schema . '.' . $index;
                 }
                 $blueprint->dropIndex($index);
             }
             $blueprint->drop();
             array_push($queries, ...$blueprint->toSql());
         }
+
         $connection->runDdlBatch($queries);
     }
 }
