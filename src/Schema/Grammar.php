@@ -55,7 +55,7 @@ class Grammar extends BaseGrammar
             'where `table_type` = \'BASE TABLE\'',
             (match (true) {
                 is_array($schema) => 'and `table_schema` in (' . $this->quoteString($schema) . ')',
-                !empty($schema) => 'and `table_schema` = ' . $this->quoteString($schema),
+                !is_null($schema) => 'and `table_schema` = ' . $this->quoteString($schema),
                 default => '',
             }),
             'order by `table_schema`, `table_name`'

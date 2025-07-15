@@ -207,14 +207,22 @@ class BuilderTestLast extends TestCase
     {
         $conn = $this->getDefaultConnection();
         $sb = $conn->getSchemaBuilder();
+        $schema = $this->generateNamedSchemaName();
         $table = $this->generateTableName(class_basename(__CLASS__));
+        $sqn = "{$schema}.{$table}";
 
         $sb->create($table, function (Blueprint $table) {
             $table->uuid('id');
             $table->primary('id');
         });
 
-        $row = Arr::first($sb->getTables(), fn($row) => $row['name'] === $table);
+        $sb->createNamedSchema($schema);
+        $sb->create($sqn, function (Blueprint $table) {
+            $table->uuid('id');
+            $table->primary('id');
+        });
+
+        $row = Arr::sole($sb->getTables(''), fn($row) => $row['name'] === $table);
 
         $this->assertSame([
             'name' => $table,
