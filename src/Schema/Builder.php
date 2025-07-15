@@ -61,6 +61,17 @@ class Builder extends BaseBuilder
     }
 
     /**
+     * Create a named schema with the given name.
+     *
+     * @param string $name
+     * @return void
+     */
+    public function createNamedSchema(string $name): void
+    {
+        $this->connection->statement("CREATE SCHEMA {$this->grammar->wrap($name)}");
+    }
+
+    /**
      * @deprecated Use Blueprint::dropIndex() instead. Will be removed in v10.0.
      *
      * @param string $table

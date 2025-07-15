@@ -29,6 +29,7 @@ use Google\Cloud\Spanner\Numeric;
 use Google\Cloud\Spanner\SpannerClient;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 use Ramsey\Uuid\Uuid;
 
 /**
@@ -62,6 +63,11 @@ abstract class TestCase extends \Orchestra\Testbench\TestCase
     protected function generateTableName(string $prefix = 'Temp'): string
     {
         return $prefix . '_' . Carbon::now()->format('Ymd_His_v');
+    }
+
+    protected function generateNamedSchemaName(): string
+    {
+        return 'sch' . time() . Str::random(8);
     }
 
     /**

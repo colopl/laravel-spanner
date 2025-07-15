@@ -203,7 +203,7 @@ class BuilderTestLast extends TestCase
         $this->assertTrue($sb->hasTable(self::TABLE_NAME_RELATION_CHILD_INTERLEAVED));
     }
 
-    public function test_getTables(): void
+    public function test_getTables__for_default_schema(): void
     {
         $conn = $this->getDefaultConnection();
         $sb = $conn->getSchemaBuilder();
@@ -226,6 +226,77 @@ class BuilderTestLast extends TestCase
             'collation' => null,
             'engine' => null,
         ], $row);
+    }
+
+    public function test_getTables__for_named_schema(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $sb = $conn->getSchemaBuilder();
+        $schema = $this->generateNamedSchemaName();
+        $table = $this->generateTableName(class_basename(__CLASS__));
+
+        $sb->createNamedSchema($schema);
+        $sb->create("{$schema}.{$table}", function (Blueprint $table) {
+            $table->uuid('id');
+            $table->primary('id');
+        });
+
+        $tables = $sb->getTables($schema);
+        $row = Arr::first($tables, fn($row) => $row['name'] === $table);
+
+        $this->assertSame([
+            'name' => $table,
+            'schema' => $schema,
+            'schema_qualified_name' => "{$schema}.{$table}",
+            'parent' => null,
+            'size' => null,
+            'comment' => null,
+            'collation' => null,
+            'engine' => null,
+        ], $row);
+    }
+
+    public function test_getTables__for_default_and_named_schema(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $sb = $conn->getSchemaBuilder();
+        $schema = $this->generateNamedSchemaName();
+        $table = $this->generateTableName(class_basename(__CLASS__));
+
+        $sb->create($table, function (Blueprint $table) {
+            $table->uuid('id');
+            $table->primary('id');
+        });
+
+        $sb->createNamedSchema($schema);
+        $sb->create("{$schema}.{$table}", function (Blueprint $table) {
+            $table->uuid('id');
+            $table->primary('id');
+        });
+
+        $tables = $sb->getTables();
+
+        $this->assertSame([
+            'name' => $table,
+            'schema' => null,
+            'schema_qualified_name' => $table,
+            'parent' => null,
+            'size' => null,
+            'comment' => null,
+            'collation' => null,
+            'engine' => null,
+        ], Arr::sole($tables, fn($row) => $row['schema'] === null && $row['name'] === $table));
+
+        $this->assertSame([
+            'name' => $table,
+            'schema' => $schema,
+            'schema_qualified_name' => "{$schema}.{$table}",
+            'parent' => null,
+            'size' => null,
+            'comment' => null,
+            'collation' => null,
+            'engine' => null,
+        ], Arr::sole($tables, fn($row) => $row['schema'] === $schema && $row['name'] === $table));
     }
 
     public function test_getColumns_with_nullable(): void
@@ -274,10 +345,37 @@ class BuilderTestLast extends TestCase
         ], Arr::first($sb->getColumns($table)));
     }
 
-    public function test_getTableListing(): void
+    public function test_getColumns__for_named_schema_table(): void
     {
         $conn = $this->getDefaultConnection();
         $sb = $conn->getSchemaBuilder();
+        $schema = $this->generateNamedSchemaName();
+        $table = $this->generateTableName(class_basename(__CLASS__));
+        $fqtn = "{$schema}.{$table}";
+
+        $sb->createNamedSchema($schema);
+        $sb->create($fqtn, function (Blueprint $table) {
+            $table->string('id', 1)->default('a')->primary();
+        });
+
+        $this->assertSame([
+            'name' => 'id',
+            'type_name' => 'STRING',
+            'type' => 'STRING(1)',
+            'collation' => null,
+            'nullable' => false,
+            'default' => '"a"',
+            'auto_increment' => false,
+            'comment' => null,
+            'generation' => null,
+        ], Arr::sole($sb->getColumns($fqtn)));
+    }
+
+    public function test_getTableListing__for_default_schema(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $sb = $conn->getSchemaBuilder();
+        $schema = $this->generateNamedSchemaName();
         $table = $this->generateTableName(class_basename(__CLASS__));
 
         $sb->create($table, function (Blueprint $table) {
@@ -285,15 +383,51 @@ class BuilderTestLast extends TestCase
             $table->primary('id');
         });
 
-        $this->assertContains($table, $sb->getTableListing());
+        $sb->createNamedSchema($schema);
+        $fqtn = "{$schema}.{$table}";
+        $sb->create($fqtn, function (Blueprint $table) {
+            $table->uuid('id');
+            $table->primary('id');
+        });
+        $listings = $sb->getTableListing();
+
+        $this->assertContains($table, $listings);
+        $this->assertContains($fqtn, $listings);
     }
 
-    public function test_getIndexes(): void
+    public function test_getTableListing__for_named_schema(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $sb = $conn->getSchemaBuilder();
+        $schema = $this->generateNamedSchemaName();
+        $table = $this->generateTableName(class_basename(__CLASS__));
+        $fqtn = "{$schema}.{$table}";
+
+        $sb->createNamedSchema($schema);
+        $sb->create($fqtn, function (Blueprint $table) {
+            $table->uuid('id');
+            $table->primary('id');
+        });
+
+        $this->assertContains($fqtn, $sb->getTableListing($schema));
+        $this->assertContains($table, $sb->getTableListing($schema, false));
+    }
+
+    public function test_getIndexes__for_default_schema(): void
     {
         $conn = $this->getDefaultConnection();
         $sb = $conn->getSchemaBuilder();
         $table = $this->generateTableName(class_basename(__CLASS__));
         $sb->create($table, function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('something');
+            $table->index('something');
+        });
+
+        $schema = $this->generateNamedSchemaName();
+        $fqtn = "{$schema}.{$table}";
+        $sb->createNamedSchema($schema);
+        $sb->create($fqtn, function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('something');
             $table->index('something');
@@ -317,6 +451,39 @@ class BuilderTestLast extends TestCase
         ], $sb->getIndexes($table));
     }
 
+    public function test_getIndexes__with_named_schema(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $sb = $conn->getSchemaBuilder();
+        $schema = $this->generateNamedSchemaName();
+        $table = $this->generateTableName(class_basename(__CLASS__));
+        $fqtn = "{$schema}.{$table}";
+
+        $sb->createNamedSchema($schema);
+        $sb->create($fqtn, function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('something');
+            $table->index('something');
+        });
+
+        $this->assertSame([
+            [
+                'name' => strtolower($table) . '_something_index',
+                'columns' => ['something'],
+                'type' => 'index',
+                'unique' => false,
+                'primary' => false,
+            ],
+            [
+                'name' => 'PRIMARY_KEY',
+                'columns' => ['id'],
+                'type' => 'primary_key',
+                'unique' => true,
+                'primary' => true,
+            ],
+        ], $sb->getIndexes($fqtn));
+    }
+
     public function test_getIndexListing(): void
     {
         $conn = $this->getDefaultConnection();
@@ -332,6 +499,27 @@ class BuilderTestLast extends TestCase
             strtolower($table) . '_something_index',
             'PRIMARY_KEY',
         ], $sb->getIndexListing($table));
+    }
+
+    public function test_getIndexListing__with_named_schema(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $sb = $conn->getSchemaBuilder();
+        $schema = $this->generateNamedSchemaName();
+        $table = $this->generateTableName(class_basename(__CLASS__));
+        $fqtn = "{$schema}.{$table}";
+
+        $sb->createNamedSchema($schema);
+        $sb->create($fqtn, function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('something');
+            $table->index('something');
+        });
+
+        $this->assertSame([
+            strtolower($table) . '_something_index',
+            'PRIMARY_KEY',
+        ], $sb->getIndexListing($fqtn));
     }
 
     public function test_getForeignKeys(): void
@@ -362,6 +550,41 @@ class BuilderTestLast extends TestCase
             'on_update' => "no action",
             'on_delete' => "no action",
         ]], $sb->getForeignKeys($table2));
+    }
+
+    public function test_getForeignKeys__with_named_schema(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $sb = $conn->getSchemaBuilder();
+        $schema = $this->generateNamedSchemaName();
+        $table1 = $this->generateTableName(class_basename(__CLASS__) . '_1');
+        $fqtn1 = "{$schema}.{$table1}";
+
+        $sb->createNamedSchema($schema);
+        $sb->create($fqtn1, function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('something');
+            $table->index('something');
+        });
+
+        $table2 = $this->generateTableName(class_basename(__CLASS__) . '_2');
+        $fqtn2 = "{$schema}.{$table2}";
+        $sb->create($fqtn2, function (Blueprint $table) use ($table1, $fqtn1) {
+            $table->uuid('table2_id')->primary();
+            $table->uuid('other_id');
+            $table->index('other_id');
+            $table->foreign('other_id')->references('id')->on($fqtn1);
+        });
+
+        $this->assertSame([[
+            'name' => strtolower($table2) . '_other_id_foreign',
+            'columns' => ['other_id'],
+            'foreign_schema' => $schema,
+            'foreign_table' => $table1,
+            'foreign_columns' => ['id'],
+            'on_update' => "no action",
+            'on_delete' => "no action",
+        ]], $sb->getForeignKeys($fqtn2));
     }
 
     public function test_dropAllTables(): void
