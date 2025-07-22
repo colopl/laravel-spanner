@@ -487,4 +487,28 @@ class Blueprint extends BaseBlueprint
 
         return $command;
     }
+
+    /**
+     * @inheritDoc
+     * @param list<string> $columns
+     */
+    protected function createIndexName($type, array $columns)
+    {
+        [$schema, $table] = $this->connection
+            ->getSchemaBuilder()
+            ->parseSchemaAndTable($this->table);
+
+        if ($this->connection->getConfig('prefix_indexes')) {
+            $table = $this->connection->getTablePrefix() . $table;
+        }
+
+        $index = strtolower($table . '_' . implode('_', $columns) . '_' . $type);
+
+        if ($type !== 'foreign' && $schema !== null) {
+            $index = $schema . '.' . $index;
+        }
+
+        return str_replace('-', '_', $index);
+    }
+
 }

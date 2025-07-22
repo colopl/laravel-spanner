@@ -40,31 +40,30 @@ class Grammar extends BaseGrammar
     protected $modifiers = ['Nullable', 'Default', 'GeneratedAs', 'Invisible', 'Increment', 'UseSequence'];
 
     /**
-     * Compile the query to determine the tables.
-     *
-     * @param $schema
-     * @return string
+     * @inheritDoc
      */
     public function compileTables($schema)
     {
         return implode(' ', [
             'select',
             implode(', ', [
-                'table_name as name',
+                'table_name as `name`',
                 'table_schema as `schema`',
-                'parent_table_name as parent',
+                'parent_table_name as `parent`',
             ]),
-            'from information_schema.tables',
-            'where table_type = \'BASE TABLE\'',
-            'and table_schema = \'\'',
+            'from `information_schema`.`tables`',
+            'where `table_type` = \'BASE TABLE\'',
+            (match (true) {
+                is_array($schema) => 'and `table_schema` in (' . $this->quoteString($schema) . ')',
+                !is_null($schema) => 'and `table_schema` = ' . $this->quoteString($schema),
+                default => '',
+            }),
+            'order by `table_schema`, `table_name`'
         ]);
     }
 
     /**
-     * Compile the query to determine the columns.
-     *
-     * @param string $table
-     * @return string
+     * @inheritDoc
      */
     public function compileColumns($schema, $table)
     {
@@ -76,17 +75,15 @@ class Grammar extends BaseGrammar
                 'is_nullable as `nullable`',
                 'column_default as `default`',
             ]),
-            'from information_schema.columns',
-            'where table_name = ' . $this->quoteString($table),
+            'from `information_schema`.`columns`',
+            'where `table_name` = ' . $this->quoteString($table),
+            'and table_schema = ' . $this->quoteString($schema ?? ''),
+            'order by `ordinal_position` asc',
         ]);
     }
 
     /**
-     * Compile the query to determine the list of indexes.
-     *
-     * @param string|null $schema
-     * @param $table
-     * @return string
+     * @inheritDoc
      */
     public function compileIndexes($schema, $table)
     {
@@ -100,18 +97,14 @@ class Grammar extends BaseGrammar
             ]),
             'from information_schema.indexes as i',
             'join information_schema.index_columns as c on i.table_schema = c.table_schema and i.table_name = c.table_name and i.index_name = c.index_name',
-            'where i.table_schema = ' . $this->quoteString(''),
-            'and i.table_name = ' . $this->quoteString($table),
-            'group by i.index_name, i.index_type, i.is_unique',
+            'where i.table_name = ' . $this->quoteString($table),
+            'and i.table_schema = ' . $this->quoteString($schema ?? ''),
+            'group by i.index_name, i.index_type, i.is_unique, i.table_schema',
         ]);
     }
 
     /**
-     * Compile the query to determine the list of foreign keys.
-     *
-     * @param string|null $schema
-     * @param $table
-     * @return string
+     * @inheritDoc
      */
     public function compileForeignKeys($schema, $table)
     {
@@ -129,8 +122,8 @@ class Grammar extends BaseGrammar
             'from information_schema.key_column_usage kc',
             'join information_schema.referential_constraints rc on kc.constraint_name = rc.constraint_name',
             'join information_schema.constraint_column_usage cc on kc.constraint_name = cc.constraint_name',
-            'where kc.table_schema = ""',
-            'and kc.table_name = ' . $this->quoteString($table),
+            'where kc.table_name = ' . $this->quoteString($table),
+            'and kc.table_schema = ' . $this->quoteString($schema ?? ''),
             'group by kc.constraint_name, cc.table_schema, cc.table_name, rc.update_rule, rc.delete_rule',
         ]);
     }
