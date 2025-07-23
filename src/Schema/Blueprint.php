@@ -463,13 +463,11 @@ class Blueprint extends BaseBlueprint
     }
 
     /**
-     * @param string $type
+     * @inheritDoc
      * @param string|list<string> $columns
-     * @param string $index
-     * @param string|null $algorithm
      * @return IndexDefinition
      */
-    protected function indexCommand($type, $columns, $index, $algorithm = null)
+    protected function indexCommand($type, $columns, $index, $algorithm = null, $operatorClass = null)
     {
         $columns = (array) $columns;
 
@@ -483,6 +481,7 @@ class Blueprint extends BaseBlueprint
             'index' => $index,
             'columns' => $columns,
             'algorithm' => $algorithm,
+            'operatorClass' => $operatorClass,
         ]);
 
         return $command;
