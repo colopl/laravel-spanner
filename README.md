@@ -89,7 +89,6 @@ Please note that the following are not required, but are strongly recommended fo
 ## Unsupported features
 
 - STRUCT data types
-- Inserting/Updating JSON data types
 
 ## Limitations
 
@@ -271,6 +270,18 @@ When fetching rows, the library coverts the following column types
 - `Numeric` -> `string`
 
 Note that if you execute a query without QueryBuilder, it will not have these conversions.
+
+### JSON Type
+
+In order to use JSON columns, use the provided Cast on your model as below
+
+```php
+use Colopl\Spanner\Casts\SpannerJson;
+
+protected $casts = [
+    'json_column_name' => SpannerJson::class,
+];
+```
 
 
 ### Partitioned DML
