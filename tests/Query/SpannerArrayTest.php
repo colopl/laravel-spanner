@@ -58,21 +58,53 @@ class SpannerArrayTest extends TestCase
         $qb = $conn->table($tableName);
         $qb->insert($insertValues);
 
-        $qb = $conn->table($tableName);
-        $result = $qb->whereInArray('int64Array', 0)->get();
-        $this->assertCount(1, $result);
+        $qb = $conn->table($tableName)->whereInArray('int64Array', 0);
+        $this->assertSame("select * from `{$tableName}` where ? in unnest(`int64Array`)", $qb->toSql());
+        $this->assertCount(1, $qb->get());
 
-        $qb = $conn->table($tableName);
-        $result = $qb->whereInArray('int64Array', 1)->get();
-        $this->assertCount(2, $result);
+        $qb = $conn->table($tableName)->whereInArray('int64Array', 1);
+        $this->assertSame("select * from `{$tableName}` where ? in unnest(`int64Array`)", $qb->toSql());
+        $this->assertCount(2, $qb->get());
 
-        $qb = $conn->table($tableName);
-        $result = $qb->whereInArray('int64Array', 2)->get();
-        $this->assertCount(3, $result);
+        $qb = $conn->table($tableName)->whereInArray('int64Array', 2);
+        $this->assertSame("select * from `{$tableName}` where ? in unnest(`int64Array`)", $qb->toSql());
+        $this->assertCount(3, $qb->get());
 
+        $qb = $conn->table($tableName)->whereInArray('int64Array', 300);
+        $this->assertSame("select * from `{$tableName}` where ? in unnest(`int64Array`)", $qb->toSql());
+        $this->assertCount(0, $qb->get());
+    }
+
+    public function testSearchNotInArray(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $tableName = self::TABLE_NAME_ARRAY_TEST;
+
+        $testDataCount = 10;
+        $insertValues = [];
+        for ($i = 0; $i < $testDataCount; $i++) {
+            $row = $this->generateArrayTestRow();
+            $row['int64Array'] = [$i, $i + 1, $i + 2];
+            $insertValues[] = $row;
+        }
         $qb = $conn->table($tableName);
-        $result = $qb->whereInArray('int64Array', 300)->get();
-        $this->assertCount(0, $result);
+        $qb->insert($insertValues);
+
+        $qb = $conn->table($tableName)->whereNotInArray('int64Array', 0);
+        $this->assertSame("select * from `{$tableName}` where ? not in unnest(`int64Array`)", $qb->toSql());
+        $this->assertCount(9, $qb->get());
+
+        $qb = $conn->table($tableName)->whereNotInArray('int64Array', 1);
+        $this->assertSame("select * from `{$tableName}` where ? not in unnest(`int64Array`)", $qb->toSql());
+        $this->assertCount(8, $qb->get());
+
+        $qb = $conn->table($tableName)->whereNotInArray('int64Array', 2);
+        $this->assertSame("select * from `{$tableName}` where ? not in unnest(`int64Array`)", $qb->toSql());
+        $this->assertCount(7, $qb->get());
+
+        $qb = $conn->table($tableName)->whereNotInArray('int64Array', 300);
+        $this->assertSame("select * from `{$tableName}` where ? not in unnest(`int64Array`)", $qb->toSql());
+        $this->assertCount(10, $qb->get());
     }
 
     public function testUpdateArray(): void

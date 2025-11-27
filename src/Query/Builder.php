@@ -163,17 +163,29 @@ class Builder extends BaseBuilder
      * @param string $column
      * @param mixed $value
      * @param string $boolean
+     * @param bool $not
      * @return $this
      */
-    public function whereInArray(string $column, $value, string $boolean = 'and')
+    public function whereInArray(string $column, $value, string $boolean = 'and', bool $not = false)
     {
         $type = 'InArray';
 
-        $this->wheres[] = compact('type', 'column', 'value', 'boolean');
+        $this->wheres[] = compact('type', 'column', 'value', 'boolean', 'not');
 
         $this->addBinding($value);
 
         return $this;
+    }
+
+    /**
+     * @param string $column
+     * @param mixed $value
+     * @param string $boolean
+     * @return $this
+     */
+    public function whereNotInArray(string $column, mixed $value, string $boolean = 'and'): static
+    {
+        return $this->whereInArray($column, $value, $boolean, true);
     }
 
     /**
