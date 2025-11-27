@@ -127,7 +127,9 @@ class Grammar extends BaseGrammar
      */
     protected function whereInArray(Builder $query, $where)
     {
-        return '? in unnest(' . $this->wrap($where['column']) . ')';
+        return '?'
+            . ($where['not'] ? ' not' : '')
+            . ' in unnest(' . $this->wrap($where['column']) . ')';
     }
 
     /**
