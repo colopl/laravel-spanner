@@ -882,7 +882,7 @@ class Grammar extends BaseGrammar
      * Get the SQL for an invisible column modifier.
      *
      * @param Blueprint $blueprint
-     * @param ColumnDefinition&object{ invisible: bool } $column
+     * @param ColumnDefinition&object{ invisible: bool|null } $column
      * @return string|null
      */
     protected function modifyInvisible(Blueprint $blueprint, Fluent $column)
