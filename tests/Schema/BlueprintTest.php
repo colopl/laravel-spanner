@@ -737,7 +737,7 @@ class BlueprintTest extends TestCase
     {
         $conn = $this->getDefaultConnection();
         $conn->useDefaultSchemaGrammar();
-        $name = __FUNCTION__ . Uuid::uuid4()->toString();
+        $name = __FUNCTION__ . Str::random(10);
 
         $blueprint = new Blueprint($conn, '_', fn(Blueprint $table) => $table->createChangeStream($name));
         $blueprint->build();
@@ -751,7 +751,7 @@ class BlueprintTest extends TestCase
     {
         $conn = $this->getDefaultConnection();
         $conn->useDefaultSchemaGrammar();
-        $name = __FUNCTION__ . Uuid::uuid4()->toString();
+        $name = __FUNCTION__ . Str::random(10);
 
         $blueprint = new Blueprint(
             $conn,
@@ -773,7 +773,7 @@ class BlueprintTest extends TestCase
     {
         $conn = $this->getDefaultConnection();
         $conn->useDefaultSchemaGrammar();
-        $name = __FUNCTION__ . Uuid::uuid4()->toString();
+        $name = __FUNCTION__ . Str::random(10);
 
         $blueprint = new Blueprint($conn, '');
         $blueprint->createChangeStream($name)->for(self::TABLE_NAME_TEST, ['stringTest', 'intTest']);
@@ -790,9 +790,9 @@ class BlueprintTest extends TestCase
     {
         $conn = $this->getDefaultConnection();
         $conn->useDefaultSchemaGrammar();
-        $uuid = Uuid::uuid4()->toString();
-        $tableName = self::TABLE_NAME_TEST . $uuid;
-        $streamName = __FUNCTION__ . $uuid;
+        $id = Str::random(10);
+        $tableName = self::TABLE_NAME_TEST . $id;
+        $streamName = __FUNCTION__ . $id;
 
         $blueprint = new Blueprint($conn, $tableName);
         $blueprint->uuid('id')->primary();
@@ -828,7 +828,7 @@ class BlueprintTest extends TestCase
     {
         $conn = $this->getDefaultConnection();
         $conn->useDefaultSchemaGrammar();
-        $uuid = Uuid::uuid4()->toString();
+        $uuid = Str::random(10);
         $tableName = self::TABLE_NAME_TEST . '_' . $uuid;
         $streamName = __FUNCTION__ . '_' . $uuid;
 
@@ -861,7 +861,7 @@ class BlueprintTest extends TestCase
     {
         $conn = $this->getDefaultConnection();
         $conn->useDefaultSchemaGrammar();
-        $uuid = Uuid::uuid4()->toString();
+        $uuid = Str::random(10);
         $streamName = __FUNCTION__ . '_' . $uuid;
 
         $blueprint = new Blueprint($conn, self::TABLE_NAME_TEST . '_' . $uuid);
