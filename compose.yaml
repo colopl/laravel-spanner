@@ -2,10 +2,10 @@ services:
   test:
     build:
       context: .
-    command: /bin/sh -c "composer install --no-progress && vendor/bin/phpstan --no-progress --memory-limit=-1 && composer test"
+    command: /bin/sh -c "composer self-update && composer install --no-progress && vendor/bin/phpstan --no-progress --memory-limit=-1 && composer test"
     volumes:
       - .:/project
     depends_on:
       - emulator
   emulator:
-    image: "gcr.io/cloud-spanner-emulator/emulator:1.5.33"
+    image: "gcr.io/cloud-spanner-emulator/emulator:latest"
