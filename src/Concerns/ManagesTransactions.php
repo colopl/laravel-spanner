@@ -66,7 +66,11 @@ trait ManagesTransactions
             return parent::transaction($callback, $attempts);
         }
 
-        $options = ['maxRetries' => $attempts - 1];
+        $options = [
+            'retrySettings' => [
+                'maxRetries' => $attempts - 1,
+            ],
+        ];
 
         $tag = $this->getTransactionTag();
         if ($tag !== null) {

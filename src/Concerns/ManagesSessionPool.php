@@ -20,11 +20,10 @@ namespace Colopl\Spanner\Concerns;
 
 use Colopl\Spanner\Session\SessionInfo;
 use Google\Cloud\Core\EmulatorTrait;
-use Google\Cloud\Spanner\Connection\Grpc;
 use Google\Cloud\Spanner\Database;
-use Google\Cloud\Spanner\Session\Session as CloudSpannerSession;
-use Google\Cloud\Spanner\V1\Session as ProtobufSpannerSession;
-use Google\Cloud\Spanner\V1\SpannerClient as ProtobufSpannerClient;
+use Google\Cloud\Spanner\V1\Client\SpannerClient;
+use Google\Cloud\Spanner\V1\ListSessionsRequest;
+use Google\Cloud\Spanner\V1\Session;
 use Illuminate\Support\Collection;
 use ReflectionException;
 use ReflectionObject;
@@ -43,21 +42,7 @@ trait ManagesSessionPool
      */
     public function clearSessionPool(): void
     {
-        $sessionPool = $this->getSpannerDatabase()->sessionPool();
-        $sessionPool?->clear();
-    }
-
-    /**
-     * @return bool
-     */
-    public function maintainSessionPool(): bool
-    {
-        $sessionPool = $this->getSpannerDatabase()->sessionPool();
-        if ($sessionPool !== null && method_exists($sessionPool, 'maintain')) {
-            $sessionPool->maintain();
-            return true;
-        }
-        return false;
+        $this->getSpannerDatabase()->session()->refresh();
     }
 
     /**
@@ -65,11 +50,8 @@ trait ManagesSessionPool
      */
     public function warmupSessionPool(): int
     {
-        $sessionPool = $this->getSpannerDatabase()->sessionPool();
-        if ($sessionPool !== null && method_exists($sessionPool, 'warmup')) {
-            return $sessionPool->warmup();
-        }
-        return 0;
+        $this->getSpannerDatabase()->session()->refresh();
+        return 1;
     }
 
     /**
@@ -78,17 +60,18 @@ trait ManagesSessionPool
     public function listSessions(): Collection
     {
         $databaseName = $this->getSpannerDatabase()->name();
-
         $emulatorHost = getenv('SPANNER_EMULATOR_HOST');
         $config = $emulatorHost
             ? $this->emulatorGapicConfig($emulatorHost)
             : [];
 
-        $response = (new ProtobufSpannerClient($config))->listSessions($databaseName);
+        $request = new ListSessionsRequest();
+        $request->setDatabase($databaseName);
+        $response = (new SpannerClient($config))->listSessions($request);
 
         $sessions = [];
-        foreach ($response->iterateAllElements() as $session) {
-            assert($session instanceof ProtobufSpannerSession);
+        foreach ($response as $session) {
+            assert($session instanceof Session);
             $sessions[] = new SessionInfo($session);
         }
         return new Collection($sessions);

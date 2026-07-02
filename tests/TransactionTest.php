@@ -432,7 +432,7 @@ class TransactionTest extends TestCase
                     $base->tablePrefix,
                     $base->config,
                     $base->authCache,
-                    $base->sessionPool,
+                    $base->sessionCache,
                 );
             }
 

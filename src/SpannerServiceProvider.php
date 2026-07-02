@@ -21,8 +21,6 @@ namespace Colopl\Spanner;
 use Colopl\Spanner\Console\CooldownCommand;
 use Colopl\Spanner\Console\SessionsCommand;
 use Colopl\Spanner\Console\WarmupCommand;
-use Google\Cloud\Spanner\Session\CacheSessionPool;
-use Google\Cloud\Spanner\Session\SessionPoolInterface;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Queue\QueueManager;
 use Illuminate\Support\Facades\DB;
@@ -116,14 +114,11 @@ class SpannerServiceProvider extends ServiceProvider
 
     /**
      * @param array{ name: string, cache_path: string|null, session_pool: array<string, mixed> } $config
-     * @return SessionPoolInterface
+     * @return AdapterInterface
      */
-    protected function createSessionPool(array $config): SessionPoolInterface
+    protected function createSessionPool(array $config): AdapterInterface
     {
-        return new CacheSessionPool(
-            $this->getCacheAdapter($config['name'] . '_sessions', $config['cache_path']),
-            $config['session_pool'],
-        );
+        return $this->getCacheAdapter($config['name'] . '_sessions', $config['cache_path']);
     }
 
     /**
