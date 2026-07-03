@@ -108,17 +108,12 @@ class Connection extends BaseConnection
      */
     protected function getSpannerClient()
     {
-        if ($this->spannerClient === null) {
-            $clientConfig = $this->config['client'] ?? [];
-            $clientConfig = array_merge($clientConfig, [
-                'credentialsConfig' => [
-                    'authCache' => $this->authCache,
-                ],
-                'cacheItemPool' => $this->sessionCache,
-            ]);
-            $this->spannerClient = new SpannerClient($clientConfig);
-        }
-        return $this->spannerClient;
+        return $this->spannerClient ??= new SpannerClient(array_merge($this->config['client'] ?? [], [
+            'credentialsConfig' => [
+                'authCache' => $this->authCache,
+            ],
+            'cacheItemPool' => $this->sessionCache,
+        ]));
     }
 
     /**

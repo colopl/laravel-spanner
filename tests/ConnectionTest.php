@@ -194,7 +194,6 @@ class ConnectionTest extends TestCase
         $userId = $this->generateUuid();
         $conn = $this->getDefaultConnection();
         $conn->transaction(function () use ($conn, $userId) {
-            dump(1);
             $conn->insertUsingMutation(self::TABLE_NAME_USER, ['userId' => $userId, 'name' => 'test']);
         });
 

@@ -26,7 +26,7 @@ use Colopl\Spanner\Tests\TestCase;
 use Colopl\Spanner\TimestampBound\ExactStaleness;
 use Colopl\Spanner\TimestampBound\StrongRead;
 use Google\Cloud\Spanner\Bytes;
-use Google\Cloud\Spanner\Duration;
+use Google\Protobuf\Duration;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Carbon;
 use LogicException;
@@ -993,7 +993,7 @@ class BuilderTest extends TestCase
         $qb->insert($insertData);
         $this->assertDatabaseHas($tableName, $insertData);
 
-        $stalenessRow = $qb->withStaleness(new ExactStaleness(new Duration(60)))
+        $stalenessRow = $qb->withStaleness(new ExactStaleness(new Duration(['seconds' => 60])))
             ->first();
         $this->assertEmpty($stalenessRow);
     }
