@@ -617,8 +617,12 @@ class Connection extends BaseConnection
      */
     protected function executePartitionedQuery(string $query, array $options): Generator
     {
+        $snapshotOptions = isset($options['databaseRole'])
+            ? ['databaseRole' => $options['databaseRole']]
+            : [];
+
         $snapshot = $this->getSpannerClient()
-            ->batch($this->instanceId, $this->database, $options)
+            ->batch($this->instanceId, $this->database, $snapshotOptions)
             ->snapshot();
 
         foreach ($snapshot->partitionQuery($query, $options) as $partition) {
