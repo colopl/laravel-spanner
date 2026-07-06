@@ -38,7 +38,7 @@ class ExactStaleness implements TimestampBoundInterface
         int|Duration $duration,
     ) {
         if (is_int($duration)) {
-            $duration = new Duration($duration);
+            $duration = new Duration(['seconds' => $duration]);
         }
         $this->duration = $duration;
     }
