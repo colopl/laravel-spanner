@@ -37,7 +37,7 @@ class MaxStaleness implements TimestampBoundInterface
     public function __construct($duration)
     {
         if (is_int($duration)) {
-            $duration = new Duration($duration);
+            $duration = new Duration(['seconds' => $duration]);
         }
         $this->duration = $duration;
     }

@@ -18,7 +18,7 @@
 
 namespace Colopl\Spanner\TimestampBound;
 
-use Google\Cloud\Spanner\Duration;
+use Google\Protobuf\Duration;
 use Google\Cloud\Spanner\Timestamp;
 
 /**
