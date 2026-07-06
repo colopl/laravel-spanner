@@ -25,8 +25,6 @@ use Google\Cloud\Spanner\V1\Client\SpannerClient;
 use Google\Cloud\Spanner\V1\ListSessionsRequest;
 use Google\Cloud\Spanner\V1\Session;
 use Illuminate\Support\Collection;
-use ReflectionException;
-use ReflectionObject;
 
 trait ManagesSessionPool
 {
@@ -50,7 +48,10 @@ trait ManagesSessionPool
      */
     public function warmupSessionPool(): int
     {
-        $this->getSpannerDatabase()->session()->refresh();
+        // Use name() instead of refresh() so that an existing valid session
+        // stored in the FilesystemAdapter cache is reused rather than
+        // unconditionally replaced with a newly-created one.
+        $this->getSpannerDatabase()->session()->name();
         return 1;
     }
 
@@ -79,37 +80,20 @@ trait ManagesSessionPool
 
     /**
      * @return array<string, mixed>
-     * @throws ReflectionException
      */
     public function __debugInfo()
     {
-        // -------------------------------------------------------------------------
-        // HACK: Use reflection to extract some information from a private method
-        // -------------------------------------------------------------------------
         $session = null;
-        $credentialFetcher = null;
-
-        $internalConnectionProperty = (new ReflectionObject($this->getSpannerClient()))->getProperty('connection');
-        $internalConnectionProperty->setAccessible(true);
-        $internalConnection = $internalConnectionProperty->getValue($this->spannerClient);
-        if ($internalConnection instanceof Grpc) {
-            $requestWrapper = $internalConnection->requestWrapper();
-            $credentialFetcher = $requestWrapper?->getCredentialsFetcher();
-        }
 
         $spannerDatabase = $this->spannerDatabase;
         if ($spannerDatabase !== null) {
-            $sessionProperty = (new ReflectionObject($spannerDatabase))->getProperty('session');
-            $sessionProperty->setAccessible(true);
-            $session = $sessionProperty->getValue($spannerDatabase);
-            assert($session instanceof CloudSpannerSession);
+            $sessionCache = $spannerDatabase->session();
+            $session = $sessionCache->name();
         }
 
         return [
             'identity' => $spannerDatabase?->identity(),
-            'session' => $session?->name(),
-            'sessionPool' => $spannerDatabase?->sessionPool(),
-            'credentialFetcher' => $credentialFetcher,
+            'session' => $session,
         ];
     }
 
