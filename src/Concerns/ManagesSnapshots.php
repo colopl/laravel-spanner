@@ -20,15 +20,15 @@ namespace Colopl\Spanner\Concerns;
 
 use Closure;
 use Colopl\Spanner\TimestampBound\TimestampBoundInterface;
-use Google\Cloud\Spanner\Snapshot;
+use Google\Cloud\Spanner\TransactionalReadInterface;
 use LogicException;
 
 trait ManagesSnapshots
 {
     /**
-     * @var Snapshot|null
+     * @var TransactionalReadInterface|null
      */
-    protected ?Snapshot $currentSnapshot = null;
+    protected ?TransactionalReadInterface $currentSnapshot = null;
 
     /**
      * @template TReturn
