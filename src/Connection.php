@@ -239,6 +239,7 @@ class Connection extends BaseConnection
     /**
      * {@inheritDoc}
      * @param array<array-key, mixed> $bindings
+     * @param array<array-key, mixed> $fetchUsing
      * @return array<array-key, mixed>
      */
     public function select($query, $bindings = [], $useReadPdo = true, array $fetchUsing = []): array
@@ -254,6 +255,7 @@ class Connection extends BaseConnection
      * {@inheritDoc}
      * @return Generator<int, array<array-key, mixed>>
      * @param array<array-key, mixed> $bindings
+     * @param array<array-key, mixed> $fetchUsing
      * @return Generator<int, array<array-key, mixed>>
      * @phpstan-ignore method.childReturnType
      */

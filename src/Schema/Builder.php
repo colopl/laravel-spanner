@@ -39,7 +39,7 @@ class Builder extends BaseBuilder
     /**
      * The default relationship morph key type.
      *
-     * @var string
+     * @var 'int'|'ulid'|'uuid'
      */
     public static $defaultMorphKeyType = 'uuid';
 

@@ -91,7 +91,8 @@ trait ManagesDataDefinitions
     }
 
     /**
-     * @param LongRunningOperation $operation
+     * @template T
+     * @param LongRunningOperation<T> $operation
      * @return mixed
      */
     protected function waitForOperation(LongRunningOperation $operation): mixed
