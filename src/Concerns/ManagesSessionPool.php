@@ -18,17 +18,10 @@
 
 namespace Colopl\Spanner\Concerns;
 
-use Google\Cloud\Core\EmulatorTrait;
 use Google\Cloud\Spanner\Database;
-use Google\Cloud\Spanner\V1\Client\SpannerClient;
-use Google\Cloud\Spanner\V1\ListSessionsRequest;
-use Google\Cloud\Spanner\V1\Session;
-use Illuminate\Support\Collection;
 
 trait ManagesSessionPool
 {
-    use EmulatorTrait;
-
     /**
      * @return Database
      */
@@ -37,40 +30,16 @@ trait ManagesSessionPool
     /**
      * @return void
      */
-    public function clearSessionPool(): void
+    public function refreshSession(): void
     {
         $this->getSpannerDatabase()->session()->refresh();
     }
 
     /**
-     * @return int  Number of warmed up sessions
+     * @return string
      */
-    public function warmupSessionPool(): int
+    public function getSessionName(): string
     {
-        // Use name() instead of refresh() so that an existing valid session
-        // stored in the FilesystemAdapter cache is reused rather than
-        // unconditionally replaced with a newly-created one.
-        $this->getSpannerDatabase()->session()->name();
-        return 1;
+        return $this->getSpannerDatabase()->session()->name();
     }
-
-    /**
-     * @return array<string, mixed>
-     */
-    public function __debugInfo()
-    {
-        $session = null;
-
-        $spannerDatabase = $this->spannerDatabase;
-        if ($spannerDatabase !== null) {
-            $sessionCache = $spannerDatabase->session();
-            $session = $sessionCache->name();
-        }
-
-        return [
-            'identity' => $spannerDatabase?->identity(),
-            'session' => $session,
-        ];
-    }
-
 }
