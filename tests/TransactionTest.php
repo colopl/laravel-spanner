@@ -99,7 +99,7 @@ class TransactionTest extends TestCase
             return $conn->getCurrentTransaction();
         });
         $this->assertNotNull($tx);
-        $this->assertSame([], $tx->getCommitStats());
+        $this->assertNull($tx->getCommitStats());
         $this->assertSame([], $conn->getCommitOptions());
 
         $newOptions = ['returnCommitStats' => true];
