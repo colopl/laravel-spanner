@@ -133,11 +133,14 @@ abstract class TestCase extends \Orchestra\Testbench\TestCase
     protected function setUpEmulatorInstance(Connection $conn): void
     {
         $spanner = new SpannerClient((array) $conn->getConfig('client') + [
-            'authCache' => new FilesystemAdapter(
-                namespace: $conn->getName() . '_auth',
-                directory: $this->app->storagePath('framework/spanner'),
-            ),
+            'credentialsConfig' => [
+                'authCache' => new FilesystemAdapter(
+                    namespace: $conn->getName() . '_auth',
+                    directory: $this->app->storagePath('framework/spanner'),
+                ),
+            ],
         ]);
+
         $name = (string) $conn->getConfig('instance');
         if (!$spanner->instance($name)->exists()) {
             $config = $spanner->instanceConfiguration('emulator-config');
@@ -165,7 +168,6 @@ abstract class TestCase extends \Orchestra\Testbench\TestCase
                 'default_sequence_kind' => 'bit_reversed_positive',
             ]);
         }
-
         $this->beforeApplicationDestroyed(fn() => $this->cleanupDatabase($conn));
     }
 

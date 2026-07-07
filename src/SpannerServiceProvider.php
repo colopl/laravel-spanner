@@ -53,16 +53,13 @@ class SpannerServiceProvider extends ServiceProvider
             });
         });
 
+        $this->app->singleton(SpannerSessionRefresher::class);
+
         if ($this->app->runningInConsole()) {
             $this->commands([
                 WarmupCommand::class,
             ]);
         }
-    }
-
-    public function boot(): void
-    {
-        $this->closeSessionAfterEachQueueJob();
     }
 
     /**
@@ -129,21 +126,5 @@ class SpannerServiceProvider extends ServiceProvider
     {
         $path ??= $this->app->storagePath('framework/spanner');
         return new FilesystemAdapter($namespace, 0, $path);
-    }
-
-    /**
-     * @return void
-     */
-    protected function closeSessionAfterEachQueueJob(): void
-    {
-        $this->app->resolving('queue', function (QueueManager $queue): void {
-            $queue->after(static function (): void {
-                foreach (DB::getConnections() as $connection) {
-                    if ($connection instanceof Connection) {
-                        $connection->disconnect();
-                    }
-                }
-            });
-        });
     }
 }
