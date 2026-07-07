@@ -25,12 +25,27 @@ use Google\Cloud\Spanner\Date;
 use Google\Cloud\Spanner\SpannerClient;
 use Google\Cloud\Spanner\Timestamp;
 use Illuminate\Support\Carbon;
+use Symfony\Component\Cache\Adapter\ArrayAdapter;
 
 class DatetimeTest extends TestCase
 {
-    public function testTimezone(): void
+    public function test_session_created(): void
     {
-        $db = (new SpannerClient())->connect(config('database.connections.main.instance'), config('database.connections.main.database'));
+        $instance = getenv('DB_SPANNER_INSTANCE_ID');
+        $database = getenv('DB_SPANNER_DATABASE_ID');
+        $db = (new SpannerClient([
+            'cacheItemPool' => new ArrayAdapter(),
+        ]))->connect($instance, $database);
+        if (!$db->exists()) {
+            $db->create();
+        }
+        $result = iterator_to_array($db->execute('SELECT 1'));
+        $this->assertSame(1, $result[0][0]);
+    }
+
+    public function test_timezone(): void
+    {
+        $db = $this->getDefaultConnection()->getSpannerDatabase();
 
         date_default_timezone_set('UTC');
 
