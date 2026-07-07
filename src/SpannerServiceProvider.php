@@ -55,7 +55,6 @@ class SpannerServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([
                 CooldownCommand::class,
-                SessionsCommand::class,
                 WarmupCommand::class,
             ]);
         }

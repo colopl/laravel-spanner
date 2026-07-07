@@ -18,7 +18,6 @@
 
 namespace Colopl\Spanner\Concerns;
 
-use Colopl\Spanner\Session\SessionInfo;
 use Google\Cloud\Core\EmulatorTrait;
 use Google\Cloud\Spanner\Database;
 use Google\Cloud\Spanner\V1\Client\SpannerClient;
@@ -53,29 +52,6 @@ trait ManagesSessionPool
         // unconditionally replaced with a newly-created one.
         $this->getSpannerDatabase()->session()->name();
         return 1;
-    }
-
-    /**
-     * @return Collection<int, SessionInfo>
-     */
-    public function listSessions(): Collection
-    {
-        $databaseName = $this->getSpannerDatabase()->name();
-        $emulatorHost = getenv('SPANNER_EMULATOR_HOST');
-        $config = $emulatorHost
-            ? $this->emulatorGapicConfig($emulatorHost)
-            : [];
-
-        $request = new ListSessionsRequest();
-        $request->setDatabase($databaseName);
-        $response = (new SpannerClient($config))->listSessions($request);
-
-        $sessions = [];
-        foreach ($response as $session) {
-            assert($session instanceof Session);
-            $sessions[] = new SessionInfo($session);
-        }
-        return new Collection($sessions);
     }
 
     /**
