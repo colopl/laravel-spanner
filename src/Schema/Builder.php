@@ -165,7 +165,9 @@ class Builder extends BaseBuilder
             $foreigns = $this->getForeignKeys($sqn);
             $blueprint = $this->createBlueprint($sqn);
             foreach ($foreigns as $foreign) {
-                $blueprint->dropForeign($foreign['name']);
+                if ($foreign['name'] !== null) {
+                    $blueprint->dropForeign($foreign['name']);
+                }
             }
             array_push($queries, ...$blueprint->toSql());
         }
