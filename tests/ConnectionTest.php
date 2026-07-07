@@ -22,7 +22,6 @@ use Colopl\Spanner\Connection;
 use Colopl\Spanner\Events\MutatingData;
 use Colopl\Spanner\Query\Nested;
 use Colopl\Spanner\Schema\Grammar;
-use Colopl\Spanner\Session\SessionInfo;
 use Colopl\Spanner\TimestampBound\ExactStaleness;
 use Colopl\Spanner\TimestampBound\MaxStaleness;
 use Colopl\Spanner\TimestampBound\MinReadTimestamp;
@@ -405,14 +404,14 @@ class ConnectionTest extends TestCase
         $config = $this->app['config']->get('database.connections.main');
 
         $authCache = new ArrayAdapter();
-        $sessionPool = new CacheSessionPool(new ArrayAdapter());
-        $conn = new Connection($config['instance'], $config['database'], '', $config, $authCache, $sessionPool);
+        $sessionCache = new ArrayAdapter();
+        $conn = new Connection($config['instance'], $config['database'], '', $config, $authCache, $sessionCache);
         $this->setUpDatabaseOnce($conn);
 
         $conn->selectOne('SELECT 1');
 
         $this->assertInstanceOf(Connection::class, $conn);
-        $this->assertNotEmpty($authCache->getValues(), 'After executing some query, session cache is created.');
+        $this->assertNotEmpty($authCache->getValues(), 'After executing some query, auth cache is populated.');
     }
 
     public function test_AuthCache_with_FileSystemAdapter(): void
@@ -433,16 +432,17 @@ class ConnectionTest extends TestCase
         $config = $this->app['config']->get('database.connections.main');
 
         $cacheItemPool = new ArrayAdapter();
-        $cacheSessionPool = new CacheSessionPool($cacheItemPool);
-        $conn = new Connection($config['instance'], $config['database'], '', $config, null, $cacheSessionPool);
+        $conn = new Connection($config['instance'], $config['database'], '', $config, null, $cacheItemPool);
         $this->setUpDatabaseOnce($conn);
         $this->assertInstanceOf(Connection::class, $conn);
 
         $conn->selectOne('SELECT 1');
-        $this->assertNotEmpty($cacheItemPool->getValues(), 'After executing some query, cache is created.');
+        $cacheValuesBefore = $cacheItemPool->getValues();
+        $this->assertNotEmpty($cacheValuesBefore, 'After executing some query, session is cached.');
 
-        $conn->clearSessionPool();
-        $this->assertEmpty($cacheItemPool->getValues(), 'After clearing the session pool, cache is removed.');
+        $conn->refreshSession();
+        // In v2, clearSessionPool refreshes the session (creates a new one) rather than clearing the cache.
+        $this->assertNotEmpty($cacheItemPool->getValues(), 'After clearing the session pool, a new session is cached.');
     }
 
     public function test_session_pool_with_FileSystemAdapter(): void
@@ -458,22 +458,12 @@ class ConnectionTest extends TestCase
         $this->assertSame('0755', substr(sprintf('%o', fileperms($outputPath)), -4));
     }
 
-    public function test_clearSessionPool(): void
+    public function test_refreshSession(): void
     {
         $conn = $this->getDefaultConnection();
-        $conn->warmupSessionPool();
-        $conn->clearSessionPool();
-        $this->assertSame(1, $conn->warmupSessionPool());
-    }
-
-    public function test_listSessions(): void
-    {
-        $conn = $this->getDefaultConnection();
-        $conn->select('SELECT 1');
-
-        $sessions = $conn->listSessions();
-        $this->assertNotEmpty($sessions);
-        $this->assertInstanceOf(SessionInfo::class, $sessions[0]);
+        $old = $conn->getSessionName();
+        $conn->refreshSession();
+        $this->assertNotSame($old, $conn->getSessionName());
     }
 
     public function test_stale_reads(): void
