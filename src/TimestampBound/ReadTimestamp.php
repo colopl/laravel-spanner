@@ -26,12 +26,12 @@ class ReadTimestamp implements TimestampBoundInterface
     /**
      * @var Timestamp
      */
-    public $timestamp;
+    public Timestamp $timestamp;
 
     /**
      * @param Timestamp|DateTimeInterface $timestamp
      */
-    public function __construct($timestamp)
+    public function __construct(Timestamp|DateTimeInterface $timestamp)
     {
         if ($timestamp instanceof DateTimeInterface) {
             $timestamp = new Timestamp($timestamp);
