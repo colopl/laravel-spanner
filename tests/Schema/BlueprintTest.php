@@ -737,7 +737,7 @@ class BlueprintTest extends TestCase
     {
         $conn = $this->getDefaultConnection();
         $conn->useDefaultSchemaGrammar();
-        $name = __FUNCTION__ . Uuid::uuid4()->toString();
+        $name = __FUNCTION__ . Str::random(8);
 
         $blueprint = new Blueprint($conn, '_', fn(Blueprint $table) => $table->createChangeStream($name));
         $blueprint->build();
@@ -751,7 +751,7 @@ class BlueprintTest extends TestCase
     {
         $conn = $this->getDefaultConnection();
         $conn->useDefaultSchemaGrammar();
-        $name = __FUNCTION__ . Uuid::uuid4()->toString();
+        $name = __FUNCTION__ . Str::random(8);
 
         $blueprint = new Blueprint(
             $conn,
@@ -773,7 +773,7 @@ class BlueprintTest extends TestCase
     {
         $conn = $this->getDefaultConnection();
         $conn->useDefaultSchemaGrammar();
-        $name = __FUNCTION__ . Uuid::uuid4()->toString();
+        $name = __FUNCTION__ . Str::random(8);
 
         $blueprint = new Blueprint($conn, '');
         $blueprint->createChangeStream($name)->for(self::TABLE_NAME_TEST, ['stringTest', 'intTest']);

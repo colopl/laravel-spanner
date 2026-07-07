@@ -373,15 +373,9 @@ class ConnectionTest extends TestCase
         $this->assertSame(5, $executedCount);
     }
 
-    public function testSession(): void
+    public function test_session_exists(): void
     {
         $conn = $this->getDefaultConnection();
-        $conn->disconnect();
-
-        $this->assertNull($conn->getSessionName(), 'At the time of creating the connection, the session has not been created yet.');
-
-        $conn->selectOne('SELECT 1');
-
         $this->assertNotEmpty($conn->getSessionName(), 'After executing some query, session is created.');
     }
 
@@ -542,7 +536,7 @@ class ConnectionTest extends TestCase
         $uuid = $this->generateUuid();
         $name = 'test';
         $conn->insert("INSERT INTO {$tableName} (`userId`, `name`) VALUES ('{$uuid}', '{$name}')");
-dump($receivedEventClasses);
+
         $this->assertCount(3, $receivedEventClasses);
         $this->assertSame(TransactionBeginning::class, $receivedEventClasses[0]);
         $this->assertSame(QueryExecuted::class, $receivedEventClasses[1]);

@@ -162,7 +162,7 @@ abstract class TestCase extends \Orchestra\Testbench\TestCase
         }
         if (!$conn->databaseExists()) {
             $conn->createDatabase($this->getTestDatabaseDDLs());
-
+            $conn->refreshSession();
             // Configure database to use bit-reversed sequences for auto-increment columns
             $conn->getSchemaBuilder()->setDatabaseOptions([
                 'default_sequence_kind' => 'bit_reversed_positive',
