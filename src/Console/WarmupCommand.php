@@ -56,10 +56,10 @@ class WarmupCommand extends Command
 
             try {
                 $connection->refreshSession();
-                $this->info("Warmed up session for {$name}");
+                $this->info("Refreshed session for {$name}");
             } catch (ServiceException $e) {
                 $skipOnError
-                    ? $this->warn("Skipping warmup for {$name} due to " . $e::class . ": {$e->getMessage()}")
+                    ? $this->warn("Skipping session refresh for {$name} due to " . $e::class . ": {$e->getMessage()}")
                     : throw $e;
             }
         }

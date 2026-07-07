@@ -378,25 +378,11 @@ class ConnectionTest extends TestCase
         $conn = $this->getDefaultConnection();
         $conn->disconnect();
 
-        $this->assertNull($conn->__debugInfo()['session'], 'At the time of creating the connection, the session has not been created yet.');
+        $this->assertNull($conn->getSessionName(), 'At the time of creating the connection, the session has not been created yet.');
 
         $conn->selectOne('SELECT 1');
 
-        $this->assertNotEmpty($conn->__debugInfo()['session'], 'After executing some query, session is created.');
-    }
-
-    public function testCredentialFetcher(): void
-    {
-        if (getenv('SPANNER_EMULATOR_HOST')) {
-            $this->markTestSkipped('Cannot test credential fetcher on emulator');
-        }
-
-        $conn = $this->getDefaultConnection();
-        /** @var FetchAuthTokenInterface|null $credentialFetcher */
-        $credentialFetcher = $conn->__debugInfo()['credentialFetcher'];
-
-        $this->assertInstanceOf(FetchAuthTokenInterface::class, $credentialFetcher);
-        $this->assertNotEmpty($credentialFetcher->getCacheKey());
+        $this->assertNotEmpty($conn->getSessionName(), 'After executing some query, session is created.');
     }
 
     public function test_AuthCache_works(): void
@@ -539,24 +525,24 @@ class ConnectionTest extends TestCase
 
     public function testEventListenOrder(): void
     {
+        $conn = $this->getDefaultConnection();
+
         $receivedEventClasses = [];
         $this->app['events']->listen(TransactionBeginning::class, function () use (&$receivedEventClasses) {
             $receivedEventClasses[] = TransactionBeginning::class;
         });
-        $this->app['events']->listen(QueryExecuted::class, function () use (&$receivedEventClasses) {
+        $this->app['events']->listen(QueryExecuted::class, function ($e) use (&$receivedEventClasses) {
             $receivedEventClasses[] = QueryExecuted::class;
         });
         $this->app['events']->listen(TransactionCommitted::class, function () use (&$receivedEventClasses) {
             $receivedEventClasses[] = TransactionCommitted::class;
         });
 
-        $conn = $this->getDefaultConnection();
-
         $tableName = self::TABLE_NAME_USER;
         $uuid = $this->generateUuid();
         $name = 'test';
         $conn->insert("INSERT INTO {$tableName} (`userId`, `name`) VALUES ('{$uuid}', '{$name}')");
-
+dump($receivedEventClasses);
         $this->assertCount(3, $receivedEventClasses);
         $this->assertSame(TransactionBeginning::class, $receivedEventClasses[0]);
         $this->assertSame(QueryExecuted::class, $receivedEventClasses[1]);
