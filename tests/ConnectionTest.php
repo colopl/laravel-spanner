@@ -524,7 +524,12 @@ class ConnectionTest extends TestCase
         $tableName = self::TABLE_NAME_USER;
         $uuid = $this->generateUuid();
 
-        $db = (new SpannerClient())->connect(config('database.connections.main.instance'), config('database.connections.main.database'));
+        $db = (new SpannerClient([
+            'cacheItemPool' => new ArrayAdapter(),
+        ]))->connect(
+            config('database.connections.main.instance'),
+            config('database.connections.main.database'),
+        );
         /** @var Timestamp|null $timestamp */
         $timestamp = null;
         $db->runTransaction(function (Transaction $tx) use ($tableName, $uuid, &$timestamp) {
@@ -532,7 +537,6 @@ class ConnectionTest extends TestCase
             $tx->executeUpdate("INSERT INTO {$tableName} (`userId`, `name`) VALUES ('{$uuid}', '{$name}')");
             $timestamp = $tx->commit();
         });
-        $db->close();
         $this->assertNotEmpty($timestamp);
 
         $timestampBound = new StrongRead();
