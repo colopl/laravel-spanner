@@ -254,7 +254,7 @@ class Builder extends BaseBuilder
 
         $requestTimeoutSeconds = $this->getRequestTimeoutSeconds();
         if ($requestTimeoutSeconds !== null) {
-            $options['requestTimeout'] = $requestTimeoutSeconds;
+            $options['timeoutMillis'] = (int) ($requestTimeoutSeconds * 1000);
         }
 
         if ($this->dataBoostEnabled()) {
