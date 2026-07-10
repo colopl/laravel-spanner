@@ -1140,8 +1140,8 @@ class BuilderTest extends TestCase
     {
         $query = $this->getDefaultConnection()->table(self::TABLE_NAME_USER);
         $this->assertNull($query->getRequestTimeoutSeconds());
-        $query->setRequestTimeoutSeconds(0.0001);
-        $this->assertSame(0.0001, $query->getRequestTimeoutSeconds());
+        $query->setRequestTimeoutSeconds(0.001);
+        $this->assertSame(0.001, $query->getRequestTimeoutSeconds());
 
         $this->expectException(QueryException::class);
         $this->expectExceptionMessageMatches('/DEADLINE_EXCEEDED/');
