@@ -26,7 +26,7 @@ use Colopl\Spanner\Tests\TestCase;
 use Colopl\Spanner\TimestampBound\ExactStaleness;
 use Colopl\Spanner\TimestampBound\StrongRead;
 use Google\Cloud\Spanner\Bytes;
-use Google\Cloud\Spanner\Duration;
+use Google\Protobuf\Duration;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Carbon;
 use LogicException;
@@ -993,7 +993,7 @@ class BuilderTest extends TestCase
         $qb->insert($insertData);
         $this->assertDatabaseHas($tableName, $insertData);
 
-        $stalenessRow = $qb->withStaleness(new ExactStaleness(new Duration(60)))
+        $stalenessRow = $qb->withStaleness(new ExactStaleness(new Duration(['seconds' => 60])))
             ->first();
         $this->assertEmpty($stalenessRow);
     }
@@ -1140,11 +1140,23 @@ class BuilderTest extends TestCase
     {
         $query = $this->getDefaultConnection()->table(self::TABLE_NAME_USER);
         $this->assertNull($query->getRequestTimeoutSeconds());
-        $query->setRequestTimeoutSeconds(0.0001);
-        $this->assertSame(0.0001, $query->getRequestTimeoutSeconds());
+        $query->setRequestTimeoutSeconds(0.001);
+        $this->assertSame(0.001, $query->getRequestTimeoutSeconds());
 
         $this->expectException(QueryException::class);
         $this->expectExceptionMessageMatches('/DEADLINE_EXCEEDED/');
+        $query->get();
+    }
+
+    public function test_setRequestTimeoutSeconds_throws_when_timeout_rounds_to_zero(): void
+    {
+        // A timeout so small that (int)($seconds * 1000) === 0 must be rejected
+        // before the query is sent to Spanner.
+        $query = $this->getDefaultConnection()->table(self::TABLE_NAME_USER);
+        $query->setRequestTimeoutSeconds(0.0009); // 0.9 ms → (int)(0.9) = 0
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('Request timeout must be >= 1ms.');
         $query->get();
     }
 

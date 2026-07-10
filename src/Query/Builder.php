@@ -249,7 +249,11 @@ class Builder extends BaseBuilder
 
         $requestTimeoutSeconds = $this->getRequestTimeoutSeconds();
         if ($requestTimeoutSeconds !== null) {
-            $options['requestTimeout'] = $requestTimeoutSeconds;
+            $timeoutMillis = (int) ($requestTimeoutSeconds * 1000);
+            if ($timeoutMillis <= 0) {
+                throw new LogicException('Request timeout must be >= 1ms.');
+            }
+            $options['timeoutMillis'] = $timeoutMillis;
         }
 
         if ($this->dataBoostEnabled()) {

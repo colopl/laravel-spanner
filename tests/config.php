@@ -25,11 +25,6 @@ $conn = [
         'projectId' => getenv('DB_SPANNER_PROJECT_ID'),
         'requestTimeout' => 600,
     ],
-
-    'session_pool' => [
-        'minSessions' => 1,
-        'maxSessions' => 100,
-    ],
 ];
 
 return [

@@ -39,7 +39,7 @@ class Builder extends BaseBuilder
     /**
      * The default relationship morph key type.
      *
-     * @var string
+     * @var 'int'|'ulid'|'uuid'
      */
     public static $defaultMorphKeyType = 'uuid';
 
@@ -165,7 +165,9 @@ class Builder extends BaseBuilder
             $foreigns = $this->getForeignKeys($sqn);
             $blueprint = $this->createBlueprint($sqn);
             foreach ($foreigns as $foreign) {
-                $blueprint->dropForeign($foreign['name']);
+                if ($foreign['name'] !== null) {
+                    $blueprint->dropForeign($foreign['name']);
+                }
             }
             array_push($queries, ...$blueprint->toSql());
         }

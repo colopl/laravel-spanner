@@ -36,7 +36,6 @@ use Google\Cloud\Core\Exception\ConflictException;
 use Google\Cloud\Core\Exception\GoogleException;
 use Google\Cloud\Core\Exception\NotFoundException;
 use Google\Cloud\Spanner\Database;
-use Google\Cloud\Spanner\Session\SessionPoolInterface;
 use Google\Cloud\Spanner\SpannerClient;
 use Google\Cloud\Spanner\Timestamp;
 use Google\Cloud\Spanner\Transaction;
@@ -57,41 +56,26 @@ class Connection extends BaseConnection
     use Concerns\ManagesDataDefinitions;
     use Concerns\ManagesMutations;
     use Concerns\ManagesPartitionedDml;
-    use Concerns\ManagesSessionPool;
+    use Concerns\ManagesSession;
     use Concerns\ManagesSnapshots;
     use Concerns\ManagesTagging;
     use Concerns\ManagesTransactions;
     use Concerns\MarksAsNotSupported;
 
     /**
-     * @var string
+     * @var SpannerClient|null
      */
-    protected $instanceId;
-
-    /**
-     * @var SpannerClient
-     */
-    protected $spannerClient;
+    protected ?SpannerClient $spannerClient = null;
 
     /**
      * @var Database|null
      */
-    protected $spannerDatabase;
+    protected ?Database $spannerDatabase = null;
 
     /**
      * @var QueryParameterizer|null
      */
-    protected $parameterizer;
-
-    /**
-     * @var CacheItemPoolInterface|null
-     */
-    protected $authCache;
-
-    /**
-     * @var SessionPoolInterface|null
-     */
-    protected $sessionPool;
+    protected ?QueryParameterizer $parameterizer = null;
 
     /**
      * @param string $instanceId instance ID
@@ -99,19 +83,16 @@ class Connection extends BaseConnection
      * @param string $tablePrefix
      * @param array<string, mixed> $config
      * @param CacheItemPoolInterface|null $authCache
-     * @param SessionPoolInterface|null $sessionPool
+     * @param CacheItemPoolInterface|null $sessionCache
      */
     public function __construct(
-        string $instanceId,
+        protected string $instanceId,
         string $database,
         $tablePrefix = '',
         array $config = [],
-        ?CacheItemPoolInterface $authCache = null,
-        ?SessionPoolInterface $sessionPool = null,
+        protected ?CacheItemPoolInterface $authCache = null,
+        protected ?CacheItemPoolInterface $sessionCache = null,
     ) {
-        $this->instanceId = $instanceId;
-        $this->authCache = $authCache;
-        $this->sessionPool = $sessionPool;
         parent::__construct(
             // TODO: throw error after v9
             static fn() => null,
@@ -127,14 +108,11 @@ class Connection extends BaseConnection
      */
     protected function getSpannerClient()
     {
-        if ($this->spannerClient === null) {
-            $clientConfig = $this->config['client'] ?? [];
-            if ($this->authCache !== null) {
-                $clientConfig = array_merge($clientConfig, ['authCache' => $this->authCache]);
-            }
-            $this->spannerClient = new SpannerClient($clientConfig);
-        }
-        return $this->spannerClient;
+        $config = $this->config['client'] ?? [];
+        $config['credentialsConfig']['authCache'] ??= $this->authCache;
+        $config['cacheItemPool'] ??= $this->sessionCache;
+
+        return $this->spannerClient ??= new SpannerClient($config);
     }
 
     /**
@@ -169,11 +147,7 @@ class Connection extends BaseConnection
     public function reconnect()
     {
         $this->disconnect();
-        $connectOptions = [];
-        if ($this->sessionPool !== null) {
-            $connectOptions = array_merge($connectOptions, ['sessionPool' => $this->sessionPool]);
-        }
-        $this->spannerDatabase = $this->getSpannerClient()->connect($this->instanceId, $this->database, $connectOptions);
+        $this->spannerDatabase = $this->getSpannerClient()->connect($this->instanceId, $this->database);
     }
 
     /**
@@ -192,7 +166,6 @@ class Connection extends BaseConnection
     public function disconnect()
     {
         if ($this->spannerDatabase !== null) {
-            $this->spannerDatabase->close();
             $this->spannerDatabase = null;
         }
     }
@@ -265,10 +238,15 @@ class Connection extends BaseConnection
     /**
      * {@inheritDoc}
      * @param array<array-key, mixed> $bindings
+     * @param array<array-key, mixed> $fetchUsing
      * @return array<array-key, mixed>
      */
-    public function select($query, $bindings = [], $useReadPdo = true): array
+    public function select($query, $bindings = [], $useReadPdo = true, array $fetchUsing = []): array
     {
+        if ($fetchUsing !== []) {
+            throw new LogicException('The $fetchUsing parameter is not supported by Cloud Spanner');
+        }
+
         return $this->selectWithOptions($query, $bindings, []);
     }
 
@@ -276,11 +254,16 @@ class Connection extends BaseConnection
      * {@inheritDoc}
      * @return Generator<int, array<array-key, mixed>>
      * @param array<array-key, mixed> $bindings
+     * @param array<array-key, mixed> $fetchUsing
      * @return Generator<int, array<array-key, mixed>>
      * @phpstan-ignore method.childReturnType
      */
-    public function cursor($query, $bindings = [], $useReadPdo = true): Generator
+    public function cursor($query, $bindings = [], $useReadPdo = true, array $fetchUsing = []): Generator
     {
+        if ($fetchUsing !== []) {
+            throw new LogicException('The $fetchUsing parameter is not supported by Cloud Spanner');
+        }
+
         return $this->cursorWithOptions($query, $bindings, []);
     }
 
@@ -635,8 +618,12 @@ class Connection extends BaseConnection
      */
     protected function executePartitionedQuery(string $query, array $options): Generator
     {
+        $snapshotOptions = isset($options['databaseRole'])
+            ? ['databaseRole' => $options['databaseRole']]
+            : [];
+
         $snapshot = $this->getSpannerClient()
-            ->batch($this->instanceId, $this->database, $options)
+            ->batch($this->instanceId, $this->database, $snapshotOptions)
             ->snapshot();
 
         foreach ($snapshot->partitionQuery($query, $options) as $partition) {
@@ -738,10 +725,7 @@ class Connection extends BaseConnection
      */
     protected function handleSessionNotFoundException(Closure $callback): mixed
     {
-        $this->disconnect();
-        // Currently, there is no way for us to delete the session, so we have to delete the whole pool.
-        // This might affect parallel processes.
-        $this->clearSessionPool();
+        $this->refreshSession();
         $this->reconnect();
         return $callback();
     }

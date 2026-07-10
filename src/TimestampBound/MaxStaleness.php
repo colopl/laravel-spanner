@@ -18,14 +18,14 @@
 
 namespace Colopl\Spanner\TimestampBound;
 
-use Google\Cloud\Spanner\Duration;
+use Google\Protobuf\Duration;
 
 class MaxStaleness implements TimestampBoundInterface
 {
     /**
      * @var Duration
      */
-    public $duration;
+    public Duration $duration;
 
     /**
      * Stale reads (i.e. using the bounded or exact staleness types) have the maximum performance benefit at
@@ -37,7 +37,7 @@ class MaxStaleness implements TimestampBoundInterface
     public function __construct($duration)
     {
         if (is_int($duration)) {
-            $duration = new Duration($duration);
+            $duration = new Duration(['seconds' => $duration]);
         }
         $this->duration = $duration;
     }

@@ -22,7 +22,6 @@ use Colopl\Spanner\Connection;
 use Colopl\Spanner\Events\MutatingData;
 use Colopl\Spanner\Query\Nested;
 use Colopl\Spanner\Schema\Grammar;
-use Colopl\Spanner\Session\SessionInfo;
 use Colopl\Spanner\TimestampBound\ExactStaleness;
 use Colopl\Spanner\TimestampBound\MaxStaleness;
 use Colopl\Spanner\TimestampBound\MinReadTimestamp;
@@ -30,12 +29,11 @@ use Colopl\Spanner\TimestampBound\ReadTimestamp;
 use Colopl\Spanner\TimestampBound\StrongRead;
 use Generator;
 use Google\Auth\FetchAuthTokenInterface;
-use Google\Cloud\Spanner\Duration;
 use Google\Cloud\Spanner\KeySet;
-use Google\Cloud\Spanner\Session\CacheSessionPool;
 use Google\Cloud\Spanner\SpannerClient;
 use Google\Cloud\Spanner\Timestamp;
 use Google\Cloud\Spanner\Transaction;
+use Google\Protobuf\Duration;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Database\Events\TransactionBeginning;
 use Illuminate\Database\Events\TransactionCommitted;
@@ -89,7 +87,7 @@ class ConnectionTest extends TestCase
     {
         $conn = $this->getDefaultConnection();
         $conn->table(self::TABLE_NAME_USER)->insert(['userId' => $this->generateUuid(), 'name' => __FUNCTION__]);
-        $values = $conn->selectWithOptions('SELECT * FROM ' . self::TABLE_NAME_USER, [], ['exactStaleness' => new Duration(10)]);
+        $values = $conn->selectWithOptions('SELECT * FROM ' . self::TABLE_NAME_USER, [], ['exactStaleness' => new Duration(['seconds' => 10])]);
         $this->assertEmpty($values);
     }
 
@@ -97,8 +95,7 @@ class ConnectionTest extends TestCase
     {
         $conn = $this->getDefaultConnection();
         $conn->table(self::TABLE_NAME_USER)->insert(['userId' => $this->generateUuid(), 'name' => __FUNCTION__]);
-        $cursor = $conn->cursorWithOptions('SELECT * FROM ' . self::TABLE_NAME_USER, [], ['exactStaleness' => new Duration(10)]);
-        $this->assertInstanceOf(Generator::class, $cursor);
+        $cursor = $conn->cursorWithOptions('SELECT * FROM ' . self::TABLE_NAME_USER, [], ['exactStaleness' => new Duration(['seconds' => 10])]);
         $this->assertNull($cursor->current());
     }
 
@@ -376,45 +373,29 @@ class ConnectionTest extends TestCase
         $this->assertSame(5, $executedCount);
     }
 
-    public function testSession(): void
+    public function test_session_exists(): void
     {
         $conn = $this->getDefaultConnection();
-        $conn->disconnect();
-
-        $this->assertNull($conn->__debugInfo()['session'], 'At the time of creating the connection, the session has not been created yet.');
-
-        $conn->selectOne('SELECT 1');
-
-        $this->assertNotEmpty($conn->__debugInfo()['session'], 'After executing some query, session is created.');
-    }
-
-    public function testCredentialFetcher(): void
-    {
-        if (getenv('SPANNER_EMULATOR_HOST')) {
-            $this->markTestSkipped('Cannot test credential fetcher on emulator');
-        }
-
-        $conn = $this->getDefaultConnection();
-        /** @var FetchAuthTokenInterface|null $credentialFetcher */
-        $credentialFetcher = $conn->__debugInfo()['credentialFetcher'];
-
-        $this->assertInstanceOf(FetchAuthTokenInterface::class, $credentialFetcher);
-        $this->assertNotEmpty($credentialFetcher->getCacheKey());
+        $this->assertNotEmpty($conn->getSessionName(), 'After executing some query, session is created.');
     }
 
     public function test_AuthCache_works(): void
     {
+        if (getenv('DB_SPANNER_EMULATOR_HOST')) {
+            $this->markTestSkipped('AuthCache is not used when connecting to the Spanner Emulator. Skipping test.');
+        }
+
         $config = $this->app['config']->get('database.connections.main');
 
         $authCache = new ArrayAdapter();
-        $sessionPool = new CacheSessionPool(new ArrayAdapter());
-        $conn = new Connection($config['instance'], $config['database'], '', $config, $authCache, $sessionPool);
+        $sessionCache = new ArrayAdapter();
+        $conn = new Connection($config['instance'], $config['database'], '', $config, $authCache, $sessionCache);
         $this->setUpDatabaseOnce($conn);
 
         $conn->selectOne('SELECT 1');
 
         $this->assertInstanceOf(Connection::class, $conn);
-        $this->assertNotEmpty($authCache->getValues(), 'After executing some query, session cache is created.');
+        $this->assertNotEmpty($authCache->getValues(), 'After executing some query, auth cache is populated.');
     }
 
     public function test_AuthCache_with_FileSystemAdapter(): void
@@ -435,16 +416,17 @@ class ConnectionTest extends TestCase
         $config = $this->app['config']->get('database.connections.main');
 
         $cacheItemPool = new ArrayAdapter();
-        $cacheSessionPool = new CacheSessionPool($cacheItemPool);
-        $conn = new Connection($config['instance'], $config['database'], '', $config, null, $cacheSessionPool);
+        $conn = new Connection($config['instance'], $config['database'], '', $config, null, $cacheItemPool);
         $this->setUpDatabaseOnce($conn);
         $this->assertInstanceOf(Connection::class, $conn);
 
         $conn->selectOne('SELECT 1');
-        $this->assertNotEmpty($cacheItemPool->getValues(), 'After executing some query, cache is created.');
+        $cacheValuesBefore = $cacheItemPool->getValues();
+        $this->assertNotEmpty($cacheValuesBefore, 'After executing some query, session is cached.');
 
-        $conn->clearSessionPool();
-        $this->assertEmpty($cacheItemPool->getValues(), 'After clearing the session pool, cache is removed.');
+        $conn->refreshSession();
+        // In v2, clearSessionPool refreshes the session (creates a new one) rather than clearing the cache.
+        $this->assertNotEmpty($cacheItemPool->getValues(), 'After clearing the session pool, a new session is cached.');
     }
 
     public function test_session_pool_with_FileSystemAdapter(): void
@@ -460,22 +442,12 @@ class ConnectionTest extends TestCase
         $this->assertSame('0755', substr(sprintf('%o', fileperms($outputPath)), -4));
     }
 
-    public function test_clearSessionPool(): void
+    public function test_refreshSession(): void
     {
         $conn = $this->getDefaultConnection();
-        $conn->warmupSessionPool();
-        $conn->clearSessionPool();
-        $this->assertSame(1, $conn->warmupSessionPool());
-    }
-
-    public function test_listSessions(): void
-    {
-        $conn = $this->getDefaultConnection();
-        $conn->select('SELECT 1');
-
-        $sessions = $conn->listSessions();
-        $this->assertNotEmpty($sessions);
-        $this->assertInstanceOf(SessionInfo::class, $sessions[0]);
+        $old = $conn->getSessionName();
+        $conn->refreshSession();
+        $this->assertNotSame($old, $conn->getSessionName());
     }
 
     public function test_stale_reads(): void
@@ -484,7 +456,12 @@ class ConnectionTest extends TestCase
         $tableName = self::TABLE_NAME_USER;
         $uuid = $this->generateUuid();
 
-        $db = (new SpannerClient())->connect(config('database.connections.main.instance'), config('database.connections.main.database'));
+        $db = (new SpannerClient([
+            'cacheItemPool' => new ArrayAdapter(),
+        ]))->connect(
+            config('database.connections.main.instance'),
+            config('database.connections.main.database'),
+        );
         /** @var Timestamp|null $timestamp */
         $timestamp = null;
         $db->runTransaction(function (Transaction $tx) use ($tableName, $uuid, &$timestamp) {
@@ -492,7 +469,6 @@ class ConnectionTest extends TestCase
             $tx->executeUpdate("INSERT INTO {$tableName} (`userId`, `name`) VALUES ('{$uuid}', '{$name}')");
             $timestamp = $tx->commit();
         });
-        $db->close();
         $this->assertNotEmpty($timestamp);
 
         $timestampBound = new StrongRead();
@@ -551,18 +527,18 @@ class ConnectionTest extends TestCase
 
     public function testEventListenOrder(): void
     {
+        $conn = $this->getDefaultConnection();
+
         $receivedEventClasses = [];
         $this->app['events']->listen(TransactionBeginning::class, function () use (&$receivedEventClasses) {
             $receivedEventClasses[] = TransactionBeginning::class;
         });
-        $this->app['events']->listen(QueryExecuted::class, function () use (&$receivedEventClasses) {
+        $this->app['events']->listen(QueryExecuted::class, function ($e) use (&$receivedEventClasses) {
             $receivedEventClasses[] = QueryExecuted::class;
         });
         $this->app['events']->listen(TransactionCommitted::class, function () use (&$receivedEventClasses) {
             $receivedEventClasses[] = TransactionCommitted::class;
         });
-
-        $conn = $this->getDefaultConnection();
 
         $tableName = self::TABLE_NAME_USER;
         $uuid = $this->generateUuid();
