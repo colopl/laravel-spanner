@@ -53,8 +53,6 @@ class SpannerServiceProvider extends ServiceProvider
             });
         });
 
-        $this->app->singleton(SpannerSessionRefresher::class);
-
         if ($this->app->runningInConsole()) {
             $this->commands([
                 WarmupCommand::class,
