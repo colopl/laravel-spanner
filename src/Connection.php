@@ -726,9 +726,6 @@ class Connection extends BaseConnection
      */
     protected function handleSessionNotFoundException(Closure $callback): mixed
     {
-        $this->disconnect();
-        // Currently, there is no way for us to delete the session, so we have to delete the whole pool.
-        // This might affect parallel processes.
         $this->refreshSession();
         $this->reconnect();
         return $callback();
