@@ -1148,6 +1148,18 @@ class BuilderTest extends TestCase
         $query->get();
     }
 
+    public function test_setRequestTimeoutSeconds_throws_when_timeout_rounds_to_zero(): void
+    {
+        // A timeout so small that (int)($seconds * 1000) === 0 must be rejected
+        // before the query is sent to Spanner.
+        $query = $this->getDefaultConnection()->table(self::TABLE_NAME_USER);
+        $query->setRequestTimeoutSeconds(0.0009); // 0.9 ms → (int)(0.9) = 0
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('Request timeout must be >= 1ms.');
+        $query->get();
+    }
+
     public function test_whereIn_with_unnest_overflow_flag_turned_on(): void
     {
         $query = $this->getDefaultConnection()->table(self::TABLE_NAME_USER);
