@@ -91,7 +91,7 @@ trait ManagesDataDefinitions
     }
 
     /**
-     * @template T
+     * @template T = mixed
      * @param LongRunningOperation<T> $operation
      * @return mixed
      */
