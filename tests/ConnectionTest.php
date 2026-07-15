@@ -67,9 +67,9 @@ class ConnectionTest extends TestCase
         $this->assertSame([12345], $conn->selectOne('SELECT 12345'));
     }
 
-    public function test_isolation_level_set_via_integer(): void
+    public function test_isolation_level_set_via_laravel_default(): void
     {
-        config()->set('database.connections.main.isolation_level', IsolationLevel::SERIALIZABLE);
+        config()->set('database.connections.main.isolation_level', 'serializable');
 
         /** @var Connection $conn */
         $conn = $this->app->make('db')->connection('main');
@@ -81,9 +81,9 @@ class ConnectionTest extends TestCase
         $this->assertSame(IsolationLevel::SERIALIZABLE, $ref->getValue($db));
     }
 
-    public function test_isolation_level_set_via_string(): void
+    public function test_isolation_level_set_via_spanner_specific(): void
     {
-        config()->set('database.connections.main.isolation_level', 'REPEATABLE_READ');
+        config()->set('database.connections.main.isolation_level', 'REPEATABLE READ');
 
         /** @var Connection $conn */
         $conn = $this->app->make('db')->connection('main');

@@ -175,10 +175,12 @@ class Connection extends BaseConnection
             $connectOptions['sessionPool'] = $this->sessionPool;
         }
         $isolationLevel = $this->config['isolation_level'] ?? null;
-        if ($isolationLevel !== null) {
-            $connectOptions['isolationLevel'] = is_string($isolationLevel)
-                ? IsolationLevel::value($isolationLevel)
-                : $isolationLevel;
+        if (is_string($isolationLevel)) {
+            $connectOptions['isolationLevel'] = match (strtolower($isolationLevel)) {
+                'serializable' => IsolationLevel::SERIALIZABLE,
+                'repeatable read' => IsolationLevel::REPEATABLE_READ,
+                default => throw new InvalidArgumentException("Invalid isolation level: {$isolationLevel}"),
+            };
         }
         $this->spannerDatabase = $this->getSpannerClient()->connect($this->instanceId, $this->database, $connectOptions);
     }
