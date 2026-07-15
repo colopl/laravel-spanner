@@ -40,6 +40,7 @@ use Google\Cloud\Spanner\Session\SessionPoolInterface;
 use Google\Cloud\Spanner\SpannerClient;
 use Google\Cloud\Spanner\Timestamp;
 use Google\Cloud\Spanner\Transaction;
+use Google\Cloud\Spanner\V1\TransactionOptions\IsolationLevel;
 use Illuminate\Contracts\Database\Query\Expression;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Connection as BaseConnection;
@@ -171,7 +172,13 @@ class Connection extends BaseConnection
         $this->disconnect();
         $connectOptions = [];
         if ($this->sessionPool !== null) {
-            $connectOptions = array_merge($connectOptions, ['sessionPool' => $this->sessionPool]);
+            $connectOptions['sessionPool'] = $this->sessionPool;
+        }
+        $isolationLevel = $this->config['isolation_level'] ?? null;
+        if ($isolationLevel !== null) {
+            $connectOptions['isolationLevel'] = is_string($isolationLevel)
+                ? IsolationLevel::value($isolationLevel)
+                : $isolationLevel;
         }
         $this->spannerDatabase = $this->getSpannerClient()->connect($this->instanceId, $this->database, $connectOptions);
     }
