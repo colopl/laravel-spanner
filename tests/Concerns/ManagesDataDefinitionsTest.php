@@ -58,7 +58,12 @@ class ManagesDataDefinitionsTest extends TestCase
         });
 
         $this->assertSame([], $result);
-        $this->assertSame([['query' => $statement, 'bindings' => [], 'time' => 0.0]], $conn->getQueryLog());
+        $this->assertSame([[
+            'query' => $statement,
+            'bindings' => [],
+            'time' => 0.0,
+            'readWriteType' => null,
+        ]], $conn->getQueryLog());
 
         Event::assertDispatchedTimes(QueryExecuted::class, 1);
 
