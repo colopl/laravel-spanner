@@ -265,21 +265,22 @@ class Connection extends BaseConnection
     /**
      * {@inheritDoc}
      * @param array<array-key, mixed> $bindings
+     * @param array<array-key, mixed> $fetchUsing
      * @return array<array-key, mixed>
      */
-    public function select($query, $bindings = [], $useReadPdo = true): array
+    public function select($query, $bindings = [], $useReadPdo = true, array $fetchUsing = []): array
     {
         return $this->selectWithOptions($query, $bindings, []);
     }
 
     /**
      * {@inheritDoc}
-     * @return Generator<int, array<array-key, mixed>>
      * @param array<array-key, mixed> $bindings
+     * @param array<array-key, mixed> $fetchUsing
      * @return Generator<int, array<array-key, mixed>>
      * @phpstan-ignore method.childReturnType
      */
-    public function cursor($query, $bindings = [], $useReadPdo = true): Generator
+    public function cursor($query, $bindings = [], $useReadPdo = true, array $fetchUsing = []): Generator
     {
         return $this->cursorWithOptions($query, $bindings, []);
     }
