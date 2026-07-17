@@ -270,6 +270,9 @@ class Connection extends BaseConnection
      */
     public function select($query, $bindings = [], $useReadPdo = true, array $fetchUsing = []): array
     {
+        if ($fetchUsing !== []) {
+            throw new InvalidArgumentException('$fetchUsing is not supported by Cloud Spanner');
+        }
         return $this->selectWithOptions($query, $bindings, []);
     }
 
@@ -282,6 +285,9 @@ class Connection extends BaseConnection
      */
     public function cursor($query, $bindings = [], $useReadPdo = true, array $fetchUsing = []): Generator
     {
+        if ($fetchUsing !== []) {
+            throw new InvalidArgumentException('$fetchUsing is not supported by Cloud Spanner');
+        }
         return $this->cursorWithOptions($query, $bindings, []);
     }
 

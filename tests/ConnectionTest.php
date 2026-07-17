@@ -85,6 +85,22 @@ class ConnectionTest extends TestCase
         $this->assertSame(12345, $values[0][0]);
     }
 
+    public function test_select_throws_on_fetchUsing(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('$fetchUsing is not supported by Cloud Spanner');
+        $conn->select('SELECT 1', [], true, ['foo' => 'bar']);
+    }
+
+    public function test_cursor_throws_on_fetchUsing(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('$fetchUsing is not supported by Cloud Spanner');
+        $conn->cursor('SELECT 1', [], true, ['foo' => 'bar']);
+    }
+
     public function test_selectWithOptions(): void
     {
         $conn = $this->getDefaultConnection();
