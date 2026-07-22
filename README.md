@@ -74,7 +74,7 @@ For more information, please see [Google Client Library docs](http://googleapis.
             ],
 
             // Isolation level for transactions ('SERIALIZABLE' | 'REPEATABLE_READ' | null (default))
-            'isolation_level' => IsolationLevel::SERIALIZABLE,
+            'isolation_level' => 'SERIALIZABLE',
         ]
     ]
 ];
