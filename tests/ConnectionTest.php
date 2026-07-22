@@ -117,7 +117,7 @@ class ConnectionTest extends TestCase
         /** @var Connection $conn */
         $conn = $this->app->make('db')->connection('main');
 
-        $this->expectException(\UnexpectedValueException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $conn->reconnect();
     }
 
