@@ -73,7 +73,7 @@ For more information, please see [Google Client Library docs](http://googleapis.
                 'maxSessions' => 500,
             ],
 
-            // Isolation level for transactions ('SERIALIZABLE' | 'REPEATABLE_READ' | null (default))
+            // Isolation level for transactions ('SERIALIZABLE' | 'REPEATABLE READ' | null (default))
             'isolation_level' => 'SERIALIZABLE',
         ]
     ]
