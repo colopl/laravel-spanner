@@ -39,6 +39,7 @@ use Symfony\Component\Cache\Adapter\FilesystemAdapter;
  *   prefix: string,
  *   cache_path: string|null,
  *   session_pool: array<string, mixed>,
+ *   isolation_level: string|null,
  * }
  */
 class SpannerServiceProvider extends ServiceProvider
@@ -102,6 +103,7 @@ class SpannerServiceProvider extends ServiceProvider
             'name' => $name,
             'cache_path' => null,
             'session_pool' => [],
+            'isolation_level' => null,
         ];
     }
 

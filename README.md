@@ -72,6 +72,9 @@ For more information, please see [Google Client Library docs](http://googleapis.
                 'minSessions' => 10,
                 'maxSessions' => 500,
             ],
+
+            // Isolation level for transactions ('SERIALIZABLE' | 'REPEATABLE READ' | null (default))
+            'isolation_level' => 'SERIALIZABLE',
         ]
     ]
 ];
