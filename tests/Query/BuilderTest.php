@@ -29,6 +29,7 @@ use Google\Cloud\Spanner\Bytes;
 use Google\Cloud\Spanner\Duration;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Carbon;
+use InvalidArgumentException;
 use LogicException;
 use Ramsey\Uuid\Uuid;
 
@@ -1259,5 +1260,15 @@ class BuilderTest extends TestCase
         $query = $conn->table($tableName)->searchSubstring('nameTokens', 't1');
         $this->assertSame("select * from `{$tableName}` where search_substring(`nameTokens`, 't1')", $query->toRawSql());
         $this->assertSame(['test1'], $query->pluck('name')->sort()->values()->all());
+    }
+
+    public function test_get_throws_on_fetchUsing(): void
+    {
+        $conn = $this->getDefaultConnection();
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('$fetchUsing is not supported by Cloud Spanner');
+
+        $conn->table(self::TABLE_NAME_USER)->fetchUsing('foo')->get();
     }
 }

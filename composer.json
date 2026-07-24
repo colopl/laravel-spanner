@@ -8,19 +8,19 @@
     {"name": "Takayasu Oyama", "email": "t-oyama@colopl.co.jp"}
   ],
   "require": {
-    "php": "^8.2",
+    "php": "^8.3",
     "ext-grpc": "*",
     "ext-json": "*",
-    "laravel/framework": "^12.21",
+    "laravel/framework": "^13.20",
     "google/cloud-spanner": "^1.106.0",
     "grpc/grpc": "^1.42",
-    "symfony/cache": "~7",
-    "symfony/lock": "~7"
+    "symfony/cache": "~7 || ~8",
+    "symfony/lock": "~7 || ~8"
   },
   "require-dev": {
-    "friendsofphp/php-cs-fixer": "^3.75",
-    "orchestra/testbench": "~10",
-    "phpunit/phpunit": "~11.0",
+    "friendsofphp/php-cs-fixer": "^3.95",
+    "orchestra/testbench": "~11",
+    "phpunit/phpunit": "~12",
     "phpstan/phpstan": "^2"
   },
   "autoload": {
@@ -51,5 +51,11 @@
     "ext-sysvmsg": "Can use SemaphoreLock for session handling. Will use FileLock if not present.",
     "ext-sysvsem": "Can use SemaphoreLock for session handling. Will use FileLock if not present.",
     "ext-sysvshm": "Can use SemaphoreLock for session handling. Will use FileLock if not present."
+  },
+  "config": {
+    "allow-plugins": {
+      "php-http/discovery": true,
+      "tbachert/spi": true
+    }
   }
 }
