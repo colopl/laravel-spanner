@@ -24,6 +24,7 @@ use Illuminate\Contracts\Database\Query\Expression;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Query\Builder as BaseBuilder;
 use Illuminate\Support\Arr;
+use InvalidArgumentException;
 use LogicException;
 
 class Builder extends BaseBuilder
@@ -243,6 +244,10 @@ class Builder extends BaseBuilder
      */
     protected function runSelect()
     {
+        if ($this->fetchUsing !== []) {
+            throw new InvalidArgumentException('$fetchUsing is not supported by Cloud Spanner');
+        }
+
         $sql = $this->toSql();
         $bindings = $this->getBindings();
         $options = [];
