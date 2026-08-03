@@ -36,12 +36,14 @@ use Google\Cloud\Spanner\Session\CacheSessionPool;
 use Google\Cloud\Spanner\SpannerClient;
 use Google\Cloud\Spanner\Timestamp;
 use Google\Cloud\Spanner\Transaction;
+use Google\Cloud\Spanner\V1\TransactionOptions\IsolationLevel;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Database\Events\TransactionBeginning;
 use Illuminate\Database\Events\TransactionCommitted;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Event;
 use LogicException;
+use ReflectionProperty;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
 
 use function dirname;
@@ -63,6 +65,60 @@ class ConnectionTest extends TestCase
         $conn = $this->getDefaultConnection();
         $conn->reconnect();
         $this->assertSame([12345], $conn->selectOne('SELECT 12345'));
+    }
+
+    public function test_isolation_level_set_via_laravel_default(): void
+    {
+        config()->set('database.connections.main.isolation_level', 'serializable');
+
+        /** @var Connection $conn */
+        $conn = $this->app->make('db')->connection('main');
+        $conn->reconnect();
+
+        $db = $conn->getSpannerDatabase();
+        $ref = new ReflectionProperty($db, 'isolationLevel');
+        $ref->setAccessible(true);
+        $this->assertSame(IsolationLevel::SERIALIZABLE, $ref->getValue($db));
+    }
+
+    public function test_isolation_level_set_via_spanner_specific(): void
+    {
+        config()->set('database.connections.main.isolation_level', 'REPEATABLE READ');
+
+        /** @var Connection $conn */
+        $conn = $this->app->make('db')->connection('main');
+        $conn->reconnect();
+
+        $db = $conn->getSpannerDatabase();
+        $ref = new ReflectionProperty($db, 'isolationLevel');
+        $ref->setAccessible(true);
+        $this->assertSame(IsolationLevel::REPEATABLE_READ, $ref->getValue($db));
+    }
+
+    public function test_isolation_level_defaults_to_unspecified_when_not_configured(): void
+    {
+        // Ensure isolation_level is not set
+        config()->offsetUnset('database.connections.main.isolation_level');
+
+        /** @var Connection $conn */
+        $conn = $this->app->make('db')->connection('main');
+        $conn->reconnect();
+
+        $db = $conn->getSpannerDatabase();
+        $ref = new ReflectionProperty($db, 'isolationLevel');
+        $ref->setAccessible(true);
+        $this->assertSame(IsolationLevel::ISOLATION_LEVEL_UNSPECIFIED, $ref->getValue($db));
+    }
+
+    public function test_isolation_level_throws_on_invalid_string(): void
+    {
+        config()->set('database.connections.main.isolation_level', 'INVALID_LEVEL');
+
+        /** @var Connection $conn */
+        $conn = $this->app->make('db')->connection('main');
+
+        $this->expectException(\InvalidArgumentException::class);
+        $conn->reconnect();
     }
 
     public function testQueryLog(): void
