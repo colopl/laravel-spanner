@@ -149,6 +149,7 @@ class Connection extends BaseConnection
     {
         $this->disconnect();
 
+        $connectOptions = [];
         $isolationLevel = $this->config['isolation_level'] ?? null;
         if (is_string($isolationLevel)) {
             $connectOptions['isolationLevel'] = match (strtolower($isolationLevel)) {
