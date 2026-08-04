@@ -453,7 +453,7 @@ class ConnectionTest extends TestCase
 
     public function test_AuthCache_works(): void
     {
-        if (getenv('DB_SPANNER_EMULATOR_HOST')) {
+        if (getenv('SPANNER_EMULATOR_HOST')) {
             $this->markTestSkipped('AuthCache is not used when connecting to the Spanner Emulator. Skipping test.');
         }
 
