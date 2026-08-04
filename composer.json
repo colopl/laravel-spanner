@@ -56,13 +56,8 @@
   "config": {
     "process-timeout": 900,
     "allow-plugins": {
-<<<<<<< HEAD
-      "php-http/discovery": true,
-      "tbachert/spi": true
-=======
       "php-http/discovery": false,
       "tbachert/spi": false
->>>>>>> 28dbb6f (feat: google-cloud/spanner v2)
     }
   }
 }
