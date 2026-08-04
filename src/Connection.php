@@ -36,7 +36,6 @@ use Google\Cloud\Core\Exception\ConflictException;
 use Google\Cloud\Core\Exception\GoogleException;
 use Google\Cloud\Core\Exception\NotFoundException;
 use Google\Cloud\Spanner\Database;
-use Google\Cloud\Spanner\Session\SessionPoolInterface;
 use Google\Cloud\Spanner\SpannerClient;
 use Google\Cloud\Spanner\Timestamp;
 use Google\Cloud\Spanner\Transaction;
@@ -65,34 +64,19 @@ class Connection extends BaseConnection
     use Concerns\MarksAsNotSupported;
 
     /**
-     * @var string
+     * @var SpannerClient|null
      */
-    protected $instanceId;
-
-    /**
-     * @var SpannerClient
-     */
-    protected $spannerClient;
+    protected ?SpannerClient $spannerClient = null;
 
     /**
      * @var Database|null
      */
-    protected $spannerDatabase;
+    protected ?Database $spannerDatabase = null;
 
     /**
      * @var QueryParameterizer|null
      */
-    protected $parameterizer;
-
-    /**
-     * @var CacheItemPoolInterface|null
-     */
-    protected $authCache;
-
-    /**
-     * @var SessionPoolInterface|null
-     */
-    protected $sessionPool;
+    protected ?QueryParameterizer $parameterizer = null;
 
     /**
      * @param string $instanceId instance ID
@@ -100,19 +84,16 @@ class Connection extends BaseConnection
      * @param string $tablePrefix
      * @param array<string, mixed> $config
      * @param CacheItemPoolInterface|null $authCache
-     * @param SessionPoolInterface|null $sessionPool
+     * @param CacheItemPoolInterface|null $sessionCache
      */
     public function __construct(
-        string $instanceId,
+        protected string $instanceId,
         string $database,
         $tablePrefix = '',
         array $config = [],
-        ?CacheItemPoolInterface $authCache = null,
-        ?SessionPoolInterface $sessionPool = null,
+        protected ?CacheItemPoolInterface $authCache = null,
+        protected ?CacheItemPoolInterface $sessionCache = null,
     ) {
-        $this->instanceId = $instanceId;
-        $this->authCache = $authCache;
-        $this->sessionPool = $sessionPool;
         parent::__construct(
             // TODO: throw error after v9
             static fn() => null,
@@ -130,9 +111,12 @@ class Connection extends BaseConnection
     {
         if ($this->spannerClient === null) {
             $clientConfig = $this->config['client'] ?? [];
-            if ($this->authCache !== null) {
-                $clientConfig = array_merge($clientConfig, ['authCache' => $this->authCache]);
-            }
+            $clientConfig = array_merge($clientConfig, [
+                'credentialsConfig' => [
+                    'authCache' => $this->authCache,
+                ],
+                'cacheItemPool' => $this->sessionCache,
+            ]);
             $this->spannerClient = new SpannerClient($clientConfig);
         }
         return $this->spannerClient;
@@ -170,10 +154,7 @@ class Connection extends BaseConnection
     public function reconnect()
     {
         $this->disconnect();
-        $connectOptions = [];
-        if ($this->sessionPool !== null) {
-            $connectOptions['sessionPool'] = $this->sessionPool;
-        }
+
         $isolationLevel = $this->config['isolation_level'] ?? null;
         if (is_string($isolationLevel)) {
             $connectOptions['isolationLevel'] = match (strtolower($isolationLevel)) {
@@ -201,7 +182,6 @@ class Connection extends BaseConnection
     public function disconnect()
     {
         if ($this->spannerDatabase !== null) {
-            $this->spannerDatabase->close();
             $this->spannerDatabase = null;
         }
     }

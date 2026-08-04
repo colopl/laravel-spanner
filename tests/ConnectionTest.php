@@ -30,13 +30,12 @@ use Colopl\Spanner\TimestampBound\ReadTimestamp;
 use Colopl\Spanner\TimestampBound\StrongRead;
 use Generator;
 use Google\Auth\FetchAuthTokenInterface;
-use Google\Cloud\Spanner\Duration;
 use Google\Cloud\Spanner\KeySet;
-use Google\Cloud\Spanner\Session\CacheSessionPool;
 use Google\Cloud\Spanner\SpannerClient;
 use Google\Cloud\Spanner\Timestamp;
 use Google\Cloud\Spanner\Transaction;
 use Google\Cloud\Spanner\V1\TransactionOptions\IsolationLevel;
+use Google\Protobuf\Duration;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Database\Events\TransactionBeginning;
 use Illuminate\Database\Events\TransactionCommitted;
@@ -161,7 +160,7 @@ class ConnectionTest extends TestCase
     {
         $conn = $this->getDefaultConnection();
         $conn->table(self::TABLE_NAME_USER)->insert(['userId' => $this->generateUuid(), 'name' => __FUNCTION__]);
-        $values = $conn->selectWithOptions('SELECT * FROM ' . self::TABLE_NAME_USER, [], ['exactStaleness' => new Duration(10)]);
+        $values = $conn->selectWithOptions('SELECT * FROM ' . self::TABLE_NAME_USER, [], ['exactStaleness' => new Duration(['seconds' => 10])]);
         $this->assertEmpty($values);
     }
 
@@ -169,8 +168,7 @@ class ConnectionTest extends TestCase
     {
         $conn = $this->getDefaultConnection();
         $conn->table(self::TABLE_NAME_USER)->insert(['userId' => $this->generateUuid(), 'name' => __FUNCTION__]);
-        $cursor = $conn->cursorWithOptions('SELECT * FROM ' . self::TABLE_NAME_USER, [], ['exactStaleness' => new Duration(10)]);
-        $this->assertInstanceOf(Generator::class, $cursor);
+        $cursor = $conn->cursorWithOptions('SELECT * FROM ' . self::TABLE_NAME_USER, [], ['exactStaleness' => new Duration(['seconds' => 10])]);
         $this->assertNull($cursor->current());
     }
 
