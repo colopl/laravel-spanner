@@ -16,15 +16,31 @@
  * limitations under the License.
  */
 
-namespace Colopl\Spanner\Tests\Queue;
+namespace Colopl\Spanner\Concerns;
 
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Support\Facades\DB;
+use Google\Cloud\Core\EmulatorTrait;
+use Google\Cloud\Spanner\Database;
 
-class QueryJob implements ShouldQueue
+trait ManagesSession
 {
-    public function handle(): void
+    /**
+     * @return Database
+     */
+    abstract public function getSpannerDatabase(): Database;
+
+    /**
+     * @return void
+     */
+    public function refreshSession(): void
     {
-        DB::connection()->select('SELECT 1');
+        $this->getSpannerDatabase()->session()->refresh();
+    }
+
+    /**
+     * @return string
+     */
+    public function getSessionName(): string
+    {
+        return $this->getSpannerDatabase()->session()->name();
     }
 }

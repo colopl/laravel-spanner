@@ -99,7 +99,7 @@ class TransactionTest extends TestCase
             return $conn->getCurrentTransaction();
         });
         $this->assertNotNull($tx);
-        $this->assertSame([], $tx->getCommitStats());
+        $this->assertNull($tx->getCommitStats());
         $this->assertSame([], $conn->getCommitOptions());
 
         $newOptions = ['returnCommitStats' => true];
@@ -432,7 +432,7 @@ class TransactionTest extends TestCase
                     $base->tablePrefix,
                     $base->config,
                     $base->authCache,
-                    $base->sessionPool,
+                    $base->sessionCache,
                 );
             }
 

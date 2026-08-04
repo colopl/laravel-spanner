@@ -21,8 +21,6 @@ namespace Colopl\Spanner;
 use Colopl\Spanner\Console\CooldownCommand;
 use Colopl\Spanner\Console\SessionsCommand;
 use Colopl\Spanner\Console\WarmupCommand;
-use Google\Cloud\Spanner\Session\CacheSessionPool;
-use Google\Cloud\Spanner\Session\SessionPoolInterface;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Queue\QueueManager;
 use Illuminate\Support\Facades\DB;
@@ -57,16 +55,9 @@ class SpannerServiceProvider extends ServiceProvider
 
         if ($this->app->runningInConsole()) {
             $this->commands([
-                CooldownCommand::class,
-                SessionsCommand::class,
                 WarmupCommand::class,
             ]);
         }
-    }
-
-    public function boot(): void
-    {
-        $this->closeSessionAfterEachQueueJob();
     }
 
     /**
@@ -81,7 +72,7 @@ class SpannerServiceProvider extends ServiceProvider
             $config['prefix'],
             $config,
             $this->createAuthCache($config),
-            $this->createSessionPool($config),
+            $this->createSessionCache($config),
         );
     }
 
@@ -102,7 +93,6 @@ class SpannerServiceProvider extends ServiceProvider
             'prefix' => '',
             'name' => $name,
             'cache_path' => null,
-            'session_pool' => [],
             'isolation_level' => null,
         ];
     }
@@ -117,15 +107,12 @@ class SpannerServiceProvider extends ServiceProvider
     }
 
     /**
-     * @param array{ name: string, cache_path: string|null, session_pool: array<string, mixed> } $config
-     * @return SessionPoolInterface
+     * @param array{ name: string, cache_path: string|null } $config
+     * @return AdapterInterface
      */
-    protected function createSessionPool(array $config): SessionPoolInterface
+    protected function createSessionCache(array $config): AdapterInterface
     {
-        return new CacheSessionPool(
-            $this->getCacheAdapter($config['name'] . '_sessions', $config['cache_path']),
-            $config['session_pool'],
-        );
+        return $this->getCacheAdapter($config['name'] . '_sessions', $config['cache_path']);
     }
 
     /**
@@ -137,21 +124,5 @@ class SpannerServiceProvider extends ServiceProvider
     {
         $path ??= $this->app->storagePath('framework/spanner');
         return new FilesystemAdapter($namespace, 0, $path);
-    }
-
-    /**
-     * @return void
-     */
-    protected function closeSessionAfterEachQueueJob(): void
-    {
-        $this->app->resolving('queue', function (QueueManager $queue): void {
-            $queue->after(static function (): void {
-                foreach (DB::getConnections() as $connection) {
-                    if ($connection instanceof Connection) {
-                        $connection->disconnect();
-                    }
-                }
-            });
-        });
     }
 }

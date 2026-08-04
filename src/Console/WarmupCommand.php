@@ -26,7 +26,6 @@ use Illuminate\Database\DatabaseManager;
 class WarmupCommand extends Command
 {
     protected $signature = 'spanner:warmup {connections?* : The database connections to be warmed up}
-               {--refresh : Will clear all existing sessions first.}
                {--skip-on-error : Will skip the connection if error is thrown.}';
 
     protected $description = "Warmup Spanner's Session Pool.";
@@ -46,7 +45,6 @@ class WarmupCommand extends Command
             static fn(string $name): bool => config("database.connections.{$name}.driver") === 'spanner',
         );
 
-        $refresh = (bool) ($this->option('refresh') ?? false);
         $skipOnError = (bool) ($this->option('skip-on-error') ?? false);
 
         foreach ($spannerConnectionNames as $name) {
@@ -57,16 +55,11 @@ class WarmupCommand extends Command
             }
 
             try {
-                if ($refresh) {
-                    $this->info("Cleared all existing sessions for {$name}");
-                    $connection->clearSessionPool();
-                }
-
-                $count = $connection->warmupSessionPool();
-                $this->info("Warmed up {$count} sessions for {$name}");
+                $connection->refreshSession();
+                $this->info("Refreshed session for {$name}");
             } catch (ServiceException $e) {
                 $skipOnError
-                    ? $this->warn("Skipping warmup for {$name} due to " . $e::class . ": {$e->getMessage()}")
+                    ? $this->warn("Skipping session refresh for {$name} due to " . $e::class . ": {$e->getMessage()}")
                     : throw $e;
             }
         }
