@@ -57,7 +57,7 @@ class Connection extends BaseConnection
     use Concerns\ManagesDataDefinitions;
     use Concerns\ManagesMutations;
     use Concerns\ManagesPartitionedDml;
-    use Concerns\ManagesSessionPool;
+    use Concerns\ManagesSession;
     use Concerns\ManagesSnapshots;
     use Concerns\ManagesTagging;
     use Concerns\ManagesTransactions;
@@ -736,7 +736,7 @@ class Connection extends BaseConnection
         $this->disconnect();
         // Currently, there is no way for us to delete the session, so we have to delete the whole pool.
         // This might affect parallel processes.
-        $this->clearSessionPool();
+        $this->refreshSession();
         $this->reconnect();
         return $callback();
     }
