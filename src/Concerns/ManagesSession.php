@@ -18,7 +18,6 @@
 
 namespace Colopl\Spanner\Concerns;
 
-use Google\Cloud\Core\EmulatorTrait;
 use Google\Cloud\Spanner\Database;
 
 trait ManagesSession
