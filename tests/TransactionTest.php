@@ -106,20 +106,12 @@ class TransactionTest extends TestCase
         $conn->setCommitOptions($newOptions);
         $this->assertSame($newOptions, $conn->getCommitOptions());
 
-        // True test for commit with options only works on the real Spanner.
-        if (getenv('SPANNER_EMULATOR_HOST')) {
-            $this->markTestSkipped(
-                'Cannot fully verify commit options on emulator. ' .
-                'Feature request for emulator: https://github.com/GoogleCloudPlatform/cloud-spanner-emulator/issues/184',
-            );
-        }
-
         /** @var Transaction $tx */
         $tx = $conn->transaction(function (Connection $conn) {
             $conn->table(self::TABLE_NAME_USER)->insert(['userId' => $this->generateUuid(), 'name' => 'test']);
             return $conn->getCurrentTransaction();
         });
-        $this->assertSame(['mutationCount' => 2], $tx->getCommitStats());
+        $this->assertSame(2, $tx->getCommitStats()->getMutationCount());
     }
 
     public function testRollbackBeforeCommit(): void
