@@ -28,7 +28,7 @@ class WarmupCommand extends Command
     protected $signature = 'spanner:warmup {connections?* : The database connections to be warmed up}
                {--skip-on-error : Will skip the connection if error is thrown.}';
 
-    protected $description = "Warmup Spanner's Session Pool.";
+    protected $description = "Creates a new session for Spanner.";
 
     /**
      * @throws ServiceException
