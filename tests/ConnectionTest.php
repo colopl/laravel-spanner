@@ -166,8 +166,13 @@ class ConnectionTest extends TestCase
     public function test_cursorWithOptions(): void
     {
         $conn = $this->getDefaultConnection();
-        $conn->table(self::TABLE_NAME_USER)->insert(['userId' => $this->generateUuid(), 'name' => __FUNCTION__]);
-        $cursor = $conn->cursorWithOptions('SELECT * FROM ' . self::TABLE_NAME_USER, [], ['exactStaleness' => new Duration(['seconds' => 10])]);
+        $uuid = $this->generateUuid();
+        $conn->table(self::TABLE_NAME_USER)->insert(['userId' => $uuid, 'name' => __FUNCTION__]);
+        $cursor = $conn->cursorWithOptions(
+            'SELECT * FROM ' . self::TABLE_NAME_USER . ' WHERE userId=?',
+            [$uuid],
+            ['exactStaleness' => new Duration(['seconds' => 10])],
+        );
         $this->assertNull($cursor->current());
     }
 
