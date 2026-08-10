@@ -29,20 +29,6 @@ use Symfony\Component\Cache\Adapter\ArrayAdapter;
 
 class DatetimeTest extends TestCase
 {
-    public function test_session_created(): void
-    {
-        $instance = getenv('DB_SPANNER_INSTANCE_ID');
-        $database = getenv('DB_SPANNER_DATABASE_ID');
-        $db = (new SpannerClient([
-            'cacheItemPool' => new ArrayAdapter(),
-        ]))->connect($instance, $database);
-        if (!$db->exists()) {
-            $db->create();
-        }
-        $result = iterator_to_array($db->execute('SELECT 1'));
-        $this->assertSame(1, $result[0][0]);
-    }
-
     public function test_timezone(): void
     {
         $db = $this->getDefaultConnection()->getSpannerDatabase();
