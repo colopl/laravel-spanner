@@ -26,7 +26,6 @@ use Google\Cloud\Spanner\Timestamp;
 use Google\Cloud\Spanner\Transaction;
 use Illuminate\Database\Events\TransactionBeginning;
 use Illuminate\Database\Events\TransactionCommitted;
-use Illuminate\Support\Arr;
 use InvalidArgumentException;
 
 /**

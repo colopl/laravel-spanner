@@ -27,8 +27,6 @@ use Colopl\Spanner\TimestampBound\MaxStaleness;
 use Colopl\Spanner\TimestampBound\MinReadTimestamp;
 use Colopl\Spanner\TimestampBound\ReadTimestamp;
 use Colopl\Spanner\TimestampBound\StrongRead;
-use Generator;
-use Google\Auth\FetchAuthTokenInterface;
 use Google\Cloud\Spanner\KeySet;
 use Google\Cloud\Spanner\SpannerClient;
 use Google\Cloud\Spanner\Timestamp;
@@ -43,7 +41,6 @@ use Illuminate\Support\Facades\Event;
 use LogicException;
 use ReflectionProperty;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
-
 use function dirname;
 use function fileperms;
 use function sprintf;

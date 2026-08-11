@@ -18,12 +18,8 @@
 
 namespace Colopl\Spanner;
 
-use Colopl\Spanner\Console\CooldownCommand;
-use Colopl\Spanner\Console\SessionsCommand;
 use Colopl\Spanner\Console\WarmupCommand;
 use Illuminate\Database\DatabaseManager;
-use Illuminate\Queue\QueueManager;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
 use LogicException;
 use Symfony\Component\Cache\Adapter\AdapterInterface;

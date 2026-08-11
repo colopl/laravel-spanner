@@ -18,8 +18,8 @@
 
 namespace Colopl\Spanner\TimestampBound;
 
-use Google\Protobuf\Duration;
 use Google\Cloud\Spanner\Timestamp;
+use Google\Protobuf\Duration;
 
 /**
  * TimestampBound defines how Cloud Spanner will choose a timestamp for a single read/query or read-only transaction.

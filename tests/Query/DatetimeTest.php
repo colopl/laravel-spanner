@@ -22,10 +22,8 @@ use Colopl\Spanner\Tests\TestCase;
 use DateTime;
 use DateTimeInterface;
 use Google\Cloud\Spanner\Date;
-use Google\Cloud\Spanner\SpannerClient;
 use Google\Cloud\Spanner\Timestamp;
 use Illuminate\Support\Carbon;
-use Symfony\Component\Cache\Adapter\ArrayAdapter;
 
 class DatetimeTest extends TestCase
 {

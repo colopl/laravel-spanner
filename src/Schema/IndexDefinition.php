@@ -19,7 +19,6 @@
 namespace Colopl\Spanner\Schema;
 
 use Illuminate\Database\Schema\IndexDefinition as BaseIndexDefinition;
-use LogicException;
 
 /**
  * @property string $indexType

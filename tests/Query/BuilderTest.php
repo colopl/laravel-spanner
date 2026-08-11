@@ -32,7 +32,6 @@ use Illuminate\Support\Carbon;
 use InvalidArgumentException;
 use LogicException;
 use Ramsey\Uuid\Uuid;
-
 use const Grpc\STATUS_ALREADY_EXISTS;
 
 class BuilderTest extends TestCase
