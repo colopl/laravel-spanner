@@ -448,16 +448,13 @@ This means that if you make any modifications through the above functions and th
 
 ### SessionPool and AuthCache
 
-In order to improve the performance of the first connection per request, we use [AuthCache](https://github.com/googleapis/google-cloud-php#caching-access-tokens) and [CacheSessionPool](https://googleapis.github.io/google-cloud-php/#/docs/google-cloud/latest/spanner/session/cachesessionpool).
+In order to improve the performance of the first connection per request, we use [AuthCache](https://github.com/googleapis/google-cloud-php#caching-access-tokens) and [SessionCache](https://docs.cloud.google.com/spanner/docs/sessions#multiplexed_sessions).
 
-By default, this library uses [Filesystem Cache Adapter](https://symfony.com/doc/current/components/cache/adapters/filesystem_adapter.html) as the caching pool. If you want to use your own caching pool, you can extend ServiceProvider and inject it into the constructor of `Colopl\Spanner\Connection`.
+By default, this library uses [Filesystem Cache Adapter](https://symfony.com/doc/current/components/cache/adapters/filesystem_adapter.html) for caching sessions. 
+If you want to use a different adapter, you can extend ServiceProvider and inject it into the constructor of `Colopl\Spanner\Connection`.
 
-The initialization of each session takes about a second, so warming up the sessions during the boot up phase of your
-server is recommended. This can be achieved by running the `php artisan spanner:warmup` command. You can set the number
-of sessions to warm up by setting the `connections.{name}.session_pool.maxSessions` option in `config/database.php`
-
-Similarly, the sessions remain active for 60 minutes after use so deleting the sessions during the shutdown phase 
-of your server is recommended. This can be achieved by running the `php artisan spanner:cooldown` command.
+Session initialization takes about a second, so warming up the sessions during the boot up phase of your
+server is recommended. This can be achieved by running the `php artisan spanner:warmup` command. 
 
 ### Queue Worker
 

@@ -550,18 +550,30 @@ class Connection extends BaseConnection
      * @see https://cloud.google.com/spanner/docs/sessions#handle_deleted_sessions
      *
      * > Attempts to use a deleted session result in NOT_FOUND.
-     * > If you encounter this error, create and use a new session, add the new session to the pool,
-     * > and remove the deleted session from the pool.
+     * > If you encounter this error, create and use a new session.
      *
-     * Most cases are covered by Google's library except for the following two cases.
+     * None of the layers below us recover from this:
      *
-     * - When a connection is opened, and idles for more than 1 hour.
-     * - If a user manually deletes a session from the console.
+     * - NOT_FOUND is not listed in any `retryableStatusCodes` of the generated gRPC retry config.
+     * - {@see Database::runTransaction()} only retries AbortedException and INTERNAL/RST_STREAM.
+     * - {@see \Google\Cloud\Spanner\Session\SessionCache} refreshes the multiplexed session on a
+     *   fixed 7 day timer only. It never invalidates on error, so a session that is gone
+     *   server-side keeps being read back from the (process-shared, persistent) cache until the
+     *   cache item expires.
      *
-     * The document states that the library should be handling this, and library for Go and Java
-     * handles this within the library but PHP's does not. So unfortunately, this code has to exist.
+     * That last point is why this must exist: the multiplexed session name is persisted in a PSR-6
+     * pool that outlives the process, so a single dead session would otherwise break every request
+     * of every process sharing that cache for up to 7 days.
      *
-     * We asked the maintainers of the PHP library to handle it, but they refused.
+     * Cases that lead to a deleted session:
+     *
+     * - The database is dropped and recreated (migrations, test setup, emulator restart) while a
+     *   session name for the old database is still cached.
+     * - A user or an admin operation (restore, move) deletes the session.
+     * - The 28 day server-side lifetime of a multiplexed session elapses.
+     *
+     * The library for Go and Java handles this internally but PHP's does not. We asked the
+     * maintainers of the PHP library to handle it, but they refused.
      * https://github.com/googleapis/google-cloud-php/issues/6284.
      *
      * @template T
