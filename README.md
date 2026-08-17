@@ -67,12 +67,6 @@ For more information, please see [Google Client Library docs](http://googleapis.
                 ...
             ],
             
-            // CacheSessionPool options
-            'session_pool' => [
-                'minSessions' => 10,
-                'maxSessions' => 500,
-            ],
-
             // Isolation level for transactions ('SERIALIZABLE' | 'REPEATABLE READ' | null (default))
             'isolation_level' => 'SERIALIZABLE',
         ]
@@ -446,7 +440,7 @@ All mutations calls within a transaction are queued and sent as batch at the tim
 This means that if you make any modifications through the above functions and then try to SELECT the same records before committing, the returned results will not include any of the modifications you've made inside the transaction.
 
 
-### SessionPool and AuthCache
+### SessionCache and AuthCache
 
 In order to improve the performance of the first connection per request, we use [AuthCache](https://github.com/googleapis/google-cloud-php#caching-access-tokens) and [SessionCache](https://docs.cloud.google.com/spanner/docs/sessions#multiplexed_sessions).
 
@@ -454,13 +448,7 @@ By default, this library uses [Filesystem Cache Adapter](https://symfony.com/doc
 If you want to use a different adapter, you can extend ServiceProvider and inject it into the constructor of `Colopl\Spanner\Connection`.
 
 Session initialization takes about a second, so warming up the sessions during the boot up phase of your
-server is recommended. This can be achieved by running the `php artisan spanner:warmup` command. 
-
-### Queue Worker
-
-After every job is processed, the connection will be disconnected so the session can be released into the session pool. 
-This allows the session to be renewed (through `maintainSessionPool()`) or expire.
-
+server is recommended. This can be achieved by running the `php artisan spanner:warmup` command.
 
 ### Laravel Tinker
 You can use [Laravel Tinker](https://github.com/laravel/tinker) with commands such as `php artisan tinker`.

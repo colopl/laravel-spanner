@@ -32,7 +32,6 @@ use Symfony\Component\Cache\Adapter\FilesystemAdapter;
  *   database: string,
  *   prefix: string,
  *   cache_path: string|null,
- *   session_pool: array<string, mixed>,
  *   isolation_level: string|null,
  * }
  */
