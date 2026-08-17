@@ -36,6 +36,7 @@ use Google\Protobuf\Duration;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Database\Events\TransactionBeginning;
 use Illuminate\Database\Events\TransactionCommitted;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Event;
 use LogicException;
@@ -72,7 +73,6 @@ class ConnectionTest extends TestCase
 
         $db = $conn->getSpannerDatabase();
         $ref = new ReflectionProperty($db, 'isolationLevel');
-        $ref->setAccessible(true);
         $this->assertSame(IsolationLevel::SERIALIZABLE, $ref->getValue($db));
     }
 
@@ -86,7 +86,6 @@ class ConnectionTest extends TestCase
 
         $db = $conn->getSpannerDatabase();
         $ref = new ReflectionProperty($db, 'isolationLevel');
-        $ref->setAccessible(true);
         $this->assertSame(IsolationLevel::REPEATABLE_READ, $ref->getValue($db));
     }
 
@@ -101,7 +100,6 @@ class ConnectionTest extends TestCase
 
         $db = $conn->getSpannerDatabase();
         $ref = new ReflectionProperty($db, 'isolationLevel');
-        $ref->setAccessible(true);
         $this->assertSame(IsolationLevel::ISOLATION_LEVEL_UNSPECIFIED, $ref->getValue($db));
     }
 
@@ -485,7 +483,7 @@ class ConnectionTest extends TestCase
         $this->assertSame('0755', substr(sprintf('%o', fileperms($outputPath)), -4));
     }
 
-    public function test_session_pool(): void
+    public function test_session_cache(): void
     {
         $config = $this->app['config']->get('database.connections.main');
 
@@ -503,7 +501,7 @@ class ConnectionTest extends TestCase
         $this->assertNotEmpty($cacheItemPool->getValues(), 'After clearing the session pool, a new session is cached.');
     }
 
-    public function test_session_pool_with_FileSystemAdapter(): void
+    public function test_session_cache_with_FileSystemAdapter(): void
     {
         $this->app->useStoragePath('/tmp/laravel-spanner');
 
@@ -731,5 +729,19 @@ class ConnectionTest extends TestCase
         $now = now()->setTimezone('Asia/Tokyo');
         $conn->select('SELECT ?', [$now]);
         $this->assertSame('Asia/Tokyo', $now->getTimezone()->getName());
+    }
+
+    public function test_connection_with_default_timeout_seconds(): void
+    {
+        $this->getDefaultConnection();
+
+        $this->expectException(QueryException::class);
+        $this->expectExceptionMessageMatches('/DEADLINE_EXCEEDED/');
+
+        $config = config('database.connections.main');
+        $config['client']['requestTimeout'] = 0.001;
+
+        $conn = new Connection($config['instance'], $config['database'], $config['prefix'] ?? '', $config);
+        $conn->table(self::TABLE_NAME_USER)->get();
     }
 }

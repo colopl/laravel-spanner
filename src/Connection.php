@@ -79,6 +79,11 @@ class Connection extends BaseConnection
     protected ?QueryParameterizer $parameterizer = null;
 
     /**
+     * @var float|null
+     */
+    protected ?float $defaultTimeoutSeconds = null;
+
+    /**
      * @param string $instanceId instance ID
      * @param string $database
      * @param string $tablePrefix
@@ -101,6 +106,8 @@ class Connection extends BaseConnection
             $tablePrefix,
             $config,
         );
+
+        $this->defaultTimeoutSeconds = $config['client']['requestTimeout'] ?? null;
     }
 
     /**
@@ -601,7 +608,8 @@ class Connection extends BaseConnection
      */
     protected function executeQuery(string $query, array $bindings, array $options): Generator
     {
-        $options += ['parameters' => $this->prepareBindings($bindings)];
+        $options['parameters'] ??= $this->prepareBindings($bindings);
+        $options['timeoutMillis'] ??= $this->calculateDefaultTimeoutMillis();
 
         if (isset($options['dataBoostEnabled'])) {
             return $this->executePartitionedQuery($query, $options);
@@ -640,7 +648,14 @@ class Connection extends BaseConnection
     {
         $snapshotOptions = $this->extractOptions($options, ['databaseRole']);
         $transactionOptions = $this->extractOptions($options, ['strong', 'readTimestamp', 'exactStaleness']);
-        $partitionOptions = $this->extractOptions($options, ['maxPartitions', 'partitionSizeBytes', 'parameters', 'types', 'dataBoostEnabled']);
+        $partitionOptions = $this->extractOptions($options, [
+            'maxPartitions',
+            'partitionSizeBytes',
+            'parameters',
+            'types',
+            'dataBoostEnabled',
+            'timeoutMillis',
+        ]);
 
         if ($options !== []) {
             $keysString = implode(', ', array_keys($options));
@@ -798,5 +813,19 @@ class Connection extends BaseConnection
             }
         }
         return $extracted;
+    }
+
+    protected function calculateDefaultTimeoutMillis(): ?int
+    {
+        if ($this->defaultTimeoutSeconds === null) {
+            return null;
+        }
+
+        $timeoutSeconds = $this->defaultTimeoutSeconds;
+        $timeoutMillis = (int) ($timeoutSeconds * 1000);
+        if ($timeoutMillis <= 0) {
+            throw new LogicException('Request timeout must be >= 1ms.');
+        }
+        return $timeoutMillis;
     }
 }

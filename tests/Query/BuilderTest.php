@@ -19,6 +19,7 @@
 namespace Colopl\Spanner\Tests\Query;
 
 use BadMethodCallException;
+use Colopl\Spanner\Connection;
 use Colopl\Spanner\Query\Builder;
 use Colopl\Spanner\Schema\Blueprint;
 use Colopl\Spanner\Schema\TokenizerFunction;
@@ -1157,6 +1158,44 @@ class BuilderTest extends TestCase
 
         $this->expectException(LogicException::class);
         $this->expectExceptionMessage('Request timeout must be >= 1ms.');
+        $query->get();
+    }
+
+    public function test_setRequestTimeoutSeconds_overrides_default_config(): void
+    {
+        $this->expectException(QueryException::class);
+        $this->expectExceptionMessageMatches('/DEADLINE_EXCEEDED/');
+
+        $config = config('database.connections.main');
+        $config['client']['requestTimeout'] = 10;
+
+        $conn = new Connection($config['instance'], $config['database'], $config['prefix'] ?? '', $config);
+        $this->setUpDatabaseOnce($conn);
+
+        $conn->table(self::TABLE_NAME_USER)
+            ->setRequestTimeoutSeconds(0.001)
+            ->get();
+    }
+
+    public function test_setRequestTimeoutSeconds_with_dataBoost(): void
+    {
+        $this->expectException(QueryException::class);
+        $this->expectExceptionMessageMatches('/DEADLINE_EXCEEDED/');
+
+        $query = $this->getDefaultConnection()->table(self::TABLE_NAME_USER);
+        $query->setRequestTimeoutSeconds(0.001);
+        $query->useDataBoost();
+        $query->get();
+    }
+
+    public function test_setRequestTimeoutSeconds_with_snapshot(): void
+    {
+        $this->expectException(QueryException::class);
+        $this->expectExceptionMessageMatches('/DEADLINE_EXCEEDED/');
+
+        $query = $this->getDefaultConnection()->table(self::TABLE_NAME_USER);
+        $query->setRequestTimeoutSeconds(0.001);
+        $query->snapshot(new ExactStaleness(20));
         $query->get();
     }
 

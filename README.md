@@ -64,6 +64,7 @@ For more information, please see [Google Client Library docs](http://googleapis.
             // Spanner Client configurations
             'client' => [
                 'projectId' => 'xxx',
+                'requestTimeout' => 60, // seconds
                 ...
             ],
             
