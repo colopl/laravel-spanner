@@ -107,7 +107,11 @@ class Connection extends BaseConnection
             $config,
         );
 
-        $this->defaultTimeoutSeconds = $config['client']['requestTimeout'] ?? null;
+        $clientConfig = $config['client'] ?? null;
+        if (is_array($clientConfig) && isset($clientConfig['requestTimeout'])) {
+            assert(is_numeric($clientConfig['requestTimeout']));
+            $this->defaultTimeoutSeconds = (float) $clientConfig['requestTimeout'];
+        }
     }
 
     /**
