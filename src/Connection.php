@@ -783,6 +783,11 @@ class Connection extends BaseConnection
             && str_contains($e->getMessage(), 'Session does not exist');
     }
 
+    /**
+     * @param array<string, mixed> $options
+     * @param list<string> $keys
+     * @return array<string, mixed>
+     */
     protected function extractOptions(array &$options, array $keys)
     {
         $extracted = [];
