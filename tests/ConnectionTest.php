@@ -599,6 +599,48 @@ class ConnectionTest extends TestCase
         });
     }
 
+    public function test_stale_reads_with_dataBoost(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $tableName = self::TABLE_NAME_USER;
+        $uuid = $this->generateUuid();
+
+        $db = (new SpannerClient([
+            'cacheItemPool' => new ArrayAdapter(),
+        ]))->connect(
+            config('database.connections.main.instance'),
+            config('database.connections.main.database'),
+        );
+        /** @var Timestamp|null $timestamp */
+        $timestamp = null;
+        $db->runTransaction(function (Transaction $tx) use ($tableName, $uuid, &$timestamp) {
+            $name = 'first';
+            $tx->executeUpdate("INSERT INTO {$tableName} (`userId`, `name`) VALUES ('{$uuid}', '{$name}')");
+            $timestamp = $tx->commit();
+        });
+        $this->assertNotEmpty($timestamp);
+
+        $oldDatetime = Carbon::instance($timestamp->get())->subSecond();
+
+        $query = "SELECT * FROM {$tableName} WHERE userId = ?";
+        $params = [$uuid];
+        $options = ['dataBoostEnabled' => true];
+
+        $timestampBound = new StrongRead();
+        $rows = $conn->selectWithOptions($query, $params, $options + $timestampBound->transactionOptions());
+        $this->assertCount(1, $rows);
+        $this->assertSame($uuid, $rows[0]['userId']);
+        $this->assertSame('first', $rows[0]['name']);
+
+        $timestampBound = new ReadTimestamp($oldDatetime);
+        $rows = $conn->selectWithOptions($query, $params, $options + $timestampBound->transactionOptions());
+        $this->assertEmpty($rows);
+
+        $timestampBound = new ExactStaleness(10);
+        $rows = $conn->selectWithOptions($query, $params, $options + $timestampBound->transactionOptions());
+        $this->assertEmpty($rows);
+    }
+
     public function testEventListenOrder(): void
     {
         $conn = $this->getDefaultConnection();

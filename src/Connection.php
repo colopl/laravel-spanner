@@ -638,15 +638,20 @@ class Connection extends BaseConnection
      */
     protected function executePartitionedQuery(string $query, array $options): Generator
     {
-        $snapshotOptions = isset($options['databaseRole'])
-            ? ['databaseRole' => $options['databaseRole']]
-            : [];
+        $snapshotOptions = $this->extractOptions($options, ['databaseRole']);
+        $transactionOptions = $this->extractOptions($options, ['strong', 'readTimestamp', 'exactStaleness']);
+        $partitionOptions = $this->extractOptions($options, ['maxPartitions', 'partitionSizeBytes', 'parameters', 'types', 'dataBoostEnabled']);
+
+        if ($options !== []) {
+            $keysString = implode(', ', array_keys($options));
+            throw new LogicException("Options: {$keysString} are not supported for partitioned queries.");
+        }
 
         $snapshot = $this->getSpannerClient()
             ->batch($this->instanceId, $this->database, $snapshotOptions)
-            ->snapshot();
+            ->snapshot(['transactionOptions' => $transactionOptions]);
 
-        foreach ($snapshot->partitionQuery($query, $options) as $partition) {
+        foreach ($snapshot->partitionQuery($query, $partitionOptions) as $partition) {
             foreach ($snapshot->executePartition($partition) as $row) {
                 /** @var array<array-key, mixed> $row */
                 yield $row;
@@ -661,7 +666,19 @@ class Connection extends BaseConnection
      */
     protected function executeSnapshotQuery(string $query, array $options): Generator
     {
-        $executeOptions = Arr::only($options, ['parameters', 'types', 'queryOptions', 'requestOptions']);
+        $executeOptions = $this->extractOptions($options, [
+            'parameters',
+            'types',
+            'queryOptions',
+            'requestOptions',
+            'directedReadOptions',
+            'headers',
+            'partitionToken',
+            'retrySettings',
+            'timeoutMillis',
+            'transportOptions',
+        ]);
+
         assert($this->currentSnapshot !== null);
         return $this->currentSnapshot->execute($query, $executeOptions)->rows();
     }
@@ -764,5 +781,17 @@ class Connection extends BaseConnection
 
         return ($e instanceof NotFoundException)
             && str_contains($e->getMessage(), 'Session does not exist');
+    }
+
+    protected function extractOptions(array &$options, array $keys)
+    {
+        $extracted = [];
+        foreach ($keys as $key) {
+            if (array_key_exists($key, $options)) {
+                $extracted[$key] = $options[$key];
+                unset($options[$key]);
+            }
+        }
+        return $extracted;
     }
 }
