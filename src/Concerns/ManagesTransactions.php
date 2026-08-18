@@ -46,6 +46,12 @@ trait ManagesTransactions
     protected ?array $commitOptions = null;
 
     /**
+     * @param array<string, mixed> $options
+     * @return array<string, mixed>
+     */
+    abstract protected function withDefaultTimeout(array $options): array;
+
+    /**
      * @inheritDoc
      * @template T
      * @param Closure(static): T $callback
@@ -76,6 +82,8 @@ trait ManagesTransactions
         if ($tag !== null) {
             $options['tag'] = $tag;
         }
+
+        $options = $this->withDefaultTimeout($options);
 
         return $this->withSessionNotFoundHandling(function () use ($callback, $options) {
             $return = $this->getSpannerDatabase()->runTransaction(function (Transaction $tx) use ($callback) {
@@ -293,9 +301,8 @@ trait ManagesTransactions
         }
 
         $options = $this->getConfig('commit') ?? [];
-        assert(is_array($options));
         /** @var array<string, mixed> $options */
-        return $this->commitOptions = $options;
+        return $this->commitOptions = $this->withDefaultTimeout($options);
     }
 
     /**
@@ -304,6 +311,6 @@ trait ManagesTransactions
      */
     public function setCommitOptions(array $options): void
     {
-        $this->commitOptions = $options;
+        $this->commitOptions = $this->withDefaultTimeout($options);
     }
 }

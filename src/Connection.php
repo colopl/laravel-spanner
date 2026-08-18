@@ -613,7 +613,7 @@ class Connection extends BaseConnection
     protected function executeQuery(string $query, array $bindings, array $options): Generator
     {
         $options['parameters'] ??= $this->prepareBindings($bindings);
-        $options['timeoutMillis'] ??= $this->calculateDefaultTimeoutMillis();
+        $options = $this->withDefaultTimeout($options);
 
         if (isset($options['dataBoostEnabled'])) {
             return $this->executePartitionedQuery($query, $options);
@@ -710,7 +710,9 @@ class Connection extends BaseConnection
      */
     protected function executeDml(Transaction $transaction, string $query, array $bindings = []): int
     {
-        $rowCount = $transaction->executeUpdate($query, ['parameters' => $this->prepareBindings($bindings)]);
+        $options = $this->withDefaultTimeout(['parameters' => $this->prepareBindings($bindings)]);
+
+        $rowCount = $transaction->executeUpdate($query, $options);
         $this->recordsHaveBeenModified($rowCount > 0);
         return $rowCount;
     }
@@ -723,9 +725,10 @@ class Connection extends BaseConnection
      */
     protected function executeBatchDml(Transaction $transaction, string $query, array $bindings = []): int
     {
-        $result = $transaction->executeUpdateBatch([
-            ['sql' => $query, 'parameters' => $this->prepareBindings($bindings)],
-        ]);
+        $result = $transaction->executeUpdateBatch(
+            [['sql' => $query, 'parameters' => $this->prepareBindings($bindings)]],
+            $this->withDefaultTimeout([]),
+        );
 
         $error = $result->error();
         if ($error !== null) {
@@ -831,5 +834,18 @@ class Connection extends BaseConnection
             throw new LogicException('Request timeout must be >= 1ms.');
         }
         return $timeoutMillis;
+    }
+
+    /**
+     * Applies the connection's default `client.requestTimeout` as `timeoutMillis`
+     * to any RPC options that don't already specify one.
+     *
+     * @param array<string, mixed> $options
+     * @return array<string, mixed>
+     */
+    protected function withDefaultTimeout(array $options): array
+    {
+        $options['timeoutMillis'] ??= $this->calculateDefaultTimeoutMillis();
+        return $options;
     }
 }
