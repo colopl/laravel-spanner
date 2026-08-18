@@ -102,7 +102,7 @@ class TransactionTest extends TestCase
         $this->assertNull($tx->getCommitStats());
         $this->assertSame(['timeoutMillis' => 600000], $conn->getCommitOptions());
 
-        $newOptions = ['returnCommitStats' => true];
+        $newOptions = ['returnCommitStats' => true, 'timeoutMillis' => 600000];
         $conn->setCommitOptions($newOptions);
         $this->assertSame($newOptions, $conn->getCommitOptions());
 
