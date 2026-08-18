@@ -19,24 +19,69 @@
 namespace Colopl\Spanner\Tests\Query;
 
 use BadMethodCallException;
-use Colopl\Spanner\Connection;
 use Colopl\Spanner\Query\Builder;
 use Colopl\Spanner\Schema\Blueprint;
 use Colopl\Spanner\Schema\TokenizerFunction;
 use Colopl\Spanner\Tests\TestCase;
+use Colopl\Spanner\Tests\Support\FakeSpannerConnection;
 use Colopl\Spanner\TimestampBound\ExactStaleness;
 use Colopl\Spanner\TimestampBound\StrongRead;
+use Google\Cloud\Spanner\Batch\BatchClient;
+use Google\Cloud\Spanner\Batch\BatchSnapshot;
 use Google\Cloud\Spanner\Bytes;
+use Google\Cloud\Spanner\Database;
+use Google\Cloud\Spanner\Snapshot;
+use Google\Cloud\Spanner\SpannerClient;
 use Google\Protobuf\Duration;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Carbon;
 use InvalidArgumentException;
 use LogicException;
 use Ramsey\Uuid\Uuid;
+use RuntimeException;
+use Throwable;
 use const Grpc\STATUS_ALREADY_EXISTS;
 
 class BuilderTest extends TestCase
 {
+    /**
+     * Marker used to abort the RPC as soon as the driver hands the options over
+     * to the Google client, so no network call is ever made.
+     */
+    private const CAPTURE_MARKER = '__options_captured__';
+
+    /**
+     * @param array<string, mixed>|null $captured
+     * @return Database&\PHPUnit\Framework\MockObject\MockObject
+     */
+    private function captureOn(string $method, ?array &$captured): Database
+    {
+        $database = $this->createMock(Database::class);
+        $database->method($method)->willReturnCallback(
+            function (mixed ...$args) use (&$captured): never {
+                $options = end($args);
+                $captured = is_array($options) ? $options : [];
+                throw new RuntimeException(self::CAPTURE_MARKER);
+            },
+        );
+
+        return $database;
+    }
+
+    private function assertCaptureMarker(Throwable $e): void
+    {
+        $messages = [];
+        for ($current = $e; $current !== null; $current = $current->getPrevious()) {
+            $messages[] = $current->getMessage();
+        }
+
+        $this->assertStringContainsString(
+            self::CAPTURE_MARKER,
+            implode(' | ', $messages),
+            'Expected the RPC to be aborted by the capturing test double.',
+        );
+    }
+
     public function test_insert_single_row(): void
     {
         $conn = $this->getDefaultConnection();
@@ -1139,21 +1184,31 @@ class BuilderTest extends TestCase
 
     public function test_setRequestTimeoutSeconds(): void
     {
-        $query = $this->getDefaultConnection()->table(self::TABLE_NAME_USER);
-        $this->assertNull($query->getRequestTimeoutSeconds());
-        $query->setRequestTimeoutSeconds(0.001);
-        $this->assertSame(0.001, $query->getRequestTimeoutSeconds());
+        $captured = null;
+        $conn = new FakeSpannerConnection($this->captureOn('execute', $captured));
 
-        $this->expectException(QueryException::class);
-        $this->expectExceptionMessageMatches('/DEADLINE_EXCEEDED/');
-        $query->get();
+        $query = $conn->table(self::TABLE_NAME_USER);
+        $this->assertNull($query->getRequestTimeoutSeconds());
+        $query->setRequestTimeoutSeconds(0.25);
+        $this->assertSame(0.25, $query->getRequestTimeoutSeconds());
+
+        try {
+            $query->get();
+            $this->fail('Expected the capturing test double to abort the query.');
+        } catch (Throwable $e) {
+            $this->assertCaptureMarker($e);
+        }
+
+        $this->assertIsArray($captured);
+        $this->assertSame(250, $captured['timeoutMillis']);
     }
 
     public function test_setRequestTimeoutSeconds_throws_when_timeout_rounds_to_zero(): void
     {
         // A timeout so small that (int)($seconds * 1000) === 0 must be rejected
         // before the query is sent to Spanner.
-        $query = $this->getDefaultConnection()->table(self::TABLE_NAME_USER);
+        $conn = new FakeSpannerConnection($this->createMock(Database::class));
+        $query = $conn->table(self::TABLE_NAME_USER);
         $query->setRequestTimeoutSeconds(0.0009); // 0.9 ms → (int)(0.9) = 0
 
         $this->expectException(LogicException::class);
@@ -1163,40 +1218,89 @@ class BuilderTest extends TestCase
 
     public function test_setRequestTimeoutSeconds_overrides_default_config(): void
     {
-        $this->expectException(QueryException::class);
-        $this->expectExceptionMessageMatches('/DEADLINE_EXCEEDED/');
+        $captured = null;
+        $conn = new FakeSpannerConnection(
+            $this->captureOn('execute', $captured),
+            ['client' => ['requestTimeout' => 10]],
+        );
 
-        $config = config('database.connections.main');
-        $config['client']['requestTimeout'] = 10;
+        try {
+            $conn->table(self::TABLE_NAME_USER)
+                ->setRequestTimeoutSeconds(0.25)
+                ->get();
+            $this->fail('Expected the capturing test double to abort the query.');
+        } catch (Throwable $e) {
+            $this->assertCaptureMarker($e);
+        }
 
-        $conn = new Connection($config['instance'], $config['database'], $config['prefix'] ?? '', $config);
-        $this->setUpDatabaseOnce($conn);
-
-        $conn->table(self::TABLE_NAME_USER)
-            ->setRequestTimeoutSeconds(0.001)
-            ->get();
+        $this->assertIsArray($captured);
+        $this->assertSame(250, $captured['timeoutMillis'], 'Per-query timeout must win over the connection default.');
     }
 
     public function test_setRequestTimeoutSeconds_with_dataBoost(): void
     {
-        $this->expectException(QueryException::class);
-        $this->expectExceptionMessageMatches('/DEADLINE_EXCEEDED/');
+        $captured = null;
 
-        $query = $this->getDefaultConnection()->table(self::TABLE_NAME_USER);
-        $query->setRequestTimeoutSeconds(0.001);
-        $query->useDataBoost();
-        $query->get();
+        $batchSnapshot = $this->createMock(BatchSnapshot::class);
+        $batchSnapshot->method('partitionQuery')->willReturnCallback(
+            function (string $sql, array $options) use (&$captured): never {
+                $captured = $options;
+                throw new RuntimeException(self::CAPTURE_MARKER);
+            },
+        );
+
+        $batchClient = $this->createMock(BatchClient::class);
+        $batchClient->method('snapshot')->willReturn($batchSnapshot);
+
+        $client = $this->createMock(SpannerClient::class);
+        $client->method('batch')->willReturn($batchClient);
+
+        $conn = new FakeSpannerConnection($this->createMock(Database::class), [], $client);
+
+        try {
+            $conn->table(self::TABLE_NAME_USER)
+                ->setRequestTimeoutSeconds(0.25)
+                ->useDataBoost()
+                ->get();
+            $this->fail('Expected the capturing test double to abort the partitioned query.');
+        } catch (Throwable $e) {
+            $this->assertCaptureMarker($e);
+        }
+
+        $this->assertIsArray($captured);
+        $this->assertSame(250, $captured['timeoutMillis']);
+        $this->assertTrue($captured['dataBoostEnabled']);
     }
 
     public function test_setRequestTimeoutSeconds_with_snapshot(): void
     {
-        $this->expectException(QueryException::class);
-        $this->expectExceptionMessageMatches('/DEADLINE_EXCEEDED/');
+        $captured = null;
 
-        $query = $this->getDefaultConnection()->table(self::TABLE_NAME_USER);
-        $query->setRequestTimeoutSeconds(0.001);
-        $query->snapshot(new ExactStaleness(20));
-        $query->get();
+        $snapshot = $this->createMock(Snapshot::class);
+        $snapshot->method('execute')->willReturnCallback(
+            function (string $sql, array $options) use (&$captured): never {
+                $captured = $options;
+                throw new RuntimeException(self::CAPTURE_MARKER);
+            },
+        );
+
+        $database = $this->createMock(Database::class);
+        $database->method('snapshot')->willReturn($snapshot);
+
+        $conn = new FakeSpannerConnection($database);
+
+        try {
+            $conn->table(self::TABLE_NAME_USER)
+                ->setRequestTimeoutSeconds(0.25)
+                ->snapshot(new ExactStaleness(20))
+                ->get();
+            $this->fail('Expected the capturing test double to abort the snapshot query.');
+        } catch (Throwable $e) {
+            $this->assertCaptureMarker($e);
+        }
+
+        $this->assertIsArray($captured);
+        $this->assertSame(250, $captured['timeoutMillis']);
     }
 
     public function test_whereIn_with_unnest_overflow_flag_turned_on(): void

@@ -27,6 +27,8 @@ use Colopl\Spanner\TimestampBound\MaxStaleness;
 use Colopl\Spanner\TimestampBound\MinReadTimestamp;
 use Colopl\Spanner\TimestampBound\ReadTimestamp;
 use Colopl\Spanner\TimestampBound\StrongRead;
+use Colopl\Spanner\Tests\Support\FakeSpannerConnection;
+use Google\Cloud\Spanner\Database;
 use Google\Cloud\Spanner\KeySet;
 use Google\Cloud\Spanner\SpannerClient;
 use Google\Cloud\Spanner\Timestamp;
@@ -41,7 +43,9 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Event;
 use LogicException;
 use ReflectionProperty;
+use RuntimeException;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
+use Throwable;
 use function dirname;
 use function fileperms;
 use function sprintf;
@@ -731,17 +735,181 @@ class ConnectionTest extends TestCase
         $this->assertSame('Asia/Tokyo', $now->getTimezone()->getName());
     }
 
+    /**
+     * Marker used to abort the RPC as soon as the driver hands the options
+     * over to the Google client, so no network call is ever made.
+     */
+    private const CAPTURE_MARKER = '__options_captured__';
+
+    /**
+     * @param array<string, mixed>|null $captured
+     * @return Database&\PHPUnit\Framework\MockObject\MockObject
+     */
+    private function fakeDatabaseCapturing(string $method, ?array &$captured): Database
+    {
+        $database = $this->createMock(Database::class);
+        $database->method($method)->willReturnCallback(
+            function (mixed ...$args) use (&$captured): never {
+                $options = end($args);
+                $captured = is_array($options) ? $options : [];
+                throw new RuntimeException(self::CAPTURE_MARKER);
+            },
+        );
+
+        return $database;
+    }
+
+    /**
+     * @param array<string, mixed>|null $captured
+     * @return Transaction&\PHPUnit\Framework\MockObject\MockObject
+     */
+    private function fakeTransactionCapturing(string $method, ?array &$captured): Transaction
+    {
+        $transaction = $this->createMock(Transaction::class);
+        $transaction->method($method)->willReturnCallback(
+            function (mixed ...$args) use (&$captured): never {
+                $options = end($args);
+                $captured = is_array($options) ? $options : [];
+                throw new RuntimeException(self::CAPTURE_MARKER);
+            },
+        );
+
+        return $transaction;
+    }
+
+    private function assertCaptureMarker(Throwable $e): void
+    {
+        $messages = [];
+        for ($current = $e; $current !== null; $current = $current->getPrevious()) {
+            $messages[] = $current->getMessage();
+        }
+
+        $this->assertStringContainsString(
+            self::CAPTURE_MARKER,
+            implode(' | ', $messages),
+            'Expected the RPC to be aborted by the capturing test double.',
+        );
+    }
+
     public function test_connection_with_default_timeout_seconds(): void
     {
-        $this->getDefaultConnection();
+        $captured = null;
+        $database = $this->fakeDatabaseCapturing('execute', $captured);
+        $conn = new FakeSpannerConnection($database, ['client' => ['requestTimeout' => 1.5]]);
+
+        try {
+            $conn->select('SELECT 1');
+            $this->fail('Expected the capturing test double to abort the query.');
+        } catch (Throwable $e) {
+            $this->assertCaptureMarker($e);
+        }
+
+        $this->assertIsArray($captured);
+        $this->assertSame(1500, $captured['timeoutMillis']);
+    }
+
+    public function test_connection_with_default_timeout_seconds_covers_dml(): void
+    {
+        $captured = null;
+        $transaction = $this->fakeTransactionCapturing('executeUpdate', $captured);
+        $conn = new FakeSpannerConnection(
+            $this->createMock(Database::class),
+            ['client' => ['requestTimeout' => 1.5]],
+        );
+
+        try {
+            $conn->callExecuteDml($transaction, 'UPDATE `User` SET `name` = ? WHERE true', ['x']);
+            $this->fail('Expected the capturing test double to abort the DML.');
+        } catch (Throwable $e) {
+            $this->assertCaptureMarker($e);
+        }
+
+        $this->assertIsArray($captured);
+        $this->assertSame(1500, $captured['timeoutMillis']);
+    }
+
+    public function test_connection_with_default_timeout_seconds_covers_batch_dml(): void
+    {
+        $captured = null;
+        $transaction = $this->fakeTransactionCapturing('executeUpdateBatch', $captured);
+        $conn = new FakeSpannerConnection(
+            $this->createMock(Database::class),
+            ['client' => ['requestTimeout' => 1.5]],
+        );
+
+        try {
+            $conn->callExecuteBatchDml($transaction, 'INSERT OR IGNORE `User` (`userId`) VALUES (?)', ['x']);
+            $this->fail('Expected the capturing test double to abort the batch DML.');
+        } catch (Throwable $e) {
+            $this->assertCaptureMarker($e);
+        }
+
+        $this->assertIsArray($captured);
+        $this->assertSame(1500, $captured['timeoutMillis']);
+    }
+
+    public function test_connection_with_default_timeout_seconds_covers_partitioned_dml(): void
+    {
+        $captured = null;
+        $database = $this->fakeDatabaseCapturing('executePartitionedUpdate', $captured);
+        $conn = new FakeSpannerConnection($database, ['client' => ['requestTimeout' => 1.5]]);
+
+        try {
+            $conn->runPartitionedDml('UPDATE `User` SET `name` = `name` WHERE true');
+            $this->fail('Expected the capturing test double to abort the partitioned DML.');
+        } catch (Throwable $e) {
+            $this->assertCaptureMarker($e);
+        }
+
+        $this->assertIsArray($captured);
+        $this->assertSame(1500, $captured['timeoutMillis']);
+    }
+
+    public function test_connection_with_default_timeout_seconds_covers_transaction_begin_and_commit(): void
+    {
+        $captured = null;
+        $database = $this->fakeDatabaseCapturing('runTransaction', $captured);
+        $conn = new FakeSpannerConnection($database, ['client' => ['requestTimeout' => 1.5]]);
+
+        try {
+            $conn->transaction(fn() => null);
+            $this->fail('Expected the capturing test double to abort the transaction.');
+        } catch (Throwable $e) {
+            $this->assertCaptureMarker($e);
+        }
+
+        $this->assertIsArray($captured);
+        $this->assertSame(1500, $captured['timeoutMillis']);
+        $this->assertSame(1500, $conn->getCommitOptions()['timeoutMillis']);
+    }
+
+    public function test_connection_without_default_timeout_seconds_sends_no_timeout(): void
+    {
+        $captured = null;
+        $database = $this->fakeDatabaseCapturing('execute', $captured);
+        $conn = new FakeSpannerConnection($database, []);
+
+        try {
+            $conn->select('SELECT 1');
+            $this->fail('Expected the capturing test double to abort the query.');
+        } catch (Throwable $e) {
+            $this->assertCaptureMarker($e);
+        }
+
+        $this->assertIsArray($captured);
+        $this->assertNull($captured['timeoutMillis']);
+    }
+
+    public function test_connection_with_default_timeout_below_one_millisecond_is_rejected(): void
+    {
+        $conn = new FakeSpannerConnection(
+            $this->createMock(Database::class),
+            ['client' => ['requestTimeout' => 0.0009]],
+        );
 
         $this->expectException(QueryException::class);
-        $this->expectExceptionMessageMatches('/DEADLINE_EXCEEDED/');
+        $this->expectExceptionMessage('Request timeout must be >= 1ms.');
 
-        $config = config('database.connections.main');
-        $config['client']['requestTimeout'] = 0.001;
-
-        $conn = new Connection($config['instance'], $config['database'], $config['prefix'] ?? '', $config);
-        $conn->table(self::TABLE_NAME_USER)->get();
+        $conn->select('SELECT 1');
     }
 }
