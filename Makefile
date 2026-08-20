@@ -10,6 +10,14 @@ test: build
 logs:
 	$(BASE_COMMAND) logs
 
+up:
+	$(BASE_COMMAND) up -d emulator
+
+# Run phpunit directly against the running emulator, skipping build/composer-install/phpstan.
+# Usage: make phpunit ARGS="--filter=testBeginTransaction tests/ConnectionTest.php"
+phpunit: up
+	$(BASE_COMMAND) run --rm test vendor/bin/phpunit $(ARGS)
+
 update:
 	$(BASE_COMMAND) run test composer update
 	$(BASE_COMMAND) down
