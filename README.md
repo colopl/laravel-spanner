@@ -50,7 +50,7 @@ $conn->...
 ```
 
 ## Additional Configurations
-You can pass `SpannerClient` config and `CacheSessionPool` options as below.
+You can pass `SpannerClient` config options as below.
 For more information, please see [Google Client Library docs](http://googleapis.github.io/google-cloud-php/#/docs/google-cloud/latest/spanner/spannerclient?method=__construct)
 
 ```php
@@ -238,8 +238,8 @@ $queryBuilder
 ```
 
 > [!NOTE]
-> This creates a new session in the background which is not shared with the current session pool.
-> This means, queries running with data boost will not be associated with transactions that may be taking place.
+> This creates a new snapshot request which does not share state with any ongoing transactions.
+> This means, queries running with data boost will not take into account any changes made in the ongoing transaction.
 
 ### Request Tags and Transaction Tags
 
