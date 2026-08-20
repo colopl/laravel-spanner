@@ -448,7 +448,7 @@ In order to improve the performance of the first connection per request, we use 
 By default, this library uses [Filesystem Cache Adapter](https://symfony.com/doc/current/components/cache/adapters/filesystem_adapter.html) for caching sessions. 
 If you want to use a different adapter, you can extend ServiceProvider and inject it into the constructor of `Colopl\Spanner\Connection`.
 
-Session initialization takes about a second, so warming up the sessions during the boot up phase of your
+Session initialization takes about a second, so warming up the session during the boot up phase of your
 server is recommended. This can be achieved by running the `php artisan spanner:warmup` command.
 
 ### Laravel Tinker
