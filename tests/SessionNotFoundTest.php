@@ -19,13 +19,21 @@
 namespace Colopl\Spanner\Tests;
 
 use Colopl\Spanner\Connection;
+use Google\Cloud\Spanner\V1\Session;
+use Psr\Cache\CacheItemPoolInterface;
+use Symfony\Component\Cache\Adapter\ArrayAdapter;
 
 class SessionNotFoundTest extends TestCase
 {
+    protected CacheItemPoolInterface $sessionPool;
 
     private function getSessionNotFoundConnection(): Connection
     {
-        $conn = $this->getDefaultConnection();
+        $config = $this->app['config']->get('database.connections.main');
+
+        $this->sessionPool = new ArrayAdapter();
+        $conn = new Connection($config['instance'], $config['database'], '', $config, null, $this->sessionPool);
+        $this->setUpDatabaseOnce($conn);
 
         // force creation of session.
         $conn->selectOne('SELECT 1');
@@ -35,13 +43,23 @@ class SessionNotFoundTest extends TestCase
 
     private function deleteSession(Connection $conn): void
     {
+        // Replace the session in the session cache with a deleted session to simulate a session not found error.
         $sessionCache = $conn->getSpannerDatabase()->session();
         $refClass = new \ReflectionClass($sessionCache);
         $sessionProp = $refClass->getProperty('session');
         $session = $sessionProp->getValue($sessionCache);
+        assert($session instanceof Session);
         $sessionClass = new \ReflectionClass($session);
         $nameProp = $sessionClass->getProperty('name');
         $nameProp->setValue($session, $session->getName() . '_deleted');
+
+        // Also update the session to replicate real world scenario where the session is deleted from the server and
+        // the cache reflects that condition.
+        $item = $this->sessionPool->getItem(array_key_first($this->sessionPool->getValues()));
+        $session->mergeFromString($item->get());
+        $session->setName($session->getName() . '_deleted');
+        $item->set($session->serializeToString());
+        $this->sessionPool->save($item);
     }
 
     public function test_session_not_found_handling(): void
