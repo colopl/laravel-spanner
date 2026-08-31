@@ -119,7 +119,7 @@ class TransactionTest extends TestCase
             $conn->table(self::TABLE_NAME_USER)->insert(['userId' => $this->generateUuid(), 'name' => 'test']);
             return $conn->getCurrentTransaction();
         });
-        $this->assertSame(['mutationCount' => 2], $tx->getCommitStats());
+        $this->assertSame(2, $tx->getCommitStats()->getMutationCount());
     }
 
     public function testRollbackBeforeCommit(): void
