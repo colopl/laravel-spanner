@@ -37,6 +37,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Support\Carbon;
 use InvalidArgumentException;
 use LogicException;
+use PHPUnit\Framework\MockObject\Stub;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
 use Throwable;
@@ -52,11 +53,11 @@ class BuilderTest extends TestCase
 
     /**
      * @param array<string, mixed>|null $captured
-     * @return Database&\PHPUnit\Framework\MockObject\MockObject
+     * @return Database&Stub
      */
     private function captureOn(string $method, ?array &$captured): Database
     {
-        $database = $this->createMock(Database::class);
+        $database = $this->createStub(Database::class);
         $database->method($method)->willReturnCallback(
             function (mixed ...$args) use (&$captured): never {
                 $options = end($args);
@@ -1207,7 +1208,7 @@ class BuilderTest extends TestCase
     {
         // A timeout so small that (int)($seconds * 1000) === 0 must be rejected
         // before the query is sent to Spanner.
-        $conn = new FakeSpannerConnection($this->createMock(Database::class));
+        $conn = new FakeSpannerConnection($this->createStub(Database::class));
         $query = $conn->table(self::TABLE_NAME_USER);
         $query->setRequestTimeoutSeconds(0.0009); // 0.9 ms → (int)(0.9) = 0
 
@@ -1241,7 +1242,7 @@ class BuilderTest extends TestCase
     {
         $captured = null;
 
-        $batchSnapshot = $this->createMock(BatchSnapshot::class);
+        $batchSnapshot = $this->createStub(BatchSnapshot::class);
         $batchSnapshot->method('partitionQuery')->willReturnCallback(
             function (string $sql, array $options) use (&$captured): never {
                 $captured = $options;
@@ -1249,13 +1250,13 @@ class BuilderTest extends TestCase
             },
         );
 
-        $batchClient = $this->createMock(BatchClient::class);
+        $batchClient = $this->createStub(BatchClient::class);
         $batchClient->method('snapshot')->willReturn($batchSnapshot);
 
-        $client = $this->createMock(SpannerClient::class);
+        $client = $this->createStub(SpannerClient::class);
         $client->method('batch')->willReturn($batchClient);
 
-        $conn = new FakeSpannerConnection($this->createMock(Database::class), [], $client);
+        $conn = new FakeSpannerConnection($this->createStub(Database::class), [], $client);
 
         try {
             $conn->table(self::TABLE_NAME_USER)
@@ -1276,7 +1277,7 @@ class BuilderTest extends TestCase
     {
         $captured = null;
 
-        $snapshot = $this->createMock(Snapshot::class);
+        $snapshot = $this->createStub(Snapshot::class);
         $snapshot->method('execute')->willReturnCallback(
             function (string $sql, array $options) use (&$captured): never {
                 $captured = $options;
@@ -1284,7 +1285,7 @@ class BuilderTest extends TestCase
             },
         );
 
-        $database = $this->createMock(Database::class);
+        $database = $this->createStub(Database::class);
         $database->method('snapshot')->willReturn($snapshot);
 
         $conn = new FakeSpannerConnection($database);

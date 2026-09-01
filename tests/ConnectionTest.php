@@ -43,6 +43,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Event;
 use LogicException;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\MockObject\Stub;
 use ReflectionProperty;
 use RuntimeException;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
@@ -744,11 +745,11 @@ class ConnectionTest extends TestCase
 
     /**
      * @param array<string, mixed>|null $captured
-     * @return Database&\PHPUnit\Framework\MockObject\MockObject
+     * @return Database&Stub
      */
     private function fakeDatabaseCapturing(string $method, ?array &$captured): Database
     {
-        $database = $this->createMock(Database::class);
+        $database = $this->createStub(Database::class);
         $database->method($method)->willReturnCallback(
             function (mixed ...$args) use (&$captured): never {
                 $options = end($args);
@@ -762,11 +763,11 @@ class ConnectionTest extends TestCase
 
     /**
      * @param array<string, mixed>|null $captured
-     * @return Transaction&\PHPUnit\Framework\MockObject\MockObject
+     * @return Transaction&Stub
      */
     private function fakeTransactionCapturing(string $method, ?array &$captured): Transaction
     {
-        $transaction = $this->createMock(Transaction::class);
+        $transaction = $this->createStub(Transaction::class);
         $transaction->method($method)->willReturnCallback(
             function (mixed ...$args) use (&$captured): never {
                 $options = end($args);
@@ -814,7 +815,7 @@ class ConnectionTest extends TestCase
         $captured = null;
         $transaction = $this->fakeTransactionCapturing('executeUpdate', $captured);
         $conn = new FakeSpannerConnection(
-            $this->createMock(Database::class),
+            $this->createStub(Database::class),
             ['client' => ['requestTimeout' => 1.5]],
         );
 
@@ -834,7 +835,7 @@ class ConnectionTest extends TestCase
         $captured = null;
         $transaction = $this->fakeTransactionCapturing('executeUpdateBatch', $captured);
         $conn = new FakeSpannerConnection(
-            $this->createMock(Database::class),
+            $this->createStub(Database::class),
             ['client' => ['requestTimeout' => 1.5]],
         );
 
@@ -938,7 +939,7 @@ class ConnectionTest extends TestCase
     public function test_connection_with_default_timeout_below_one_millisecond_is_rejected(): void
     {
         $conn = new FakeSpannerConnection(
-            $this->createMock(Database::class),
+            $this->createStub(Database::class),
             ['client' => ['requestTimeout' => 0.0009]],
         );
 
