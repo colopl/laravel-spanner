@@ -114,4 +114,13 @@ class FakeSpannerConnection extends Connection
     {
         return $this->executeBatchDml($transaction, $query, $bindings);
     }
+
+    /**
+     * Exposes the protected rollback path so it can be asserted directly.
+     */
+    public function callPerformRollBack(Transaction $transaction): void
+    {
+        $this->currentTransaction = $transaction;
+        $this->performRollBack(0);
+    }
 }

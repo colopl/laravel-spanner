@@ -919,6 +919,76 @@ class ConnectionTest extends TestCase
         $this->assertSame(1500, $conn->getCommitOptions()['timeoutMillis']);
     }
 
+    /**
+     * @param array<string, mixed>|null $captured
+     * @return Transaction&Stub
+     */
+    private function fakeActiveTransactionCapturingRollback(?array &$captured): Transaction
+    {
+        $transaction = $this->createStub(Transaction::class);
+        $transaction->method('state')->willReturn(Transaction::STATE_ACTIVE);
+        $transaction->method('id')->willReturn('fake-transaction-id');
+        $transaction->method('rollBack')->willReturnCallback(
+            function (mixed ...$args) use (&$captured): void {
+                $options = $args[0] ?? [];
+                $captured = is_array($options) ? $options : [];
+            },
+        );
+
+        return $transaction;
+    }
+
+    public function test_connection_with_default_timeout_seconds_covers_rollback(): void
+    {
+        $captured = null;
+        $transaction = $this->fakeActiveTransactionCapturingRollback($captured);
+        $conn = new FakeSpannerConnection(
+            $this->createStub(Database::class),
+            ['client' => ['requestTimeout' => 1.5]],
+        );
+
+        $conn->callPerformRollBack($transaction);
+
+        $this->assertIsArray($captured);
+        $this->assertSame(1500, $captured['timeoutMillis']);
+        $this->assertFalse($conn->inTransaction());
+    }
+
+    public function test_connection_without_default_timeout_seconds_covers_rollback(): void
+    {
+        $captured = null;
+        $transaction = $this->fakeActiveTransactionCapturingRollback($captured);
+        $conn = new FakeSpannerConnection($this->createStub(Database::class), []);
+
+        $conn->callPerformRollBack($transaction);
+
+        $this->assertIsArray($captured);
+        $this->assertNull($captured['timeoutMillis']);
+    }
+
+    public function test_rollback_is_skipped_when_transaction_is_not_active(): void
+    {
+        $captured = null;
+        $transaction = $this->createStub(Transaction::class);
+        $transaction->method('state')->willReturn(Transaction::STATE_ROLLED_BACK);
+        $transaction->method('id')->willReturn('fake-transaction-id');
+        $transaction->method('rollBack')->willReturnCallback(
+            function (mixed ...$args) use (&$captured): void {
+                $captured = $args;
+            },
+        );
+
+        $conn = new FakeSpannerConnection(
+            $this->createStub(Database::class),
+            ['client' => ['requestTimeout' => 1.5]],
+        );
+
+        $conn->callPerformRollBack($transaction);
+
+        $this->assertNull($captured, 'rollBack() must not be called on an inactive transaction.');
+        $this->assertFalse($conn->inTransaction());
+    }
+
     public function test_connection_without_default_timeout_seconds_sends_no_timeout(): void
     {
         $captured = null;

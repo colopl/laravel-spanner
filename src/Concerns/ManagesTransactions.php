@@ -216,7 +216,7 @@ trait ManagesTransactions
         if ($this->currentTransaction !== null) {
             try {
                 if ($this->currentTransaction->state() === Transaction::STATE_ACTIVE && $this->currentTransaction->id() !== null) {
-                    $this->currentTransaction->rollBack();
+                    $this->currentTransaction->rollBack($this->getRollbackOptions());
                 }
             } finally {
                 $this->currentTransaction = null;
@@ -312,5 +312,15 @@ trait ManagesTransactions
     public function setCommitOptions(array $options): void
     {
         $this->commitOptions = $this->withDefaultTimeout($options);
+    }
+
+    /**
+     * Options applied when a transaction is rolled back.
+     *
+     * @return array<string, mixed>
+     */
+    protected function getRollbackOptions(): array
+    {
+        return $this->withDefaultTimeout([]);
     }
 }
