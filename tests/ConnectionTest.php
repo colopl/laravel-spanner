@@ -42,6 +42,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Event;
 use LogicException;
+use PHPUnit\Framework\Attributes\DataProvider;
 use ReflectionProperty;
 use RuntimeException;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
@@ -857,6 +858,40 @@ class ConnectionTest extends TestCase
         try {
             $conn->runPartitionedDml('UPDATE `User` SET `name` = `name` WHERE true');
             $this->fail('Expected the capturing test double to abort the partitioned DML.');
+        } catch (Throwable $e) {
+            $this->assertCaptureMarker($e);
+        }
+
+        $this->assertIsArray($captured);
+        $this->assertSame(1500, $captured['timeoutMillis']);
+    }
+
+    /**
+     * @return array<string, array{string, callable(FakeSpannerConnection): void}>
+     */
+    public static function mutationMethodProvider(): array
+    {
+        return [
+            'insert' => ['insertBatch', static fn(FakeSpannerConnection $conn) => $conn->insertUsingMutation('User', ['userId' => 'x'])],
+            'update' => ['updateBatch', static fn(FakeSpannerConnection $conn) => $conn->updateUsingMutation('User', ['userId' => 'x'])],
+            'insertOrUpdate' => ['insertOrUpdateBatch', static fn(FakeSpannerConnection $conn) => $conn->insertOrUpdateUsingMutation('User', ['userId' => 'x'])],
+            'delete' => ['delete', static fn(FakeSpannerConnection $conn) => $conn->deleteUsingMutation('User', ['x'])],
+        ];
+    }
+
+    /**
+     * @param callable(FakeSpannerConnection): void $mutate
+     */
+    #[DataProvider('mutationMethodProvider')]
+    public function test_connection_with_default_timeout_seconds_covers_mutations(string $method, callable $mutate): void
+    {
+        $captured = null;
+        $database = $this->fakeDatabaseCapturing($method, $captured);
+        $conn = new FakeSpannerConnection($database, ['client' => ['requestTimeout' => 1.5]]);
+
+        try {
+            $mutate($conn);
+            $this->fail('Expected the capturing test double to abort the mutation.');
         } catch (Throwable $e) {
             $this->assertCaptureMarker($e);
         }
