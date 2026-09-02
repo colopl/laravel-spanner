@@ -489,7 +489,7 @@ class Blueprint extends BaseBlueprint
 
     /**
      * @inheritDoc
-     * @param list<string> $columns
+     * @param array<string, string>|list<string> $columns
      */
     protected function createIndexName($type, array $columns)
     {
