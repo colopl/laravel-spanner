@@ -501,7 +501,8 @@ class Blueprint extends BaseBlueprint
             $table = $this->connection->getTablePrefix() . $table;
         }
 
-        $index = strtolower($table . '_' . implode('_', $columns) . '_' . $type);
+        $columnNames = array_is_list($columns) ? $columns : array_keys($columns);
+        $index = strtolower($table . '_' . implode('_', $columnNames) . '_' . $type);
 
         if ($type !== 'foreign' && $schema !== null) {
             $index = $schema . '.' . $index;
