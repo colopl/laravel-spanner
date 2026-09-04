@@ -464,7 +464,7 @@ class Blueprint extends BaseBlueprint
 
     /**
      * @inheritDoc
-     * @param string|list<string> $columns
+     * @param string|array<string, string>|list<string> $columns
      * @return IndexDefinition
      */
     protected function indexCommand($type, $columns, $index, $algorithm = null, $operatorClass = null)
