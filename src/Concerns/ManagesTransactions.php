@@ -141,7 +141,7 @@ trait ManagesTransactions
         if ($this->transactions === 0) {
             try {
                 $this->reconnectIfMissingConnection();
-                $this->currentTransaction = $this->getSpannerDatabase()->transaction();
+                $this->currentTransaction = $this->getSpannerDatabase()->transaction($this->withDefaultTimeout([]));
             } catch (Exception $e) {
                 $this->handleBeginTransactionException($e);
             }
@@ -156,7 +156,7 @@ trait ManagesTransactions
         if ($this->causedByLostConnection($e)) {
             $this->reconnect();
 
-            $this->currentTransaction = $this->getSpannerDatabase()->transaction();
+            $this->currentTransaction = $this->getSpannerDatabase()->transaction($this->withDefaultTimeout([]));
             return;
         }
 

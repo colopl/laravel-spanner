@@ -28,8 +28,11 @@ use Colopl\Spanner\TimestampBound\MinReadTimestamp;
 use Colopl\Spanner\TimestampBound\ReadTimestamp;
 use Colopl\Spanner\TimestampBound\StrongRead;
 use Colopl\Spanner\Tests\Support\FakeSpannerConnection;
+use Google\Cloud\Spanner\Batch\BatchClient;
+use Google\Cloud\Spanner\Batch\BatchSnapshot;
 use Google\Cloud\Spanner\Database;
 use Google\Cloud\Spanner\KeySet;
+use Google\Cloud\Spanner\Snapshot;
 use Google\Cloud\Spanner\SpannerClient;
 use Google\Cloud\Spanner\Timestamp;
 use Google\Cloud\Spanner\Transaction;
@@ -917,6 +920,192 @@ class ConnectionTest extends TestCase
         $this->assertIsArray($captured);
         $this->assertSame(1500, $captured['timeoutMillis']);
         $this->assertSame(1500, $conn->getCommitOptions()['timeoutMillis']);
+    }
+
+    /**
+     * `Database::snapshot()` starts a read-only transaction with its own RPC, so it must
+     * also carry the connection's default timeout.
+     *
+     * @param array<string, mixed>|null $captured
+     * @return Database&Stub
+     */
+    private function fakeDatabaseCapturingSnapshot(?array &$captured): Database
+    {
+        $database = $this->createStub(Database::class);
+        $database->method('snapshot')->willReturnCallback(
+            function (array $options = []) use (&$captured): Snapshot {
+                $captured = $options;
+                return $this->createStub(Snapshot::class);
+            },
+        );
+
+        return $database;
+    }
+
+    public function test_connection_with_default_timeout_seconds_covers_snapshot(): void
+    {
+        $captured = null;
+        $conn = new FakeSpannerConnection(
+            $this->fakeDatabaseCapturingSnapshot($captured),
+            ['client' => ['requestTimeout' => 1.5]],
+        );
+
+        $result = $conn->snapshot(new StrongRead(), static fn() => 'done');
+
+        $this->assertSame('done', $result);
+        $this->assertIsArray($captured);
+        $this->assertSame(['strong' => true, 'timeoutMillis' => 1500], $captured);
+        $this->assertFalse($conn->inSnapshot());
+    }
+
+    public function test_connection_with_default_timeout_seconds_covers_snapshot_with_timestamp_bound(): void
+    {
+        $captured = null;
+        $conn = new FakeSpannerConnection(
+            $this->fakeDatabaseCapturingSnapshot($captured),
+            ['client' => ['requestTimeout' => 1.5]],
+        );
+
+        $duration = new Duration(['seconds' => 10]);
+        $conn->snapshot(new ExactStaleness($duration), static fn() => null);
+
+        $this->assertIsArray($captured);
+        $this->assertSame(1500, $captured['timeoutMillis']);
+        $this->assertSame(
+            $duration,
+            $captured['exactStaleness'],
+            'The timestamp bound options must be preserved alongside the timeout.',
+        );
+    }
+
+    public function test_connection_without_default_timeout_seconds_covers_snapshot(): void
+    {
+        $captured = null;
+        $conn = new FakeSpannerConnection($this->fakeDatabaseCapturingSnapshot($captured), []);
+
+        $conn->snapshot(new StrongRead(), static fn() => null);
+
+        $this->assertIsArray($captured);
+        $this->assertArrayHasKey('timeoutMillis', $captured);
+        $this->assertNull($captured['timeoutMillis']);
+    }
+
+    /**
+     * `Database::transaction()` is the RPC issued by `beginTransaction()`, which is a
+     * separate path from `runTransaction()` used by `transaction()`.
+     *
+     * @param list<array<string, mixed>> $captured
+     * @param list<Throwable> $throwOnCall exception to throw for the nth call, or null
+     * @return Database&Stub
+     */
+    private function fakeDatabaseCapturingTransaction(array &$captured, array $throwOnCall = []): Database
+    {
+        $database = $this->createStub(Database::class);
+        $database->method('transaction')->willReturnCallback(
+            function (array $options = []) use (&$captured, $throwOnCall): Transaction {
+                $captured[] = $options;
+                $exception = $throwOnCall[count($captured) - 1] ?? null;
+                if ($exception !== null) {
+                    throw $exception;
+                }
+                return $this->createStub(Transaction::class);
+            },
+        );
+
+        return $database;
+    }
+
+    public function test_connection_with_default_timeout_seconds_covers_begin_transaction(): void
+    {
+        $captured = [];
+        $conn = new FakeSpannerConnection(
+            $this->fakeDatabaseCapturingTransaction($captured),
+            ['client' => ['requestTimeout' => 1.5]],
+        );
+
+        $conn->beginTransaction();
+
+        $this->assertCount(1, $captured);
+        $this->assertSame(['timeoutMillis' => 1500], $captured[0]);
+        $this->assertTrue($conn->inTransaction());
+    }
+
+    public function test_connection_without_default_timeout_seconds_covers_begin_transaction(): void
+    {
+        $captured = [];
+        $conn = new FakeSpannerConnection($this->fakeDatabaseCapturingTransaction($captured), []);
+
+        $conn->beginTransaction();
+
+        $this->assertCount(1, $captured);
+        $this->assertArrayHasKey('timeoutMillis', $captured[0]);
+        $this->assertNull($captured[0]['timeoutMillis']);
+    }
+
+    public function test_connection_with_default_timeout_seconds_covers_begin_transaction_retry_after_lost_connection(): void
+    {
+        $captured = [];
+        $conn = new FakeSpannerConnection(
+            $this->fakeDatabaseCapturingTransaction($captured, [new RuntimeException('server has gone away')]),
+            ['client' => ['requestTimeout' => 1.5]],
+        );
+
+        $conn->beginTransaction();
+
+        $this->assertCount(2, $captured, 'The lost connection must be retried once.');
+        $this->assertSame(['timeoutMillis' => 1500], $captured[0]);
+        $this->assertSame(
+            ['timeoutMillis' => 1500],
+            $captured[1],
+            'The retry after reconnecting must also carry the default timeout.',
+        );
+        $this->assertTrue($conn->inTransaction());
+    }
+
+    public function test_partitioned_query_splits_batch_and_snapshot_options(): void
+    {
+        $batchOptions = null;
+        $snapshotOptions = null;
+
+        $batchSnapshot = $this->createStub(BatchSnapshot::class);
+        $batchSnapshot->method('partitionQuery')->willReturn([]);
+
+        $batchClient = $this->createStub(BatchClient::class);
+        $batchClient->method('snapshot')->willReturnCallback(
+            function (array $options = []) use (&$snapshotOptions, $batchSnapshot): BatchSnapshot {
+                $snapshotOptions = $options;
+                return $batchSnapshot;
+            },
+        );
+
+        $client = $this->createStub(SpannerClient::class);
+        $client->method('batch')->willReturnCallback(
+            function (string $instanceId, string $database, array $options = []) use (&$batchOptions, $batchClient): BatchClient {
+                $batchOptions = $options;
+                return $batchClient;
+            },
+        );
+
+        $conn = new FakeSpannerConnection($this->createStub(Database::class), [], $client);
+
+        $duration = new Duration(['seconds' => 10]);
+        $rows = $conn->selectWithOptions('SELECT 1', [], [
+            'dataBoostEnabled' => true,
+            'databaseRole' => 'reader',
+            'exactStaleness' => $duration,
+        ]);
+
+        $this->assertSame([], $rows);
+        $this->assertSame(
+            ['databaseRole' => 'reader'],
+            $batchOptions,
+            'databaseRole belongs to the BatchClient, not the snapshot.',
+        );
+        $this->assertSame(
+            ['transactionOptions' => ['exactStaleness' => $duration]],
+            $snapshotOptions,
+            'Timestamp bounds must be nested under transactionOptions for the batch snapshot.',
+        );
     }
 
     /**

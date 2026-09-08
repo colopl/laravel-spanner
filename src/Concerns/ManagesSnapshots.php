@@ -31,6 +31,12 @@ trait ManagesSnapshots
     protected ?TransactionalReadInterface $currentSnapshot = null;
 
     /**
+     * @param array<string, mixed> $options
+     * @return array<string, mixed>
+     */
+    abstract protected function withDefaultTimeout(array $options): array;
+
+    /**
      * @template TReturn
      * @param TimestampBoundInterface $timestampBound
      * @param Closure(): TReturn $callback
@@ -42,7 +48,7 @@ trait ManagesSnapshots
             throw new LogicException('Nested snapshots are not supported.');
         }
 
-        $options = $timestampBound->transactionOptions();
+        $options = $this->withDefaultTimeout($timestampBound->transactionOptions());
         try {
             $this->currentSnapshot = $this->getSpannerDatabase()->snapshot($options);
             return $callback();

@@ -650,8 +650,10 @@ class Connection extends BaseConnection
      */
     protected function executePartitionedQuery(string $query, array $options): Generator
     {
-        $snapshotOptions = $this->extractOptions($options, ['databaseRole']);
-        $transactionOptions = $this->extractOptions($options, ['strong', 'readTimestamp', 'exactStaleness']);
+        $batchOptions = $this->extractOptions($options, ['databaseRole']);
+        $snapshotOptions = [
+            'transactionOptions' => $this->extractOptions($options, ['strong', 'readTimestamp', 'exactStaleness']),
+        ];
         $partitionOptions = $this->extractOptions($options, [
             'maxPartitions',
             'partitionSizeBytes',
@@ -667,8 +669,8 @@ class Connection extends BaseConnection
         }
 
         $snapshot = $this->getSpannerClient()
-            ->batch($this->instanceId, $this->database, $snapshotOptions)
-            ->snapshot(['transactionOptions' => $transactionOptions]);
+            ->batch($this->instanceId, $this->database, $batchOptions)
+            ->snapshot($snapshotOptions);
 
         foreach ($snapshot->partitionQuery($query, $partitionOptions) as $partition) {
             foreach ($snapshot->executePartition($partition) as $row) {
