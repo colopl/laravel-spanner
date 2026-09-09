@@ -506,8 +506,8 @@ class ConnectionTest extends TestCase
         $this->assertNotEmpty($cacheValuesBefore, 'After executing some query, session is cached.');
 
         $conn->refreshSession();
-        // In v2, clearSessionPool refreshes the session (creates a new one) rather than clearing the cache.
-        $this->assertNotEmpty($cacheItemPool->getValues(), 'After clearing the session pool, a new session is cached.');
+        // In v2, refreshSession creates a new session rather than clearing the cache.
+        $this->assertNotEmpty($cacheItemPool->getValues(), 'After refreshing the session, a new session is cached.');
     }
 
     public function test_session_cache_with_FileSystemAdapter(): void
