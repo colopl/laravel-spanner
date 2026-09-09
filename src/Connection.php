@@ -654,13 +654,13 @@ class Connection extends BaseConnection
         $snapshotOptions = [
             'transactionOptions' => $this->extractOptions($options, ['strong', 'readTimestamp', 'exactStaleness']),
         ];
+        $timeoutOptions = $this->extractOptions($options, ['timeoutMillis']);
         $partitionOptions = $this->extractOptions($options, [
             'maxPartitions',
             'partitionSizeBytes',
             'parameters',
             'types',
             'dataBoostEnabled',
-            'timeoutMillis',
         ]);
 
         if ($options !== []) {
@@ -672,8 +672,8 @@ class Connection extends BaseConnection
             ->batch($this->instanceId, $this->database, $batchOptions)
             ->snapshot($snapshotOptions);
 
-        foreach ($snapshot->partitionQuery($query, $partitionOptions) as $partition) {
-            foreach ($snapshot->executePartition($partition) as $row) {
+        foreach ($snapshot->partitionQuery($query, [...$partitionOptions, ...$timeoutOptions]) as $partition) {
+            foreach ($snapshot->executePartition($partition, $timeoutOptions) as $row) {
                 /** @var array<array-key, mixed> $row */
                 yield $row;
             }
