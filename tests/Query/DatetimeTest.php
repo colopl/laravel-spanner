@@ -22,15 +22,14 @@ use Colopl\Spanner\Tests\TestCase;
 use DateTime;
 use DateTimeInterface;
 use Google\Cloud\Spanner\Date;
-use Google\Cloud\Spanner\SpannerClient;
 use Google\Cloud\Spanner\Timestamp;
 use Illuminate\Support\Carbon;
 
 class DatetimeTest extends TestCase
 {
-    public function testTimezone(): void
+    public function test_timezone(): void
     {
-        $db = (new SpannerClient())->connect(config('database.connections.main.instance'), config('database.connections.main.database'));
+        $db = $this->getDefaultConnection()->getSpannerDatabase();
 
         date_default_timezone_set('UTC');
 

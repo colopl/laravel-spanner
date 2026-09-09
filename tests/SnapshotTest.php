@@ -20,6 +20,7 @@ namespace Colopl\Spanner\Tests;
 
 use Colopl\Spanner\TimestampBound\ExactStaleness;
 use Colopl\Spanner\TimestampBound\StrongRead;
+use Illuminate\Database\QueryException;
 use LogicException;
 use RuntimeException;
 
@@ -64,6 +65,15 @@ class SnapshotTest extends TestCase
             $this->assertNotNull($conn->table(self::TABLE_NAME_USER)->first());
             $this->assertSame(1, $conn->table(self::TABLE_NAME_USER)->count());
         });
+    }
+
+    public function test_snapshot_with_dataBoost(): void
+    {
+        $this->expectException(QueryException::class);
+        $this->expectExceptionMessage('Options: snapshotEnabled, snapshotTimestampBound are not supported for partitioned queries.');
+
+        $conn = $this->getDefaultConnection();
+        $conn->table(self::TABLE_NAME_USER)->useDataBoost()->snapshot(new StrongRead())->get();
     }
 
     public function test_snapshot_can_call_after_error(): void

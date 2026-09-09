@@ -28,6 +28,12 @@ trait ManagesPartitionedDml
     abstract public function getSpannerDatabase(): Database;
 
     /**
+     * @param array<string, mixed> $options
+     * @return array<string, mixed>
+     */
+    abstract protected function withDefaultTimeout(array $options): array;
+
+    /**
      * Run an SQL statement as partitioned DML and get the number of rows affected.
      *
      * @param string $query
@@ -42,7 +48,8 @@ trait ManagesPartitionedDml
                 return 0;
             }
 
-            $rowCount = $this->getSpannerDatabase()->executePartitionedUpdate($query, ['parameters' => $this->prepareBindings($bindings)]);
+            $options = $this->withDefaultTimeout(['parameters' => $this->prepareBindings($bindings)]);
+            $rowCount = $this->getSpannerDatabase()->executePartitionedUpdate($query, $options);
 
             $this->recordsHaveBeenModified($rowCount > 0);
 

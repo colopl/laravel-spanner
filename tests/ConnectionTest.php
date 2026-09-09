@@ -22,30 +22,35 @@ use Colopl\Spanner\Connection;
 use Colopl\Spanner\Events\MutatingData;
 use Colopl\Spanner\Query\Nested;
 use Colopl\Spanner\Schema\Grammar;
-use Colopl\Spanner\Session\SessionInfo;
 use Colopl\Spanner\TimestampBound\ExactStaleness;
 use Colopl\Spanner\TimestampBound\MaxStaleness;
 use Colopl\Spanner\TimestampBound\MinReadTimestamp;
 use Colopl\Spanner\TimestampBound\ReadTimestamp;
 use Colopl\Spanner\TimestampBound\StrongRead;
-use Generator;
-use Google\Auth\FetchAuthTokenInterface;
-use Google\Cloud\Spanner\Duration;
+use Colopl\Spanner\Tests\Support\FakeSpannerConnection;
+use Google\Cloud\Spanner\Batch\BatchClient;
+use Google\Cloud\Spanner\Batch\BatchSnapshot;
+use Google\Cloud\Spanner\Database;
 use Google\Cloud\Spanner\KeySet;
-use Google\Cloud\Spanner\Session\CacheSessionPool;
+use Google\Cloud\Spanner\Snapshot;
 use Google\Cloud\Spanner\SpannerClient;
 use Google\Cloud\Spanner\Timestamp;
 use Google\Cloud\Spanner\Transaction;
 use Google\Cloud\Spanner\V1\TransactionOptions\IsolationLevel;
+use Google\Protobuf\Duration;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Database\Events\TransactionBeginning;
 use Illuminate\Database\Events\TransactionCommitted;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Event;
 use LogicException;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\MockObject\Stub;
 use ReflectionProperty;
+use RuntimeException;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
-
+use Throwable;
 use function dirname;
 use function fileperms;
 use function sprintf;
@@ -77,7 +82,6 @@ class ConnectionTest extends TestCase
 
         $db = $conn->getSpannerDatabase();
         $ref = new ReflectionProperty($db, 'isolationLevel');
-        $ref->setAccessible(true);
         $this->assertSame(IsolationLevel::SERIALIZABLE, $ref->getValue($db));
     }
 
@@ -91,7 +95,6 @@ class ConnectionTest extends TestCase
 
         $db = $conn->getSpannerDatabase();
         $ref = new ReflectionProperty($db, 'isolationLevel');
-        $ref->setAccessible(true);
         $this->assertSame(IsolationLevel::REPEATABLE_READ, $ref->getValue($db));
     }
 
@@ -106,7 +109,6 @@ class ConnectionTest extends TestCase
 
         $db = $conn->getSpannerDatabase();
         $ref = new ReflectionProperty($db, 'isolationLevel');
-        $ref->setAccessible(true);
         $this->assertSame(IsolationLevel::ISOLATION_LEVEL_UNSPECIFIED, $ref->getValue($db));
     }
 
@@ -161,16 +163,20 @@ class ConnectionTest extends TestCase
     {
         $conn = $this->getDefaultConnection();
         $conn->table(self::TABLE_NAME_USER)->insert(['userId' => $this->generateUuid(), 'name' => __FUNCTION__]);
-        $values = $conn->selectWithOptions('SELECT * FROM ' . self::TABLE_NAME_USER, [], ['exactStaleness' => new Duration(10)]);
+        $values = $conn->selectWithOptions('SELECT * FROM ' . self::TABLE_NAME_USER, [], ['exactStaleness' => new Duration(['seconds' => 10])]);
         $this->assertEmpty($values);
     }
 
     public function test_cursorWithOptions(): void
     {
         $conn = $this->getDefaultConnection();
-        $conn->table(self::TABLE_NAME_USER)->insert(['userId' => $this->generateUuid(), 'name' => __FUNCTION__]);
-        $cursor = $conn->cursorWithOptions('SELECT * FROM ' . self::TABLE_NAME_USER, [], ['exactStaleness' => new Duration(10)]);
-        $this->assertInstanceOf(Generator::class, $cursor);
+        $uuid = $this->generateUuid();
+        $conn->table(self::TABLE_NAME_USER)->insert(['userId' => $uuid, 'name' => __FUNCTION__]);
+        $cursor = $conn->cursorWithOptions(
+            'SELECT * FROM ' . self::TABLE_NAME_USER . ' WHERE userId=?',
+            [$uuid],
+            ['exactStaleness' => new Duration(['seconds' => 10])],
+        );
         $this->assertNull($cursor->current());
     }
 
@@ -448,45 +454,29 @@ class ConnectionTest extends TestCase
         $this->assertSame(5, $executedCount);
     }
 
-    public function testSession(): void
+    public function test_session_exists(): void
     {
         $conn = $this->getDefaultConnection();
-        $conn->disconnect();
-
-        $this->assertNull($conn->__debugInfo()['session'], 'At the time of creating the connection, the session has not been created yet.');
-
-        $conn->selectOne('SELECT 1');
-
-        $this->assertNotEmpty($conn->__debugInfo()['session'], 'After executing some query, session is created.');
-    }
-
-    public function testCredentialFetcher(): void
-    {
-        if (getenv('SPANNER_EMULATOR_HOST')) {
-            $this->markTestSkipped('Cannot test credential fetcher on emulator');
-        }
-
-        $conn = $this->getDefaultConnection();
-        /** @var FetchAuthTokenInterface|null $credentialFetcher */
-        $credentialFetcher = $conn->__debugInfo()['credentialFetcher'];
-
-        $this->assertInstanceOf(FetchAuthTokenInterface::class, $credentialFetcher);
-        $this->assertNotEmpty($credentialFetcher->getCacheKey());
+        $this->assertNotEmpty($conn->getSessionName(), 'After executing some query, session is created.');
     }
 
     public function test_AuthCache_works(): void
     {
+        if (getenv('SPANNER_EMULATOR_HOST')) {
+            $this->markTestSkipped('AuthCache is not used when connecting to the Spanner Emulator. Skipping test.');
+        }
+
         $config = $this->app['config']->get('database.connections.main');
 
         $authCache = new ArrayAdapter();
-        $sessionPool = new CacheSessionPool(new ArrayAdapter());
-        $conn = new Connection($config['instance'], $config['database'], '', $config, $authCache, $sessionPool);
+        $sessionCache = new ArrayAdapter();
+        $conn = new Connection($config['instance'], $config['database'], '', $config, $authCache, $sessionCache);
         $this->setUpDatabaseOnce($conn);
 
         $conn->selectOne('SELECT 1');
 
         $this->assertInstanceOf(Connection::class, $conn);
-        $this->assertNotEmpty($authCache->getValues(), 'After executing some query, session cache is created.');
+        $this->assertNotEmpty($authCache->getValues(), 'After executing some query, auth cache is populated.');
     }
 
     public function test_AuthCache_with_FileSystemAdapter(): void
@@ -502,24 +492,25 @@ class ConnectionTest extends TestCase
         $this->assertSame('0755', substr(sprintf('%o', fileperms($outputPath)), -4));
     }
 
-    public function test_session_pool(): void
+    public function test_session_cache(): void
     {
         $config = $this->app['config']->get('database.connections.main');
 
         $cacheItemPool = new ArrayAdapter();
-        $cacheSessionPool = new CacheSessionPool($cacheItemPool);
-        $conn = new Connection($config['instance'], $config['database'], '', $config, null, $cacheSessionPool);
+        $conn = new Connection($config['instance'], $config['database'], '', $config, null, $cacheItemPool);
         $this->setUpDatabaseOnce($conn);
         $this->assertInstanceOf(Connection::class, $conn);
 
         $conn->selectOne('SELECT 1');
-        $this->assertNotEmpty($cacheItemPool->getValues(), 'After executing some query, cache is created.');
+        $cacheValuesBefore = $cacheItemPool->getValues();
+        $this->assertNotEmpty($cacheValuesBefore, 'After executing some query, session is cached.');
 
-        $conn->clearSessionPool();
-        $this->assertEmpty($cacheItemPool->getValues(), 'After clearing the session pool, cache is removed.');
+        $conn->refreshSession();
+        // In v2, refreshSession creates a new session rather than clearing the cache.
+        $this->assertNotEmpty($cacheItemPool->getValues(), 'After refreshing the session, a new session is cached.');
     }
 
-    public function test_session_pool_with_FileSystemAdapter(): void
+    public function test_session_cache_with_FileSystemAdapter(): void
     {
         $this->app->useStoragePath('/tmp/laravel-spanner');
 
@@ -532,22 +523,12 @@ class ConnectionTest extends TestCase
         $this->assertSame('0755', substr(sprintf('%o', fileperms($outputPath)), -4));
     }
 
-    public function test_clearSessionPool(): void
+    public function test_refreshSession(): void
     {
         $conn = $this->getDefaultConnection();
-        $conn->warmupSessionPool();
-        $conn->clearSessionPool();
-        $this->assertSame(1, $conn->warmupSessionPool());
-    }
-
-    public function test_listSessions(): void
-    {
-        $conn = $this->getDefaultConnection();
-        $conn->select('SELECT 1');
-
-        $sessions = $conn->listSessions();
-        $this->assertNotEmpty($sessions);
-        $this->assertInstanceOf(SessionInfo::class, $sessions[0]);
+        $old = $conn->getSessionName();
+        $conn->refreshSession();
+        $this->assertNotSame($old, $conn->getSessionName());
     }
 
     public function test_stale_reads(): void
@@ -556,7 +537,12 @@ class ConnectionTest extends TestCase
         $tableName = self::TABLE_NAME_USER;
         $uuid = $this->generateUuid();
 
-        $db = (new SpannerClient())->connect(config('database.connections.main.instance'), config('database.connections.main.database'));
+        $db = (new SpannerClient([
+            'cacheItemPool' => new ArrayAdapter(),
+        ]))->connect(
+            config('database.connections.main.instance'),
+            config('database.connections.main.database'),
+        );
         /** @var Timestamp|null $timestamp */
         $timestamp = null;
         $db->runTransaction(function (Transaction $tx) use ($tableName, $uuid, &$timestamp) {
@@ -564,7 +550,6 @@ class ConnectionTest extends TestCase
             $tx->executeUpdate("INSERT INTO {$tableName} (`userId`, `name`) VALUES ('{$uuid}', '{$name}')");
             $timestamp = $tx->commit();
         });
-        $db->close();
         $this->assertNotEmpty($timestamp);
 
         $timestampBound = new StrongRead();
@@ -621,20 +606,62 @@ class ConnectionTest extends TestCase
         });
     }
 
+    public function test_stale_reads_with_dataBoost(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $tableName = self::TABLE_NAME_USER;
+        $uuid = $this->generateUuid();
+
+        $db = (new SpannerClient([
+            'cacheItemPool' => new ArrayAdapter(),
+        ]))->connect(
+            config('database.connections.main.instance'),
+            config('database.connections.main.database'),
+        );
+        /** @var Timestamp|null $timestamp */
+        $timestamp = null;
+        $db->runTransaction(function (Transaction $tx) use ($tableName, $uuid, &$timestamp) {
+            $name = 'first';
+            $tx->executeUpdate("INSERT INTO {$tableName} (`userId`, `name`) VALUES ('{$uuid}', '{$name}')");
+            $timestamp = $tx->commit();
+        });
+        $this->assertNotEmpty($timestamp);
+
+        $oldDatetime = Carbon::instance($timestamp->get())->subSecond();
+
+        $query = "SELECT * FROM {$tableName} WHERE userId = ?";
+        $params = [$uuid];
+        $options = ['dataBoostEnabled' => true];
+
+        $timestampBound = new StrongRead();
+        $rows = $conn->selectWithOptions($query, $params, $options + $timestampBound->transactionOptions());
+        $this->assertCount(1, $rows);
+        $this->assertSame($uuid, $rows[0]['userId']);
+        $this->assertSame('first', $rows[0]['name']);
+
+        $timestampBound = new ReadTimestamp($oldDatetime);
+        $rows = $conn->selectWithOptions($query, $params, $options + $timestampBound->transactionOptions());
+        $this->assertEmpty($rows);
+
+        $timestampBound = new ExactStaleness(10);
+        $rows = $conn->selectWithOptions($query, $params, $options + $timestampBound->transactionOptions());
+        $this->assertEmpty($rows);
+    }
+
     public function testEventListenOrder(): void
     {
+        $conn = $this->getDefaultConnection();
+
         $receivedEventClasses = [];
         $this->app['events']->listen(TransactionBeginning::class, function () use (&$receivedEventClasses) {
             $receivedEventClasses[] = TransactionBeginning::class;
         });
-        $this->app['events']->listen(QueryExecuted::class, function () use (&$receivedEventClasses) {
+        $this->app['events']->listen(QueryExecuted::class, function ($e) use (&$receivedEventClasses) {
             $receivedEventClasses[] = QueryExecuted::class;
         });
         $this->app['events']->listen(TransactionCommitted::class, function () use (&$receivedEventClasses) {
             $receivedEventClasses[] = TransactionCommitted::class;
         });
-
-        $conn = $this->getDefaultConnection();
 
         $tableName = self::TABLE_NAME_USER;
         $uuid = $this->generateUuid();
@@ -711,5 +738,473 @@ class ConnectionTest extends TestCase
         $now = now()->setTimezone('Asia/Tokyo');
         $conn->select('SELECT ?', [$now]);
         $this->assertSame('Asia/Tokyo', $now->getTimezone()->getName());
+    }
+
+    /**
+     * Marker used to abort the RPC as soon as the driver hands the options
+     * over to the Google client, so no network call is ever made.
+     */
+    private const CAPTURE_MARKER = '__options_captured__';
+
+    /**
+     * @param array<string, mixed>|null $captured
+     * @return Database&Stub
+     */
+    private function fakeDatabaseCapturing(string $method, ?array &$captured): Database
+    {
+        $database = $this->createStub(Database::class);
+        $database->method($method)->willReturnCallback(
+            function (mixed ...$args) use (&$captured): never {
+                $options = end($args);
+                $captured = is_array($options) ? $options : [];
+                throw new RuntimeException(self::CAPTURE_MARKER);
+            },
+        );
+
+        return $database;
+    }
+
+    /**
+     * @param array<string, mixed>|null $captured
+     * @return Transaction&Stub
+     */
+    private function fakeTransactionCapturing(string $method, ?array &$captured): Transaction
+    {
+        $transaction = $this->createStub(Transaction::class);
+        $transaction->method($method)->willReturnCallback(
+            function (mixed ...$args) use (&$captured): never {
+                $options = end($args);
+                $captured = is_array($options) ? $options : [];
+                throw new RuntimeException(self::CAPTURE_MARKER);
+            },
+        );
+
+        return $transaction;
+    }
+
+    private function assertCaptureMarker(Throwable $e): void
+    {
+        $messages = [];
+        for ($current = $e; $current !== null; $current = $current->getPrevious()) {
+            $messages[] = $current->getMessage();
+        }
+
+        $this->assertStringContainsString(
+            self::CAPTURE_MARKER,
+            implode(' | ', $messages),
+            'Expected the RPC to be aborted by the capturing test double.',
+        );
+    }
+
+    public function test_connection_with_default_timeout_seconds(): void
+    {
+        $captured = null;
+        $database = $this->fakeDatabaseCapturing('execute', $captured);
+        $conn = new FakeSpannerConnection($database, ['client' => ['requestTimeout' => 1.5]]);
+
+        try {
+            $conn->select('SELECT 1');
+            $this->fail('Expected the capturing test double to abort the query.');
+        } catch (Throwable $e) {
+            $this->assertCaptureMarker($e);
+        }
+
+        $this->assertIsArray($captured);
+        $this->assertSame(1500, $captured['timeoutMillis']);
+    }
+
+    public function test_connection_with_default_timeout_seconds_covers_dml(): void
+    {
+        $captured = null;
+        $transaction = $this->fakeTransactionCapturing('executeUpdate', $captured);
+        $conn = new FakeSpannerConnection(
+            $this->createStub(Database::class),
+            ['client' => ['requestTimeout' => 1.5]],
+        );
+
+        try {
+            $conn->callExecuteDml($transaction, 'UPDATE `User` SET `name` = ? WHERE true', ['x']);
+            $this->fail('Expected the capturing test double to abort the DML.');
+        } catch (Throwable $e) {
+            $this->assertCaptureMarker($e);
+        }
+
+        $this->assertIsArray($captured);
+        $this->assertSame(1500, $captured['timeoutMillis']);
+    }
+
+    public function test_connection_with_default_timeout_seconds_covers_batch_dml(): void
+    {
+        $captured = null;
+        $transaction = $this->fakeTransactionCapturing('executeUpdateBatch', $captured);
+        $conn = new FakeSpannerConnection(
+            $this->createStub(Database::class),
+            ['client' => ['requestTimeout' => 1.5]],
+        );
+
+        try {
+            $conn->callExecuteBatchDml($transaction, 'INSERT OR IGNORE `User` (`userId`) VALUES (?)', ['x']);
+            $this->fail('Expected the capturing test double to abort the batch DML.');
+        } catch (Throwable $e) {
+            $this->assertCaptureMarker($e);
+        }
+
+        $this->assertIsArray($captured);
+        $this->assertSame(1500, $captured['timeoutMillis']);
+    }
+
+    public function test_connection_with_default_timeout_seconds_covers_partitioned_dml(): void
+    {
+        $captured = null;
+        $database = $this->fakeDatabaseCapturing('executePartitionedUpdate', $captured);
+        $conn = new FakeSpannerConnection($database, ['client' => ['requestTimeout' => 1.5]]);
+
+        try {
+            $conn->runPartitionedDml('UPDATE `User` SET `name` = `name` WHERE true');
+            $this->fail('Expected the capturing test double to abort the partitioned DML.');
+        } catch (Throwable $e) {
+            $this->assertCaptureMarker($e);
+        }
+
+        $this->assertIsArray($captured);
+        $this->assertSame(1500, $captured['timeoutMillis']);
+    }
+
+    /**
+     * @return array<string, array{string, callable(FakeSpannerConnection): void}>
+     */
+    public static function mutationMethodProvider(): array
+    {
+        return [
+            'insert' => ['insertBatch', static fn(FakeSpannerConnection $conn) => $conn->insertUsingMutation('User', ['userId' => 'x'])],
+            'update' => ['updateBatch', static fn(FakeSpannerConnection $conn) => $conn->updateUsingMutation('User', ['userId' => 'x'])],
+            'insertOrUpdate' => ['insertOrUpdateBatch', static fn(FakeSpannerConnection $conn) => $conn->insertOrUpdateUsingMutation('User', ['userId' => 'x'])],
+            'delete' => ['delete', static fn(FakeSpannerConnection $conn) => $conn->deleteUsingMutation('User', ['x'])],
+        ];
+    }
+
+    /**
+     * @param callable(FakeSpannerConnection): void $mutate
+     */
+    #[DataProvider('mutationMethodProvider')]
+    public function test_connection_with_default_timeout_seconds_covers_mutations(string $method, callable $mutate): void
+    {
+        $captured = null;
+        $database = $this->fakeDatabaseCapturing($method, $captured);
+        $conn = new FakeSpannerConnection($database, ['client' => ['requestTimeout' => 1.5]]);
+
+        try {
+            $mutate($conn);
+            $this->fail('Expected the capturing test double to abort the mutation.');
+        } catch (Throwable $e) {
+            $this->assertCaptureMarker($e);
+        }
+
+        $this->assertIsArray($captured);
+        $this->assertSame(1500, $captured['timeoutMillis']);
+    }
+
+    public function test_connection_with_default_timeout_seconds_covers_transaction_begin_and_commit(): void
+    {
+        $captured = null;
+        $database = $this->fakeDatabaseCapturing('runTransaction', $captured);
+        $conn = new FakeSpannerConnection($database, ['client' => ['requestTimeout' => 1.5]]);
+
+        try {
+            $conn->transaction(fn() => null);
+            $this->fail('Expected the capturing test double to abort the transaction.');
+        } catch (Throwable $e) {
+            $this->assertCaptureMarker($e);
+        }
+
+        $this->assertIsArray($captured);
+        $this->assertSame(1500, $captured['timeoutMillis']);
+        $this->assertSame(1500, $conn->getCommitOptions()['timeoutMillis']);
+    }
+
+    /**
+     * `Database::snapshot()` starts a read-only transaction with its own RPC, so it must
+     * also carry the connection's default timeout.
+     *
+     * @param array<string, mixed>|null $captured
+     * @return Database&Stub
+     */
+    private function fakeDatabaseCapturingSnapshot(?array &$captured): Database
+    {
+        $database = $this->createStub(Database::class);
+        $database->method('snapshot')->willReturnCallback(
+            function (array $options = []) use (&$captured): Snapshot {
+                $captured = $options;
+                return $this->createStub(Snapshot::class);
+            },
+        );
+
+        return $database;
+    }
+
+    public function test_connection_with_default_timeout_seconds_covers_snapshot(): void
+    {
+        $captured = null;
+        $conn = new FakeSpannerConnection(
+            $this->fakeDatabaseCapturingSnapshot($captured),
+            ['client' => ['requestTimeout' => 1.5]],
+        );
+
+        $result = $conn->snapshot(new StrongRead(), static fn() => 'done');
+
+        $this->assertSame('done', $result);
+        $this->assertIsArray($captured);
+        $this->assertSame(['strong' => true, 'timeoutMillis' => 1500], $captured);
+        $this->assertFalse($conn->inSnapshot());
+    }
+
+    public function test_connection_with_default_timeout_seconds_covers_snapshot_with_timestamp_bound(): void
+    {
+        $captured = null;
+        $conn = new FakeSpannerConnection(
+            $this->fakeDatabaseCapturingSnapshot($captured),
+            ['client' => ['requestTimeout' => 1.5]],
+        );
+
+        $duration = new Duration(['seconds' => 10]);
+        $conn->snapshot(new ExactStaleness($duration), static fn() => null);
+
+        $this->assertIsArray($captured);
+        $this->assertSame(1500, $captured['timeoutMillis']);
+        $this->assertSame(
+            $duration,
+            $captured['exactStaleness'],
+            'The timestamp bound options must be preserved alongside the timeout.',
+        );
+    }
+
+    public function test_connection_without_default_timeout_seconds_covers_snapshot(): void
+    {
+        $captured = null;
+        $conn = new FakeSpannerConnection($this->fakeDatabaseCapturingSnapshot($captured), []);
+
+        $conn->snapshot(new StrongRead(), static fn() => null);
+
+        $this->assertIsArray($captured);
+        $this->assertArrayHasKey('timeoutMillis', $captured);
+        $this->assertNull($captured['timeoutMillis']);
+    }
+
+    /**
+     * `Database::transaction()` is the RPC issued by `beginTransaction()`, which is a
+     * separate path from `runTransaction()` used by `transaction()`.
+     *
+     * @param list<array<string, mixed>> $captured
+     * @param list<Throwable> $throwOnCall exception to throw for the nth call, or null
+     * @return Database&Stub
+     */
+    private function fakeDatabaseCapturingTransaction(array &$captured, array $throwOnCall = []): Database
+    {
+        $database = $this->createStub(Database::class);
+        $database->method('transaction')->willReturnCallback(
+            function (array $options = []) use (&$captured, $throwOnCall): Transaction {
+                $captured[] = $options;
+                $exception = $throwOnCall[count($captured) - 1] ?? null;
+                if ($exception !== null) {
+                    throw $exception;
+                }
+                return $this->createStub(Transaction::class);
+            },
+        );
+
+        return $database;
+    }
+
+    public function test_connection_with_default_timeout_seconds_covers_begin_transaction(): void
+    {
+        $captured = [];
+        $conn = new FakeSpannerConnection(
+            $this->fakeDatabaseCapturingTransaction($captured),
+            ['client' => ['requestTimeout' => 1.5]],
+        );
+
+        $conn->beginTransaction();
+
+        $this->assertCount(1, $captured);
+        $this->assertSame(['timeoutMillis' => 1500], $captured[0]);
+        $this->assertTrue($conn->inTransaction());
+    }
+
+    public function test_connection_without_default_timeout_seconds_covers_begin_transaction(): void
+    {
+        $captured = [];
+        $conn = new FakeSpannerConnection($this->fakeDatabaseCapturingTransaction($captured), []);
+
+        $conn->beginTransaction();
+
+        $this->assertCount(1, $captured);
+        $this->assertArrayHasKey('timeoutMillis', $captured[0]);
+        $this->assertNull($captured[0]['timeoutMillis']);
+    }
+
+    public function test_connection_with_default_timeout_seconds_covers_begin_transaction_retry_after_lost_connection(): void
+    {
+        $captured = [];
+        $conn = new FakeSpannerConnection(
+            $this->fakeDatabaseCapturingTransaction($captured, [new RuntimeException('server has gone away')]),
+            ['client' => ['requestTimeout' => 1.5]],
+        );
+
+        $conn->beginTransaction();
+
+        $this->assertCount(2, $captured, 'The lost connection must be retried once.');
+        $this->assertSame(['timeoutMillis' => 1500], $captured[0]);
+        $this->assertSame(
+            ['timeoutMillis' => 1500],
+            $captured[1],
+            'The retry after reconnecting must also carry the default timeout.',
+        );
+        $this->assertTrue($conn->inTransaction());
+    }
+
+    public function test_partitioned_query_splits_batch_and_snapshot_options(): void
+    {
+        $batchOptions = null;
+        $snapshotOptions = null;
+
+        $batchSnapshot = $this->createStub(BatchSnapshot::class);
+        $batchSnapshot->method('partitionQuery')->willReturn([]);
+
+        $batchClient = $this->createStub(BatchClient::class);
+        $batchClient->method('snapshot')->willReturnCallback(
+            function (array $options = []) use (&$snapshotOptions, $batchSnapshot): BatchSnapshot {
+                $snapshotOptions = $options;
+                return $batchSnapshot;
+            },
+        );
+
+        $client = $this->createStub(SpannerClient::class);
+        $client->method('batch')->willReturnCallback(
+            function (string $instanceId, string $database, array $options = []) use (&$batchOptions, $batchClient): BatchClient {
+                $batchOptions = $options;
+                return $batchClient;
+            },
+        );
+
+        $conn = new FakeSpannerConnection($this->createStub(Database::class), [], $client);
+
+        $duration = new Duration(['seconds' => 10]);
+        $rows = $conn->selectWithOptions('SELECT 1', [], [
+            'dataBoostEnabled' => true,
+            'databaseRole' => 'reader',
+            'exactStaleness' => $duration,
+        ]);
+
+        $this->assertSame([], $rows);
+        $this->assertSame(
+            ['databaseRole' => 'reader'],
+            $batchOptions,
+            'databaseRole belongs to the BatchClient, not the snapshot.',
+        );
+        $this->assertSame(
+            ['transactionOptions' => ['exactStaleness' => $duration]],
+            $snapshotOptions,
+            'Timestamp bounds must be nested under transactionOptions for the batch snapshot.',
+        );
+    }
+
+    /**
+     * @param array<string, mixed>|null $captured
+     * @return Transaction&Stub
+     */
+    private function fakeActiveTransactionCapturingRollback(?array &$captured): Transaction
+    {
+        $transaction = $this->createStub(Transaction::class);
+        $transaction->method('state')->willReturn(Transaction::STATE_ACTIVE);
+        $transaction->method('id')->willReturn('fake-transaction-id');
+        $transaction->method('rollBack')->willReturnCallback(
+            function (mixed ...$args) use (&$captured): void {
+                $options = $args[0] ?? [];
+                $captured = is_array($options) ? $options : [];
+            },
+        );
+
+        return $transaction;
+    }
+
+    public function test_connection_with_default_timeout_seconds_covers_rollback(): void
+    {
+        $captured = null;
+        $transaction = $this->fakeActiveTransactionCapturingRollback($captured);
+        $conn = new FakeSpannerConnection(
+            $this->createStub(Database::class),
+            ['client' => ['requestTimeout' => 1.5]],
+        );
+
+        $conn->callPerformRollBack($transaction);
+
+        $this->assertIsArray($captured);
+        $this->assertSame(1500, $captured['timeoutMillis']);
+        $this->assertFalse($conn->inTransaction());
+    }
+
+    public function test_connection_without_default_timeout_seconds_covers_rollback(): void
+    {
+        $captured = null;
+        $transaction = $this->fakeActiveTransactionCapturingRollback($captured);
+        $conn = new FakeSpannerConnection($this->createStub(Database::class), []);
+
+        $conn->callPerformRollBack($transaction);
+
+        $this->assertIsArray($captured);
+        $this->assertNull($captured['timeoutMillis']);
+    }
+
+    public function test_rollback_is_skipped_when_transaction_is_not_active(): void
+    {
+        $captured = null;
+        $transaction = $this->createStub(Transaction::class);
+        $transaction->method('state')->willReturn(Transaction::STATE_ROLLED_BACK);
+        $transaction->method('id')->willReturn('fake-transaction-id');
+        $transaction->method('rollBack')->willReturnCallback(
+            function (mixed ...$args) use (&$captured): void {
+                $captured = $args;
+            },
+        );
+
+        $conn = new FakeSpannerConnection(
+            $this->createStub(Database::class),
+            ['client' => ['requestTimeout' => 1.5]],
+        );
+
+        $conn->callPerformRollBack($transaction);
+
+        $this->assertNull($captured, 'rollBack() must not be called on an inactive transaction.');
+        $this->assertFalse($conn->inTransaction());
+    }
+
+    public function test_connection_without_default_timeout_seconds_sends_no_timeout(): void
+    {
+        $captured = null;
+        $database = $this->fakeDatabaseCapturing('execute', $captured);
+        $conn = new FakeSpannerConnection($database, []);
+
+        try {
+            $conn->select('SELECT 1');
+            $this->fail('Expected the capturing test double to abort the query.');
+        } catch (Throwable $e) {
+            $this->assertCaptureMarker($e);
+        }
+
+        $this->assertIsArray($captured);
+        $this->assertNull($captured['timeoutMillis']);
+    }
+
+    public function test_connection_with_default_timeout_below_one_millisecond_is_rejected(): void
+    {
+        $conn = new FakeSpannerConnection(
+            $this->createStub(Database::class),
+            ['client' => ['requestTimeout' => 0.0009]],
+        );
+
+        $this->expectException(QueryException::class);
+        $this->expectExceptionMessage('Request timeout must be >= 1ms.');
+
+        $conn->select('SELECT 1');
     }
 }

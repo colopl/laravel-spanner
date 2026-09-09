@@ -33,14 +33,14 @@ class WarmupCommandTest extends TestCase
         }
 
         $this->artisan('spanner:warmup')
-            ->expectsOutputToContain("Warmed up 1 sessions for main")
-            ->expectsOutputToContain("Warmed up 1 sessions for alternative")
+            ->expectsOutputToContain("Refreshed session for main")
+            ->expectsOutputToContain("Refreshed session for alternative")
             ->assertSuccessful()
             ->run();
 
         $this->artisan('spanner:warmup')
-            ->expectsOutputToContain("Warmed up 0 sessions for main")
-            ->expectsOutputToContain("Warmed up 0 sessions for alternative")
+            ->expectsOutputToContain("Refreshed session for main")
+            ->expectsOutputToContain("Refreshed session for alternative")
             ->assertSuccessful()
             ->run();
     }
@@ -54,25 +54,8 @@ class WarmupCommandTest extends TestCase
         }
 
         $this->artisan('spanner:warmup', ['connections' => 'main'])
-            ->expectsOutputToContain("Warmed up 1 sessions for main")
+            ->expectsOutputToContain("Refreshed session for main")
             ->doesntExpectOutputToContain("alternative")
-            ->assertSuccessful()
-            ->run();
-    }
-
-    public function test_with_refresh(): void
-    {
-        foreach (['main', 'alternative'] as $name) {
-            $conn = $this->getConnection($name);
-            assert($conn instanceof Connection);
-            $this->setUpDatabaseOnce($conn);
-        }
-
-        $this->artisan('spanner:warmup', ['--refresh' => true])
-            ->expectsOutputToContain('Cleared all existing sessions for main')
-            ->expectsOutputToContain('Cleared all existing sessions for alternative')
-            ->expectsOutputToContain("Warmed up 1 sessions for main")
-            ->expectsOutputToContain("Warmed up 1 sessions for alternative")
             ->assertSuccessful()
             ->run();
     }
@@ -107,7 +90,7 @@ class WarmupCommandTest extends TestCase
         ]);
 
         $this->artisan('spanner:warmup', ['connections' => 'none', '--skip-on-error' => true])
-            ->expectsOutputToContain('Skipping warmup for none')
+            ->expectsOutputToContain('Skipping session refresh for none')
             ->assertSuccessful()
             ->run();
 

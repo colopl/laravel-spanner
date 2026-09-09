@@ -21,7 +21,6 @@ namespace Colopl\Spanner\Concerns;
 use Google\Cloud\Core\LongRunning\LongRunningOperation;
 use Google\Cloud\Spanner\Database;
 use RuntimeException;
-
 use function json_encode;
 
 trait ManagesDataDefinitions

@@ -133,11 +133,14 @@ abstract class TestCase extends \Orchestra\Testbench\TestCase
     protected function setUpEmulatorInstance(Connection $conn): void
     {
         $spanner = new SpannerClient((array) $conn->getConfig('client') + [
-            'authCache' => new FilesystemAdapter(
-                namespace: $conn->getName() . '_auth',
-                directory: $this->app->storagePath('framework/spanner'),
-            ),
+            'credentialsConfig' => [
+                'authCache' => new FilesystemAdapter(
+                    namespace: $conn->getName() . '_auth',
+                    directory: $this->app->storagePath('framework/spanner'),
+                ),
+            ],
         ]);
+
         $name = (string) $conn->getConfig('instance');
         if (!$spanner->instance($name)->exists()) {
             $config = $spanner->instanceConfiguration('emulator-config');
@@ -159,13 +162,12 @@ abstract class TestCase extends \Orchestra\Testbench\TestCase
         }
         if (!$conn->databaseExists()) {
             $conn->createDatabase($this->getTestDatabaseDDLs());
-
+            $conn->refreshSession();
             // Configure database to use bit-reversed sequences for auto-increment columns
             $conn->getSchemaBuilder()->setDatabaseOptions([
                 'default_sequence_kind' => 'bit_reversed_positive',
             ]);
         }
-
         $this->beforeApplicationDestroyed(fn() => $this->cleanupDatabase($conn));
     }
 
@@ -178,7 +180,6 @@ abstract class TestCase extends \Orchestra\Testbench\TestCase
         foreach ($conn->select("SELECT t.table_name FROM information_schema.tables as t WHERE t.table_schema = ''") as $row) {
             $conn->table($row['table_name'])->truncate();
         }
-        $conn->clearSessionPool();
     }
 
     /**

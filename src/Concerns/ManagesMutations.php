@@ -26,7 +26,6 @@ use Google\Cloud\Spanner\Timestamp;
 use Google\Cloud\Spanner\Transaction;
 use Illuminate\Database\Events\TransactionBeginning;
 use Illuminate\Database\Events\TransactionCommitted;
-use Illuminate\Support\Arr;
 use InvalidArgumentException;
 
 /**
@@ -40,6 +39,12 @@ trait ManagesMutations
     abstract protected function getDatabaseContext(): Database|Transaction;
 
     /**
+     * @param array<string, mixed> $options
+     * @return array<string, mixed>
+     */
+    abstract protected function withDefaultTimeout(array $options): array;
+
+    /**
      * @param string $table
      * @param TDataSet $dataSet
      * @return void
@@ -49,7 +54,10 @@ trait ManagesMutations
         $this->withTransactionEvents(function () use ($table, $dataSet) {
             $dataSet = $this->prepareForMutation($dataSet);
             $this->event(new MutatingData($this, $table, 'insert', $dataSet));
-            $this->getMutationExecutor()->insertBatch($table, $dataSet);
+            $executor = $this->getMutationExecutor();
+            $executor instanceof Database
+                ? $executor->insertBatch($table, $dataSet, $this->getMutationOptions())
+                : $executor->insertBatch($table, $dataSet);
         });
     }
 
@@ -63,7 +71,10 @@ trait ManagesMutations
         $this->withTransactionEvents(function () use ($table, $dataSet) {
             $dataSet = $this->prepareForMutation($dataSet);
             $this->event(new MutatingData($this, $table, 'update', $dataSet));
-            $this->getMutationExecutor()->updateBatch($table, $dataSet);
+            $executor = $this->getMutationExecutor();
+            $executor instanceof Database
+                ? $executor->updateBatch($table, $dataSet, $this->getMutationOptions())
+                : $executor->updateBatch($table, $dataSet);
         });
     }
 
@@ -77,7 +88,10 @@ trait ManagesMutations
         $this->withTransactionEvents(function () use ($table, $dataSet) {
             $dataSet = $this->prepareForMutation($dataSet);
             $this->event(new MutatingData($this, $table, 'update', $dataSet));
-            $this->getMutationExecutor()->insertOrUpdateBatch($table, $dataSet);
+            $executor = $this->getMutationExecutor();
+            $executor instanceof Database
+                ? $executor->insertOrUpdateBatch($table, $dataSet, $this->getMutationOptions())
+                : $executor->insertOrUpdateBatch($table, $dataSet);
         });
     }
 
@@ -92,8 +106,23 @@ trait ManagesMutations
             $keySet = $this->createDeleteMutationKeySet($keySet);
             $dataSet = $keySet->keys() ?: $keySet->keySetObject();
             $this->event(new MutatingData($this, $table, 'delete', $dataSet));
-            $this->getMutationExecutor()->delete($table, $keySet);
+            $executor = $this->getMutationExecutor();
+            $executor instanceof Database
+                ? $executor->delete($table, $keySet, $this->getMutationOptions())
+                : $executor->delete($table, $keySet);
         });
+    }
+
+    /**
+     * Options applied to mutations which are committed in a single-use transaction.
+     * Mutations buffered in an existing transaction are sent on commit instead,
+     * so the options are applied through {@see ManagesTransactions::getCommitOptions()}.
+     *
+     * @return array<string, mixed>
+     */
+    protected function getMutationOptions(): array
+    {
+        return $this->withDefaultTimeout([]);
     }
 
     /**

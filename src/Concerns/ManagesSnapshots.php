@@ -20,15 +20,21 @@ namespace Colopl\Spanner\Concerns;
 
 use Closure;
 use Colopl\Spanner\TimestampBound\TimestampBoundInterface;
-use Google\Cloud\Spanner\Snapshot;
+use Google\Cloud\Spanner\TransactionalReadInterface;
 use LogicException;
 
 trait ManagesSnapshots
 {
     /**
-     * @var Snapshot|null
+     * @var TransactionalReadInterface|null
      */
-    protected ?Snapshot $currentSnapshot = null;
+    protected ?TransactionalReadInterface $currentSnapshot = null;
+
+    /**
+     * @param array<string, mixed> $options
+     * @return array<string, mixed>
+     */
+    abstract protected function withDefaultTimeout(array $options): array;
 
     /**
      * @template TReturn
@@ -42,7 +48,7 @@ trait ManagesSnapshots
             throw new LogicException('Nested snapshots are not supported.');
         }
 
-        $options = $timestampBound->transactionOptions();
+        $options = $this->withDefaultTimeout($timestampBound->transactionOptions());
         try {
             $this->currentSnapshot = $this->getSpannerDatabase()->snapshot($options);
             return $callback();

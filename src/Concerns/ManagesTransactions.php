@@ -46,6 +46,12 @@ trait ManagesTransactions
     protected ?array $commitOptions = null;
 
     /**
+     * @param array<string, mixed> $options
+     * @return array<string, mixed>
+     */
+    abstract protected function withDefaultTimeout(array $options): array;
+
+    /**
      * @inheritDoc
      * @template T
      * @param Closure(static): T $callback
@@ -66,12 +72,18 @@ trait ManagesTransactions
             return parent::transaction($callback, $attempts);
         }
 
-        $options = ['maxRetries' => $attempts - 1];
+        $options = [
+            'retrySettings' => [
+                'maxRetries' => $attempts - 1,
+            ],
+        ];
 
         $tag = $this->getTransactionTag();
         if ($tag !== null) {
             $options['tag'] = $tag;
         }
+
+        $options = $this->withDefaultTimeout($options);
 
         return $this->withSessionNotFoundHandling(function () use ($callback, $options) {
             $return = $this->getSpannerDatabase()->runTransaction(function (Transaction $tx) use ($callback) {
@@ -129,7 +141,7 @@ trait ManagesTransactions
         if ($this->transactions === 0) {
             try {
                 $this->reconnectIfMissingConnection();
-                $this->currentTransaction = $this->getSpannerDatabase()->transaction();
+                $this->currentTransaction = $this->getSpannerDatabase()->transaction($this->withDefaultTimeout([]));
             } catch (Exception $e) {
                 $this->handleBeginTransactionException($e);
             }
@@ -144,7 +156,7 @@ trait ManagesTransactions
         if ($this->causedByLostConnection($e)) {
             $this->reconnect();
 
-            $this->currentTransaction = $this->getSpannerDatabase()->transaction();
+            $this->currentTransaction = $this->getSpannerDatabase()->transaction($this->withDefaultTimeout([]));
             return;
         }
 
@@ -204,7 +216,7 @@ trait ManagesTransactions
         if ($this->currentTransaction !== null) {
             try {
                 if ($this->currentTransaction->state() === Transaction::STATE_ACTIVE && $this->currentTransaction->id() !== null) {
-                    $this->currentTransaction->rollBack();
+                    $this->currentTransaction->rollBack($this->getRollbackOptions());
                 }
             } finally {
                 $this->currentTransaction = null;
@@ -289,9 +301,8 @@ trait ManagesTransactions
         }
 
         $options = $this->getConfig('commit') ?? [];
-        assert(is_array($options));
         /** @var array<string, mixed> $options */
-        return $this->commitOptions = $options;
+        return $this->commitOptions = $this->withDefaultTimeout($options);
     }
 
     /**
@@ -300,6 +311,16 @@ trait ManagesTransactions
      */
     public function setCommitOptions(array $options): void
     {
-        $this->commitOptions = $options;
+        $this->commitOptions = $this->withDefaultTimeout($options);
+    }
+
+    /**
+     * Options applied when a transaction is rolled back.
+     *
+     * @return array<string, mixed>
+     */
+    protected function getRollbackOptions(): array
+    {
+        return $this->withDefaultTimeout([]);
     }
 }

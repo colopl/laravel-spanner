@@ -50,7 +50,7 @@ $conn->...
 ```
 
 ## Additional Configurations
-You can pass `SpannerClient` config and `CacheSessionPool` options as below.
+You can pass `SpannerClient` config options as below.
 For more information, please see [Google Client Library docs](http://googleapis.github.io/google-cloud-php/#/docs/google-cloud/latest/spanner/spannerclient?method=__construct)
 
 ```php
@@ -64,15 +64,10 @@ For more information, please see [Google Client Library docs](http://googleapis.
             // Spanner Client configurations
             'client' => [
                 'projectId' => 'xxx',
+                'requestTimeout' => 60, // seconds
                 ...
             ],
             
-            // CacheSessionPool options
-            'session_pool' => [
-                'minSessions' => 10,
-                'maxSessions' => 500,
-            ],
-
             // Isolation level for transactions ('SERIALIZABLE' | 'REPEATABLE READ' | null (default))
             'isolation_level' => 'SERIALIZABLE',
         ]
@@ -243,8 +238,8 @@ $queryBuilder
 ```
 
 > [!NOTE]
-> This creates a new session in the background which is not shared with the current session pool.
-> This means, queries running with data boost will not be associated with transactions that may be taking place.
+> This creates a new snapshot request which does not share state with any ongoing transactions.
+> This means, queries running with data boost will not take into account any changes made in the ongoing transaction.
 
 ### Request Tags and Transaction Tags
 
@@ -446,24 +441,15 @@ All mutations calls within a transaction are queued and sent as batch at the tim
 This means that if you make any modifications through the above functions and then try to SELECT the same records before committing, the returned results will not include any of the modifications you've made inside the transaction.
 
 
-### SessionPool and AuthCache
+### SessionCache and AuthCache
 
-In order to improve the performance of the first connection per request, we use [AuthCache](https://github.com/googleapis/google-cloud-php#caching-access-tokens) and [CacheSessionPool](https://googleapis.github.io/google-cloud-php/#/docs/google-cloud/latest/spanner/session/cachesessionpool).
+In order to improve the performance of the first connection per request, we use [AuthCache](https://github.com/googleapis/google-cloud-php#caching-access-tokens) and [SessionCache](https://docs.cloud.google.com/spanner/docs/sessions#multiplexed_sessions).
 
-By default, this library uses [Filesystem Cache Adapter](https://symfony.com/doc/current/components/cache/adapters/filesystem_adapter.html) as the caching pool. If you want to use your own caching pool, you can extend ServiceProvider and inject it into the constructor of `Colopl\Spanner\Connection`.
+By default, this library uses [Filesystem Cache Adapter](https://symfony.com/doc/current/components/cache/adapters/filesystem_adapter.html) for caching sessions. 
+If you want to use a different adapter, you can extend ServiceProvider and inject it into the constructor of `Colopl\Spanner\Connection`.
 
-The initialization of each session takes about a second, so warming up the sessions during the boot up phase of your
-server is recommended. This can be achieved by running the `php artisan spanner:warmup` command. You can set the number
-of sessions to warm up by setting the `connections.{name}.session_pool.maxSessions` option in `config/database.php`
-
-Similarly, the sessions remain active for 60 minutes after use so deleting the sessions during the shutdown phase 
-of your server is recommended. This can be achieved by running the `php artisan spanner:cooldown` command.
-
-### Queue Worker
-
-After every job is processed, the connection will be disconnected so the session can be released into the session pool. 
-This allows the session to be renewed (through `maintainSessionPool()`) or expire.
-
+Session initialization takes about a second, so warming up the session during the boot up phase of your
+server is recommended. This can be achieved by running the `php artisan spanner:warmup` command.
 
 ### Laravel Tinker
 You can use [Laravel Tinker](https://github.com/laravel/tinker) with commands such as `php artisan tinker`.

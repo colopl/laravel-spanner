@@ -36,7 +36,6 @@ use Google\Cloud\Core\Exception\ConflictException;
 use Google\Cloud\Core\Exception\GoogleException;
 use Google\Cloud\Core\Exception\NotFoundException;
 use Google\Cloud\Spanner\Database;
-use Google\Cloud\Spanner\Session\SessionPoolInterface;
 use Google\Cloud\Spanner\SpannerClient;
 use Google\Cloud\Spanner\Timestamp;
 use Google\Cloud\Spanner\Transaction;
@@ -58,41 +57,31 @@ class Connection extends BaseConnection
     use Concerns\ManagesDataDefinitions;
     use Concerns\ManagesMutations;
     use Concerns\ManagesPartitionedDml;
-    use Concerns\ManagesSessionPool;
+    use Concerns\ManagesSession;
     use Concerns\ManagesSnapshots;
     use Concerns\ManagesTagging;
     use Concerns\ManagesTransactions;
     use Concerns\MarksAsNotSupported;
 
     /**
-     * @var string
+     * @var SpannerClient|null
      */
-    protected $instanceId;
-
-    /**
-     * @var SpannerClient
-     */
-    protected $spannerClient;
+    protected ?SpannerClient $spannerClient = null;
 
     /**
      * @var Database|null
      */
-    protected $spannerDatabase;
+    protected ?Database $spannerDatabase = null;
 
     /**
      * @var QueryParameterizer|null
      */
-    protected $parameterizer;
+    protected ?QueryParameterizer $parameterizer = null;
 
     /**
-     * @var CacheItemPoolInterface|null
+     * @var float|null
      */
-    protected $authCache;
-
-    /**
-     * @var SessionPoolInterface|null
-     */
-    protected $sessionPool;
+    protected ?float $defaultTimeoutSeconds = null;
 
     /**
      * @param string $instanceId instance ID
@@ -100,19 +89,16 @@ class Connection extends BaseConnection
      * @param string $tablePrefix
      * @param array<string, mixed> $config
      * @param CacheItemPoolInterface|null $authCache
-     * @param SessionPoolInterface|null $sessionPool
+     * @param CacheItemPoolInterface|null $sessionCache
      */
     public function __construct(
-        string $instanceId,
+        protected string $instanceId,
         string $database,
         $tablePrefix = '',
         array $config = [],
-        ?CacheItemPoolInterface $authCache = null,
-        ?SessionPoolInterface $sessionPool = null,
+        protected ?CacheItemPoolInterface $authCache = null,
+        protected ?CacheItemPoolInterface $sessionCache = null,
     ) {
-        $this->instanceId = $instanceId;
-        $this->authCache = $authCache;
-        $this->sessionPool = $sessionPool;
         parent::__construct(
             // TODO: throw error after v9
             static fn() => null,
@@ -120,6 +106,12 @@ class Connection extends BaseConnection
             $tablePrefix,
             $config,
         );
+
+        $clientConfig = $config['client'] ?? null;
+        if (is_array($clientConfig) && isset($clientConfig['requestTimeout'])) {
+            assert(is_numeric($clientConfig['requestTimeout']));
+            $this->defaultTimeoutSeconds = (float) $clientConfig['requestTimeout'];
+        }
     }
 
     /**
@@ -128,14 +120,11 @@ class Connection extends BaseConnection
      */
     protected function getSpannerClient()
     {
-        if ($this->spannerClient === null) {
-            $clientConfig = $this->config['client'] ?? [];
-            if ($this->authCache !== null) {
-                $clientConfig = array_merge($clientConfig, ['authCache' => $this->authCache]);
-            }
-            $this->spannerClient = new SpannerClient($clientConfig);
-        }
-        return $this->spannerClient;
+        $config = $this->config['client'] ?? [];
+        $config['credentialsConfig']['authCache'] ??= $this->authCache;
+        $config['cacheItemPool'] ??= $this->sessionCache;
+
+        return $this->spannerClient ??= new SpannerClient($config);
     }
 
     /**
@@ -170,10 +159,8 @@ class Connection extends BaseConnection
     public function reconnect()
     {
         $this->disconnect();
+
         $connectOptions = [];
-        if ($this->sessionPool !== null) {
-            $connectOptions['sessionPool'] = $this->sessionPool;
-        }
         $isolationLevel = $this->config['isolation_level'] ?? null;
         if (is_string($isolationLevel)) {
             $connectOptions['isolationLevel'] = match (strtolower($isolationLevel)) {
@@ -201,7 +188,6 @@ class Connection extends BaseConnection
     public function disconnect()
     {
         if ($this->spannerDatabase !== null) {
-            $this->spannerDatabase->close();
             $this->spannerDatabase = null;
         }
     }
@@ -575,18 +561,30 @@ class Connection extends BaseConnection
      * @see https://cloud.google.com/spanner/docs/sessions#handle_deleted_sessions
      *
      * > Attempts to use a deleted session result in NOT_FOUND.
-     * > If you encounter this error, create and use a new session, add the new session to the pool,
-     * > and remove the deleted session from the pool.
+     * > If you encounter this error, create and use a new session.
      *
-     * Most cases are covered by Google's library except for the following two cases.
+     * None of the layers below us recover from this:
      *
-     * - When a connection is opened, and idles for more than 1 hour.
-     * - If a user manually deletes a session from the console.
+     * - NOT_FOUND is not listed in any `retryableStatusCodes` of the generated gRPC retry config.
+     * - {@see Database::runTransaction()} only retries AbortedException and INTERNAL/RST_STREAM.
+     * - {@see \Google\Cloud\Spanner\Session\SessionCache} refreshes the multiplexed session on a
+     *   fixed 7 day timer only. It never invalidates on error, so a session that is gone
+     *   server-side keeps being read back from the (process-shared, persistent) cache until the
+     *   cache item expires.
      *
-     * The document states that the library should be handling this, and library for Go and Java
-     * handles this within the library but PHP's does not. So unfortunately, this code has to exist.
+     * That last point is why this must exist: the multiplexed session name is persisted in a PSR-6
+     * pool that outlives the process, so a single dead session would otherwise break every request
+     * of every process sharing that cache for up to 7 days.
      *
-     * We asked the maintainers of the PHP library to handle it, but they refused.
+     * Cases that lead to a deleted session:
+     *
+     * - The database is dropped and recreated (migrations, test setup, emulator restart) while a
+     *   session name for the old database is still cached.
+     * - A user or an admin operation (restore, move) deletes the session.
+     * - The 28 day server-side lifetime of a multiplexed session elapses.
+     *
+     * The library for Go and Java handles this internally but PHP's does not. We asked the
+     * maintainers of the PHP library to handle it, but they refused.
      * https://github.com/googleapis/google-cloud-php/issues/6284.
      *
      * @template T
@@ -614,7 +612,8 @@ class Connection extends BaseConnection
      */
     protected function executeQuery(string $query, array $bindings, array $options): Generator
     {
-        $options += ['parameters' => $this->prepareBindings($bindings)];
+        $options['parameters'] ??= $this->prepareBindings($bindings);
+        $options = $this->withDefaultTimeout($options);
 
         if (isset($options['dataBoostEnabled'])) {
             return $this->executePartitionedQuery($query, $options);
@@ -651,11 +650,29 @@ class Connection extends BaseConnection
      */
     protected function executePartitionedQuery(string $query, array $options): Generator
     {
-        $snapshot = $this->getSpannerClient()
-            ->batch($this->instanceId, $this->database, $options)
-            ->snapshot();
+        $batchOptions = $this->extractOptions($options, ['databaseRole']);
+        $snapshotOptions = [
+            'transactionOptions' => $this->extractOptions($options, ['strong', 'readTimestamp', 'exactStaleness']),
+        ];
+        $partitionOptions = $this->extractOptions($options, [
+            'maxPartitions',
+            'partitionSizeBytes',
+            'parameters',
+            'types',
+            'dataBoostEnabled',
+            'timeoutMillis',
+        ]);
 
-        foreach ($snapshot->partitionQuery($query, $options) as $partition) {
+        if ($options !== []) {
+            $keysString = implode(', ', array_keys($options));
+            throw new LogicException("Options: {$keysString} are not supported for partitioned queries.");
+        }
+
+        $snapshot = $this->getSpannerClient()
+            ->batch($this->instanceId, $this->database, $batchOptions)
+            ->snapshot($snapshotOptions);
+
+        foreach ($snapshot->partitionQuery($query, $partitionOptions) as $partition) {
             foreach ($snapshot->executePartition($partition) as $row) {
                 /** @var array<array-key, mixed> $row */
                 yield $row;
@@ -670,7 +687,19 @@ class Connection extends BaseConnection
      */
     protected function executeSnapshotQuery(string $query, array $options): Generator
     {
-        $executeOptions = Arr::only($options, ['parameters', 'types', 'queryOptions', 'requestOptions']);
+        $executeOptions = $this->extractOptions($options, [
+            'parameters',
+            'types',
+            'queryOptions',
+            'requestOptions',
+            'directedReadOptions',
+            'headers',
+            'partitionToken',
+            'retrySettings',
+            'timeoutMillis',
+            'transportOptions',
+        ]);
+
         assert($this->currentSnapshot !== null);
         return $this->currentSnapshot->execute($query, $executeOptions)->rows();
     }
@@ -683,7 +712,9 @@ class Connection extends BaseConnection
      */
     protected function executeDml(Transaction $transaction, string $query, array $bindings = []): int
     {
-        $rowCount = $transaction->executeUpdate($query, ['parameters' => $this->prepareBindings($bindings)]);
+        $options = $this->withDefaultTimeout(['parameters' => $this->prepareBindings($bindings)]);
+
+        $rowCount = $transaction->executeUpdate($query, $options);
         $this->recordsHaveBeenModified($rowCount > 0);
         return $rowCount;
     }
@@ -696,9 +727,10 @@ class Connection extends BaseConnection
      */
     protected function executeBatchDml(Transaction $transaction, string $query, array $bindings = []): int
     {
-        $result = $transaction->executeUpdateBatch([
-            ['sql' => $query, 'parameters' => $this->prepareBindings($bindings)],
-        ]);
+        $result = $transaction->executeUpdateBatch(
+            [['sql' => $query, 'parameters' => $this->prepareBindings($bindings)]],
+            $this->withDefaultTimeout([]),
+        );
 
         $error = $result->error();
         if ($error !== null) {
@@ -754,10 +786,7 @@ class Connection extends BaseConnection
      */
     protected function handleSessionNotFoundException(Closure $callback): mixed
     {
-        $this->disconnect();
-        // Currently, there is no way for us to delete the session, so we have to delete the whole pool.
-        // This might affect parallel processes.
-        $this->clearSessionPool();
+        $this->refreshSession();
         $this->reconnect();
         return $callback();
     }
@@ -776,5 +805,49 @@ class Connection extends BaseConnection
 
         return ($e instanceof NotFoundException)
             && str_contains($e->getMessage(), 'Session does not exist');
+    }
+
+    /**
+     * @param array<string, mixed> $options
+     * @param list<string> $keys
+     * @return array<string, mixed>
+     */
+    protected function extractOptions(array &$options, array $keys)
+    {
+        $extracted = [];
+        foreach ($keys as $key) {
+            if (array_key_exists($key, $options)) {
+                $extracted[$key] = $options[$key];
+                unset($options[$key]);
+            }
+        }
+        return $extracted;
+    }
+
+    protected function calculateDefaultTimeoutMillis(): ?int
+    {
+        if ($this->defaultTimeoutSeconds === null) {
+            return null;
+        }
+
+        $timeoutSeconds = $this->defaultTimeoutSeconds;
+        $timeoutMillis = (int) ($timeoutSeconds * 1000);
+        if ($timeoutMillis <= 0) {
+            throw new LogicException('Request timeout must be >= 1ms.');
+        }
+        return $timeoutMillis;
+    }
+
+    /**
+     * Applies the connection's default `client.requestTimeout` as `timeoutMillis`
+     * to any RPC options that don't already specify one.
+     *
+     * @param array<string, mixed> $options
+     * @return array<string, mixed>
+     */
+    protected function withDefaultTimeout(array $options): array
+    {
+        $options['timeoutMillis'] ??= $this->calculateDefaultTimeoutMillis();
+        return $options;
     }
 }

@@ -99,10 +99,10 @@ class TransactionTest extends TestCase
             return $conn->getCurrentTransaction();
         });
         $this->assertNotNull($tx);
-        $this->assertSame([], $tx->getCommitStats());
-        $this->assertSame([], $conn->getCommitOptions());
+        $this->assertNull($tx->getCommitStats());
+        $this->assertSame(['timeoutMillis' => 600000], $conn->getCommitOptions());
 
-        $newOptions = ['returnCommitStats' => true];
+        $newOptions = ['returnCommitStats' => true, 'timeoutMillis' => 600000];
         $conn->setCommitOptions($newOptions);
         $this->assertSame($newOptions, $conn->getCommitOptions());
 
@@ -119,7 +119,7 @@ class TransactionTest extends TestCase
             $conn->table(self::TABLE_NAME_USER)->insert(['userId' => $this->generateUuid(), 'name' => 'test']);
             return $conn->getCurrentTransaction();
         });
-        $this->assertSame(['mutationCount' => 2], $tx->getCommitStats());
+        $this->assertSame(2, $tx->getCommitStats()->getMutationCount());
     }
 
     public function testRollbackBeforeCommit(): void
@@ -432,7 +432,7 @@ class TransactionTest extends TestCase
                     $base->tablePrefix,
                     $base->config,
                     $base->authCache,
-                    $base->sessionPool,
+                    $base->sessionCache,
                 );
             }
 
