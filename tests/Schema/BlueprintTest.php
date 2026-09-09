@@ -234,12 +234,29 @@ class BlueprintTest extends TestCase
         $blueprint = new Blueprint($conn, $tableName, function (Blueprint $table) {
             $table->unique('name');
             $table->index('createdAt');
+            $table->index(['name', 'createdAt']);
         });
 
         $statements = $blueprint->toSql();
         $this->assertSame([
             "create unique index `{$indexPrefix}_name_unique` on `{$tableName}` (`name`)",
             "create index `{$indexPrefix}_createdat_index` on `{$tableName}` (`createdAt`)",
+            "create index `{$indexPrefix}_name_createdat_index` on `{$tableName}` (`name`, `createdAt`)",
+        ], $statements);
+    }
+
+    public function test_create_indexes_with_order(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $tableName = $this->generateTableName();
+        $indexPrefix = Str::snake($tableName);
+        $blueprint = new Blueprint($conn, $tableName, function (Blueprint $table) {
+            $table->index(['name' => 'asc', 'createdAt' => 'desc']);
+        });
+
+        $statements = $blueprint->toSql();
+        $this->assertSame([
+            "create index `{$indexPrefix}_name_createdat_index` on `{$tableName}` (`name` asc, `createdAt` desc)",
         ], $statements);
     }
 

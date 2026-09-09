@@ -464,7 +464,7 @@ class Blueprint extends BaseBlueprint
 
     /**
      * @inheritDoc
-     * @param string|list<string> $columns
+     * @param string|array<string, string>|list<string> $columns
      * @return IndexDefinition
      */
     protected function indexCommand($type, $columns, $index, $algorithm = null, $operatorClass = null)
@@ -489,7 +489,7 @@ class Blueprint extends BaseBlueprint
 
     /**
      * @inheritDoc
-     * @param list<string> $columns
+     * @param array<string, string>|list<string> $columns
      */
     protected function createIndexName($type, array $columns)
     {
@@ -501,7 +501,8 @@ class Blueprint extends BaseBlueprint
             $table = $this->connection->getTablePrefix() . $table;
         }
 
-        $index = strtolower($table . '_' . implode('_', $columns) . '_' . $type);
+        $columnNames = array_is_list($columns) ? $columns : array_keys($columns);
+        $index = strtolower($table . '_' . implode('_', $columnNames) . '_' . $type);
 
         if ($type !== 'foreign' && $schema !== null) {
             $index = $schema . '.' . $index;
