@@ -28,7 +28,6 @@ use Colopl\Spanner\TimestampBound\ExactStaleness;
 use Colopl\Spanner\TimestampBound\StrongRead;
 use Google\Cloud\Spanner\Batch\BatchClient;
 use Google\Cloud\Spanner\Batch\BatchSnapshot;
-use Google\Cloud\Spanner\Batch\QueryPartition;
 use Google\Cloud\Spanner\Bytes;
 use Google\Cloud\Spanner\Database;
 use Google\Cloud\Spanner\Snapshot;
@@ -1241,20 +1240,12 @@ class BuilderTest extends TestCase
 
     public function test_setRequestTimeoutSeconds_with_dataBoost(): void
     {
-        $partitionQueryOptions = null;
-        $executePartitionOptions = null;
-        $partition = $this->createStub(QueryPartition::class);
+        $captured = null;
 
         $batchSnapshot = $this->createStub(BatchSnapshot::class);
         $batchSnapshot->method('partitionQuery')->willReturnCallback(
-            function (string $sql, array $options) use (&$partitionQueryOptions, $partition): array {
-                $partitionQueryOptions = $options;
-                return [$partition];
-            },
-        );
-        $batchSnapshot->method('executePartition')->willReturnCallback(
-            function (QueryPartition $queryPartition, array $options) use (&$executePartitionOptions): never {
-                $executePartitionOptions = $options;
+            function (string $sql, array $options) use (&$captured): never {
+                $captured = $options;
                 throw new RuntimeException(self::CAPTURE_MARKER);
             },
         );
@@ -1277,10 +1268,9 @@ class BuilderTest extends TestCase
             $this->assertCaptureMarker($e);
         }
 
-        $this->assertIsArray($partitionQueryOptions);
-        $this->assertSame(250, $partitionQueryOptions['timeoutMillis']);
-        $this->assertTrue($partitionQueryOptions['dataBoostEnabled']);
-        $this->assertSame(['timeoutMillis' => 250], $executePartitionOptions);
+        $this->assertIsArray($captured);
+        $this->assertSame(250, $captured['timeoutMillis']);
+        $this->assertTrue($captured['dataBoostEnabled']);
     }
 
     public function test_setRequestTimeoutSeconds_with_snapshot(): void
