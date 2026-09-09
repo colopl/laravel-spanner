@@ -34,7 +34,7 @@ class MaxStaleness implements TimestampBoundInterface
      *
      * @param Duration|int $duration Use a minimum staleness of 10 seconds for best results
      */
-    public function __construct($duration)
+    public function __construct(int|Duration $duration)
     {
         if (is_int($duration)) {
             $duration = new Duration(['seconds' => $duration]);
