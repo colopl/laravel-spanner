@@ -1,6 +1,7 @@
 ## Upgrading to v12.0.0
 
 In this version, the underlying `google/cloud-spanner` library has been upgraded from `^1.106` to `^2.10`.
+If you pass options through `client`, also follow the upstream [v1-to-v2 migration guide](https://github.com/googleapis/google-cloud-php-spanner/blob/v2.10.5/MIGRATING.md), which documents the client options that moved or were removed.
 This upgrade introduces some breaking changes. The biggest change is in how the sessions are managed. 
 In v1 the sessions were handled by the session pool, and every process checked out sessions from the pool as needed. 
 In v2, the session pool is no longer used and all processes run on a single multiplexed session. 
