@@ -20,9 +20,11 @@ namespace Colopl\Spanner\Tests\Concerns;
 
 use Colopl\Spanner\Connection;
 use Colopl\Spanner\Tests\TestCase;
+use Google\Cloud\Spanner\V1\Session;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
+use Symfony\Component\Cache\Adapter\ArrayAdapter;
 
 class ManagesDataDefinitionsTest extends TestCase
 {
@@ -39,14 +41,15 @@ class ManagesDataDefinitionsTest extends TestCase
         $this->assertSame([], $result);
         $this->assertSame($statement, $conn->getQueryLog()[0]['query']);
         $this->assertCount(1, $conn->getQueryLog());
-        Event::assertDispatchedTimes(QueryExecuted::class, 1);
+        $events->assertDispatchedTimes(QueryExecuted::class, 1);
         $this->assertContains($newTable, array_map(fn($d) => $d['name'], $conn->getSchemaBuilder()->getTables()));
     }
 
     public function test_runDdlBatch_within_pretend(): void
     {
+        $events = Event::fake([QueryExecuted::class]);
         $conn = $this->getDefaultConnection();
-        $conn->setEventDispatcher(Event::fake([QueryExecuted::class]));
+        $conn->setEventDispatcher($events);
         $conn->enableQueryLog();
 
         $newTable = $this->generateTableName('runDdlBatch');
@@ -65,7 +68,7 @@ class ManagesDataDefinitionsTest extends TestCase
             'readWriteType' => null,
         ]], $conn->getQueryLog());
 
-        Event::assertDispatchedTimes(QueryExecuted::class, 1);
+        $events->assertDispatchedTimes(QueryExecuted::class, 1);
 
         $this->assertFalse($conn->getSchemaBuilder()->hasTable($newTable));
     }
@@ -80,15 +83,16 @@ class ManagesDataDefinitionsTest extends TestCase
 
         $this->assertSame([], $result);
         $this->assertCount(0, $conn->getQueryLog());
-        Event::assertNotDispatched(QueryExecuted::class);
+        $events->assertNotDispatched(QueryExecuted::class);
     }
 
     public function test_createDatabase_with_statements(): void
     {
         $events = Event::fake([QueryExecuted::class]);
-
         $config = config('database.connections.main');
-        $conn = new Connection($config['instance'], 'test_' . time(), '', $config);
+        $database = 'test_' . time();
+        $sessionCache = new ArrayAdapter();
+        $conn = new Connection($config['instance'], $database, '', $config, null, $sessionCache);
 
         if (!empty(getenv('SPANNER_EMULATOR_HOST'))) {
             $this->setUpEmulatorInstance($conn);
@@ -101,11 +105,19 @@ class ManagesDataDefinitionsTest extends TestCase
             static fn() => "create table " . 'createDatabase_' . md5(uniqid('', true)) . " (id int64) primary key (id)",
             range(0, 1),
         );
+
+        $this->assertSame([], $sessionCache->getValues(), 'No session should exist before the database is created.');
+
         $conn->createDatabase($statements);
+
         $this->assertSame($statements[0], $conn->getQueryLog()[0]['query']);
         $this->assertSame($statements[1], $conn->getQueryLog()[1]['query']);
         $this->assertCount(2, $conn->getQueryLog());
+        $events->assertDispatchedTimes(QueryExecuted::class, 2);
 
-        Event::assertDispatchedTimes(QueryExecuted::class, 2);
+        // createDatabase() must refresh the session, so a session for the new database
+        // must be created and cached without running any query.
+        $cachedSessions = $sessionCache->getValues();
+        $this->assertCount(1, $cachedSessions, 'Session must be refreshed right after the database is created.');
     }
 }

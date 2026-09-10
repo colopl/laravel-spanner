@@ -63,10 +63,13 @@ trait ManagesDataDefinitions
     public function createDatabase(array $statements = [])
     {
         $start = microtime(true);
+        $database = $this->getSpannerDatabase();
 
         $this->waitForOperation(
-            $this->getSpannerDatabase()->create(['statements' => $statements]),
+            $database->create(['statements' => $statements]),
         );
+
+        $database->session()->refresh();
 
         foreach ($statements as $statement) {
             $this->logQuery($statement, [], $this->getElapsedTime($start));
