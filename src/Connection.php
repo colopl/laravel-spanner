@@ -137,6 +137,14 @@ class Connection extends BaseConnection
     }
 
     /**
+     * @return CacheItemPoolInterface|null
+     */
+    protected function getSessionCache(): ?CacheItemPoolInterface
+    {
+        return $this->sessionCache;
+    }
+
+    /**
      * @deprecated will be removed in v10
      * @return Database|Transaction
      */

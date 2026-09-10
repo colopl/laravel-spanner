@@ -20,7 +20,6 @@ namespace Colopl\Spanner\Tests\Concerns;
 
 use Colopl\Spanner\Connection;
 use Colopl\Spanner\Tests\TestCase;
-use Google\Cloud\Spanner\V1\Session;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
@@ -91,8 +90,7 @@ class ManagesDataDefinitionsTest extends TestCase
         $events = Event::fake([QueryExecuted::class]);
         $config = config('database.connections.main');
         $database = 'test_' . time();
-        $sessionCache = new ArrayAdapter();
-        $conn = new Connection($config['instance'], $database, '', $config, null, $sessionCache);
+        $conn = new Connection($config['instance'], $database, '', $config);
 
         if (!empty(getenv('SPANNER_EMULATOR_HOST'))) {
             $this->setUpEmulatorInstance($conn);
@@ -106,18 +104,32 @@ class ManagesDataDefinitionsTest extends TestCase
             range(0, 1),
         );
 
-        $this->assertSame([], $sessionCache->getValues(), 'No session should exist before the database is created.');
-
         $conn->createDatabase($statements);
 
         $this->assertSame($statements[0], $conn->getQueryLog()[0]['query']);
         $this->assertSame($statements[1], $conn->getQueryLog()[1]['query']);
         $this->assertCount(2, $conn->getQueryLog());
         $events->assertDispatchedTimes(QueryExecuted::class, 2);
+    }
 
-        // createDatabase() must refresh the session, so a session for the new database
-        // must be created and cached without running any query.
-        $cachedSessions = $sessionCache->getValues();
-        $this->assertCount(1, $cachedSessions, 'Session must be refreshed right after the database is created.');
+    public function test_dropDatabase_clears_session_cache(): void
+    {
+        $config = config('database.connections.main');
+        $database = 'test_' . time() . '_' . Str::lower(Str::random(5));
+        $sessionCache = new ArrayAdapter();
+        $conn = new Connection($config['instance'], $database, '', $config, null, $sessionCache);
+
+        if (!empty(getenv('SPANNER_EMULATOR_HOST'))) {
+            $this->setUpEmulatorInstance($conn);
+        }
+
+        $conn->createDatabase();
+        $conn->refreshSession();
+
+        $this->assertNotSame([], $sessionCache->getValues(), 'A session should be cached before the database is dropped.');
+
+        $conn->dropDatabase();
+
+        $this->assertSame([], $sessionCache->getValues(), 'Session cache must be cleared after the database is dropped.');
     }
 }
