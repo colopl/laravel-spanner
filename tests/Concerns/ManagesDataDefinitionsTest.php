@@ -131,5 +131,10 @@ class ManagesDataDefinitionsTest extends TestCase
         $conn->dropDatabase();
 
         $this->assertSame([], $sessionCache->getValues(), 'Session cache must be cleared after the database is dropped.');
+
+        $conn->createDatabase();
+        $conn->refreshSession();
+
+        $this->assertNotSame([], $sessionCache->getValues(), 'Session cache should be recreated when reusing the same connection after dropping and recreating the database.');
     }
 }

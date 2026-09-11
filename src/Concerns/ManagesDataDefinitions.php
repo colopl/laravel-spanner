@@ -37,6 +37,11 @@ trait ManagesDataDefinitions
     abstract protected function getSessionCache(): ?CacheItemPoolInterface;
 
     /**
+     * @return void
+     */
+    abstract public function disconnect();
+
+    /**
      * @param list<string> $statements
      * @return mixed
      */
@@ -87,6 +92,7 @@ trait ManagesDataDefinitions
     {
         $this->getSpannerDatabase()->drop();
         $this->getSessionCache()?->clear();
+        $this->disconnect();
     }
 
     /**
