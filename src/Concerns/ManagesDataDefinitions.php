@@ -91,7 +91,11 @@ trait ManagesDataDefinitions
     public function dropDatabase()
     {
         $this->getSpannerDatabase()->drop();
+
+        // Clear the session cache to avoid using invalidated session.
         $this->getSessionCache()?->clear();
+
+        // Disconnect to avoid using a dropped database connection.
         $this->disconnect();
     }
 
