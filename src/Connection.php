@@ -108,9 +108,17 @@ class Connection extends BaseConnection
         );
 
         $clientConfig = $config['client'] ?? null;
-        if (is_array($clientConfig) && isset($clientConfig['requestTimeout'])) {
-            assert(is_numeric($clientConfig['requestTimeout']));
-            $this->defaultTimeoutSeconds = (float) $clientConfig['requestTimeout'];
+        if (is_array($clientConfig)) {
+            if (isset($clientConfig['requestTimeout'])) {
+                assert(is_numeric($clientConfig['requestTimeout']));
+                $this->defaultTimeoutSeconds = (float) $clientConfig['requestTimeout'];
+            }
+
+            if (isset($clientConfig['cacheItemPool']) && $this->sessionCache === null) {
+                $cacheItemPool = $clientConfig['cacheItemPool'];
+                assert($cacheItemPool instanceof CacheItemPoolInterface);
+                $this->sessionCache = $cacheItemPool;
+            }
         }
     }
 

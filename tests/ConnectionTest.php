@@ -510,6 +510,31 @@ class ConnectionTest extends TestCase
         $this->assertNotEmpty($cacheItemPool->getValues(), 'After refreshing the session, a new session is cached.');
     }
 
+    public function test_session_cache_via_client_config(): void
+    {
+        $config = $this->app['config']->get('database.connections.main');
+
+        $cacheItemPool = new ArrayAdapter();
+        $config['client']['cacheItemPool'] = $cacheItemPool;
+        $conn = new Connection($config['instance'], $config['database'], '', $config);
+        $this->setUpDatabaseOnce($conn);
+
+        $conn->selectOne('SELECT 1');
+        $this->assertNotEmpty($cacheItemPool->getValues(), 'A cacheItemPool given via client config must be used to cache the session.');
+    }
+
+    public function test_explicit_sessionCache_takes_precedence_over_client_config(): void
+    {
+        $config = $this->app['config']->get('database.connections.main');
+
+        $explicitSessionCache = new ArrayAdapter();
+        $config['client']['cacheItemPool'] = new ArrayAdapter();
+        $conn = new Connection($config['instance'], $config['database'], '', $config, null, $explicitSessionCache);
+
+        $ref = new ReflectionProperty($conn, 'sessionCache');
+        $this->assertSame($explicitSessionCache, $ref->getValue($conn), 'The explicitly passed sessionCache must not be overridden by client config.');
+    }
+
     public function test_session_cache_with_FileSystemAdapter(): void
     {
         $this->app->useStoragePath('/tmp/laravel-spanner');
