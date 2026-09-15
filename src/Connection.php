@@ -130,7 +130,10 @@ class Connection extends BaseConnection
     {
         $config = $this->config['client'] ?? [];
         $config['credentialsConfig']['authCache'] ??= $this->authCache;
-        $config['cacheItemPool'] ??= $this->sessionCache;
+
+        if ($this->sessionCache !== null) {
+            $config['cacheItemPool'] = $this->sessionCache;
+        }
 
         return $this->spannerClient ??= new SpannerClient($config);
     }
