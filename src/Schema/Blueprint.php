@@ -21,6 +21,7 @@ namespace Colopl\Spanner\Schema;
 use Colopl\Spanner\Concerns\MarksAsNotSupported;
 use Illuminate\Database\Schema\Blueprint as BaseBlueprint;
 use Illuminate\Database\Schema\ColumnDefinition;
+use Illuminate\Database\Schema\ForeignIdColumnDefinition;
 use Illuminate\Support\Fluent;
 
 /**
@@ -123,12 +124,89 @@ class Blueprint extends BaseBlueprint
     }
 
     /**
+     * Creates a `STRING(36)` column, or a native `UUID` column when
+     * {@see Builder::$useNativeUuid} is enabled.
+     *
      * @inheritDoc
      * @return UuidColumnDefinition
      */
     public function uuid($column = 'uuid')
     {
-        $definition = new UuidColumnDefinition(['type' => 'uuid', 'name' => $column]);
+        return Builder::$useNativeUuid
+            ? $this->nativeUuid($column)
+            : $this->addUuidColumnDefinition('uuid', $column);
+    }
+
+    /**
+     * Creates a column of Spanner's native `UUID` type.
+     *
+     * @see https://cloud.google.com/spanner/docs/reference/standard-sql/data-types#uuid_type
+     * @param string $column
+     * @return UuidColumnDefinition
+     */
+    public function nativeUuid(string $column = 'uuid'): UuidColumnDefinition
+    {
+        return $this->addUuidColumnDefinition('nativeUuid', $column);
+    }
+
+    /**
+     * Overridden because the parent hardcodes the column type, which would create
+     * a `STRING(36)` column referencing a native `UUID` key.
+     *
+     * @inheritDoc
+     */
+    public function foreignUuid($column)
+    {
+        return $this->addForeignUuidColumnDefinition(
+            Builder::$useNativeUuid ? 'nativeUuid' : 'uuid',
+            $column,
+        );
+    }
+
+    /**
+     * Creates a foreign key column of Spanner's native `UUID` type.
+     *
+     * @param string $column
+     * @return ForeignIdColumnDefinition
+     */
+    public function foreignNativeUuid($column)
+    {
+        return $this->addForeignUuidColumnDefinition('nativeUuid', $column);
+    }
+
+    /**
+     * Creates an `ARRAY<UUID>` column.
+     *
+     * @param string $column
+     * @return ColumnDefinition
+     */
+    public function nativeUuidArray($column)
+    {
+        return $this->addColumn('array', $column, [
+            'arrayType' => 'nativeUuid',
+        ]);
+    }
+
+    /**
+     * @param string $type
+     * @param string $column
+     * @return UuidColumnDefinition
+     */
+    protected function addUuidColumnDefinition(string $type, string $column): UuidColumnDefinition
+    {
+        $definition = new UuidColumnDefinition(['type' => $type, 'name' => $column]);
+        $this->addColumnDefinition($definition);
+        return $definition;
+    }
+
+    /**
+     * @param string $type
+     * @param string $column
+     * @return ForeignIdColumnDefinition
+     */
+    protected function addForeignUuidColumnDefinition(string $type, string $column): ForeignIdColumnDefinition
+    {
+        $definition = new ForeignIdColumnDefinition($this, ['type' => $type, 'name' => $column]);
         $this->addColumnDefinition($definition);
         return $definition;
     }

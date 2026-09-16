@@ -21,13 +21,25 @@ namespace Colopl\Spanner\Schema;
 use Illuminate\Database\Query\Expression;
 use Illuminate\Database\Schema\ColumnDefinition as BaseColumnDefinition;
 
+/**
+ * @property string $type
+ */
 class UuidColumnDefinition extends BaseColumnDefinition
 {
     /**
+     * Fills the column with a generated UUID when no value is given.
+     *
+     * `generate_uuid()` returns a `STRING` and `new_uuid()` returns a `UUID`,
+     * so which one is usable depends on the type of the column.
+     *
      * @return $this
      */
     public function generateUuid(): static
     {
-        return $this->default(new Expression('generate_uuid()'));
+        return $this->default(new Expression(
+            $this->type === 'nativeUuid'
+                ? 'new_uuid()'
+                : 'generate_uuid()',
+        ));
     }
 }

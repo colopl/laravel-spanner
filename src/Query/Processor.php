@@ -20,6 +20,7 @@ namespace Colopl\Spanner\Query;
 
 use Google\Cloud\Spanner\Numeric;
 use Google\Cloud\Spanner\Timestamp;
+use Google\Cloud\Spanner\Uuid;
 use Google\Cloud\Spanner\ValueInterface;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Database\Query\Processors\Processor as BaseProcessor;
@@ -85,7 +86,7 @@ class Processor extends BaseProcessor
     /**
      * @template TValue of mixed
      * @param TValue $value
-     * @return ($value is Timestamp ? Carbon : ($value is Numeric ? string : TValue))
+     * @return ($value is Timestamp ? Carbon : ($value is Numeric ? string : ($value is Uuid ? string : TValue)))
      */
     protected function processColumn(mixed $value): mixed
     {
@@ -95,6 +96,13 @@ class Processor extends BaseProcessor
 
         if ($value instanceof Numeric) {
             return $value->formatAsString();
+        }
+
+        // Columns of Spanner's native UUID type are read back as objects. They are
+        // unwrapped so that they behave the same as the STRING(36) columns which
+        // were the only way to store a UUID before the type existed.
+        if ($value instanceof Uuid) {
+            return $value->get();
         }
 
         return $value;
