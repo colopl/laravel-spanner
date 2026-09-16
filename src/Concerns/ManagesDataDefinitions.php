@@ -20,6 +20,7 @@ namespace Colopl\Spanner\Concerns;
 
 use Google\Cloud\Core\LongRunning\LongRunningOperation;
 use Google\Cloud\Spanner\Database;
+use Psr\Cache\CacheItemPoolInterface;
 use RuntimeException;
 use function json_encode;
 
@@ -29,6 +30,16 @@ trait ManagesDataDefinitions
      * @return Database
      */
     abstract public function getSpannerDatabase(): Database;
+
+    /**
+     * @return CacheItemPoolInterface|null
+     */
+    abstract protected function getSessionCache(): ?CacheItemPoolInterface;
+
+    /**
+     * @return void
+     */
+    abstract public function disconnect();
 
     /**
      * @param list<string> $statements
@@ -63,9 +74,10 @@ trait ManagesDataDefinitions
     public function createDatabase(array $statements = [])
     {
         $start = microtime(true);
+        $database = $this->getSpannerDatabase();
 
         $this->waitForOperation(
-            $this->getSpannerDatabase()->create(['statements' => $statements]),
+            $database->create(['statements' => $statements]),
         );
 
         foreach ($statements as $statement) {
@@ -79,6 +91,12 @@ trait ManagesDataDefinitions
     public function dropDatabase()
     {
         $this->getSpannerDatabase()->drop();
+
+        // Clear the session cache to avoid using invalidated session.
+        $this->getSessionCache()?->clear();
+
+        // Disconnect to avoid using a dropped database connection.
+        $this->disconnect();
     }
 
     /**

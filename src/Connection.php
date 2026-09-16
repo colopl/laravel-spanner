@@ -108,9 +108,17 @@ class Connection extends BaseConnection
         );
 
         $clientConfig = $config['client'] ?? null;
-        if (is_array($clientConfig) && isset($clientConfig['requestTimeout'])) {
-            assert(is_numeric($clientConfig['requestTimeout']));
-            $this->defaultTimeoutSeconds = (float) $clientConfig['requestTimeout'];
+        if (is_array($clientConfig)) {
+            if (isset($clientConfig['requestTimeout'])) {
+                assert(is_numeric($clientConfig['requestTimeout']));
+                $this->defaultTimeoutSeconds = (float) $clientConfig['requestTimeout'];
+            }
+
+            if (isset($clientConfig['cacheItemPool']) && $this->sessionCache === null) {
+                $cacheItemPool = $clientConfig['cacheItemPool'];
+                assert($cacheItemPool instanceof CacheItemPoolInterface);
+                $this->sessionCache = $cacheItemPool;
+            }
         }
     }
 
@@ -122,7 +130,10 @@ class Connection extends BaseConnection
     {
         $config = $this->config['client'] ?? [];
         $config['credentialsConfig']['authCache'] ??= $this->authCache;
-        $config['cacheItemPool'] ??= $this->sessionCache;
+
+        if ($this->sessionCache !== null) {
+            $config['cacheItemPool'] = $this->sessionCache;
+        }
 
         return $this->spannerClient ??= new SpannerClient($config);
     }
@@ -134,6 +145,14 @@ class Connection extends BaseConnection
     {
         $this->reconnectIfMissingConnection();
         return $this->spannerDatabase ?? throw new LogicException('Spanner Database does not exist');
+    }
+
+    /**
+     * @return CacheItemPoolInterface|null
+     */
+    protected function getSessionCache(): ?CacheItemPoolInterface
+    {
+        return $this->sessionCache;
     }
 
     /**
