@@ -18,7 +18,11 @@
 
 namespace Colopl\Spanner\Tests\Query;
 
+use Colopl\Spanner\Query\Builder as QueryBuilder;
+use Colopl\Spanner\Query\Uuids;
+use Colopl\Spanner\Schema\Blueprint;
 use Colopl\Spanner\Tests\TestCase;
+use Illuminate\Database\QueryException;
 
 class UnnestTest extends TestCase
 {
@@ -77,6 +81,71 @@ class UnnestTest extends TestCase
         $this->assertSame($expected, $given);
     }
 
+    /**
+     * @return string the name of a table whose primary key uses the native UUID type
+     */
+    private function createNativeUuidTable(): string
+    {
+        return $this->createTempTable(function (Blueprint $table) {
+            $table->nativeUuid('id')->primary();
+            $table->string('name');
+        });
+    }
+
+    public function test_whereInUnnest__with_native_uuid_column(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $tableName = $this->createNativeUuidTable();
+        $qb = $conn->table($tableName);
+
+        $id1 = $this->generateUuid();
+        $id2 = $this->generateUuid();
+        $qb->insert([['id' => $id1, 'name' => 't1'], ['id' => $id2, 'name' => 't2']]);
+
+        $given = $qb->whereInUnnest('id', Uuids::from([$id1]))->pluck('id')->all();
+
+        $this->assertSame([$id1], $given);
+    }
+
+    public function test_whereInUnnest__with_native_uuid_column_and_unmarked_strings(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $tableName = $this->createNativeUuidTable();
+        $qb = $conn->table($tableName);
+
+        $id = $this->generateUuid();
+        $qb->insert([['id' => $id, 'name' => 't1']]);
+
+        // ARRAY<STRING> is not coerced to ARRAY<UUID>, unlike a single STRING binding.
+        // Uuids::from() exists to work around this.
+        $this->expectException(QueryException::class);
+        $this->expectExceptionMessageMatches('/IN UNNEST for argument types: UUID, ARRAY<STRING>/');
+
+        $qb->whereInUnnest('id', [$id])->get();
+    }
+
+    public function test_whereIn__with_native_uuid_column_across_unnest_threshold(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $tableName = $this->createNativeUuidTable();
+        $qb = $conn->table($tableName);
+
+        $id = $this->generateUuid();
+        $qb->insert([['id' => $id, 'name' => 't1']]);
+
+        $threshold = $conn->getConfig('parameter_unnest_threshold')
+            ?? QueryBuilder::DEFAULT_UNNEST_THRESHOLD;
+
+        // whereIn() silently switches to UNNEST() once the threshold is crossed, so
+        // marked values have to work on both sides of it.
+        $dummyIds = array_map($this->generateUuid(...), range(1, $threshold + 1));
+
+        $below = $conn->table($tableName)->whereIn('id', Uuids::from([$id]))->pluck('id')->all();
+        $above = $conn->table($tableName)->whereIn('id', Uuids::from([$id, ...$dummyIds]))->pluck('id')->all();
+
+        $this->assertSame([$id], $below);
+        $this->assertSame([$id], $above);
+    }
 
     public function test_whereNotInUnnest(): void
     {
