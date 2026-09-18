@@ -19,7 +19,9 @@
 namespace Colopl\Spanner;
 
 use Colopl\Spanner\Console\WarmupCommand;
+use Colopl\Spanner\Queue\SpannerConnector;
 use Illuminate\Database\DatabaseManager;
+use Illuminate\Queue\QueueManager;
 use Illuminate\Support\ServiceProvider;
 use LogicException;
 use Symfony\Component\Cache\Adapter\AdapterInterface;
@@ -46,6 +48,14 @@ class SpannerServiceProvider extends ServiceProvider
         $this->app->resolving('db', function (DatabaseManager $db) {
             $db->extend('spanner', function (array $config, string $name): Connection {
                 return $this->createSpannerConnection($this->parseConfig($config, $name));
+            });
+        });
+
+        $this->app->resolving('queue', function (QueueManager $queue) {
+            $queue->addConnector('spanner', function (): SpannerConnector {
+                /** @var DatabaseManager $db */
+                $db = $this->app->make('db');
+                return new SpannerConnector($db);
             });
         });
 

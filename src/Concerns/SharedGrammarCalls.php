@@ -47,25 +47,26 @@ trait SharedGrammarCalls
     }
 
     /**
-     * @param array<string, scalar|BackedEnum> $options
+     * @param array<string, scalar|BackedEnum|null> $options
      * @param string $delimiter
      * @return string
      */
     protected function formatOptions(array $options, string $delimiter = '='): string
     {
-        $mapped = Arr::map($options, function (int|float|bool|string|BackedEnum $v, string $k) use ($delimiter): string {
+        $mapped = Arr::map($options, function (int|float|bool|string|BackedEnum|null $v, string $k) use ($delimiter): string {
             return Str::snake($k) . $delimiter . $this->formatOptionValue($v);
         });
         return implode(', ', $mapped);
     }
 
     /**
-     * @param scalar|BackedEnum $value
+     * @param scalar|BackedEnum|null $value
      * @return string
      */
     protected function formatOptionValue(mixed $value): string
     {
         return match (true) {
+            is_null($value) => 'null',
             is_bool($value) => $value ? 'true' : 'false',
             is_string($value) => $this->quoteString($value),
             $value instanceof BackedEnum => $this->formatOptionValue($value->value),
