@@ -504,7 +504,7 @@ Add a `spanner` queue connection to `config/queue.php`:
             'block_for' => 20,
             'after_commit' => false,
             // Key columns in front of MessageId. Only for an interleaved queue.
-            'key_columns' => [],
+            'parent_keys' => [],
         ],
     ],
 ];
@@ -526,24 +526,21 @@ as `SIGTERM` once the current call returns, so it also delays graceful shutdown 
 #### Interleaved queues
 
 A queue interleaved into a table is keyed by that table's key columns followed by `MessageId`, so the driver
-has to know what to write into them. List them in `key_columns`, in primary key order:
+has to know what to write into them. List them in `parent_keys`, in primary key order:
 
 ```php
 'spanner' => [
     'driver' => 'spanner',
     'queue' => 'UserTasks',
-    'key_columns' => ['UserId'],
+    'parent_keys' => ['UserId'],
 ],
 ```
 
 The values are then worked out automatically. A dispatched job object is serialized into an opaque blob
 inside the payload, so the driver inspects the job itself before the payload is built, and falls back to the
-payload for jobs pushed as a class name. For each column it takes the first of:
-
-1. `queueKeys()`, when the job implements `Colopl\Spanner\Queue\ProvidesQueueKeys`.
-2. A resolver registered with `SpannerQueue::resolveKeysUsing()`.
-3. A public property of the job named after the column, or the same name under the payload's `data`.
-   Both the column's own spelling and its `lcfirst` form are tried, so `UserId` matches `$userId` too.
+payload for jobs pushed as a class name. A job implementing `Colopl\Spanner\Queue\ProvidesParentKeys` is
+asked directly; otherwise each column is looked for as a public property of the job, then under the payload's
+`data`. Both the column's own spelling and its `lcfirst` form are tried, so `UserId` matches `$userId` too.
 
 So this needs no extra code at all:
 
@@ -557,30 +554,24 @@ class ProcessUserTask implements ShouldQueue
 Queue::push('ProcessUserTask', ['userId' => $userId]);
 ```
 
-Reach for `ProvidesQueueKeys` when the value has to be computed, which is the usual case once a job holds a
+Implement `ProvidesParentKeys` when the value has to be computed, which is the usual case once a job holds a
 model rather than an id:
 
 ```php
-class ProcessUserTask implements ShouldQueue, ProvidesQueueKeys
+class ProcessUserTask implements ShouldQueue, ProvidesParentKeys
 {
     public function __construct(private User $user) {}
 
-    public function queueKeys(): array
+    public function parentKeys(): array
     {
         return ['UserId' => $this->user->getKey()];
     }
 }
 ```
 
-`SpannerQueue::resolveKeysUsing()` is the escape hatch for jobs you cannot change, and `pushRaw()` can pass
-values directly:
+`pushRaw()` can pass the values directly, which is useful when there is no payload to derive them from:
 
 ```php
-// A service provider's boot method
-SpannerQueue::resolveKeysUsing(
-    fn (array $payload) => ['UserId' => $payload['data']['userId']],
-);
-
 $queue->pushRaw($payload, 'UserTasks', ['keys' => ['UserId' => $userId]]);
 ```
 

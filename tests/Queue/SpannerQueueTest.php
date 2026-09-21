@@ -18,7 +18,7 @@
 
 namespace Colopl\Spanner\Tests\Queue;
 
-use Colopl\Spanner\Queue\ProvidesQueueKeys;
+use Colopl\Spanner\Queue\ProvidesParentKeys;
 use Colopl\Spanner\Queue\SpannerJob;
 use Colopl\Spanner\Queue\SpannerQueue;
 use Colopl\Spanner\Tests\Support\RecordingConnection;
@@ -35,21 +35,14 @@ class SpannerQueueTest extends TestCase
 {
     protected const QUEUE_NAME = 'Jobs';
 
-    protected function tearDown(): void
-    {
-        SpannerQueue::resolveKeysUsing(null);
-
-        parent::tearDown();
-    }
-
     /**
-     * @param list<string> $keyColumns
+     * @param list<string> $parentKeyColumns
      */
     protected function createQueue(
         RecordingConnection $connection,
         int $retryAfter = 60,
         int $blockFor = 20,
-        array $keyColumns = [],
+        array $parentKeyColumns = [],
     ): SpannerQueue {
         $queue = new SpannerQueue(
             $connection,
@@ -57,7 +50,7 @@ class SpannerQueueTest extends TestCase
             $retryAfter,
             $blockFor,
             false,
-            $keyColumns,
+            $parentKeyColumns,
         );
         $queue->setContainer(Container::getInstance());
         $queue->setConnectionName('spanner');
@@ -446,14 +439,10 @@ class SpannerQueueTest extends TestCase
         new SpannerQueue(new RecordingConnection(), 'Jobs', 60, 0);
     }
 
-    public function test_interleaved_queue_writes_the_resolved_key_columns(): void
+    public function test_interleaved_queue_writes_the_parent_keys(): void
     {
-        SpannerQueue::resolveKeysUsing(
-            static fn(array $payload) => ['UserId' => $payload['data']['userId']],
-        );
-
         $conn = new RecordingConnection();
-        $this->createQueue($conn, keyColumns: ['UserId'])
+        $this->createQueue($conn, parentKeyColumns: ['UserId'])
             ->push('JobClass', ['userId' => 'user-1']);
 
         $recorded = $conn->recordedAt(0);
@@ -469,7 +458,7 @@ class SpannerQueueTest extends TestCase
         $conn = new RecordingConnection();
         $conn->messages = [$this->message(['UserId' => 'user-1'])];
 
-        $job = $this->createQueue($conn, keyColumns: ['UserId'])->pop();
+        $job = $this->createQueue($conn, parentKeyColumns: ['UserId'])->pop();
 
         $this->assertInstanceOf(SpannerJob::class, $job);
         $this->assertSame(
@@ -485,14 +474,15 @@ class SpannerQueueTest extends TestCase
 
     public function test_reserving_an_interleaved_message_keeps_it_under_the_same_parent(): void
     {
-        // The resolver would send the message somewhere else entirely, proving
-        // that reservation carries the received key instead of re-resolving it.
-        SpannerQueue::resolveKeysUsing(static fn() => ['UserId' => 'wrong-user']);
-
         $conn = new RecordingConnection();
-        $conn->messages = [$this->message(['UserId' => 'user-1'])];
+        // The payload names a different user than the message was keyed by, so
+        // re-deriving the key on reservation would move the job elsewhere.
+        $conn->messages = [$this->message([
+            'UserId' => 'user-1',
+            SpannerQueue::PAYLOAD_COLUMN => json_encode(['data' => ['userId' => 'wrong-user']]),
+        ])];
 
-        $job = $this->createQueue($conn, keyColumns: ['UserId'])->pop();
+        $job = $this->createQueue($conn, parentKeyColumns: ['UserId'])->pop();
         $this->assertInstanceOf(SpannerJob::class, $job);
 
         $resend = $conn->recordedAt(2);
@@ -506,7 +496,7 @@ class SpannerQueueTest extends TestCase
         $conn = new RecordingConnection();
         $conn->messages = [$this->message(['UserId' => 'user-1'])];
 
-        $queue = $this->createQueue($conn, keyColumns: ['UserId']);
+        $queue = $this->createQueue($conn, parentKeyColumns: ['UserId']);
         $job = $queue->pop();
         $this->assertInstanceOf(SpannerJob::class, $job);
 
@@ -524,7 +514,7 @@ class SpannerQueueTest extends TestCase
         $conn = new RecordingConnection();
         $conn->messages = [$this->message(['UserId' => 'user-1'])];
 
-        $job = $this->createQueue($conn, keyColumns: ['UserId'])->pop();
+        $job = $this->createQueue($conn, parentKeyColumns: ['UserId'])->pop();
         $this->assertInstanceOf(SpannerJob::class, $job);
 
         $reservedId = $job->getJobId();
@@ -533,106 +523,72 @@ class SpannerQueueTest extends TestCase
         $this->assertSame(['user-1', $reservedId], $conn->recordedAt(3)['bindings']);
     }
 
-    public function test_unresolvable_key_column_explains_every_option(): void
+    public function test_unresolvable_parent_key_explains_every_option(): void
     {
         $conn = new RecordingConnection();
 
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Key column "UserId" of queue "Jobs" could not be resolved');
+        $this->expectExceptionMessage('Parent key column "UserId" of queue "Jobs" could not be resolved');
 
-        $this->createQueue($conn, keyColumns: ['UserId'])->pushRaw('{}');
+        $this->createQueue($conn, parentKeyColumns: ['UserId'])->pushRaw('{}');
     }
 
-    public function test_resolver_must_supply_every_key_column(): void
-    {
-        SpannerQueue::resolveKeysUsing(static fn() => []);
-
-        $conn = new RecordingConnection();
-
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Key column "UserId" of queue "Jobs" could not be resolved');
-
-        $this->createQueue($conn, keyColumns: ['UserId'])->pushRaw('{}');
-    }
-
-    public function test_key_columns_are_discovered_from_a_job_property(): void
+    public function test_parent_keys_are_discovered_from_a_job_property(): void
     {
         $conn = new RecordingConnection();
 
-        // No resolver, no interface: the driver reads the job's own property,
+        // No interface: the driver reads the job's own property,
         // which it can only do before the job is serialized into the payload.
-        $this->createQueue($conn, keyColumns: ['UserId'])
+        $this->createQueue($conn, parentKeyColumns: ['UserId'])
             ->push(new FakeJobWithUserId('user-7'));
 
         $this->assertSame('user-7', $conn->recordedAt(0)['bindings'][0]);
     }
 
-    public function test_key_columns_are_discovered_from_the_payload_data(): void
+    public function test_parent_keys_are_discovered_from_the_payload_data(): void
     {
         $conn = new RecordingConnection();
 
-        $this->createQueue($conn, keyColumns: ['UserId'])
+        $this->createQueue($conn, parentKeyColumns: ['UserId'])
             ->push('JobClass', ['userId' => 'user-8']);
 
         $this->assertSame('user-8', $conn->recordedAt(0)['bindings'][0]);
     }
 
-    public function test_a_job_can_declare_its_own_key_columns(): void
+    public function test_a_job_can_declare_its_own_parent_keys(): void
     {
-        // The property would be found too, so this also pins that the job's
-        // own declaration wins over discovery.
+        // The property would be discovered too, so this also pins that the
+        // job's own declaration wins.
         $conn = new RecordingConnection();
 
-        $this->createQueue($conn, keyColumns: ['UserId'])
-            ->push(new FakeJobProvidingKeys('user-1', 'user-declared'));
+        $this->createQueue($conn, parentKeyColumns: ['UserId'])
+            ->push(new FakeJobProvidingParentKeys('user-1', 'user-declared'));
 
         $this->assertSame('user-declared', $conn->recordedAt(0)['bindings'][0]);
     }
 
-    public function test_a_declaring_job_wins_over_a_registered_resolver(): void
-    {
-        SpannerQueue::resolveKeysUsing(static fn() => ['UserId' => 'from-resolver']);
-
-        $conn = new RecordingConnection();
-        $this->createQueue($conn, keyColumns: ['UserId'])
-            ->push(new FakeJobProvidingKeys('user-1', 'user-declared'));
-
-        $this->assertSame('user-declared', $conn->recordedAt(0)['bindings'][0]);
-    }
-
-    public function test_a_registered_resolver_wins_over_discovery(): void
-    {
-        SpannerQueue::resolveKeysUsing(static fn() => ['UserId' => 'from-resolver']);
-
-        $conn = new RecordingConnection();
-        $this->createQueue($conn, keyColumns: ['UserId'])
-            ->push(new FakeJobWithUserId('user-7'));
-
-        $this->assertSame('from-resolver', $conn->recordedAt(0)['bindings'][0]);
-    }
-
-    public function test_later_resolves_key_columns_from_the_job_too(): void
+    public function test_later_resolves_parent_keys_from_the_job_too(): void
     {
         $conn = new RecordingConnection();
 
-        $this->createQueue($conn, keyColumns: ['UserId'])
+        $this->createQueue($conn, parentKeyColumns: ['UserId'])
             ->later(60, new FakeJobWithUserId('user-7'));
 
         $this->assertSame('user-7', $conn->recordedAt(0)['bindings'][0]);
     }
 
-    public function test_pushRaw_accepts_key_columns_directly(): void
+    public function test_pushRaw_accepts_parent_keys_directly(): void
     {
         $conn = new RecordingConnection();
 
-        // No resolver is registered, so the keys must come from the options.
-        $this->createQueue($conn, keyColumns: ['UserId'])
+        // Nothing in the payload to discover, so the keys come from the options.
+        $this->createQueue($conn, parentKeyColumns: ['UserId'])
             ->pushRaw('{"job":"Foo"}', null, ['keys' => ['UserId' => 'user-9']]);
 
         $this->assertSame('user-9', $conn->recordedAt(0)['bindings'][0]);
     }
 
-    public function test_key_columns_must_not_repeat_the_message_id(): void
+    public function test_parent_keys_must_not_repeat_the_message_id(): void
     {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('must not contain "MessageId"');
@@ -640,10 +596,10 @@ class SpannerQueueTest extends TestCase
         new SpannerQueue(new RecordingConnection(), 'Jobs', 60, 20, false, ['MessageId']);
     }
 
-    public function test_key_columns_must_be_spanner_identifiers(): void
+    public function test_parent_keys_must_be_spanner_identifiers(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Key column "UserId`; drop table `User" is not a valid');
+        $this->expectExceptionMessage('Parent key column "UserId`; drop table `User" is not a valid');
 
         new SpannerQueue(new RecordingConnection(), 'Jobs', 60, 20, false, ['UserId`; drop table `User']);
     }
@@ -657,7 +613,7 @@ class FakeJobWithUserId
     }
 }
 
-class FakeJobProvidingKeys implements ProvidesQueueKeys
+class FakeJobProvidingParentKeys implements ProvidesParentKeys
 {
     public function __construct(
         public string $userId,
@@ -665,7 +621,7 @@ class FakeJobProvidingKeys implements ProvidesQueueKeys
     ) {
     }
 
-    public function queueKeys(): array
+    public function parentKeys(): array
     {
         return ['UserId' => $this->declared];
     }

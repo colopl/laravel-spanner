@@ -66,10 +66,6 @@ class SpannerQueueIntegrationTest extends TestCase
             $connection->getSchemaBuilder()->dropQueueIfExists($this->queueName);
         });
 
-        $this->beforeApplicationDestroyed(static function () {
-            SpannerQueue::resolveKeysUsing(null);
-        });
-
         config()->set('queue.connections.spanner', [
             'driver' => 'spanner',
             'connection' => 'main',
@@ -201,7 +197,7 @@ class SpannerQueueIntegrationTest extends TestCase
             'connection' => 'main',
             'queue' => $interleaved,
             'block_for' => 2,
-            'key_columns' => ['userId'],
+            'parent_keys' => ['userId'],
         ]);
 
         /** @var QueueManager $manager */
@@ -209,7 +205,7 @@ class SpannerQueueIntegrationTest extends TestCase
         $queue = $manager->connection('spanner-interleaved');
         assert($queue instanceof SpannerQueue);
 
-        // No resolver is registered: `userId` is discovered from the payload.
+        // `userId` is discovered from the payload's data.
         $queue->push('Foo', ['userId' => $userId]);
 
         $job = $queue->pop();
