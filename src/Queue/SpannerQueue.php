@@ -142,22 +142,17 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
     }
 
     /**
-     * Registers how the leading key column values of a message are derived.
+     * Registers a fallback for deriving the leading key column values.
      *
-     * An interleaved queue is keyed by its parent's key columns followed by
-     * `MessageId`, so the driver has to be told what to write into them. The
-     * resolver receives the decoded job payload and the queue name, and
-     * returns a value for each configured key column.
+     * This is only needed when {@see self::resolveKeys()} cannot work out the
+     * values on its own, for example when a job neither implements
+     * {@see ProvidesQueueKeys} nor exposes a matching property.
      *
      * ```
      * SpannerQueue::resolveKeysUsing(
      *     fn (array $payload) => ['UserId' => $payload['data']['userId']],
      * );
      * ```
-     *
-     * Only newly sent messages go through the resolver. Reserving and releasing
-     * a job carry the key values of the message they came from, so a job never
-     * moves to a different parent row.
      *
      * @param Closure(array<array-key, mixed>, string): array<string, scalar>|null $resolver
      * @return void
@@ -242,13 +237,19 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
     public function push($job, $data = '', $queue = null)
     {
         $queue = $this->getQueue($queue);
+        $payload = $this->createPayload($job, $queue, $data);
+        $keys = $this->resolveKeys($queue, $payload, is_object($job) ? $job : null);
 
         return $this->enqueueUsing(
             $job,
-            $this->createPayload($job, $queue, $data),
+            $payload,
             $queue,
             null,
-            fn(string $payload, string $queue): string => $this->pushRaw($payload, $queue),
+            function (string $payload, string $queue) use ($keys): string {
+                $messageId = $this->send($queue, $payload, 0, $keys)[self::MESSAGE_ID_COLUMN];
+
+                return (string) $messageId;
+            },
         );
     }
 
@@ -273,14 +274,16 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
     public function later($delay, $job, $data = '', $queue = null)
     {
         $queue = $this->getQueue($queue);
+        $payload = $this->createPayload($job, $queue, $data, $delay);
+        $keys = $this->resolveKeys($queue, $payload, is_object($job) ? $job : null);
 
         return $this->enqueueUsing(
             $job,
-            $this->createPayload($job, $queue, $data, $delay),
+            $payload,
             $queue,
             $delay,
-            function (string $payload, string $queue, $delay): string {
-                $messageId = $this->send($queue, $payload, $delay)[self::MESSAGE_ID_COLUMN];
+            function (string $payload, string $queue, $delay) use ($keys): string {
+                $messageId = $this->send($queue, $payload, $delay, $keys)[self::MESSAGE_ID_COLUMN];
 
                 return (string) $messageId;
             },
@@ -481,7 +484,7 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
      */
     protected function buildKey(string $queue, string $payload, ?array $keys): array
     {
-        $keys ??= $this->resolveKeys($queue, $payload);
+        $keys ??= $this->resolveKeys($queue, $payload, null);
 
         $key = [];
         foreach ($this->keyColumns as $column) {
@@ -489,10 +492,15 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
 
             if (!is_scalar($value)) {
                 throw new InvalidArgumentException(sprintf(
-                    'Key column "%s" of queue "%s" resolved to %s instead of a scalar value.',
+                    'Key column "%s" of queue "%s" could not be resolved to a scalar value (got %s). ' .
+                    'Let the job implement %s, give it a public $%s property, pass ["keys" => [...]] to ' .
+                    'pushRaw(), or register %s::resolveKeysUsing().',
                     $column,
                     $queue,
                     get_debug_type($value),
+                    ProvidesQueueKeys::class,
+                    lcfirst($column),
+                    static::class,
                 ));
             }
 
@@ -505,27 +513,81 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
     }
 
     /**
+     * Works out the values for the queue's key columns.
+     *
+     * Sources are tried in order of how explicit they are, and the first one
+     * that yields anything is used:
+     *
+     * 1. {@see ProvidesQueueKeys::queueKeys()} on the job being dispatched.
+     * 2. A resolver registered with {@see self::resolveKeysUsing()}.
+     * 3. A public property of the job named after the column, or the same name
+     *    in the payload's `data`, which covers `push('Job', ['userId' => ...])`.
+     *
+     * A dispatched job object is serialized into an opaque blob inside the
+     * payload, so the object itself has to be inspected before that happens,
+     * which is why sending resolves the key up front rather than in
+     * {@see self::send()}.
+     *
      * @param string $queue
      * @param string $payload
+     * @param object|null $job the job being dispatched, when there is one
      * @return array<string, scalar>
      */
-    protected function resolveKeys(string $queue, string $payload): array
+    protected function resolveKeys(string $queue, string $payload, ?object $job): array
     {
         if ($this->keyColumns === []) {
             return [];
         }
 
-        $resolver = static::$keysResolver ?? throw new LogicException(sprintf(
-            'Queue "%s" declares the key columns [%s], so %s::resolveKeysUsing() must be registered ' .
-            'to supply their values.',
-            $queue,
-            implode(', ', $this->keyColumns),
-            static::class,
-        ));
+        if ($job instanceof ProvidesQueueKeys) {
+            return $job->queueKeys();
+        }
 
         $decoded = json_decode($payload, true);
+        $decoded = is_array($decoded) ? $decoded : [];
 
-        return $resolver(is_array($decoded) ? $decoded : [], $queue);
+        if (static::$keysResolver !== null) {
+            return (static::$keysResolver)($decoded, $queue);
+        }
+
+        $data = $decoded['data'] ?? null;
+        $data = is_array($data) ? $data : [];
+
+        $keys = [];
+        foreach ($this->keyColumns as $column) {
+            $value = $this->discoverKey($column, $job, $data);
+
+            if ($value !== null) {
+                $keys[$column] = $value;
+            }
+        }
+
+        return $keys;
+    }
+
+    /**
+     * Looks for a single key column value on the job, then in the payload data.
+     *
+     * @param string $column
+     * @param object|null $job
+     * @param array<array-key, mixed> $data
+     * @return scalar|null
+     */
+    protected function discoverKey(string $column, ?object $job, array $data): mixed
+    {
+        // Spanner columns are conventionally PascalCase while PHP properties
+        // and payload entries are camelCase, so both spellings are tried.
+        foreach ([$column, lcfirst($column)] as $name) {
+            if ($job !== null && isset($job->{$name}) && is_scalar($job->{$name})) {
+                return $job->{$name};
+            }
+
+            if (isset($data[$name]) && is_scalar($data[$name])) {
+                return $data[$name];
+            }
+        }
+
+        return null;
     }
 
     /**

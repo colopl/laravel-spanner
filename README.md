@@ -526,31 +526,68 @@ as `SIGTERM` once the current call returns, so it also delays graceful shutdown 
 #### Interleaved queues
 
 A queue interleaved into a table is keyed by that table's key columns followed by `MessageId`, so the driver
-has to be told what to write into them. List them in `key_columns`, in primary key order, and register a
-resolver that derives their values from the job payload:
+has to know what to write into them. List them in `key_columns`, in primary key order:
 
 ```php
-// config/queue.php
 'spanner' => [
     'driver' => 'spanner',
     'queue' => 'UserTasks',
     'key_columns' => ['UserId'],
 ],
+```
 
+The values are then worked out automatically. A dispatched job object is serialized into an opaque blob
+inside the payload, so the driver inspects the job itself before the payload is built, and falls back to the
+payload for jobs pushed as a class name. For each column it takes the first of:
+
+1. `queueKeys()`, when the job implements `Colopl\Spanner\Queue\ProvidesQueueKeys`.
+2. A resolver registered with `SpannerQueue::resolveKeysUsing()`.
+3. A public property of the job named after the column, or the same name under the payload's `data`.
+   Both the column's own spelling and its `lcfirst` form are tried, so `UserId` matches `$userId` too.
+
+So this needs no extra code at all:
+
+```php
+class ProcessUserTask implements ShouldQueue
+{
+    public function __construct(public string $userId) {}
+}
+
+// or
+Queue::push('ProcessUserTask', ['userId' => $userId]);
+```
+
+Reach for `ProvidesQueueKeys` when the value has to be computed, which is the usual case once a job holds a
+model rather than an id:
+
+```php
+class ProcessUserTask implements ShouldQueue, ProvidesQueueKeys
+{
+    public function __construct(private User $user) {}
+
+    public function queueKeys(): array
+    {
+        return ['UserId' => $this->user->getKey()];
+    }
+}
+```
+
+`SpannerQueue::resolveKeysUsing()` is the escape hatch for jobs you cannot change, and `pushRaw()` can pass
+values directly:
+
+```php
 // A service provider's boot method
 SpannerQueue::resolveKeysUsing(
     fn (array $payload) => ['UserId' => $payload['data']['userId']],
 );
-```
 
-The resolver is given the decoded payload and the queue name, and runs only for messages that are newly
-sent. Reserving and releasing a job carry the key values of the message they came from, so a job never moves
-to a different parent row. `pushRaw()` can also pass them directly, which is useful when there is no payload
-to derive them from:
-
-```php
 $queue->pushRaw($payload, 'UserTasks', ['keys' => ['UserId' => $userId]]);
 ```
+
+If a column cannot be resolved, sending fails with an error naming the column and every way to supply it.
+
+Only newly sent messages go through this. Reserving and releasing a job carry the key values of the message
+they came from, so a job never moves to a different parent row.
 
 With `interleaveInParent()` the parent row must already exist when the message is sent, so send it in the
 same transaction that creates the parent, or use `interleaveIn()`.

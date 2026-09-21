@@ -203,15 +203,13 @@ class SpannerQueueIntegrationTest extends TestCase
             'block_for' => 2,
             'key_columns' => ['userId'],
         ]);
-        SpannerQueue::resolveKeysUsing(
-            static fn(array $payload) => ['userId' => $payload['data']['userId']],
-        );
 
         /** @var QueueManager $manager */
         $manager = $this->app->make('queue');
         $queue = $manager->connection('spanner-interleaved');
         assert($queue instanceof SpannerQueue);
 
+        // No resolver is registered: `userId` is discovered from the payload.
         $queue->push('Foo', ['userId' => $userId]);
 
         $job = $queue->pop();
