@@ -18,7 +18,7 @@
 
 namespace Colopl\Spanner\Tests\Queue;
 
-use Colopl\Spanner\Queue\ProvidesParentKeyColumns;
+use Colopl\Spanner\Queue\ProvidesInterleaveKeys;
 use Colopl\Spanner\Queue\SpannerJob;
 use Colopl\Spanner\Queue\SpannerQueue;
 use Colopl\Spanner\Tests\Support\RecordingConnection;
@@ -36,13 +36,13 @@ class SpannerQueueTest extends TestCase
     protected const QUEUE_NAME = 'Jobs';
 
     /**
-     * @param list<string> $parentKeyColumns
+     * @param list<string> $interleaveKeys
      */
     protected function createQueue(
         RecordingConnection $connection,
         int $retryAfter = 60,
         int $blockFor = 20,
-        array $parentKeyColumns = [],
+        array $interleaveKeys = [],
     ): SpannerQueue {
         $queue = new SpannerQueue(
             $connection,
@@ -50,7 +50,7 @@ class SpannerQueueTest extends TestCase
             $retryAfter,
             $blockFor,
             false,
-            $parentKeyColumns,
+            $interleaveKeys,
         );
         $queue->setContainer(Container::getInstance());
         $queue->setConnectionName('spanner');
@@ -439,10 +439,10 @@ class SpannerQueueTest extends TestCase
         new SpannerQueue(new RecordingConnection(), 'Jobs', 60, 0);
     }
 
-    public function test_interleaved_queue_writes_the_parent_key_columns(): void
+    public function test_interleaved_queue_writes_the_interleave_keys(): void
     {
         $conn = new RecordingConnection();
-        $this->createQueue($conn, parentKeyColumns: ['UserId'])
+        $this->createQueue($conn, interleaveKeys: ['UserId'])
             ->push('JobClass', ['userId' => 'user-1']);
 
         $recorded = $conn->recordedAt(0);
@@ -458,7 +458,7 @@ class SpannerQueueTest extends TestCase
         $conn = new RecordingConnection();
         $conn->messages = [$this->message(['UserId' => 'user-1'])];
 
-        $job = $this->createQueue($conn, parentKeyColumns: ['UserId'])->pop();
+        $job = $this->createQueue($conn, interleaveKeys: ['UserId'])->pop();
 
         $this->assertInstanceOf(SpannerJob::class, $job);
         $this->assertSame(
@@ -482,7 +482,7 @@ class SpannerQueueTest extends TestCase
             SpannerQueue::PAYLOAD_COLUMN => json_encode(['data' => ['userId' => 'wrong-user']]),
         ])];
 
-        $job = $this->createQueue($conn, parentKeyColumns: ['UserId'])->pop();
+        $job = $this->createQueue($conn, interleaveKeys: ['UserId'])->pop();
         $this->assertInstanceOf(SpannerJob::class, $job);
 
         $resend = $conn->recordedAt(2);
@@ -496,7 +496,7 @@ class SpannerQueueTest extends TestCase
         $conn = new RecordingConnection();
         $conn->messages = [$this->message(['UserId' => 'user-1'])];
 
-        $queue = $this->createQueue($conn, parentKeyColumns: ['UserId']);
+        $queue = $this->createQueue($conn, interleaveKeys: ['UserId']);
         $job = $queue->pop();
         $this->assertInstanceOf(SpannerJob::class, $job);
 
@@ -514,7 +514,7 @@ class SpannerQueueTest extends TestCase
         $conn = new RecordingConnection();
         $conn->messages = [$this->message(['UserId' => 'user-1'])];
 
-        $job = $this->createQueue($conn, parentKeyColumns: ['UserId'])->pop();
+        $job = $this->createQueue($conn, interleaveKeys: ['UserId'])->pop();
         $this->assertInstanceOf(SpannerJob::class, $job);
 
         $reservedId = $job->getJobId();
@@ -523,72 +523,72 @@ class SpannerQueueTest extends TestCase
         $this->assertSame(['user-1', $reservedId], $conn->recordedAt(3)['bindings']);
     }
 
-    public function test_unresolvable_parent_key_explains_every_option(): void
+    public function test_unresolvable_interleave_key_explains_every_option(): void
     {
         $conn = new RecordingConnection();
 
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Parent key column "UserId" of queue "Jobs" could not be resolved');
+        $this->expectExceptionMessage('Interleave key "UserId" of queue "Jobs" could not be resolved');
 
-        $this->createQueue($conn, parentKeyColumns: ['UserId'])->pushRaw('{}');
+        $this->createQueue($conn, interleaveKeys: ['UserId'])->pushRaw('{}');
     }
 
-    public function test_parent_key_columns_are_discovered_from_a_job_property(): void
+    public function test_interleave_keys_are_discovered_from_a_job_property(): void
     {
         $conn = new RecordingConnection();
 
         // No interface: the driver reads the job's own property,
         // which it can only do before the job is serialized into the payload.
-        $this->createQueue($conn, parentKeyColumns: ['UserId'])
+        $this->createQueue($conn, interleaveKeys: ['UserId'])
             ->push(new FakeJobWithUserId('user-7'));
 
         $this->assertSame('user-7', $conn->recordedAt(0)['bindings'][0]);
     }
 
-    public function test_parent_key_columns_are_discovered_from_the_payload_data(): void
+    public function test_interleave_keys_are_discovered_from_the_payload_data(): void
     {
         $conn = new RecordingConnection();
 
-        $this->createQueue($conn, parentKeyColumns: ['UserId'])
+        $this->createQueue($conn, interleaveKeys: ['UserId'])
             ->push('JobClass', ['userId' => 'user-8']);
 
         $this->assertSame('user-8', $conn->recordedAt(0)['bindings'][0]);
     }
 
-    public function test_a_job_can_declare_its_own_parent_key_columns(): void
+    public function test_a_job_can_declare_its_own_interleave_keys(): void
     {
         // The property would be discovered too, so this also pins that the
         // job's own declaration wins.
         $conn = new RecordingConnection();
 
-        $this->createQueue($conn, parentKeyColumns: ['UserId'])
-            ->push(new FakeJobProvidingParentKeyColumns('user-1', 'user-declared'));
+        $this->createQueue($conn, interleaveKeys: ['UserId'])
+            ->push(new FakeJobProvidingInterleaveKeys('user-1', 'user-declared'));
 
         $this->assertSame('user-declared', $conn->recordedAt(0)['bindings'][0]);
     }
 
-    public function test_later_resolves_parent_key_columns_from_the_job_too(): void
+    public function test_later_resolves_interleave_keys_from_the_job_too(): void
     {
         $conn = new RecordingConnection();
 
-        $this->createQueue($conn, parentKeyColumns: ['UserId'])
+        $this->createQueue($conn, interleaveKeys: ['UserId'])
             ->later(60, new FakeJobWithUserId('user-7'));
 
         $this->assertSame('user-7', $conn->recordedAt(0)['bindings'][0]);
     }
 
-    public function test_pushRaw_accepts_parent_key_columns_directly(): void
+    public function test_pushRaw_accepts_interleave_keys_directly(): void
     {
         $conn = new RecordingConnection();
 
         // Nothing in the payload to discover, so the keys come from the options.
-        $this->createQueue($conn, parentKeyColumns: ['UserId'])
+        $this->createQueue($conn, interleaveKeys: ['UserId'])
             ->pushRaw('{"job":"Foo"}', null, ['keys' => ['UserId' => 'user-9']]);
 
         $this->assertSame('user-9', $conn->recordedAt(0)['bindings'][0]);
     }
 
-    public function test_parent_key_columns_must_not_repeat_the_message_id(): void
+    public function test_interleave_keys_must_not_repeat_the_message_id(): void
     {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('must not contain "MessageId"');
@@ -596,10 +596,10 @@ class SpannerQueueTest extends TestCase
         new SpannerQueue(new RecordingConnection(), 'Jobs', 60, 20, false, ['MessageId']);
     }
 
-    public function test_parent_key_columns_must_be_spanner_identifiers(): void
+    public function test_interleave_keys_must_be_spanner_identifiers(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Parent key column "UserId`; drop table `User" is not a valid');
+        $this->expectExceptionMessage('Interleave key "UserId`; drop table `User" is not a valid');
 
         new SpannerQueue(new RecordingConnection(), 'Jobs', 60, 20, false, ['UserId`; drop table `User']);
     }
@@ -613,7 +613,7 @@ class FakeJobWithUserId
     }
 }
 
-class FakeJobProvidingParentKeyColumns implements ProvidesParentKeyColumns
+class FakeJobProvidingInterleaveKeys implements ProvidesInterleaveKeys
 {
     public function __construct(
         public string $userId,
@@ -621,7 +621,7 @@ class FakeJobProvidingParentKeyColumns implements ProvidesParentKeyColumns
     ) {
     }
 
-    public function parentKeyColumns(): array
+    public function interleaveKeys(): array
     {
         return ['UserId' => $this->declared];
     }

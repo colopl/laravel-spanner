@@ -504,7 +504,7 @@ Add a `spanner` queue connection to `config/queue.php`:
             'block_for' => 20,
             'after_commit' => false,
             // Key columns in front of MessageId. Only for an interleaved queue.
-            'parent_key_columns' => [],
+            'interleave_keys' => [],
         ],
     ],
 ];
@@ -526,19 +526,20 @@ as `SIGTERM` once the current call returns, so it also delays graceful shutdown 
 #### Interleaved queues
 
 A queue interleaved into a table is keyed by that table's key columns followed by `MessageId`, so the driver
-has to know what to write into them. List them in `parent_key_columns`, in primary key order:
+has to know what to write into them. These are the same interleave keys an Eloquent model declares in its
+[`$interleaveKeys` property](#eloquent). List them in `interleave_keys`, in primary key order:
 
 ```php
 'spanner' => [
     'driver' => 'spanner',
     'queue' => 'UserTasks',
-    'parent_key_columns' => ['UserId'],
+    'interleave_keys' => ['UserId'],
 ],
 ```
 
 The values are then worked out automatically. A dispatched job object is serialized into an opaque blob
 inside the payload, so the driver inspects the job itself before the payload is built, and falls back to the
-payload for jobs pushed as a class name. A job implementing `Colopl\Spanner\Queue\ProvidesParentKeyColumns` is
+payload for jobs pushed as a class name. A job implementing `Colopl\Spanner\Queue\ProvidesInterleaveKeys` is
 asked directly; otherwise each column is looked for as a public property of the job, then under the payload's
 `data`. Both the column's own spelling and its `lcfirst` form are tried, so `UserId` matches `$userId` too.
 
@@ -554,15 +555,15 @@ class ProcessUserTask implements ShouldQueue
 Queue::push('ProcessUserTask', ['userId' => $userId]);
 ```
 
-Implement `ProvidesParentKeyColumns` when the value has to be computed, which is the usual case once a job holds a
-model rather than an id:
+Implement `ProvidesInterleaveKeys` when the value has to be computed, which is the usual case once a job
+holds a model rather than an id:
 
 ```php
-class ProcessUserTask implements ShouldQueue, ProvidesParentKeyColumns
+class ProcessUserTask implements ShouldQueue, ProvidesInterleaveKeys
 {
     public function __construct(private User $user) {}
 
-    public function parentKeyColumns(): array
+    public function interleaveKeys(): array
     {
         return ['UserId' => $this->user->getKey()];
     }

@@ -197,7 +197,7 @@ class SpannerQueueIntegrationTest extends TestCase
             'connection' => 'main',
             'queue' => $interleaved,
             'block_for' => 2,
-            'parent_key_columns' => ['userId'],
+            'interleave_keys' => ['userId'],
         ]);
 
         /** @var QueueManager $manager */

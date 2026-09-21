@@ -89,11 +89,12 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
     protected array $receivers = [];
 
     /**
-     * Parent key columns that precede {@see self::MESSAGE_ID_COLUMN}, in order.
+     * Names of the interleave key columns that precede
+     * {@see self::MESSAGE_ID_COLUMN}, in order.
      *
      * @var list<string>
      */
-    protected array $parentKeyColumns;
+    protected array $interleaveKeys;
 
     /**
      * @param Connection $connection
@@ -101,7 +102,7 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
      * @param int $retryAfter seconds a reserved message stays invisible
      * @param int $blockFor seconds a single `RECEIVE_<queue>()` call streams for
      * @param bool $dispatchAfterCommit
-     * @param list<string> $parentKeyColumns parent key columns of an interleaved queue
+     * @param list<string> $interleaveKeys key columns the queue inherits from the table it is interleaved into
      */
     public function __construct(
         protected Connection $connection,
@@ -109,7 +110,7 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
         protected int $retryAfter = 60,
         protected int $blockFor = 20,
         bool $dispatchAfterCommit = false,
-        array $parentKeyColumns = [],
+        array $interleaveKeys = [],
     ) {
         if ($retryAfter < 1) {
             throw new InvalidArgumentException('retry_after must be at least 1 second.');
@@ -118,18 +119,18 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
             throw new InvalidArgumentException('block_for must be at least 1 second.');
         }
 
-        foreach ($parentKeyColumns as $column) {
-            $this->assertIsIdentifier($column, 'Parent key column');
+        foreach ($interleaveKeys as $column) {
+            $this->assertIsIdentifier($column, 'Interleave key');
 
             if (strcasecmp($column, self::MESSAGE_ID_COLUMN) === 0) {
                 throw new InvalidArgumentException(sprintf(
-                    'parent_key_columns must not contain "%s"; it is always the last key column.',
+                    'interleave_keys must not contain "%s"; it is always the last key column.',
                     self::MESSAGE_ID_COLUMN,
                 ));
             }
         }
 
-        $this->parentKeyColumns = $parentKeyColumns;
+        $this->interleaveKeys = $interleaveKeys;
         $this->dispatchAfterCommit = $dispatchAfterCommit;
     }
 
@@ -209,15 +210,15 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
     {
         $queue = $this->getQueue($queue);
         $payload = $this->createPayload($job, $queue, $data);
-        $parentKeyValues = $this->resolveParentKeyValues($queue, $payload, is_object($job) ? $job : null);
+        $interleaveKeyValues = $this->resolveInterleaveKeyValues($queue, $payload, is_object($job) ? $job : null);
 
         return $this->enqueueUsing(
             $job,
             $payload,
             $queue,
             null,
-            function (string $payload, string $queue) use ($parentKeyValues): string {
-                $messageId = $this->send($queue, $payload, 0, $parentKeyValues)[self::MESSAGE_ID_COLUMN];
+            function (string $payload, string $queue) use ($interleaveKeyValues): string {
+                $messageId = $this->send($queue, $payload, 0, $interleaveKeyValues)[self::MESSAGE_ID_COLUMN];
 
                 return (string) $messageId;
             },
@@ -227,7 +228,7 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
     /**
      * {@inheritDoc}
      * @param UnitEnum|string|null $queue
-     * @param array{ keys?: array<string, scalar> } $options parent key values, skipping resolution
+     * @param array{ keys?: array<string, scalar> } $options interleave key values, skipping resolution
      * @return string identifier of the sent message
      */
     public function pushRaw($payload, $queue = null, array $options = [])
@@ -246,15 +247,15 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
     {
         $queue = $this->getQueue($queue);
         $payload = $this->createPayload($job, $queue, $data, $delay);
-        $parentKeyValues = $this->resolveParentKeyValues($queue, $payload, is_object($job) ? $job : null);
+        $interleaveKeyValues = $this->resolveInterleaveKeyValues($queue, $payload, is_object($job) ? $job : null);
 
         return $this->enqueueUsing(
             $job,
             $payload,
             $queue,
             $delay,
-            function (string $payload, string $queue, $delay) use ($parentKeyValues): string {
-                $messageId = $this->send($queue, $payload, $delay, $parentKeyValues)[self::MESSAGE_ID_COLUMN];
+            function (string $payload, string $queue, $delay) use ($interleaveKeyValues): string {
+                $messageId = $this->send($queue, $payload, $delay, $interleaveKeyValues)[self::MESSAGE_ID_COLUMN];
 
                 return (string) $messageId;
             },
@@ -387,18 +388,18 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
     }
 
     /**
-     * Names of the parent key columns that precede
+     * Names of the interleave key columns that precede
      * {@see self::MESSAGE_ID_COLUMN}, in order.
      *
      * Note that this lists column names, unlike
-     * {@see ProvidesParentKeyColumns::parentKeyColumns()}, which supplies a
+     * {@see ProvidesInterleaveKeys::interleaveKeys()}, which supplies a
      * value for each of them.
      *
      * @return list<string>
      */
-    public function getParentKeyColumns(): array
+    public function getInterleaveKeys(): array
     {
-        return $this->parentKeyColumns;
+        return $this->interleaveKeys;
     }
 
     /**
@@ -425,12 +426,12 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
      * @param string $queue
      * @param string $payload
      * @param DateTimeInterface|DateInterval|int $delay
-     * @param array<string, scalar>|null $parentKeyValues parent key values, resolved from the job or payload when null
+     * @param array<string, scalar>|null $interleaveKeyValues interleave key values, resolved from the job or payload when null
      * @return array<string, scalar> full primary key of the sent message
      */
-    protected function send(string $queue, string $payload, $delay = 0, ?array $parentKeyValues = null): array
+    protected function send(string $queue, string $payload, $delay = 0, ?array $interleaveKeyValues = null): array
     {
-        $key = $this->buildKey($queue, $payload, $parentKeyValues);
+        $key = $this->buildKey($queue, $payload, $interleaveKeyValues);
 
         $columns = array_map(
             fn(string $column): string => $this->wrapIdentifier($column),
@@ -455,26 +456,26 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
      *
      * @param string $queue
      * @param string $payload
-     * @param array<string, scalar>|null $parentKeyValues
+     * @param array<string, scalar>|null $interleaveKeyValues
      * @return array<string, scalar>
      */
-    protected function buildKey(string $queue, string $payload, ?array $parentKeyValues): array
+    protected function buildKey(string $queue, string $payload, ?array $interleaveKeyValues): array
     {
-        $parentKeyValues ??= $this->resolveParentKeyValues($queue, $payload, null);
+        $interleaveKeyValues ??= $this->resolveInterleaveKeyValues($queue, $payload, null);
 
         $key = [];
-        foreach ($this->parentKeyColumns as $column) {
-            $value = $parentKeyValues[$column] ?? null;
+        foreach ($this->interleaveKeys as $column) {
+            $value = $interleaveKeyValues[$column] ?? null;
 
             if (!is_scalar($value)) {
                 throw new InvalidArgumentException(sprintf(
-                    'Parent key column "%s" of queue "%s" could not be resolved to a scalar value (got %s). ' .
+                    'Interleave key "%s" of queue "%s" could not be resolved to a scalar value (got %s). ' .
                     'Let the job implement %s, give it a public $%s property, or pass ["keys" => [...]] ' .
                     'to pushRaw().',
                     $column,
                     $queue,
                     get_debug_type($value),
-                    ProvidesParentKeyColumns::class,
+                    ProvidesInterleaveKeys::class,
                     lcfirst($column),
                 ));
             }
@@ -488,14 +489,14 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
     }
 
     /**
-     * Works out the values for the queue's parent key columns.
+     * Works out the values for the queue's interleave keys.
      *
-     * A job that implements {@see ProvidesParentKeyColumns} is asked directly.
+     * A job that implements {@see ProvidesInterleaveKeys} is asked directly.
      * Otherwise each column is looked for on the job itself, then under the
      * payload's `data`, which covers `push('Job', ['userId' => ...])`.
      *
      * The result maps column names to values, whereas
-     * {@see self::$parentKeyColumns} holds the names alone.
+     * {@see self::$interleaveKeys} holds the names alone.
      *
      * A dispatched job object is serialized into an opaque blob inside the
      * payload, so the object itself has to be inspected before that happens,
@@ -507,14 +508,14 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
      * @param object|null $job the job being dispatched, when there is one
      * @return array<string, scalar>
      */
-    protected function resolveParentKeyValues(string $queue, string $payload, ?object $job): array
+    protected function resolveInterleaveKeyValues(string $queue, string $payload, ?object $job): array
     {
-        if ($this->parentKeyColumns === []) {
+        if ($this->interleaveKeys === []) {
             return [];
         }
 
-        if ($job instanceof ProvidesParentKeyColumns) {
-            return $job->parentKeyColumns();
+        if ($job instanceof ProvidesInterleaveKeys) {
+            return $job->interleaveKeys();
         }
 
         $decoded = json_decode($payload, true);
@@ -523,16 +524,16 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
         $data = $decoded['data'] ?? null;
         $data = is_array($data) ? $data : [];
 
-        $parentKeyValues = [];
-        foreach ($this->parentKeyColumns as $column) {
-            $value = $this->discoverParentKeyValue($column, $job, $data);
+        $interleaveKeyValues = [];
+        foreach ($this->interleaveKeys as $column) {
+            $value = $this->discoverInterleaveKeyValue($column, $job, $data);
 
             if ($value !== null) {
-                $parentKeyValues[$column] = $value;
+                $interleaveKeyValues[$column] = $value;
             }
         }
 
-        return $parentKeyValues;
+        return $interleaveKeyValues;
     }
 
     /**
@@ -543,7 +544,7 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
      * @param array<array-key, mixed> $data
      * @return scalar|null
      */
-    protected function discoverParentKeyValue(string $column, ?object $job, array $data): mixed
+    protected function discoverInterleaveKeyValue(string $column, ?object $job, array $data): mixed
     {
         // Spanner columns are conventionally PascalCase while PHP properties
         // and payload entries are camelCase, so both spellings are tried.
@@ -606,12 +607,12 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
     protected function keyOf(string $queue, array $message): array
     {
         $key = [];
-        foreach ([...$this->parentKeyColumns, self::MESSAGE_ID_COLUMN] as $column) {
+        foreach ([...$this->interleaveKeys, self::MESSAGE_ID_COLUMN] as $column) {
             $value = $message[$column] ?? null;
 
             if (!is_scalar($value)) {
                 throw new RuntimeException(sprintf(
-                    'Parent key column "%s" of queue "%s" was received as %s instead of a scalar value.',
+                    'Interleave key "%s" of queue "%s" was received as %s instead of a scalar value.',
                     $column,
                     $queue,
                     get_debug_type($value),
@@ -694,7 +695,7 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
         $columns = array_map(
             fn(string $column): string => $this->wrapIdentifier($column),
             [
-                ...$this->parentKeyColumns,
+                ...$this->interleaveKeys,
                 self::MESSAGE_ID_COLUMN,
                 self::PAYLOAD_COLUMN,
                 self::LEASE_EXPIRATION_COLUMN,

@@ -34,7 +34,7 @@ use InvalidArgumentException;
  *   retry_after?: int,
  *   block_for?: int,
  *   after_commit?: bool|null,
- *   parent_key_columns?: list<string>,
+ *   interleave_keys?: list<string>,
  * }
  */
 class SpannerConnector implements ConnectorInterface
@@ -71,7 +71,7 @@ class SpannerConnector implements ConnectorInterface
             (int) ($config['retry_after'] ?? 60),
             (int) ($config['block_for'] ?? 20),
             (bool) ($config['after_commit'] ?? false),
-            $config['parent_key_columns'] ?? [],
+            $config['interleave_keys'] ?? [],
         );
     }
 }
