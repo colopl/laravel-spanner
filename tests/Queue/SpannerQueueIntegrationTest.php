@@ -66,6 +66,10 @@ class SpannerQueueIntegrationTest extends TestCase
             $connection->getSchemaBuilder()->dropQueueIfExists($this->queueName);
         });
 
+        $this->beforeApplicationDestroyed(static function () {
+            SpannerQueue::resolveKeysUsing(null);
+        });
+
         config()->set('queue.connections.spanner', [
             'driver' => 'spanner',
             'connection' => 'main',
@@ -167,6 +171,56 @@ class SpannerQueueIntegrationTest extends TestCase
 
         $this->assertSame(0, $queue->size());
         $this->assertNull($queue->pop());
+    }
+
+    public function test_an_interleaved_queue_keeps_a_job_under_its_parent_row(): void
+    {
+        $connection = $this->getDefaultConnection();
+        $interleaved = $this->generateTableName('QueueInterleavedTest');
+        $userId = $this->generateUuid();
+
+        $connection->getSchemaBuilder()->createQueue(
+            $interleaved,
+            static function (Blueprint $queue) {
+                // Must positionally match the parent's primary key, in name and type.
+                $queue->string('userId', 36);
+                $queue->string(SpannerQueue::MESSAGE_ID_COLUMN, 36);
+                $queue->string(SpannerQueue::PAYLOAD_COLUMN, 'max');
+                $queue->primary(['userId', SpannerQueue::MESSAGE_ID_COLUMN]);
+                $queue->interleaveInParent(self::TABLE_NAME_USER)->cascadeOnDelete();
+            },
+        );
+        $this->beforeApplicationDestroyed(function () use ($connection, $interleaved) {
+            $connection->getSchemaBuilder()->dropQueueIfExists($interleaved);
+        });
+
+        $connection->table(self::TABLE_NAME_USER)->insert(['userId' => $userId, 'name' => 'test']);
+
+        config()->set('queue.connections.spanner-interleaved', [
+            'driver' => 'spanner',
+            'connection' => 'main',
+            'queue' => $interleaved,
+            'block_for' => 2,
+            'key_columns' => ['userId'],
+        ]);
+        SpannerQueue::resolveKeysUsing(
+            static fn(array $payload) => ['userId' => $payload['data']['userId']],
+        );
+
+        /** @var QueueManager $manager */
+        $manager = $this->app->make('queue');
+        $queue = $manager->connection('spanner-interleaved');
+        assert($queue instanceof SpannerQueue);
+
+        $queue->push('Foo', ['userId' => $userId]);
+
+        $job = $queue->pop();
+        $this->assertInstanceOf(SpannerJob::class, $job);
+        // Reservation must not move the message to a different parent row.
+        $this->assertSame($userId, $job->getKey()['userId']);
+
+        $job->delete();
+        $this->assertSame(0, $queue->size());
     }
 
     public function test_clear_removes_every_message(): void

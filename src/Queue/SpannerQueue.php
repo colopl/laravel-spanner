@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace Colopl\Spanner\Queue;
 
+use Closure;
 use Colopl\Spanner\Connection;
 use DateInterval;
 use DateTimeImmutable;
@@ -34,6 +35,7 @@ use Illuminate\Queue\Queue as BaseQueue;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 use LogicException;
+use RuntimeException;
 use UnitEnum;
 
 use function Illuminate\Support\enum_value;
@@ -60,7 +62,7 @@ use function Illuminate\Support\enum_value;
 class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
 {
     /**
-     * Primary key column of the queue, holding the message's identifier.
+     * Last primary key column of the queue, holding the message's identifier.
      */
     public const string MESSAGE_ID_COLUMN = 'MessageId';
 
@@ -81,6 +83,13 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
     public const string LEASE_EXPIRATION_COLUMN = 'SpannerLeaseExpirationTimestamp';
 
     /**
+     * Resolves the leading key column values of a message being sent.
+     *
+     * @var Closure(array<array-key, mixed>, string): array<string, scalar>|null
+     */
+    protected static ?Closure $keysResolver = null;
+
+    /**
      * Open `RECEIVE_<queue>()` streams, keyed by queue name.
      *
      * @var array<string, MessageReceiver>
@@ -88,11 +97,19 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
     protected array $receivers = [];
 
     /**
+     * Key columns that precede {@see self::MESSAGE_ID_COLUMN}, in order.
+     *
+     * @var list<string>
+     */
+    protected array $keyColumns;
+
+    /**
      * @param Connection $connection
      * @param string $default name of the Spanner queue used when none is given
      * @param int $retryAfter seconds a reserved message stays invisible
      * @param int $blockFor seconds a single `RECEIVE_<queue>()` call streams for
      * @param bool $dispatchAfterCommit
+     * @param list<string> $keyColumns leading key columns of an interleaved queue
      */
     public function __construct(
         protected Connection $connection,
@@ -100,6 +117,7 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
         protected int $retryAfter = 60,
         protected int $blockFor = 20,
         bool $dispatchAfterCommit = false,
+        array $keyColumns = [],
     ) {
         if ($retryAfter < 1) {
             throw new InvalidArgumentException('retry_after must be at least 1 second.');
@@ -108,7 +126,45 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
             throw new InvalidArgumentException('block_for must be at least 1 second.');
         }
 
+        foreach ($keyColumns as $column) {
+            $this->assertIsIdentifier($column, 'Key column');
+
+            if (strcasecmp($column, self::MESSAGE_ID_COLUMN) === 0) {
+                throw new InvalidArgumentException(sprintf(
+                    'key_columns must not contain "%s"; it is always the last key column.',
+                    self::MESSAGE_ID_COLUMN,
+                ));
+            }
+        }
+
+        $this->keyColumns = $keyColumns;
         $this->dispatchAfterCommit = $dispatchAfterCommit;
+    }
+
+    /**
+     * Registers how the leading key column values of a message are derived.
+     *
+     * An interleaved queue is keyed by its parent's key columns followed by
+     * `MessageId`, so the driver has to be told what to write into them. The
+     * resolver receives the decoded job payload and the queue name, and
+     * returns a value for each configured key column.
+     *
+     * ```
+     * SpannerQueue::resolveKeysUsing(
+     *     fn (array $payload) => ['UserId' => $payload['data']['userId']],
+     * );
+     * ```
+     *
+     * Only newly sent messages go through the resolver. Reserving and releasing
+     * a job carry the key values of the message they came from, so a job never
+     * moves to a different parent row.
+     *
+     * @param Closure(array<array-key, mixed>, string): array<string, scalar>|null $resolver
+     * @return void
+     */
+    public static function resolveKeysUsing(?Closure $resolver): void
+    {
+        static::$keysResolver = $resolver;
     }
 
     /**
@@ -192,18 +248,21 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
             $this->createPayload($job, $queue, $data),
             $queue,
             null,
-            fn(string $payload, string $queue): string => $this->send($queue, $payload, 0),
+            fn(string $payload, string $queue): string => $this->pushRaw($payload, $queue),
         );
     }
 
     /**
      * {@inheritDoc}
      * @param UnitEnum|string|null $queue
-     * @param array<string, mixed> $options
+     * @param array{ keys?: array<string, scalar> } $options key column values, bypassing the resolver
+     * @return string identifier of the sent message
      */
     public function pushRaw($payload, $queue = null, array $options = [])
     {
-        return $this->send($this->getQueue($queue), $payload, 0);
+        $key = $this->send($this->getQueue($queue), $payload, 0, $options['keys'] ?? null);
+
+        return (string) $key[self::MESSAGE_ID_COLUMN];
     }
 
     /**
@@ -220,7 +279,11 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
             $this->createPayload($job, $queue, $data, $delay),
             $queue,
             $delay,
-            fn(string $payload, string $queue, $delay): string => $this->send($queue, $payload, $delay),
+            function (string $payload, string $queue, $delay): string {
+                $messageId = $this->send($queue, $payload, $delay)[self::MESSAGE_ID_COLUMN];
+
+                return (string) $messageId;
+            },
         );
     }
 
@@ -276,18 +339,23 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
      * Acknowledges a message, removing it from the queue.
      *
      * @param string $queue
-     * @param string $messageId
+     * @param array<string, scalar> $key full primary key of the message
      * @return int number of messages that were acknowledged (0 or 1)
      */
-    public function acknowledge(string $queue, string $messageId): int
+    public function acknowledge(string $queue, array $key): int
     {
+        $conditions = [];
+        foreach (array_keys($key) as $column) {
+            $conditions[] = $this->wrapIdentifier($column) . ' = ?';
+        }
+
         return $this->connection->affectingStatement(
             sprintf(
-                'delete from %s where %s = ?',
+                'delete from %s where %s',
                 $this->wrapQueue($queue),
-                $this->wrapIdentifier(self::MESSAGE_ID_COLUMN),
+                implode(' and ', $conditions),
             ),
-            [$messageId],
+            array_values($key),
         );
     }
 
@@ -302,9 +370,11 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
      */
     public function deleteAndRelease(string $queue, SpannerJob $job, $delay = 0): void
     {
-        $this->connection->transaction(function () use ($queue, $job, $delay): void {
-            $this->acknowledge($queue, (string) $job->getJobId());
-            $this->send($queue, $job->getRawBody(), $delay);
+        $key = $job->getKey();
+
+        $this->connection->transaction(function () use ($queue, $job, $key, $delay): void {
+            $this->acknowledge($queue, $key);
+            $this->send($queue, $job->getRawBody(), $delay, $key);
         });
     }
 
@@ -343,6 +413,16 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
     }
 
     /**
+     * Key columns that precede {@see self::MESSAGE_ID_COLUMN}, in order.
+     *
+     * @return list<string>
+     */
+    public function getKeyColumns(): array
+    {
+        return $this->keyColumns;
+    }
+
+    /**
      * Resolves the name of the Spanner queue to operate on.
      *
      * @param UnitEnum|string|null $queue
@@ -366,24 +446,86 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
      * @param string $queue
      * @param string $payload
      * @param DateTimeInterface|DateInterval|int $delay
-     * @return string the identifier of the sent message
+     * @param array<string, scalar>|null $keys key column values, resolved from the payload when null
+     * @return array<string, scalar> full primary key of the sent message
      */
-    protected function send(string $queue, string $payload, $delay = 0): string
+    protected function send(string $queue, string $payload, $delay = 0, ?array $keys = null): array
     {
-        $messageId = (string) Str::uuid();
+        $key = $this->buildKey($queue, $payload, $keys);
+
+        $columns = array_map(
+            fn(string $column): string => $this->wrapIdentifier($column),
+            [...array_keys($key), self::PAYLOAD_COLUMN, self::DELIVER_TIME_COLUMN],
+        );
 
         $this->connection->affectingStatement(
             sprintf(
-                'insert into %s (%s, %s, %s) values (?, ?, ?)',
+                'insert into %s (%s) values (%s)',
                 $this->wrapQueue($queue),
-                $this->wrapIdentifier(self::MESSAGE_ID_COLUMN),
-                $this->wrapIdentifier(self::PAYLOAD_COLUMN),
-                $this->wrapIdentifier(self::DELIVER_TIME_COLUMN),
+                implode(', ', $columns),
+                implode(', ', array_fill(0, count($columns), '?')),
             ),
-            [$messageId, $payload, $this->deliverTimeFor($delay)],
+            [...array_values($key), $payload, $this->deliverTimeFor($delay)],
         );
 
-        return $messageId;
+        return $key;
+    }
+
+    /**
+     * Primary key for a message that is about to be sent.
+     *
+     * @param string $queue
+     * @param string $payload
+     * @param array<string, scalar>|null $keys
+     * @return array<string, scalar>
+     */
+    protected function buildKey(string $queue, string $payload, ?array $keys): array
+    {
+        $keys ??= $this->resolveKeys($queue, $payload);
+
+        $key = [];
+        foreach ($this->keyColumns as $column) {
+            $value = $keys[$column] ?? null;
+
+            if (!is_scalar($value)) {
+                throw new InvalidArgumentException(sprintf(
+                    'Key column "%s" of queue "%s" resolved to %s instead of a scalar value.',
+                    $column,
+                    $queue,
+                    get_debug_type($value),
+                ));
+            }
+
+            $key[$column] = $value;
+        }
+
+        $key[self::MESSAGE_ID_COLUMN] = (string) Str::uuid();
+
+        return $key;
+    }
+
+    /**
+     * @param string $queue
+     * @param string $payload
+     * @return array<string, scalar>
+     */
+    protected function resolveKeys(string $queue, string $payload): array
+    {
+        if ($this->keyColumns === []) {
+            return [];
+        }
+
+        $resolver = static::$keysResolver ?? throw new LogicException(sprintf(
+            'Queue "%s" declares the key columns [%s], so %s::resolveKeysUsing() must be registered ' .
+            'to supply their values.',
+            $queue,
+            implode(', ', $this->keyColumns),
+            static::class,
+        ));
+
+        $decoded = json_decode($payload, true);
+
+        return $resolver(is_array($decoded) ? $decoded : [], $queue);
     }
 
     /**
@@ -401,23 +543,53 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
             return null;
         }
 
-        $messageId = $message[self::MESSAGE_ID_COLUMN];
+        $key = $this->keyOf($queue, $message);
         $rawPayload = $message[self::PAYLOAD_COLUMN];
-        assert(is_string($messageId) && is_string($rawPayload));
+        assert(is_string($rawPayload));
 
         $payload = $this->incrementAttempts($rawPayload);
 
-        $reservedId = $this->connection->transaction(function () use ($queue, $messageId, $payload): ?string {
-            if ($this->acknowledge($queue, $messageId) === 0) {
+        $reservedKey = $this->connection->transaction(function () use ($queue, $key, $payload): ?array {
+            if ($this->acknowledge($queue, $key) === 0) {
                 // The message is already gone, so it was handled elsewhere.
                 return null;
             }
-            return $this->send($queue, $payload, $this->retryAfter);
+            // The reserved message keeps the key columns of the one it
+            // replaces, so an interleaved queue stays under the same parent.
+            return $this->send($queue, $payload, $this->retryAfter, $key);
         });
 
-        return $reservedId !== null
-            ? new SpannerJob($this->container, $this, $payload, $reservedId, $this->connectionName, $queue)
+        return $reservedKey !== null
+            ? new SpannerJob($this->container, $this, $payload, $reservedKey, $this->connectionName, $queue)
             : null;
+    }
+
+    /**
+     * Primary key of a received message.
+     *
+     * @param string $queue
+     * @param array<array-key, mixed> $message
+     * @return array<string, scalar>
+     */
+    protected function keyOf(string $queue, array $message): array
+    {
+        $key = [];
+        foreach ([...$this->keyColumns, self::MESSAGE_ID_COLUMN] as $column) {
+            $value = $message[$column] ?? null;
+
+            if (!is_scalar($value)) {
+                throw new RuntimeException(sprintf(
+                    'Key column "%s" of queue "%s" was received as %s instead of a scalar value.',
+                    $column,
+                    $queue,
+                    get_debug_type($value),
+                ));
+            }
+
+            $key[$column] = $value;
+        }
+
+        return $key;
     }
 
     /**
@@ -487,11 +659,19 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
             );
         }
 
+        $columns = array_map(
+            fn(string $column): string => $this->wrapIdentifier($column),
+            [
+                ...$this->keyColumns,
+                self::MESSAGE_ID_COLUMN,
+                self::PAYLOAD_COLUMN,
+                self::LEASE_EXPIRATION_COLUMN,
+            ],
+        );
+
         $sql = sprintf(
-            'select %s, %s, %s from %s(max_duration => %s)',
-            $this->wrapIdentifier(self::MESSAGE_ID_COLUMN),
-            $this->wrapIdentifier(self::PAYLOAD_COLUMN),
-            $this->wrapIdentifier(self::LEASE_EXPIRATION_COLUMN),
+            'select %s from %s(max_duration => %s)',
+            implode(', ', $columns),
             $this->receiveFunction($queue),
             $this->connection->getQueryGrammar()->quoteString($this->blockFor . 's'),
         );
@@ -571,14 +751,23 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
     protected function qualifyQueue(string $queue): string
     {
         $name = $this->connection->getTablePrefix() . $queue;
-
-        if (preg_match('/\A[A-Za-z_][A-Za-z0-9_]{0,127}\z/', $name) !== 1) {
-            throw new InvalidArgumentException(
-                "Queue name \"{$name}\" is not a valid Cloud Spanner identifier.",
-            );
-        }
+        $this->assertIsIdentifier($name, 'Queue name');
 
         return $name;
+    }
+
+    /**
+     * @param string $identifier
+     * @param string $subject
+     * @return void
+     */
+    protected function assertIsIdentifier(string $identifier, string $subject): void
+    {
+        if (preg_match('/\A[A-Za-z_][A-Za-z0-9_]{0,127}\z/', $identifier) !== 1) {
+            throw new InvalidArgumentException(
+                "{$subject} \"{$identifier}\" is not a valid Cloud Spanner identifier.",
+            );
+        }
     }
 
     /**

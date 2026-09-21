@@ -450,7 +450,10 @@ $schemaBuilder->createQueue('Jobs', function (Blueprint $queue) {
 
 Spanner adds a `DeliverTime` column to every queue implicitly, so you don't declare it, but you can point a
 [Row Deletion Policy](#row-deletion-policy) at it to expire messages that were never acknowledged.
-Queues can also be interleaved, and accept queue options:
+Queues can also be interleaved into a table, and accept queue options. Interleaving requires the queue's
+primary key to be prefixed by the parent's key columns, positionally matching in name and type, so the queue
+gains key columns in front of `MessageId` (see [Interleaved queues](#interleaved-queues) for what the driver
+needs in order to write them):
 
 ```php
 $schemaBuilder->createQueue('UserTasks', function (Blueprint $queue) {
@@ -464,6 +467,9 @@ $schemaBuilder->createQueue('UserTasks', function (Blueprint $queue) {
 
 $schemaBuilder->dropQueue('UserTasks');
 ```
+
+Use `interleaveIn()` instead of `interleaveInParent()` for colocation without requiring the parent row to
+exist.
 
 Queue options can be changed afterwards with `alterQueue()`. `disableSend` rejects new messages, which is
 useful to drain a queue before dropping it, and `disableDelivery` pauses delivery to consumers:
@@ -497,6 +503,8 @@ Add a `spanner` queue connection to `config/queue.php`:
             // Seconds a single receiving call waits for messages.
             'block_for' => 20,
             'after_commit' => false,
+            // Key columns in front of MessageId. Only for an interleaved queue.
+            'key_columns' => [],
         ],
     ],
 ];
@@ -514,6 +522,38 @@ as `SIGTERM` once the current call returns, so it also delays graceful shutdown 
 > As with the `redis` driver's `block_for`, avoid giving one worker several queues
 > (`queue:work spanner --queue=High,Low`) while `block_for` is long. Queues are read in order, so an empty
 > `High` makes the worker wait `block_for` seconds before it even looks at `Low`.
+
+#### Interleaved queues
+
+A queue interleaved into a table is keyed by that table's key columns followed by `MessageId`, so the driver
+has to be told what to write into them. List them in `key_columns`, in primary key order, and register a
+resolver that derives their values from the job payload:
+
+```php
+// config/queue.php
+'spanner' => [
+    'driver' => 'spanner',
+    'queue' => 'UserTasks',
+    'key_columns' => ['UserId'],
+],
+
+// A service provider's boot method
+SpannerQueue::resolveKeysUsing(
+    fn (array $payload) => ['UserId' => $payload['data']['userId']],
+);
+```
+
+The resolver is given the decoded payload and the queue name, and runs only for messages that are newly
+sent. Reserving and releasing a job carry the key values of the message they came from, so a job never moves
+to a different parent row. `pushRaw()` can also pass them directly, which is useful when there is no payload
+to derive them from:
+
+```php
+$queue->pushRaw($payload, 'UserTasks', ['keys' => ['UserId' => $userId]]);
+```
+
+With `interleaveInParent()` the parent row must already exist when the message is sent, so send it in the
+same transaction that creates the parent, or use `interleaveIn()`.
 
 #### Dispatching jobs transactionally
 
