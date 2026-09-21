@@ -391,9 +391,9 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
      * Names of the interleave key columns that precede
      * {@see self::MESSAGE_ID_COLUMN}, in order.
      *
-     * Note that this lists column names, unlike
-     * {@see ProvidesInterleaveKeys::interleaveKeys()}, which supplies a
-     * value for each of them.
+     * Careful: this returns the column names, `['UserId']`, while the
+     * identically named {@see ProvidesInterleaveKeys::getInterleaveKeys()}
+     * returns a value for each of them, `['UserId' => 'a-user-id']`.
      *
      * @return list<string>
      */
@@ -515,7 +515,7 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
         }
 
         if ($job instanceof ProvidesInterleaveKeys) {
-            return $job->interleaveKeys();
+            return $job->getInterleaveKeys();
         }
 
         $decoded = json_decode($payload, true);

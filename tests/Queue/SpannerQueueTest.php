@@ -621,7 +621,7 @@ class FakeJobProvidingInterleaveKeys implements ProvidesInterleaveKeys
     ) {
     }
 
-    public function interleaveKeys(): array
+    public function getInterleaveKeys(): array
     {
         return ['UserId' => $this->declared];
     }
