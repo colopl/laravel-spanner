@@ -18,7 +18,7 @@
 
 namespace Colopl\Spanner\Tests\Queue;
 
-use Colopl\Spanner\Queue\ProvidesParentKeys;
+use Colopl\Spanner\Queue\ProvidesParentKeyColumns;
 use Colopl\Spanner\Queue\SpannerJob;
 use Colopl\Spanner\Queue\SpannerQueue;
 use Colopl\Spanner\Tests\Support\RecordingConnection;
@@ -439,7 +439,7 @@ class SpannerQueueTest extends TestCase
         new SpannerQueue(new RecordingConnection(), 'Jobs', 60, 0);
     }
 
-    public function test_interleaved_queue_writes_the_parent_keys(): void
+    public function test_interleaved_queue_writes_the_parent_key_columns(): void
     {
         $conn = new RecordingConnection();
         $this->createQueue($conn, parentKeyColumns: ['UserId'])
@@ -533,7 +533,7 @@ class SpannerQueueTest extends TestCase
         $this->createQueue($conn, parentKeyColumns: ['UserId'])->pushRaw('{}');
     }
 
-    public function test_parent_keys_are_discovered_from_a_job_property(): void
+    public function test_parent_key_columns_are_discovered_from_a_job_property(): void
     {
         $conn = new RecordingConnection();
 
@@ -545,7 +545,7 @@ class SpannerQueueTest extends TestCase
         $this->assertSame('user-7', $conn->recordedAt(0)['bindings'][0]);
     }
 
-    public function test_parent_keys_are_discovered_from_the_payload_data(): void
+    public function test_parent_key_columns_are_discovered_from_the_payload_data(): void
     {
         $conn = new RecordingConnection();
 
@@ -555,19 +555,19 @@ class SpannerQueueTest extends TestCase
         $this->assertSame('user-8', $conn->recordedAt(0)['bindings'][0]);
     }
 
-    public function test_a_job_can_declare_its_own_parent_keys(): void
+    public function test_a_job_can_declare_its_own_parent_key_columns(): void
     {
         // The property would be discovered too, so this also pins that the
         // job's own declaration wins.
         $conn = new RecordingConnection();
 
         $this->createQueue($conn, parentKeyColumns: ['UserId'])
-            ->push(new FakeJobProvidingParentKeys('user-1', 'user-declared'));
+            ->push(new FakeJobProvidingParentKeyColumns('user-1', 'user-declared'));
 
         $this->assertSame('user-declared', $conn->recordedAt(0)['bindings'][0]);
     }
 
-    public function test_later_resolves_parent_keys_from_the_job_too(): void
+    public function test_later_resolves_parent_key_columns_from_the_job_too(): void
     {
         $conn = new RecordingConnection();
 
@@ -577,7 +577,7 @@ class SpannerQueueTest extends TestCase
         $this->assertSame('user-7', $conn->recordedAt(0)['bindings'][0]);
     }
 
-    public function test_pushRaw_accepts_parent_keys_directly(): void
+    public function test_pushRaw_accepts_parent_key_columns_directly(): void
     {
         $conn = new RecordingConnection();
 
@@ -588,7 +588,7 @@ class SpannerQueueTest extends TestCase
         $this->assertSame('user-9', $conn->recordedAt(0)['bindings'][0]);
     }
 
-    public function test_parent_keys_must_not_repeat_the_message_id(): void
+    public function test_parent_key_columns_must_not_repeat_the_message_id(): void
     {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('must not contain "MessageId"');
@@ -596,7 +596,7 @@ class SpannerQueueTest extends TestCase
         new SpannerQueue(new RecordingConnection(), 'Jobs', 60, 20, false, ['MessageId']);
     }
 
-    public function test_parent_keys_must_be_spanner_identifiers(): void
+    public function test_parent_key_columns_must_be_spanner_identifiers(): void
     {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Parent key column "UserId`; drop table `User" is not a valid');
@@ -613,7 +613,7 @@ class FakeJobWithUserId
     }
 }
 
-class FakeJobProvidingParentKeys implements ProvidesParentKeys
+class FakeJobProvidingParentKeyColumns implements ProvidesParentKeyColumns
 {
     public function __construct(
         public string $userId,
@@ -621,7 +621,7 @@ class FakeJobProvidingParentKeys implements ProvidesParentKeys
     ) {
     }
 
-    public function parentKeys(): array
+    public function parentKeyColumns(): array
     {
         return ['UserId' => $this->declared];
     }

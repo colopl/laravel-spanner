@@ -504,7 +504,7 @@ Add a `spanner` queue connection to `config/queue.php`:
             'block_for' => 20,
             'after_commit' => false,
             // Key columns in front of MessageId. Only for an interleaved queue.
-            'parent_keys' => [],
+            'parent_key_columns' => [],
         ],
     ],
 ];
@@ -526,19 +526,19 @@ as `SIGTERM` once the current call returns, so it also delays graceful shutdown 
 #### Interleaved queues
 
 A queue interleaved into a table is keyed by that table's key columns followed by `MessageId`, so the driver
-has to know what to write into them. List them in `parent_keys`, in primary key order:
+has to know what to write into them. List them in `parent_key_columns`, in primary key order:
 
 ```php
 'spanner' => [
     'driver' => 'spanner',
     'queue' => 'UserTasks',
-    'parent_keys' => ['UserId'],
+    'parent_key_columns' => ['UserId'],
 ],
 ```
 
 The values are then worked out automatically. A dispatched job object is serialized into an opaque blob
 inside the payload, so the driver inspects the job itself before the payload is built, and falls back to the
-payload for jobs pushed as a class name. A job implementing `Colopl\Spanner\Queue\ProvidesParentKeys` is
+payload for jobs pushed as a class name. A job implementing `Colopl\Spanner\Queue\ProvidesParentKeyColumns` is
 asked directly; otherwise each column is looked for as a public property of the job, then under the payload's
 `data`. Both the column's own spelling and its `lcfirst` form are tried, so `UserId` matches `$userId` too.
 
@@ -554,15 +554,15 @@ class ProcessUserTask implements ShouldQueue
 Queue::push('ProcessUserTask', ['userId' => $userId]);
 ```
 
-Implement `ProvidesParentKeys` when the value has to be computed, which is the usual case once a job holds a
+Implement `ProvidesParentKeyColumns` when the value has to be computed, which is the usual case once a job holds a
 model rather than an id:
 
 ```php
-class ProcessUserTask implements ShouldQueue, ProvidesParentKeys
+class ProcessUserTask implements ShouldQueue, ProvidesParentKeyColumns
 {
     public function __construct(private User $user) {}
 
-    public function parentKeys(): array
+    public function parentKeyColumns(): array
     {
         return ['UserId' => $this->user->getKey()];
     }
