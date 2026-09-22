@@ -159,15 +159,13 @@ class Builder extends BaseBuilder
         usort($sortedTables, static fn($a, $b) => $b['parents'] <=> $a['parents']);
 
         // drop foreign keys first (otherwise index queries will include them)
+        $foreignKeysByTable = $this->getNamesGroupedByTable($this->grammar->compileForeignKeysForAllTables());
         $queries = [];
         foreach ($sortedTables as $tableData) {
             $sqn = $tableData['schema_qualified_name'];
-            $foreigns = $this->getForeignKeys($sqn);
             $blueprint = $this->createBlueprint($sqn);
-            foreach ($foreigns as $foreign) {
-                if (isset($foreign['name'])) {
-                    $blueprint->dropForeign($foreign['name']);
-                }
+            foreach ($foreignKeysByTable[$sqn] ?? [] as $foreign) {
+                $blueprint->dropForeign($foreign);
             }
             array_push($queries, ...$blueprint->toSql());
         }
@@ -175,13 +173,13 @@ class Builder extends BaseBuilder
         $connection->runDdlBatch($queries);
 
         // drop indexes and tables
+        $indexesByTable = $this->getNamesGroupedByTable($this->grammar->compileIndexesForAllTables());
         $queries = [];
         foreach ($sortedTables as $tableData) {
             $schema = $tableData['schema'] ?? null;
             $sqn = $tableData['schema_qualified_name'];
-            $indexes = $this->getIndexListing($sqn);
             $blueprint = $this->createBlueprint($sqn);
-            foreach ($indexes as $index) {
+            foreach ($indexesByTable[$sqn] ?? [] as $index) {
                 if ($index === 'PRIMARY_KEY') {
                     continue;
                 }
@@ -195,5 +193,26 @@ class Builder extends BaseBuilder
         }
 
         $connection->runDdlBatch($queries);
+    }
+
+    /**
+     * Run a query whose rows contain `table_schema`, `table_name` and `name`,
+     * and group the names by schema qualified table name.
+     * This avoids running one query per table.
+     *
+     * @param string $query
+     * @return array<string, list<string>>
+     */
+    protected function getNamesGroupedByTable(string $query): array
+    {
+        $grouped = [];
+        foreach ($this->connection->selectFromWriteConnection($query) as $row) {
+            $row = (object) $row;
+            $sqn = $row->table_schema !== ''
+                ? $row->table_schema . '.' . $row->table_name
+                : $row->table_name;
+            $grouped[$sqn][] = $row->name;
+        }
+        return $grouped;
     }
 }

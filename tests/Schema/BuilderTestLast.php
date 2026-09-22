@@ -637,6 +637,67 @@ class BuilderTestLast extends TestCase
         $this->assertEmpty($tables);
     }
 
+    public function test_dropAllTables__with_named_schema(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $sb = $conn->getSchemaBuilder();
+        $schema = $this->generateNamedSchemaName();
+        $sb->createNamedSchema($schema);
+
+        $table1 = $this->generateTableName(class_basename(__CLASS__));
+        $sb->create($table1, function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('something');
+            $table->index('something');
+        });
+
+        $fqtn2 = $schema . '.' . $this->generateTableName(class_basename(__CLASS__));
+        $sb->create($fqtn2, function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('something');
+            $table->index('something');
+        });
+
+        $fqtn3 = $schema . '.' . $this->generateTableName(class_basename(__CLASS__));
+        $sb->create($fqtn3, function (Blueprint $table) use ($fqtn2) {
+            $table->uuid('id')->primary();
+            $table->uuid('other_id');
+            $table->index('other_id');
+            $table->foreign('other_id')->references('id')->on($fqtn2);
+        });
+
+        $sb->dropAllTables();
+
+        $this->assertEmpty($sb->getTables());
+    }
+
+    public function test_dropAllTables_does_not_query_per_table(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $sb = $conn->getSchemaBuilder();
+
+        foreach (range(1, 3) as $ignored) {
+            $sb->create($this->generateTableName(class_basename(__CLASS__)), function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->uuid('something');
+                $table->index('something');
+            });
+        }
+
+        $conn->enableQueryLog();
+        $sb->dropAllTables();
+        $conn->disableQueryLog();
+
+        $selects = array_filter(
+            $conn->getQueryLog(),
+            static fn(array $log): bool => stripos($log['query'], 'select') === 0,
+        );
+
+        // tables, foreign keys and indexes
+        $this->assertCount(3, $selects);
+        $this->assertEmpty($sb->getTables());
+    }
+
     public function test_dropAllTables_when_no_tables_exist(): void
     {
         $conn = $this->getDefaultConnection();

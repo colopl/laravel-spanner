@@ -87,9 +87,34 @@ class Grammar extends BaseGrammar
      */
     public function compileIndexes($schema, $table)
     {
+        return $this->compileIndexesWhere(implode(' ', [
+            'i.table_name = ' . $this->quoteString($table),
+            'and i.table_schema = ' . $this->quoteString($schema ?? ''),
+        ]));
+    }
+
+    /**
+     * Compile the query to get the indexes of all user tables at once.
+     * Each row also contains the `table_schema` and `table_name` the index belongs to.
+     *
+     * @return string
+     */
+    public function compileIndexesForAllTables(): string
+    {
+        return $this->compileIndexesWhere('i.table_schema not in (\'INFORMATION_SCHEMA\', \'SPANNER_SYS\')');
+    }
+
+    /**
+     * @param string $where
+     * @return string
+     */
+    protected function compileIndexesWhere(string $where): string
+    {
         return implode(' ', [
             'select',
             implode(', ', [
+                'i.table_schema as `table_schema`',
+                'i.table_name as `table_name`',
                 'i.index_name as `name`',
                 'string_agg(c.column_name, \',\') as `columns`',
                 'i.index_type as `type`',
@@ -97,9 +122,8 @@ class Grammar extends BaseGrammar
             ]),
             'from information_schema.indexes as i',
             'join information_schema.index_columns as c on i.table_schema = c.table_schema and i.table_name = c.table_name and i.index_name = c.index_name',
-            'where i.table_name = ' . $this->quoteString($table),
-            'and i.table_schema = ' . $this->quoteString($schema ?? ''),
-            'group by i.index_name, i.index_type, i.is_unique, i.table_schema',
+            'where ' . $where,
+            'group by i.table_schema, i.table_name, i.index_name, i.index_type, i.is_unique',
         ]);
     }
 
@@ -108,9 +132,34 @@ class Grammar extends BaseGrammar
      */
     public function compileForeignKeys($schema, $table)
     {
+        return $this->compileForeignKeysWhere(implode(' ', [
+            'kc.table_name = ' . $this->quoteString($table),
+            'and kc.table_schema = ' . $this->quoteString($schema ?? ''),
+        ]));
+    }
+
+    /**
+     * Compile the query to get the foreign keys of all tables at once.
+     * Each row also contains the `table_schema` and `table_name` the foreign key belongs to.
+     *
+     * @return string
+     */
+    public function compileForeignKeysForAllTables(): string
+    {
+        return $this->compileForeignKeysWhere('kc.table_schema not in (\'INFORMATION_SCHEMA\', \'SPANNER_SYS\')');
+    }
+
+    /**
+     * @param string $where
+     * @return string
+     */
+    protected function compileForeignKeysWhere(string $where): string
+    {
         return implode(' ', [
             'select',
             implode(', ', [
+                'kc.table_schema as `table_schema`',
+                'kc.table_name as `table_name`',
                 'kc.constraint_name as `name`',
                 'string_agg(kc.column_name) as `columns`',
                 'cc.table_schema as `foreign_schema`',
@@ -122,9 +171,8 @@ class Grammar extends BaseGrammar
             'from information_schema.key_column_usage kc',
             'join information_schema.referential_constraints rc on kc.constraint_name = rc.constraint_name',
             'join information_schema.constraint_column_usage cc on kc.constraint_name = cc.constraint_name',
-            'where kc.table_name = ' . $this->quoteString($table),
-            'and kc.table_schema = ' . $this->quoteString($schema ?? ''),
-            'group by kc.constraint_name, cc.table_schema, cc.table_name, rc.update_rule, rc.delete_rule',
+            'where ' . $where,
+            'group by kc.table_schema, kc.table_name, kc.constraint_name, cc.table_schema, cc.table_name, rc.update_rule, rc.delete_rule',
         ]);
     }
 
