@@ -18,6 +18,8 @@
 
 namespace Colopl\Spanner\Query;
 
+use DateTimeImmutable;
+use DateTimeZone;
 use Google\Cloud\Spanner\Numeric;
 use Google\Cloud\Spanner\Timestamp;
 use Google\Cloud\Spanner\ValueInterface;
@@ -90,7 +92,11 @@ class Processor extends BaseProcessor
     protected function processColumn(mixed $value): mixed
     {
         if ($value instanceof Timestamp) {
-            return Carbon::instance($value->get())->setTimezone(date_default_timezone_get());
+            // Converting the timezone before creating the Carbon instance is much faster
+            // than calling Carbon::setTimezone() and gives the same result.
+            $datetime = DateTimeImmutable::createFromInterface($value->get())
+                ->setTimezone(new DateTimeZone(date_default_timezone_get()));
+            return Carbon::instance($datetime);
         }
 
         if ($value instanceof Numeric) {
