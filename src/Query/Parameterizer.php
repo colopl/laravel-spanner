@@ -43,14 +43,17 @@ class Parameterizer
     {
         $newBindings = [];
         $i = 0;
-        $newQuery = preg_replace_callback('/\?/', function () use ($query, $bindings, &$newBindings, &$i) {
+        // Checked once per query instead of once per binding, since scanning the
+        // query for every binding is O(bindings * query length) for large queries.
+        $hasLike = stripos($query, 'like') !== false;
+        $newQuery = preg_replace_callback('/\?/', function () use ($hasLike, $bindings, &$newBindings, &$i) {
             $binding = $bindings[$i];
             $result = null;
             if ($binding === null) {
                 $result = 'NULL';
             } elseif (is_array($binding) && empty($binding)) {
                 $result = '[]';
-            } elseif (is_string($binding) && self::hasLikeWildcard($query, $binding)) {
+            } elseif ($hasLike && is_string($binding) && self::hasLikeWildcard($binding)) {
                 $result = self::createLikeClause($binding);
             } else {
                 $placeHolder = 'p' . $i;
@@ -67,15 +70,14 @@ class Parameterizer
     }
 
     /**
-     * @param string $query
      * @param string $value
      * @return bool
      */
-    private static function hasLikeWildcard(string $query, string $value)
+    private static function hasLikeWildcard(string $value)
     {
-        return Str::contains(strtolower($query), 'like')
-            && Str::contains($value, ['%', '_'])
-            && (Str::startsWith($value, ['%', '_']) || preg_match('/[^\\\\][%_]/', $value));
+        // `%` or `_` that is at the start or not escaped by a preceding backslash
+        return strpbrk($value, '%_') !== false
+            && preg_match('/(?:^|[^\\\\])[%_]/', $value) === 1;
     }
 
     /**
