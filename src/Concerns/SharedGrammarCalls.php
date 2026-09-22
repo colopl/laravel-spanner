@@ -20,7 +20,6 @@ namespace Colopl\Spanner\Concerns;
 
 use BackedEnum;
 use Illuminate\Database\Grammar;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 
 trait SharedGrammarCalls
@@ -53,9 +52,10 @@ trait SharedGrammarCalls
      */
     protected function formatOptions(array $options, string $delimiter = '='): string
     {
-        $mapped = Arr::map($options, function (int|float|bool|string|BackedEnum|null $v, string $k) use ($delimiter): string {
-            return Str::snake($k) . $delimiter . $this->formatOptionValue($v);
-        });
+        $mapped = [];
+        foreach ($options as $key => $value) {
+            $mapped[] = Str::snake($key) . $delimiter . $this->formatOptionValue($value);
+        }
         return implode(', ', $mapped);
     }
 
