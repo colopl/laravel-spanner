@@ -92,11 +92,12 @@ class Processor extends BaseProcessor
     protected function processColumn(mixed $value): mixed
     {
         if ($value instanceof Timestamp) {
-            // Converting the timezone before creating the Carbon instance is much faster
-            // than calling Carbon::setTimezone() and gives the same result.
+            // Spanner returns timestamps in the "Z" timezone. Carbon::instance() rebuilds the
+            // timezone from its name, which is very slow for "Z" (new DateTimeZone('Z')).
+            // The native methods used here copy the timezone instead.
             $datetime = DateTimeImmutable::createFromInterface($value->get())
                 ->setTimezone(new DateTimeZone(date_default_timezone_get()));
-            return Carbon::instance($datetime);
+            return Carbon::createFromInterface($datetime);
         }
 
         if ($value instanceof Numeric) {
