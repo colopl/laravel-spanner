@@ -21,6 +21,7 @@ namespace Colopl\Spanner\Schema;
 use Colopl\Spanner\Concerns\MarksAsNotSupported;
 use Illuminate\Database\Schema\Blueprint as BaseBlueprint;
 use Illuminate\Database\Schema\ColumnDefinition;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Fluent;
 
 /**
@@ -460,6 +461,71 @@ class Blueprint extends BaseBlueprint
     {
         $this->commands[] = $command = new ChangeStreamDefinition(__FUNCTION__, $name);
         return $command;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * Creating a queue declares its columns the same way creating a table
+     * does, so queue creation has to count as "creating" too. Otherwise the
+     * columns would be turned into `alter table ... add column` commands.
+     */
+    public function creating()
+    {
+        return parent::creating()
+            || (new Collection($this->commands))->contains(
+                static fn(object $command) => $command instanceof QueueDefinition
+                    && in_array($command->name, ['createQueue', 'createQueueIfNotExists'], true),
+            );
+    }
+
+    /**
+     * Create a queue instead of a table.
+     *
+     * The queue must declare a `Payload` column and every other column must be
+     * part of the primary key.
+     *
+     * @see https://cloud.google.com/spanner/docs/queues/queues-overview
+     * @return QueueDefinition
+     */
+    public function createQueue(): QueueDefinition
+    {
+        $this->commands[] = $command = new QueueDefinition(__FUNCTION__);
+        return $command;
+    }
+
+    /**
+     * @return QueueDefinition
+     */
+    public function createQueueIfNotExists(): QueueDefinition
+    {
+        $this->commands[] = $command = new QueueDefinition(__FUNCTION__);
+        return $command;
+    }
+
+    /**
+     * @return QueueDefinition
+     */
+    public function alterQueue(): QueueDefinition
+    {
+        $this->commands[] = $command = new QueueDefinition(__FUNCTION__);
+        return $command;
+    }
+
+    /**
+     * @return Fluent<string, mixed>
+     */
+    public function dropQueue(): Fluent
+    {
+        return $this->addCommand(__FUNCTION__);
+    }
+
+    /**
+     * @return Fluent<string, mixed>
+     */
+    public function dropQueueIfExists(): Fluent
+    {
+        return $this->addCommand(__FUNCTION__);
     }
 
     /**

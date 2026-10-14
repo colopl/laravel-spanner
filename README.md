@@ -425,6 +425,207 @@ $schemaBuilder->table('user_items', function (Blueprint $table) {
 });
 ```
 
+### Queues
+
+Spanner supports [Queues](https://cloud.google.com/spanner/docs/queues/queues-overview), a transactional
+messaging feature that lets you send and acknowledge messages atomically together with your other writes.
+This package ships a Laravel queue driver built on top of it.
+
+> [!IMPORTANT]
+> Spanner queues require the Enterprise or Enterprise Plus edition, and are **not** implemented by the
+> Spanner emulator. An instance is limited to 100 queues.
+
+#### Creating a queue
+
+Every Laravel queue name maps to one Spanner `QUEUE` object, which is created through the schema builder.
+The queue must have a `Payload` column, and every other column has to be part of the primary key.
+The driver expects a `MessageId` primary key and a `Payload` column holding the serialized job:
+
+```php
+$schemaBuilder->createQueue('Jobs', function (Blueprint $queue) {
+    $queue->string('MessageId', 36)->primary();
+    $queue->string('Payload', 'max');
+});
+```
+
+Spanner adds a `DeliverTime` column to every queue implicitly, so you don't declare it, but you can point a
+[Row Deletion Policy](#row-deletion-policy) at it to expire messages that were never acknowledged.
+Queues can also be interleaved into a table, and accept queue options. Interleaving requires the queue's
+primary key to be prefixed by the parent's key columns, positionally matching in name and type, so the queue
+gains key columns in front of `MessageId` (see [Interleaved queues](#interleaved-queues) for what the driver
+needs in order to write them):
+
+```php
+$schemaBuilder->createQueue('UserTasks', function (Blueprint $queue) {
+    $queue->string('UserId', 36);
+    $queue->string('MessageId', 36);
+    $queue->string('Payload', 'max');
+    $queue->primary(['UserId', 'MessageId']);
+    $queue->interleaveInParent('User')->cascadeOnDelete();
+    $queue->deleteRowsOlderThan('DeliverTime', 7);
+});
+
+$schemaBuilder->dropQueue('UserTasks');
+```
+
+Use `interleaveIn()` instead of `interleaveInParent()` for colocation without requiring the parent row to
+exist.
+
+Queue options can be changed afterwards with `alterQueue()`. `disableSend` rejects new messages, which is
+useful to drain a queue before dropping it, and `disableDelivery` pauses delivery to consumers:
+
+```php
+$schemaBuilder->table('Jobs', function (Blueprint $queue) {
+    $queue->alterQueue()->disableDelivery(true);
+});
+
+// Passing null resets an option back to its default.
+$schemaBuilder->table('Jobs', function (Blueprint $queue) {
+    $queue->alterQueue()->disableDelivery(null);
+});
+```
+
+#### Configuration
+
+Add a `spanner` queue connection to `config/queue.php`:
+
+```php
+[
+    'connections' => [
+        'spanner' => [
+            'driver' => 'spanner',
+            // Database connection from config/database.php. Defaults to the default connection.
+            'connection' => 'spanner',
+            // Name of the Spanner queue, as created above.
+            'queue' => 'Jobs',
+            // Seconds a reserved job stays invisible before it is delivered again.
+            'retry_after' => 90,
+            // Seconds a single receiving call waits for messages.
+            'block_for' => 20,
+            'after_commit' => false,
+            // Key columns in front of MessageId. Only for an interleaved queue.
+            'interleave_keys' => [],
+        ],
+    ],
+];
+```
+
+`retry_after` works like it does for the `database` and `redis` drivers and must be longer than your longest
+job, otherwise the job will be processed twice.
+
+`block_for` is the `max_duration` of the `RECEIVE_<queue>()` call. Receiving is a long running streaming
+query rather than a poll, so a worker blocks inside it until a message arrives or the duration elapses.
+A longer duration means fewer requests, but a worker can only react to `queue:restart` and to signals such
+as `SIGTERM` once the current call returns, so it also delays graceful shutdown by up to that long.
+
+> [!WARNING]
+> As with the `redis` driver's `block_for`, avoid giving one worker several queues
+> (`queue:work spanner --queue=High,Low`) while `block_for` is long. Queues are read in order, so an empty
+> `High` makes the worker wait `block_for` seconds before it even looks at `Low`.
+
+#### Interleaved queues
+
+A queue interleaved into a table is keyed by that table's key columns followed by `MessageId`, so the driver
+has to know what to write into them. These are the same interleave keys an Eloquent model declares in its
+[`$interleaveKeys` property](#eloquent). List them in `interleave_keys`, in primary key order:
+
+```php
+'spanner' => [
+    'driver' => 'spanner',
+    'queue' => 'UserTasks',
+    'interleave_keys' => ['UserId'],
+],
+```
+
+The values are then worked out automatically. A dispatched job object is serialized into an opaque blob
+inside the payload, so the driver inspects the job itself before the payload is built, and falls back to the
+payload for jobs pushed as a class name. A job implementing `Colopl\Spanner\Queue\ProvidesInterleaveKeys` is
+asked directly; otherwise each column is looked for as a public property of the job, then under the payload's
+`data`. Both the column's own spelling and its `lcfirst` form are tried, so `UserId` matches `$userId` too.
+
+So this needs no extra code at all:
+
+```php
+class ProcessUserTask implements ShouldQueue
+{
+    public function __construct(public string $userId) {}
+}
+
+// or
+Queue::push('ProcessUserTask', ['userId' => $userId]);
+```
+
+Implement `ProvidesInterleaveKeys` when the value has to be computed, which is the usual case once a job
+holds a model rather than an id:
+
+```php
+class ProcessUserTask implements ShouldQueue, ProvidesInterleaveKeys
+{
+    public function __construct(private User $user) {}
+
+    public function getInterleaveKeys(): array
+    {
+        return ['UserId' => $this->user->getKey()];
+    }
+}
+```
+
+`pushRaw()` can pass the values directly, which is useful when there is no payload to derive them from:
+
+```php
+$queue->pushRaw($payload, 'UserTasks', ['keys' => ['UserId' => $userId]]);
+```
+
+If a column cannot be resolved, sending fails with an error naming the column and every way to supply it.
+
+Only newly sent messages go through this. Reserving and releasing a job carry the key values of the message
+they came from, so a job never moves to a different parent row.
+
+With `interleaveInParent()` the parent row must already exist when the message is sent, so send it in the
+same transaction that creates the parent, or use `interleaveIn()`.
+
+#### Dispatching jobs transactionally
+
+Because messages are rows, dispatching a job inside a transaction makes it part of that transaction. The job
+becomes deliverable only if the transaction commits, without needing the `afterCommit` dance:
+
+```php
+DB::connection('spanner')->transaction(function () use ($user) {
+    $user->save();
+    // Never delivered if the transaction is rolled back.
+    ProcessSignup::dispatch($user);
+});
+```
+
+#### How reservation works
+
+Spanner hands out a message with a fixed, non-configurable 10 second lease, which is too short for most
+Laravel jobs, and PHP cannot renew it from a background thread while a job is running. The driver therefore
+uses the pattern Google documents for
+[long running work](https://cloud.google.com/spanner/docs/queues/queues-examples#handle-long-running-work):
+reserving a message acknowledges it and, in the same transaction, sends a fresh message scheduled
+`retry_after` seconds into the future. Finishing the job acknowledges that message, releasing it re-sends it,
+and a worker that dies simply lets it become deliverable again.
+
+Two consequences are worth knowing:
+
+- Delivery is at-least-once, as it is for every Laravel queue driver, so jobs should be idempotent.
+- A reserved job is stored as a message that is not deliverable yet, which Spanner cannot tell apart from a
+  delayed one. `Queue::delayedSize()` therefore counts in-flight jobs as well, and `Queue::reservedSize()`
+  always returns `0`.
+
+#### Other notes
+
+- Keep payloads under 4 KB, as Google recommends. Use the
+  [out-of-band storage pattern](https://cloud.google.com/spanner/docs/queues/queues-examples#handle-large-message-payloads)
+  for bigger data.
+- A queue name is interpolated into the `RECEIVE_<queue>()` function name, where it cannot be bound as a
+  parameter, so it must be a plain Spanner identifier.
+- Each worker keeps one receiving stream open per queue, as Spanner expects. A queue allows at most 1000
+  concurrent receivers.
+- `Queue::clear()` deletes every message in a single transaction, so it is subject to the transaction
+  mutation limit and is not suited to very large queues.
+
 ### Mutations
 
 You can [insert, update, and delete data using mutations](https://cloud.google.com/spanner/docs/modify-mutation-api) to modify data instead of using DML to improve performance.
