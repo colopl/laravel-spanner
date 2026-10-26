@@ -23,17 +23,29 @@ use Colopl\Spanner\Queue\SpannerJob;
 use Colopl\Spanner\Queue\SpannerQueue;
 use Colopl\Spanner\Schema\Blueprint;
 use Colopl\Spanner\Tests\TestCase;
+use Closure;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Queue\QueueManager;
+use Illuminate\Queue\Worker;
+use Illuminate\Queue\WorkerOptions;
 use RuntimeException;
 use Throwable;
 
 /**
  * End to end coverage against the configured Cloud Spanner database.
  *
- * Cloud Spanner queues require the Enterprise or Enterprise Plus edition and
- * are not implemented by the Spanner emulator, so every test here is skipped
- * unless `create queue` actually succeeds. Run the suite against a real
- * instance to exercise them.
+ * Cloud Spanner queues require the Enterprise or Enterprise Plus edition, and
+ * only recent builds of the Spanner emulator implement them, so every test here
+ * is skipped unless `create queue` actually succeeds.
+ *
+ * Mind the differences between the emulator and Cloud Spanner when writing
+ * assertions. The emulator releases a stream's rows when its `max_duration`
+ * ends instead of pushing them live, so a `pop()` always lasts the whole
+ * `block_for`, and it hands one message to several concurrent receivers. Tests
+ * that wait for a message to turn up therefore poll, like a worker does, rather
+ * than relying on a particular `pop()` returning it.
  *
  * @see https://cloud.google.com/spanner/docs/queues/queues-overview
  */
@@ -45,6 +57,7 @@ class SpannerQueueIntegrationTest extends TestCase
     {
         parent::setUp();
 
+        QueueIntegrationJob::$handled = 0;
         $this->queueName = $this->generateTableName('QueueTest');
         $connection = $this->getDefaultConnection();
 
@@ -71,8 +84,48 @@ class SpannerQueueIntegrationTest extends TestCase
             'connection' => 'main',
             'queue' => $this->queueName,
             'retry_after' => 60,
-            'block_for' => 2,
+            'block_for' => 1,
         ]);
+    }
+
+    /**
+     * Polls the way a worker does, until a job arrives or the time is up.
+     */
+    protected function popWithin(SpannerQueue $queue, int $seconds): ?SpannerJob
+    {
+        $deadline = microtime(true) + $seconds;
+
+        do {
+            $job = $queue->pop();
+            if ($job instanceof SpannerJob) {
+                return $job;
+            }
+        } while (microtime(true) < $deadline);
+
+        return null;
+    }
+
+    protected function worker(): Worker
+    {
+        $worker = $this->app->make('queue.worker');
+        assert($worker instanceof Worker);
+
+        return $worker;
+    }
+
+    /**
+     * Runs the worker until the condition holds or the time is up.
+     *
+     * @param Closure(): bool $done
+     */
+    protected function workUntil(WorkerOptions $options, Closure $done, int $seconds = 15): void
+    {
+        $worker = $this->worker();
+        $deadline = microtime(true) + $seconds;
+
+        while (!$done() && microtime(true) < $deadline) {
+            $worker->runNextJob('spanner', $this->queueName, $options);
+        }
     }
 
     protected function queue(): SpannerQueue
@@ -196,7 +249,7 @@ class SpannerQueueIntegrationTest extends TestCase
             'driver' => 'spanner',
             'connection' => 'main',
             'queue' => $interleaved,
-            'block_for' => 2,
+            'block_for' => 1,
             'interleave_keys' => ['userId'],
         ]);
 
@@ -217,6 +270,166 @@ class SpannerQueueIntegrationTest extends TestCase
         $this->assertSame(0, $queue->size());
     }
 
+    public function test_an_unacknowledged_job_is_delivered_again_after_retry_after(): void
+    {
+        config()->set('queue.connections.spanner.retry_after', 2);
+        $queue = $this->queue();
+        $queue->pushRaw((string) json_encode(['job' => 'Foo']));
+
+        $first = $this->popWithin($queue, 10);
+        $this->assertInstanceOf(SpannerJob::class, $first);
+        $this->assertSame(1, $first->attempts());
+
+        // The worker dies here: the job is neither deleted nor released. The
+        // reserved message simply becomes deliverable once `retry_after` is up.
+        $second = $this->popWithin($queue, 15);
+        $this->assertInstanceOf(SpannerJob::class, $second);
+        $this->assertSame(2, $second->attempts());
+        $this->assertSame('Foo', $second->payload()['job']);
+        // Every reservation is a message of its own.
+        $this->assertNotSame($first->getJobId(), $second->getJobId());
+
+        $second->delete();
+        $this->assertSame(0, $queue->size());
+    }
+
+    public function test_acknowledging_a_message_twice_reports_the_second_as_already_taken(): void
+    {
+        $queue = $this->queue();
+        $key = [SpannerQueue::MESSAGE_ID_COLUMN => $queue->pushRaw('{"job":"Foo"}')];
+
+        // `reserve()` tells that another worker took a message by this count.
+        $this->assertSame(1, $queue->acknowledge($this->queueName, $key));
+        $this->assertSame(0, $queue->acknowledge($this->queueName, $key));
+    }
+
+    public function test_a_queue_can_expire_stale_messages_with_a_row_deletion_policy(): void
+    {
+        $connection = $this->getDefaultConnection();
+        $expiring = $this->generateTableName('QueueTtlTest');
+
+        // A row deletion policy can only use a column that the queue declares
+        // itself, so `DeliverTime` has to be declared, as part of the key.
+        $connection->getSchemaBuilder()->createQueue(
+            $expiring,
+            static function (Blueprint $queue) {
+                $queue->string(SpannerQueue::MESSAGE_ID_COLUMN, 36);
+                $queue->timestamp(SpannerQueue::DELIVER_TIME_COLUMN);
+                $queue->string(SpannerQueue::PAYLOAD_COLUMN, 'max');
+                $queue->primary([SpannerQueue::MESSAGE_ID_COLUMN, SpannerQueue::DELIVER_TIME_COLUMN]);
+                $queue->deleteRowsOlderThan(SpannerQueue::DELIVER_TIME_COLUMN, 7);
+            },
+        );
+        $this->beforeApplicationDestroyed(function () use ($connection, $expiring) {
+            $connection->getSchemaBuilder()->dropQueueIfExists($expiring);
+        });
+
+        config()->set('queue.connections.spanner-expiring', [
+            'driver' => 'spanner',
+            'connection' => 'main',
+            'queue' => $expiring,
+            'block_for' => 1,
+        ]);
+
+        /** @var QueueManager $manager */
+        $manager = $this->app->make('queue');
+        $queue = $manager->connection('spanner-expiring');
+        assert($queue instanceof SpannerQueue);
+
+        $queue->pushRaw('{"job":"Foo"}');
+
+        $job = $this->popWithin($queue, 10);
+        $this->assertInstanceOf(SpannerJob::class, $job);
+        $job->delete();
+        $this->assertSame(0, $queue->size());
+    }
+
+    public function test_a_laravel_worker_runs_a_dispatched_job(): void
+    {
+        $queue = $this->queue();
+        $queue->push(new QueueIntegrationJob());
+
+        $this->workUntil(
+            new WorkerOptions(sleep: 0, maxTries: 1),
+            static fn() => QueueIntegrationJob::$handled >= 1,
+        );
+
+        $this->assertSame(1, QueueIntegrationJob::$handled);
+        $this->assertSame(0, $queue->size());
+    }
+
+    public function test_a_laravel_worker_retries_a_failing_job_and_then_fails_it(): void
+    {
+        $queue = $this->queue();
+        $failures = [];
+        $this->app['events']->listen(JobFailed::class, static function (JobFailed $event) use (&$failures) {
+            $failures[] = $event->exception->getMessage();
+        });
+
+        $queue->push(new QueueIntegrationJob(fail: true));
+        $options = new WorkerOptions(sleep: 0, maxTries: 2);
+
+        // The first attempt fails and the job is released back to the queue.
+        $this->workUntil($options, static fn() => QueueIntegrationJob::$handled >= 1);
+        $this->assertSame(1, QueueIntegrationJob::$handled);
+        $this->assertSame([], $failures);
+        $this->assertSame(1, $queue->size());
+
+        // The second attempt reaches `maxTries`, so the job fails for good.
+        $this->workUntil($options, static fn() => QueueIntegrationJob::$handled >= 2);
+        $this->assertSame(2, QueueIntegrationJob::$handled);
+        $this->assertSame(['boom'], $failures);
+        $this->assertSame(0, $queue->size());
+    }
+
+    public function test_the_ddl_generated_by_the_schema_builder_is_accepted(): void
+    {
+        $connection = $this->getDefaultConnection();
+        $connection->useDefaultSchemaGrammar();
+        $schema = $connection->getSchemaBuilder();
+        $columns = static function (Blueprint $queue) {
+            $queue->string(SpannerQueue::MESSAGE_ID_COLUMN, 36)->primary();
+            $queue->string(SpannerQueue::PAYLOAD_COLUMN, 'max');
+        };
+
+        $name = $this->generateTableName('QueueDdlTest');
+        $this->beforeApplicationDestroyed(function () use ($schema, $name) {
+            $schema->dropQueueIfExists($name);
+            $schema->dropQueueIfExists($name . '_options');
+        });
+
+        // The unit tests only compare SQL text. These have to get past the parser.
+        $schema->createQueueIfNotExists($name, $columns);
+        $schema->createQueueIfNotExists($name, $columns);
+        $this->assertContains($name, $this->queueNames());
+
+        // Create time options are set on the definition the blueprint hands out.
+        $blueprint = new Blueprint($connection, $name . '_options');
+        $blueprint->createQueue()->disableSend(false)->disableDelivery(false);
+        $columns($blueprint);
+        $blueprint->build();
+        $this->assertContains($name . '_options', $this->queueNames());
+
+        $schema->table($name, static fn(Blueprint $queue) => $queue->alterQueue()->disableDelivery(true)->disableSend(false));
+        $schema->table($name, static fn(Blueprint $queue) => $queue->alterQueue()->disableDelivery(null)->disableSend(null));
+
+        $schema->dropQueue($name);
+        $schema->dropQueueIfExists($name);
+        $this->assertNotContains($name, $this->queueNames());
+    }
+
+    /**
+     * @return list<string>
+     */
+    protected function queueNames(): array
+    {
+        $rows = $this->getDefaultConnection()->select(
+            "select table_name from information_schema.tables where table_schema = '' and table_type = 'QUEUE'",
+        );
+
+        return array_values(array_map(static fn(array $row) => (string) $row['table_name'], $rows));
+    }
+
     public function test_clear_removes_every_message(): void
     {
         $queue = $this->queue();
@@ -227,5 +440,29 @@ class SpannerQueueIntegrationTest extends TestCase
 
         $this->assertSame(2, $queue->clear($this->queueName));
         $this->assertSame(0, $queue->size());
+    }
+}
+
+class QueueIntegrationJob implements ShouldQueue
+{
+    use Queueable;
+
+    /**
+     * How many times a worker ran a job.
+     */
+    public static int $handled = 0;
+
+    public function __construct(
+        public bool $fail = false,
+    ) {
+    }
+
+    public function handle(): void
+    {
+        static::$handled++;
+
+        if ($this->fail) {
+            throw new RuntimeException('boom');
+        }
     }
 }

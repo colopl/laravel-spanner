@@ -106,16 +106,21 @@ class QueueBlueprintTest extends TestCase
 
     public function test_createQueue_with_row_deletion_policy(): void
     {
+        // The policy can only use a column the queue declares itself, so the
+        // implicit `DeliverTime` has to be declared, as part of the key.
         $sql = $this->compile('Jobs', static function (Blueprint $queue) {
             $queue->createQueue();
-            $queue->string('MessageId', 36)->primary();
+            $queue->string('MessageId', 36);
+            $queue->timestamp('DeliverTime');
             $queue->string('Payload', 'max');
+            $queue->primary(['MessageId', 'DeliverTime']);
             $queue->deleteRowsOlderThan('DeliverTime', 7);
         });
 
         $this->assertSame([
-            'create queue `Jobs` (`MessageId` string(36) not null, `Payload` string(max) not null) ' .
-            'primary key (`MessageId`), row deletion policy (older_than(DeliverTime, interval 7 day))',
+            'create queue `Jobs` (`MessageId` string(36) not null, `DeliverTime` timestamp not null, ' .
+            '`Payload` string(max) not null) primary key (`MessageId`, `DeliverTime`), ' .
+            'row deletion policy (older_than(DeliverTime, interval 7 day))',
         ], $sql);
     }
 
