@@ -60,6 +60,16 @@ class ParameterizerTest extends TestCase
         $this->assertSame("LIKE @p0 'wildcard_' '_wildcard' 'wil_card'", $query);
     }
 
+    public function testParameterizeLikeClauseIsCaseInsensitive(): void
+    {
+        $parameterizer = new Parameterizer();
+
+        $bindings = ['%a', 'b%', 'test'];
+        [$query, $newBindings] = $parameterizer->parameterizeQuery('select * from `User` where `Col1` like ? and `Col2` Like ? and `Col3` = ?', $bindings);
+        $this->assertSame("select * from `User` where `Col1` like '%a' and `Col2` Like 'b%' and `Col3` = @p2", $query);
+        $this->assertSame(['p2' => 'test'], $newBindings);
+    }
+
     /**
      * strings that include new lines should be triple-quoted
      * @see https://cloud.google.com/spanner/docs/lexical?hl=en#string-and-bytes-literals

@@ -68,6 +68,17 @@ class DatetimeTest extends TestCase
         $this->assertSame('Asia/Tokyo', $datetime->getTimezone()->getName());
     }
 
+    public function testTimestampKeepsMicrosecondsWithQueryBuilder(): void
+    {
+        $conn = $this->getDefaultConnection();
+
+        date_default_timezone_set('Asia/Tokyo');
+        $row = $conn->query()->selectRaw('TIMESTAMP("2018-03-13T00:00:00.123456Z")')->get()->first();
+        $datetime = $row[0];
+        $this->assertInstanceOf(Carbon::class, $datetime);
+        $this->assertSame('2018-03-13 09:00:00.123456 Asia/Tokyo', $datetime->format('Y-m-d H:i:s.u e'));
+    }
+
     public function testTimestampCreateWithNanoseconds(): void
     {
         $datetime = DateTime::createFromFormat(Timestamp::FORMAT, '2018-03-13T16:40:12.345678Z');
