@@ -432,8 +432,9 @@ messaging feature that lets you send and acknowledge messages atomically togethe
 This package ships a Laravel queue driver built on top of it.
 
 > [!IMPORTANT]
-> Spanner queues require the Enterprise or Enterprise Plus edition, and are **not** implemented by the
-> Spanner emulator. An instance is limited to 100 queues.
+> Spanner queues require the Enterprise or Enterprise Plus edition. The Spanner emulator supports them from
+> version 1.5.59, with a few differences described in [Using the emulator](#using-the-emulator).
+> An instance is limited to 100 queues.
 
 #### Creating a queue
 
@@ -448,12 +449,11 @@ $schemaBuilder->createQueue('Jobs', function (Blueprint $queue) {
 });
 ```
 
-Spanner adds a `DeliverTime` column to every queue implicitly, so you don't declare it, but you can point a
-[Row Deletion Policy](#row-deletion-policy) at it to expire messages that were never acknowledged.
-Queues can also be interleaved into a table, and accept queue options. Interleaving requires the queue's
-primary key to be prefixed by the parent's key columns, positionally matching in name and type, so the queue
-gains key columns in front of `MessageId` (see [Interleaved queues](#interleaved-queues) for what the driver
-needs in order to write them):
+Spanner adds a `DeliverTime` column to every queue implicitly, so you don't declare it.
+
+Queues can also be interleaved into a table. Interleaving requires the queue's primary key to be prefixed by
+the parent's key columns, positionally matching in name and type, so the queue gains key columns in front of
+`MessageId` (see [Interleaved queues](#interleaved-queues) for what the driver needs in order to write them):
 
 ```php
 $schemaBuilder->createQueue('UserTasks', function (Blueprint $queue) {
@@ -462,14 +462,32 @@ $schemaBuilder->createQueue('UserTasks', function (Blueprint $queue) {
     $queue->string('Payload', 'max');
     $queue->primary(['UserId', 'MessageId']);
     $queue->interleaveInParent('User')->cascadeOnDelete();
-    $queue->deleteRowsOlderThan('DeliverTime', 7);
 });
 
 $schemaBuilder->dropQueue('UserTasks');
 ```
 
-Use `interleaveIn()` instead of `interleaveInParent()` for colocation without requiring the parent row to
-exist.
+`interleaveInParent()` requires the parent row to exist for every message. `interleaveIn()` is part of the
+documented grammar as well, but the emulator rejects it for queues, so it has not been verified.
+
+#### Expiring stale messages
+
+A [Row Deletion Policy](#row-deletion-policy) can remove messages that nothing has picked up. The policy has to
+use a column that the queue declares itself, so the implicit `DeliverTime` has to be declared explicitly, as
+part of the primary key:
+
+```php
+$schemaBuilder->createQueue('Jobs', function (Blueprint $queue) {
+    $queue->string('MessageId', 36);
+    $queue->timestamp('DeliverTime');
+    $queue->string('Payload', 'max');
+    $queue->primary(['MessageId', 'DeliverTime']);
+    $queue->deleteRowsOlderThan('DeliverTime', 7);
+});
+```
+
+A message gets a fresh `DeliverTime` each time a job is reserved or released, so a job that keeps being
+retried does not expire. Only a message that has gone unhandled for the given number of days does.
 
 Queue options can be changed afterwards with `alterQueue()`. `disableSend` rejects new messages, which is
 useful to drain a queue before dropping it, and `disableDelivery` pauses delivery to consumers:
@@ -582,7 +600,7 @@ Only newly sent messages go through this. Reserving and releasing a job carry th
 they came from, so a job never moves to a different parent row.
 
 With `interleaveInParent()` the parent row must already exist when the message is sent, so send it in the
-same transaction that creates the parent, or use `interleaveIn()`.
+same transaction that creates the parent.
 
 #### Dispatching jobs transactionally
 
@@ -613,6 +631,18 @@ Two consequences are worth knowing:
 - A reserved job is stored as a message that is not deliverable yet, which Spanner cannot tell apart from a
   delayed one. `Queue::delayedSize()` therefore counts in-flight jobs as well, and `Queue::reservedSize()`
   always returns `0`.
+
+#### Using the emulator
+
+The emulator can run queues, but it differs from Cloud Spanner in ways that matter to a worker:
+
+- It releases a stream's rows when its `max_duration` ends instead of pushing them as they arrive, so every
+  receiving call lasts the whole `block_for`, even with messages waiting. Set `block_for` to `1` or `2` for
+  local development and for tests.
+- It can hand one message to several workers at once, which Cloud Spanner does not do while the message is
+  leased. The driver copes: exactly one worker's acknowledgement succeeds and the others skip the message.
+- It accepts `disable_send`, `disable_delivery` and `locality_group` without enforcing them, and rejects
+  `INTERLEAVE IN` for queues.
 
 #### Other notes
 
