@@ -51,19 +51,21 @@ class SnapshotTest extends TestCase
     public function test_snapshot_with_staleness(): void
     {
         $conn = $this->getDefaultConnection();
+        $userId = $this->generateUuid();
 
-        $conn->transaction(function () use ($conn) {
-            $conn->table(self::TABLE_NAME_USER)->insert(['userId' => $this->generateUuid(), 'name' => 't']);
+        $conn->transaction(function () use ($conn, $userId) {
+            $conn->table(self::TABLE_NAME_USER)->insert(['userId' => $userId, 'name' => 't']);
         });
 
-        $conn->snapshot(new ExactStaleness(10), function () use ($conn) {
-            $this->assertNull($conn->table(self::TABLE_NAME_USER)->first());
-            $this->assertSame(0, $conn->table(self::TABLE_NAME_USER)->count());
+        // Filter by the inserted key since rows from other tests may have existed at the stale timestamp.
+        $conn->snapshot(new ExactStaleness(10), function () use ($conn, $userId) {
+            $this->assertNull($conn->table(self::TABLE_NAME_USER)->where('userId', $userId)->first());
+            $this->assertSame(0, $conn->table(self::TABLE_NAME_USER)->where('userId', $userId)->count());
         });
 
-        $conn->snapshot(new StrongRead(), function () use ($conn) {
-            $this->assertNotNull($conn->table(self::TABLE_NAME_USER)->first());
-            $this->assertSame(1, $conn->table(self::TABLE_NAME_USER)->count());
+        $conn->snapshot(new StrongRead(), function () use ($conn, $userId) {
+            $this->assertNotNull($conn->table(self::TABLE_NAME_USER)->where('userId', $userId)->first());
+            $this->assertSame(1, $conn->table(self::TABLE_NAME_USER)->where('userId', $userId)->count());
         });
     }
 

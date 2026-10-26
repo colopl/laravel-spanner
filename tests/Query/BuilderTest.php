@@ -1040,7 +1040,9 @@ class BuilderTest extends TestCase
         $qb->insert($insertData);
         $this->assertDatabaseHas($tableName, $insertData);
 
-        $stalenessRow = $qb->withStaleness(new ExactStaleness(new Duration(['seconds' => 60])))
+        // Filter by the inserted key since rows from other tests may have existed at the stale timestamp.
+        $stalenessRow = $qb->where('userId', $insertData['userId'])
+            ->withStaleness(new ExactStaleness(new Duration(['seconds' => 60])))
             ->first();
         $this->assertEmpty($stalenessRow);
     }
@@ -1158,14 +1160,16 @@ class BuilderTest extends TestCase
     public function test_snapshot(): void
     {
         $conn = $this->getDefaultConnection();
+        $userId = $this->generateUuid();
 
-        $conn->transaction(function () use ($conn) {
+        $conn->transaction(function () use ($conn, $userId) {
             $this->assertFalse($conn->inSnapshot());
-            $conn->table(self::TABLE_NAME_USER)->insert(['userId' => $this->generateUuid(), 'name' => 't']);
+            $conn->table(self::TABLE_NAME_USER)->insert(['userId' => $userId, 'name' => 't']);
         });
 
         $this->assertFalse($conn->inSnapshot());
-        $query = $conn->table(self::TABLE_NAME_USER)->snapshot(new ExactStaleness(20));
+        // Filter by the inserted key since rows from other tests may have existed at the stale timestamp.
+        $query = $conn->table(self::TABLE_NAME_USER)->where('userId', $userId)->snapshot(new ExactStaleness(20));
         $result = $query->first();
 
         $this->assertTrue($query->snapshotEnabled());
@@ -1173,7 +1177,7 @@ class BuilderTest extends TestCase
         $this->assertFalse($conn->inSnapshot());
         $this->assertNull($result);
 
-        $query = $conn->table(self::TABLE_NAME_USER)->snapshot(new StrongRead());
+        $query = $conn->table(self::TABLE_NAME_USER)->where('userId', $userId)->snapshot(new StrongRead());
         $result = $query->first();
 
         $this->assertTrue($query->snapshotEnabled());
