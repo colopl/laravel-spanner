@@ -671,6 +671,7 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
     {
         return $this->receivers[$queue] ??= new MessageReceiver(
             fn(): Generator => $this->receive($queue),
+            $this->blockFor,
         );
     }
 

@@ -35,6 +35,13 @@ class SpannerQueueTest extends TestCase
 {
     protected const QUEUE_NAME = 'Jobs';
 
+    protected function tearDown(): void
+    {
+        Carbon::setTestNow();
+
+        parent::tearDown();
+    }
+
     /**
      * @param list<string> $interleaveKeys
      */
@@ -237,6 +244,26 @@ class SpannerQueueTest extends TestCase
         $this->assertSame(1, $conn->streamsOpened);
         $this->assertSame('delete from `Jobs` where `MessageId` = ?', $conn->recordedAt(3)['sql']);
         $this->assertSame(['message-2'], $conn->recordedAt(3)['bindings']);
+    }
+
+    public function test_pop_listens_on_a_fresh_stream_once_the_held_one_has_run_out_of_time(): void
+    {
+        Carbon::setTestNow($start = Carbon::parse('2026-10-26 12:00:00'));
+
+        $conn = new RecordingConnection();
+        $conn->messages = [$this->message([SpannerQueue::MESSAGE_ID_COLUMN => 'message-1'])];
+
+        $queue = $this->createQueue($conn, blockFor: 20);
+        $this->assertInstanceOf(SpannerJob::class, $queue->pop());
+
+        // The job ran for longer than `block_for`, so the stream ended while the
+        // worker was busy. Consulting it would report an empty queue instantly
+        // and send the worker to sleep with this message already waiting.
+        Carbon::setTestNow($start->copy()->addSeconds(25));
+        $conn->messages = [$this->message([SpannerQueue::MESSAGE_ID_COLUMN => 'message-2'])];
+
+        $this->assertInstanceOf(SpannerJob::class, $queue->pop());
+        $this->assertSame(2, $conn->streamsOpened);
     }
 
     public function test_pop_skips_a_message_another_worker_already_took(): void

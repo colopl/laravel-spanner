@@ -22,6 +22,7 @@ namespace Colopl\Spanner\Queue;
 
 use Closure;
 use Generator;
+use Illuminate\Support\Carbon;
 use Throwable;
 
 /**
@@ -32,6 +33,12 @@ use Throwable;
  * underlying generator is only advanced right before the next message is
  * requested, because advancing it blocks until Spanner pushes the next message
  * (or the stream reaches `max_duration`).
+ *
+ * A stream only lives for its `max_duration`, and the caller is not necessarily
+ * around when it ends, since a job can easily run for longer than `block_for`.
+ * Asking a stream that has already ended for the next message would report an
+ * empty queue instantly, so the worker would go to sleep with work waiting.
+ * Such a stream is therefore replaced rather than consulted.
  *
  * @see https://cloud.google.com/spanner/docs/queues/queues-using#receive-messages
  * @internal
@@ -49,21 +56,36 @@ class MessageReceiver
     protected bool $consumed = false;
 
     /**
+     * When the held stream reaches its `max_duration`, as a unix timestamp.
+     */
+    protected float $expiresAt = 0.0;
+
+    /**
      * @param Closure(): Generator<int, array<array-key, mixed>> $factory
+     * @param int $lifetime seconds a stream stays open, which is its `max_duration`
      */
     public function __construct(
         protected Closure $factory,
+        protected int $lifetime,
     ) {
     }
 
     /**
      * Blocks until the next message arrives, or until the stream is exhausted.
      *
-     * @return array<array-key, mixed>|null null once the stream reached its `max_duration`.
+     * @return array<array-key, mixed>|null null once a stream opened for this call reached its `max_duration`.
      */
     public function next(): ?array
     {
-        $stream = $this->stream ??= ($this->factory)();
+        if ($this->stream !== null && $this->now() >= $this->expiresAt) {
+            $this->close();
+        }
+
+        if ($this->stream === null) {
+            $this->expiresAt = $this->now() + $this->lifetime;
+            $this->stream = ($this->factory)();
+        }
+        $stream = $this->stream;
 
         try {
             if ($this->consumed) {
@@ -95,5 +117,13 @@ class MessageReceiver
     {
         $this->stream = null;
         $this->consumed = false;
+    }
+
+    /**
+     * @return float
+     */
+    protected function now(): float
+    {
+        return (float) Carbon::now()->format('U.u');
     }
 }
