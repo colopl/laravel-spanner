@@ -20,6 +20,7 @@ namespace Colopl\Spanner\Tests\Schema;
 
 use Closure;
 use Colopl\Spanner\Schema\Blueprint;
+use Colopl\Spanner\Schema\QueueDefinition;
 use Colopl\Spanner\Tests\Queue\SpannerQueueIntegrationTest;
 use Colopl\Spanner\Tests\Support\RecordingConnection;
 use Colopl\Spanner\Tests\TestCase;
@@ -229,6 +230,46 @@ class QueueBlueprintTest extends TestCase
         $connection->getSchemaBuilder()->dropQueueIfExists('Jobs');
 
         $this->assertSame(['drop queue if exists `Jobs`'], $connection->recordedSql());
+    }
+
+    public function test_schema_builder_hands_the_queue_definition_to_the_callback(): void
+    {
+        $connection = new RecordingConnection();
+        $connection->useDefaultSchemaGrammar();
+
+        $connection->getSchemaBuilder()->createQueue(
+            'Jobs',
+            static function (Blueprint $queue, QueueDefinition $definition) {
+                $definition->disableSend(true)->localityGroup('queues');
+                $queue->string('MessageId', 36)->primary();
+                $queue->string('Payload', 'max');
+            },
+        );
+
+        $this->assertSame([
+            'create queue `Jobs` (`MessageId` string(36) not null, `Payload` string(max) not null) ' .
+            "primary key (`MessageId`), options (disable_send=true, locality_group='queues')",
+        ], $connection->recordedSql());
+    }
+
+    public function test_schema_builder_hands_the_queue_definition_to_the_callback_if_not_exists(): void
+    {
+        $connection = new RecordingConnection();
+        $connection->useDefaultSchemaGrammar();
+
+        $connection->getSchemaBuilder()->createQueueIfNotExists(
+            'Jobs',
+            static function (Blueprint $queue, QueueDefinition $definition) {
+                $definition->disableDelivery(true);
+                $queue->string('MessageId', 36)->primary();
+                $queue->string('Payload', 'max');
+            },
+        );
+
+        $this->assertSame([
+            'create queue if not exists `Jobs` (`MessageId` string(36) not null, ' .
+            '`Payload` string(max) not null) primary key (`MessageId`), options (disable_delivery=true)',
+        ], $connection->recordedSql());
     }
 
     public function test_schema_builder_lists_queues(): void

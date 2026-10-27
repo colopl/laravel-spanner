@@ -80,16 +80,19 @@ class Builder extends BaseBuilder
     /**
      * Create a new queue.
      *
+     * The callback also receives the definition of the queue, which is where
+     * options such as `disableSend` are set as the queue is created.
+     *
      * @see https://cloud.google.com/spanner/docs/queues/queues-overview
      * @param string $queue
-     * @param Closure(Blueprint): void $callback
+     * @param Closure(Blueprint, QueueDefinition): void $callback
      * @return void
      */
     public function createQueue(string $queue, Closure $callback): void
     {
         $this->buildQueue($queue, static function (Blueprint $blueprint) use ($callback): void {
-            $blueprint->createQueue();
-            $callback($blueprint);
+            $definition = $blueprint->createQueue();
+            $callback($blueprint, $definition);
         });
     }
 
@@ -97,14 +100,14 @@ class Builder extends BaseBuilder
      * Create a new queue if it doesn't already exist.
      *
      * @param string $queue
-     * @param Closure(Blueprint): void $callback
+     * @param Closure(Blueprint, QueueDefinition): void $callback
      * @return void
      */
     public function createQueueIfNotExists(string $queue, Closure $callback): void
     {
         $this->buildQueue($queue, static function (Blueprint $blueprint) use ($callback): void {
-            $blueprint->createQueueIfNotExists();
-            $callback($blueprint);
+            $definition = $blueprint->createQueueIfNotExists();
+            $callback($blueprint, $definition);
         });
     }
 

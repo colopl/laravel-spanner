@@ -489,8 +489,26 @@ $schemaBuilder->createQueue('Jobs', function (Blueprint $queue) {
 A message gets a fresh `DeliverTime` each time a job is reserved or released, so a job that keeps being
 retried does not expire. Only a message that has gone unhandled for the given number of days does.
 
-Queue options can be changed afterwards with `alterQueue()`. `disableSend` rejects new messages, which is
-useful to drain a queue before dropping it, and `disableDelivery` pauses delivery to consumers:
+Queue options are set on the `QueueDefinition` that the callback receives as its second argument.
+`disableSend` rejects new messages, which is useful to drain a queue before dropping it, and
+`disableDelivery` pauses delivery to consumers:
+
+```php
+use Colopl\Spanner\Schema\QueueDefinition;
+
+$schemaBuilder->createQueue('Jobs', function (Blueprint $queue, QueueDefinition $definition) {
+    // Collect messages without delivering them yet.
+    $definition->disableDelivery(true);
+
+    $queue->string('MessageId', 36)->primary();
+    $queue->string('Payload', 'max');
+});
+```
+
+Don't call `$queue->createQueue()` yourself in that callback, since the schema builder already did. A second
+call would declare a second queue.
+
+Options can be changed afterwards with `alterQueue()`:
 
 ```php
 $schemaBuilder->table('Jobs', function (Blueprint $queue) {

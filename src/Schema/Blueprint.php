@@ -485,6 +485,9 @@ class Blueprint extends BaseBlueprint
      * The queue must declare a `Payload` column and every other column must be
      * part of the primary key.
      *
+     * {@see Builder::createQueue()} calls this itself and hands the definition
+     * to its callback, so calling it again there would declare a second queue.
+     *
      * @see https://cloud.google.com/spanner/docs/queues/queues-overview
      * @return QueueDefinition
      */

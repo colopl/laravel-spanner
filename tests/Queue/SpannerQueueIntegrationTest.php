@@ -22,6 +22,7 @@ use Colopl\Spanner\Connection;
 use Colopl\Spanner\Queue\SpannerJob;
 use Colopl\Spanner\Queue\SpannerQueue;
 use Colopl\Spanner\Schema\Blueprint;
+use Colopl\Spanner\Schema\QueueDefinition;
 use Colopl\Spanner\Tests\TestCase;
 use Closure;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -403,11 +404,14 @@ class SpannerQueueIntegrationTest extends TestCase
         $schema->createQueueIfNotExists($name, $columns);
         $this->assertTrue($schema->hasQueue($name));
 
-        // Create time options are set on the definition the blueprint hands out.
-        $blueprint = new Blueprint($connection, $name . '_options');
-        $blueprint->createQueue()->disableSend(false)->disableDelivery(false);
-        $columns($blueprint);
-        $blueprint->build();
+        // Create time options are set on the definition that the callback receives.
+        $schema->createQueue(
+            $name . '_options',
+            static function (Blueprint $queue, QueueDefinition $definition) use ($columns) {
+                $definition->disableSend(false)->disableDelivery(false);
+                $columns($queue);
+            },
+        );
         $this->assertTrue($schema->hasQueue($name . '_options'));
 
         $schema->table($name, static fn(Blueprint $queue) => $queue->alterQueue()->disableDelivery(true)->disableSend(false));
