@@ -17,3 +17,5 @@ parameters:
           identifier: isset.property
           count: 1
           path: src/Schema/Builder.php
+          # Newer Laravel releases declare the property as nullable, so the error only exists on older ones.
+          reportUnmatched: false
