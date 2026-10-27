@@ -81,22 +81,24 @@ class SnapshotTest extends TestCase
     public function test_snapshot_can_call_after_error(): void
     {
         $conn = $this->getDefaultConnection();
+        $userId = $this->generateUuid();
 
         try {
-            $conn->snapshot(new ExactStaleness(10), function () use ($conn) {
-                $this->assertSame(0, $conn->table(self::TABLE_NAME_USER)->count());
+            // Filter by key since rows from other tests may have existed at the stale timestamp.
+            $conn->snapshot(new ExactStaleness(10), function () use ($conn, $userId) {
+                $this->assertSame(0, $conn->table(self::TABLE_NAME_USER)->where('userId', $userId)->count());
                 throw new RuntimeException('error');
             });
         } catch (RuntimeException $e) {
             // ignore
         }
 
-        $conn->transaction(function () use ($conn) {
-            $conn->table(self::TABLE_NAME_USER)->insert(['userId' => $this->generateUuid(), 'name' => 't']);
+        $conn->transaction(function () use ($conn, $userId) {
+            $conn->table(self::TABLE_NAME_USER)->insert(['userId' => $userId, 'name' => 't']);
         });
 
-        $conn->snapshot(new ExactStaleness(0), function () use ($conn) {
-            $this->assertSame(1, $conn->table(self::TABLE_NAME_USER)->count());
+        $conn->snapshot(new ExactStaleness(0), function () use ($conn, $userId) {
+            $this->assertSame(1, $conn->table(self::TABLE_NAME_USER)->where('userId', $userId)->count());
         });
     }
 
