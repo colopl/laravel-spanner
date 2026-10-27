@@ -20,12 +20,14 @@ namespace Colopl\Spanner\Tests\Schema;
 
 use Closure;
 use Colopl\Spanner\Schema\Blueprint;
+use Colopl\Spanner\Tests\Queue\SpannerQueueIntegrationTest;
 use Colopl\Spanner\Tests\Support\RecordingConnection;
 use Colopl\Spanner\Tests\TestCase;
 
 /**
- * Cloud Spanner queues are not implemented by the Spanner emulator, so these
- * tests assert the generated DDL rather than executing it.
+ * These tests assert the generated DDL rather than executing it, so they run
+ * wherever queues are unsupported as well. {@see SpannerQueueIntegrationTest}
+ * is what sends the DDL to a backend.
  */
 class QueueBlueprintTest extends TestCase
 {
@@ -227,5 +229,113 @@ class QueueBlueprintTest extends TestCase
         $connection->getSchemaBuilder()->dropQueueIfExists('Jobs');
 
         $this->assertSame(['drop queue if exists `Jobs`'], $connection->recordedSql());
+    }
+
+    public function test_schema_builder_lists_queues(): void
+    {
+        $connection = new RecordingConnection();
+        $connection->useDefaultSchemaGrammar();
+        $connection->selectResults = [
+            ['name' => 'Jobs', 'schema' => '', 'parent' => null],
+            ['name' => 'UserTasks', 'schema' => '', 'parent' => 'User'],
+        ];
+
+        $queues = $connection->getSchemaBuilder()->getQueues();
+
+        $this->assertSame(['Jobs', 'UserTasks'], array_column($queues, 'name'));
+        $this->assertSame(['Jobs', 'UserTasks'], array_column($queues, 'schema_qualified_name'));
+        $this->assertSame([null, 'User'], array_column($queues, 'parent'));
+
+        $sql = $connection->recordedAt(0)['sql'];
+        $this->assertStringContainsString("where `table_type` = 'QUEUE'", $sql);
+        $this->assertStringNotContainsString("'BASE TABLE'", $sql);
+    }
+
+    public function test_schema_builder_lists_the_queues_of_a_named_schema(): void
+    {
+        $connection = new RecordingConnection();
+        $connection->useDefaultSchemaGrammar();
+        $connection->selectResults = [['name' => 'Jobs', 'schema' => 'analytics', 'parent' => null]];
+
+        $queues = $connection->getSchemaBuilder()->getQueues('analytics');
+
+        $this->assertSame(['analytics.Jobs'], array_column($queues, 'schema_qualified_name'));
+        $this->assertStringContainsString("and `table_schema` = 'analytics'", $connection->recordedAt(0)['sql']);
+    }
+
+    public function test_schema_builder_keeps_queues_out_of_the_table_listing(): void
+    {
+        $connection = new RecordingConnection();
+        $connection->useDefaultSchemaGrammar();
+
+        $connection->getSchemaBuilder()->getTables();
+
+        $sql = $connection->recordedAt(0)['sql'];
+        $this->assertStringContainsString("where `table_type` = 'BASE TABLE'", $sql);
+        $this->assertStringNotContainsString("'QUEUE'", $sql);
+    }
+
+    public function test_schema_builder_tells_whether_a_queue_exists(): void
+    {
+        $connection = new RecordingConnection();
+        $connection->useDefaultSchemaGrammar();
+        $connection->selectResults = [['name' => 'Jobs', 'schema' => '', 'parent' => null]];
+        $schema = $connection->getSchemaBuilder();
+
+        $this->assertTrue($schema->hasQueue('Jobs'));
+        $this->assertTrue($schema->hasQueue('jobs'), 'Spanner names are case insensitive.');
+        $this->assertFalse($schema->hasQueue('Other'));
+    }
+
+    public function test_hasQueue_applies_the_table_prefix(): void
+    {
+        $connection = new RecordingConnection('app_');
+        $connection->useDefaultSchemaGrammar();
+        $connection->selectResults = [['name' => 'app_Jobs', 'schema' => '', 'parent' => null]];
+
+        $this->assertTrue($connection->getSchemaBuilder()->hasQueue('Jobs'));
+    }
+
+    public function test_dropAllTables_drops_queues_before_tables(): void
+    {
+        $connection = new RecordingConnection();
+        $connection->useDefaultSchemaGrammar();
+        $connection->selectUsing = static fn(string $sql) => match (true) {
+            str_contains($sql, "'QUEUE'") => [['name' => 'UserTasks', 'schema' => '', 'parent' => 'User']],
+            str_contains($sql, "'BASE TABLE'") => [['name' => 'User', 'schema' => '', 'parent' => null]],
+            default => [],
+        };
+
+        $connection->getSchemaBuilder()->dropAllTables();
+
+        // A table cannot be dropped while a queue is interleaved in it.
+        $this->assertSame(
+            ['drop queue `UserTasks`', 'drop table `User`'],
+            $this->dropStatements($connection),
+        );
+    }
+
+    public function test_dropAllTables_drops_queues_when_there_are_no_tables(): void
+    {
+        $connection = new RecordingConnection();
+        $connection->useDefaultSchemaGrammar();
+        $connection->selectUsing = static fn(string $sql) => str_contains($sql, "'QUEUE'")
+            ? [['name' => 'Jobs', 'schema' => '', 'parent' => null]]
+            : [];
+
+        $connection->getSchemaBuilder()->dropAllTables();
+
+        $this->assertSame(['drop queue `Jobs`'], $this->dropStatements($connection));
+    }
+
+    /**
+     * @return list<string>
+     */
+    protected function dropStatements(RecordingConnection $connection): array
+    {
+        return array_values(array_filter(
+            $connection->recordedSql(),
+            static fn(string $sql) => str_starts_with($sql, 'drop '),
+        ));
     }
 }

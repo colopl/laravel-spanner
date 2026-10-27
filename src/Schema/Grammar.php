@@ -44,6 +44,30 @@ class Grammar extends BaseGrammar
      */
     public function compileTables($schema)
     {
+        return $this->compileTablesOfType('BASE TABLE', $schema);
+    }
+
+    /**
+     * Compile the query to determine the queues.
+     *
+     * Queues are listed in the same `information_schema.tables` view as tables,
+     * so {@see self::compileTables()} does not return them.
+     *
+     * @param string|string[]|null $schema
+     * @return string
+     */
+    public function compileQueues($schema = null): string
+    {
+        return $this->compileTablesOfType('QUEUE', $schema);
+    }
+
+    /**
+     * @param string $tableType value of the `table_type` column, e.g. `BASE TABLE` or `QUEUE`
+     * @param string|string[]|null $schema
+     * @return string
+     */
+    protected function compileTablesOfType(string $tableType, $schema): string
+    {
         return implode(' ', [
             'select',
             implode(', ', [
@@ -52,13 +76,13 @@ class Grammar extends BaseGrammar
                 'parent_table_name as `parent`',
             ]),
             'from `information_schema`.`tables`',
-            'where `table_type` = \'BASE TABLE\'',
+            'where `table_type` = ' . $this->quoteString($tableType),
             (match (true) {
                 is_array($schema) => 'and `table_schema` in (' . $this->quoteString($schema) . ')',
                 !is_null($schema) => 'and `table_schema` = ' . $this->quoteString($schema),
                 default => '',
             }),
-            'order by `table_schema`, `table_name`'
+            'order by `table_schema`, `table_name`',
         ]);
     }
 

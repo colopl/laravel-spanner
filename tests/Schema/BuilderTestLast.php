@@ -23,6 +23,7 @@ use Colopl\Spanner\Tests\TestCase;
 use Exception;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
+use Throwable;
 
 class BuilderTestLast extends TestCase
 {
@@ -653,5 +654,49 @@ class BuilderTestLast extends TestCase
 
         $tables = $sb->getTables();
         $this->assertEmpty($tables);
+    }
+
+    public function test_dropAllTables_drops_queues_before_their_parent_tables(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $sb = $conn->getSchemaBuilder();
+
+        $parent = $this->generateTableName('QueueParent');
+        $sb->create($parent, function (Blueprint $table) {
+            $table->string('parentId', 36)->primary();
+        });
+
+        $standalone = $this->generateTableName('QueueStandalone');
+        try {
+            $sb->createQueue($standalone, function (Blueprint $queue) {
+                $queue->string('MessageId', 36)->primary();
+                $queue->string('Payload', 'max');
+            });
+        } catch (Throwable $e) {
+            $this->markTestSkipped('Cloud Spanner queues are unavailable on this backend: ' . $e->getMessage());
+        }
+
+        // The parent cannot be dropped while a queue is interleaved in it.
+        $interleaved = $this->generateTableName('QueueInterleaved');
+        $sb->createQueue($interleaved, function (Blueprint $queue) use ($parent) {
+            $queue->string('parentId', 36);
+            $queue->string('MessageId', 36);
+            $queue->string('Payload', 'max');
+            $queue->primary(['parentId', 'MessageId']);
+            $queue->interleaveInParent($parent)->cascadeOnDelete();
+        });
+
+        // Make sure the check below is not vacuous.
+        $queues = array_column($sb->getQueues(), 'parent', 'name');
+        $this->assertArrayHasKey($standalone, $queues);
+        $this->assertNull($queues[$standalone]);
+        $this->assertSame($parent, $queues[$interleaved] ?? null);
+        $this->assertContains($parent, $sb->getTableListing());
+        $this->assertNotContains($standalone, $sb->getTableListing());
+
+        $sb->dropAllTables();
+
+        $this->assertEmpty($sb->getTables());
+        $this->assertEmpty($sb->getQueues());
     }
 }

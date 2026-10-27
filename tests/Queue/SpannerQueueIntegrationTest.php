@@ -401,33 +401,21 @@ class SpannerQueueIntegrationTest extends TestCase
         // The unit tests only compare SQL text. These have to get past the parser.
         $schema->createQueueIfNotExists($name, $columns);
         $schema->createQueueIfNotExists($name, $columns);
-        $this->assertContains($name, $this->queueNames());
+        $this->assertTrue($schema->hasQueue($name));
 
         // Create time options are set on the definition the blueprint hands out.
         $blueprint = new Blueprint($connection, $name . '_options');
         $blueprint->createQueue()->disableSend(false)->disableDelivery(false);
         $columns($blueprint);
         $blueprint->build();
-        $this->assertContains($name . '_options', $this->queueNames());
+        $this->assertTrue($schema->hasQueue($name . '_options'));
 
         $schema->table($name, static fn(Blueprint $queue) => $queue->alterQueue()->disableDelivery(true)->disableSend(false));
         $schema->table($name, static fn(Blueprint $queue) => $queue->alterQueue()->disableDelivery(null)->disableSend(null));
 
         $schema->dropQueue($name);
         $schema->dropQueueIfExists($name);
-        $this->assertNotContains($name, $this->queueNames());
-    }
-
-    /**
-     * @return list<string>
-     */
-    protected function queueNames(): array
-    {
-        $rows = $this->getDefaultConnection()->select(
-            "select table_name from information_schema.tables where table_schema = '' and table_type = 'QUEUE'",
-        );
-
-        return array_values(array_map(static fn(array $row) => (string) $row['table_name'], $rows));
+        $this->assertFalse($schema->hasQueue($name));
     }
 
     public function test_clear_removes_every_message(): void

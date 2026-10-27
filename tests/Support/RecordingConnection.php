@@ -28,9 +28,9 @@ use LogicException;
  * A Connection that records every statement instead of sending it to Cloud
  * Spanner, and replays canned results back.
  *
- * Cloud Spanner queues are not implemented by the Spanner emulator, so driver
- * behaviour that would otherwise need a real instance is asserted against
- * this double.
+ * Queues need the Enterprise edition, or an emulator recent enough to implement
+ * them, so driver behaviour that would otherwise need such a backend is
+ * asserted against this double.
  *
  * @phpstan-type TRecordedQuery array{
  *     sql: string,
@@ -65,6 +65,14 @@ class RecordingConnection extends Connection
      * @var list<array<array-key, mixed>>
      */
     public array $selectResults = [];
+
+    /**
+     * Picks the rows that `select()` returns from the SQL, for code that issues
+     * several different queries. Takes precedence over {@see self::$selectResults}.
+     *
+     * @var (Closure(string): list<array<array-key, mixed>>)|null
+     */
+    public ?Closure $selectUsing = null;
 
     /**
      * Row counts that successive affecting statements report, in order.
@@ -143,7 +151,9 @@ class RecordingConnection extends Connection
     {
         $this->record($query, $bindings, []);
 
-        return $this->selectResults;
+        return $this->selectUsing !== null
+            ? ($this->selectUsing)($query)
+            : $this->selectResults;
     }
 
     /**

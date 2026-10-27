@@ -25,6 +25,12 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 
 /**
+ * @phpstan-type TQueue array{
+ *     name: string,
+ *     schema: string|null,
+ *     schema_qualified_name: string,
+ *     parent: string|null,
+ * }
  * @property Grammar $grammar
  */
 class Builder extends BaseBuilder
@@ -125,6 +131,44 @@ class Builder extends BaseBuilder
     }
 
     /**
+     * Get the queues that belong to the connection.
+     *
+     * Queues are not tables, so they are left out of {@see self::getTables()}.
+     *
+     * @param string|string[]|null $schema
+     * @return list<TQueue>
+     */
+    public function getQueues($schema = null): array
+    {
+        /** @var list<array<string, mixed>> $rows */
+        $rows = $this->connection->selectFromWriteConnection($this->grammar->compileQueues($schema));
+
+        /** @var list<TQueue> */
+        return $this->connection->getPostProcessor()->processTables($rows);
+    }
+
+    /**
+     * Determine if the given queue exists.
+     *
+     * @param string $queue
+     * @return bool
+     */
+    public function hasQueue(string $queue): bool
+    {
+        [$schema, $queue] = $this->parseSchemaAndTable($queue);
+
+        $queue = $this->connection->getTablePrefix() . $queue;
+
+        foreach ($this->getQueues($schema ?? $this->getCurrentSchemaName()) as $value) {
+            if (strtolower($queue) === strtolower($value['name'])) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * @param string $queue
      * @param Closure(Blueprint): void $callback
      * @return void
@@ -179,9 +223,14 @@ class Builder extends BaseBuilder
 
     /**
      * @inheritDoc
+     *
+     * Queues are dropped too, as they are created alongside tables, and since
+     * a table cannot be dropped while a queue is interleaved in it.
      */
     public function dropAllTables()
     {
+        $this->dropAllQueues();
+
         $connection = $this->connection;
         /** @var list<array{
          *     name: string,
@@ -260,6 +309,24 @@ class Builder extends BaseBuilder
             array_push($queries, ...$blueprint->toSql());
         }
 
+        $connection->runDdlBatch($queries);
+    }
+
+    /**
+     * @return void
+     */
+    protected function dropAllQueues(): void
+    {
+        $queries = [];
+        foreach ($this->getQueues() as $queue) {
+            $blueprint = $this->createBlueprint($queue['schema_qualified_name']);
+            assert($blueprint instanceof Blueprint);
+            $blueprint->dropQueue();
+            array_push($queries, ...$blueprint->toSql());
+        }
+
+        /** @var Connection $connection */
+        $connection = $this->connection;
         $connection->runDdlBatch($queries);
     }
 }

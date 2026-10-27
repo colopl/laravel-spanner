@@ -503,6 +503,20 @@ $schemaBuilder->table('Jobs', function (Blueprint $queue) {
 });
 ```
 
+Queues are not tables, so `hasTable()` and `getTables()` never report them. Use `hasQueue()` and `getQueues()`
+instead, the latter also telling which table a queue is interleaved in:
+
+```php
+$schemaBuilder->hasQueue('Jobs'); // true
+
+foreach ($schemaBuilder->getQueues() as $queue) {
+    echo $queue['name'], ' => ', $queue['parent'] ?? '-', PHP_EOL;
+}
+```
+
+`dropAllTables()`, and with it `db:wipe` and `migrate:fresh`, drops queues too. Queues go first, since a table
+can't be dropped while a queue is interleaved in it.
+
 #### Configuration
 
 Add a `spanner` queue connection to `config/queue.php`:
