@@ -100,7 +100,7 @@ class SpannerJob extends BaseJob implements JobContract
     {
         parent::delete();
 
-        $this->spannerQueue->acknowledge($this->queue, $this->key);
+        $this->spannerQueue->deleteReserved($this->queue, $this->key);
     }
 
     /**

@@ -665,17 +665,45 @@ DB::connection('spanner')->transaction(function () use ($user) {
 });
 ```
 
-#### How reservation works
+#### How a job is dequeued and retried
+
+**Dequeuing.** Each worker keeps one `RECEIVE_<queue>(max_duration => block_for)` stream open per queue and
+reads messages from it as `queue:work` asks for them, instead of polling. A stream is a single-use strong
+read, which is why messages cannot be received from inside a transaction. When a stream has reached its
+`max_duration` it is replaced rather than reused.
 
 Spanner hands out a message with a fixed, non-configurable 10 second lease, which is too short for most
 Laravel jobs, and PHP cannot renew it from a background thread while a job is running. The driver therefore
 uses the pattern Google documents for
-[long running work](https://cloud.google.com/spanner/docs/queues/queues-examples#handle-long-running-work):
-reserving a message acknowledges it and, in the same transaction, sends a fresh message scheduled
-`retry_after` seconds into the future. Finishing the job acknowledges that message, releasing it re-sends it,
-and a worker that dies simply lets it become deliverable again.
+[long running work](https://cloud.google.com/spanner/docs/queues/queues-examples#handle-long-running-work),
+and reserves every message it receives:
 
-Two consequences are worth knowing:
+1. The attempt counter in the payload (`attempts`, which `$job->attempts()` returns) is incremented.
+2. In one read-write transaction, the received message is acknowledged (deleted by its primary key) and a
+   fresh message with a new `MessageId` and the incremented payload is sent, scheduled `retry_after` seconds
+   ahead. An interleaved queue keeps the key columns of the message it replaces.
+3. If the acknowledging `DELETE` removes no row, another worker reserved the message first and it is skipped,
+   as is a message whose 10 second lease has already run out. No locking is needed for this.
+4. The worker runs the job against the reserved message.
+
+**What happens next** depends on how the job ends:
+
+| Outcome | What the driver does |
+|---|---|
+| The job succeeds | The reserved message is acknowledged, so the job is gone. |
+| The job throws and has tries left | Laravel calls `release($backoff)`. In one transaction the reserved message is acknowledged and the payload is sent again, deliverable after `$backoff` seconds (immediately without a backoff). |
+| The job exceeds `--tries` or `--max-exceptions`, or calls `fail()` | Laravel records it in the failed jobs provider and the reserved message is acknowledged. |
+| The worker is killed, crashes or times out | Nothing is released. Once `retry_after` seconds have passed the reserved message becomes deliverable and the next worker receives and reserves it again. |
+
+Because every delivery goes through reservation, the attempt counter also counts deliveries after a crash,
+so a job that kills its worker cannot retry forever. `--tries` and `--backoff` behave as they do with the
+`database` and `redis` drivers, since the retry decisions are made by Laravel's worker, not by the driver.
+
+If a job runs longer than `retry_after`, its reserved message becomes deliverable while it is still running
+and another worker may start the same job. When the first worker finishes, its acknowledgement finds no row
+and does nothing. Keep `retry_after` above your longest job.
+
+Two more consequences are worth knowing:
 
 - Delivery is at-least-once, as it is for every Laravel queue driver, so jobs should be idempotent.
 - A reserved job is stored as a message that is not deliverable yet, which Spanner cannot tell apart from a

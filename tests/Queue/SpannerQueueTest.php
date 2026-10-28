@@ -337,6 +337,41 @@ class SpannerQueueTest extends TestCase
         $this->assertSame([$reservedId], $conn->recordedAt(3)['bindings']);
     }
 
+    public function test_deleting_a_job_that_another_worker_already_processed_logs_a_notice(): void
+    {
+        $conn = new RecordingConnection();
+        $conn->messages = [$this->message()];
+        // The delete of the reserved message (after receive, reserve's delete and insert) removes nothing.
+        $conn->affectedRows = [3 => 0];
+        $logger = new RecordingLogger();
+
+        $job = $this->createQueue($conn, retryAfter: 90, logger: $logger)->pop();
+        $this->assertInstanceOf(SpannerJob::class, $job);
+        $job->delete();
+
+        $this->assertTrue($job->isDeleted());
+        $this->assertCount(1, $logger->records);
+        $this->assertSame('notice', $logger->records[0]['level']);
+        $this->assertStringContainsString(
+            sprintf('Job "%s" of queue "Jobs" could not be deleted', $job->getJobId()),
+            $logger->records[0]['message'],
+        );
+        $this->assertStringContainsString('retry_after (90 seconds)', $logger->records[0]['message']);
+    }
+
+    public function test_deleting_a_job_normally_logs_nothing(): void
+    {
+        $conn = new RecordingConnection();
+        $conn->messages = [$this->message()];
+        $logger = new RecordingLogger();
+
+        $job = $this->createQueue($conn, logger: $logger)->pop();
+        $this->assertInstanceOf(SpannerJob::class, $job);
+        $job->delete();
+
+        $this->assertSame([], $logger->records);
+    }
+
     public function test_releasing_a_job_reschedules_it_atomically(): void
     {
         Carbon::setTestNow($now = Carbon::parse('2026-09-18 12:00:00'));

@@ -356,6 +356,29 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
     }
 
     /**
+     * Deletes the reserved message of a finished job.
+     *
+     * When nothing was deleted, the reservation had already run out and
+     * another worker took the job, so it is running or has run twice.
+     *
+     * @param string $queue
+     * @param array<string, scalar> $key full primary key of the reserved message
+     * @return void
+     */
+    public function deleteReserved(string $queue, array $key): void
+    {
+        if ($this->acknowledge($queue, $key) === 0) {
+            $this->logger?->notice(sprintf(
+                'Job "%s" of queue "%s" could not be deleted because another worker already processed it. ' .
+                'Its reservation ran out after retry_after (%d seconds) while it was still running.',
+                $key[self::MESSAGE_ID_COLUMN] ?? '',
+                $queue,
+                $this->retryAfter,
+            ));
+        }
+    }
+
+    /**
      * Acknowledges a reserved message and sends its payload back to the queue,
      * atomically, so the job is neither lost nor duplicated.
      *

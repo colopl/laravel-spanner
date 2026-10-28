@@ -431,6 +431,25 @@ class SpannerQueueIntegrationTest extends TestCase
         $this->assertSame(0, $queue->acknowledge($this->queueName, $key));
     }
 
+    public function test_deleting_a_job_that_another_worker_already_processed_logs_a_notice(): void
+    {
+        $logger = new RecordingLogger();
+        $this->app->instance('log', $logger);
+        $queue = $this->queue();
+        $queue->pushRaw((string) json_encode(['job' => 'Foo']));
+
+        $job = $this->popWithin($queue, 10);
+        $this->assertInstanceOf(SpannerJob::class, $job);
+
+        // Another worker handled the job once its reservation ran out.
+        $this->assertSame(1, $queue->acknowledge($this->queueName, $job->getKey()));
+        $job->delete();
+
+        $notices = array_values(array_filter($logger->records, static fn(array $r): bool => $r['level'] === 'notice'));
+        $this->assertCount(1, $notices);
+        $this->assertStringContainsString($job->getJobId(), $notices[0]['message']);
+    }
+
     public function test_a_queue_can_expire_stale_messages_with_a_row_deletion_policy(): void
     {
         $connection = $this->getDefaultConnection();
