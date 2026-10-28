@@ -83,6 +83,12 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
     public const string LEASE_EXPIRATION_COLUMN = 'SpannerLeaseExpirationTimestamp';
 
     /**
+     * Seconds a reservation outlasts the job's own `timeout`, which is how long
+     * the worker needs after killing a job to release or fail it.
+     */
+    public const int TIMEOUT_MARGIN = 10;
+
+    /**
      * Open `RECEIVE_<queue>()` streams, keyed by queue name.
      *
      * @var array<string, MessageReceiver>
@@ -107,7 +113,7 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
     /**
      * @param Connection $connection
      * @param string $default name of the Spanner queue used when none is given
-     * @param int $retryAfter seconds a reserved message stays invisible
+     * @param int $retryAfter seconds a reserved message stays invisible, unless the job's `timeout` plus {@see self::TIMEOUT_MARGIN} is longer
      * @param int $blockFor seconds a single `RECEIVE_<queue>()` call streams for
      * @param bool $dispatchAfterCommit
      * @param array<array-key, list<string>|null> $interleaveKeys key columns that precede `MessageId` in each queue,
@@ -370,7 +376,8 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
         if ($this->acknowledge($queue, $key) === 0) {
             $this->logger?->notice(sprintf(
                 'Job "%s" of queue "%s" could not be deleted because another worker already processed it. ' .
-                'Its reservation ran out after retry_after (%d seconds) while it was still running.',
+                'Its reservation (retry_after of %d seconds, or longer when the job declares a timeout) ' .
+                'ran out while it was still running.',
                 $key[self::MESSAGE_ID_COLUMN] ?? '',
                 $queue,
                 $this->retryAfter,
@@ -701,7 +708,7 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
             }
             // The reserved message keeps the key columns of the one it
             // replaces, so an interleaved queue stays under the same parent.
-            return $this->send($queue, $payload, $this->retryAfter, $key);
+            return $this->send($queue, $payload, $this->reservationFor($payload), $key);
         });
 
         return $reservedKey !== null
@@ -747,6 +754,25 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
 
         return $expiresAt instanceof Timestamp
             && $expiresAt->get() < new DateTimeImmutable();
+    }
+
+    /**
+     * Seconds a reserved message stays invisible: `retry_after`, or the job's
+     * own `timeout` (which Laravel writes into the payload) plus a margin when
+     * that is longer, so a job allowed to run for minutes is not delivered to a
+     * second worker after `retry_after` seconds.
+     *
+     * @param string $payload
+     * @return int
+     */
+    protected function reservationFor(string $payload): int
+    {
+        $decoded = json_decode($payload, true);
+        $timeout = is_array($decoded) ? ($decoded['timeout'] ?? null) : null;
+
+        return is_int($timeout) && $timeout > 0
+            ? max($this->retryAfter, $timeout + self::TIMEOUT_MARGIN)
+            : $this->retryAfter;
     }
 
     /**

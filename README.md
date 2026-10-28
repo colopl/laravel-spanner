@@ -563,7 +563,10 @@ Add a `spanner` queue connection to `config/queue.php`:
 ```
 
 `retry_after` works like it does for the `database` and `redis` drivers and must be longer than your longest
-job, otherwise the job will be processed twice.
+job, otherwise the job will be processed twice. A job that declares a `$timeout` is covered without raising it
+for every job: its reserved message stays invisible for the `$timeout` plus 10 seconds when that is longer than
+`retry_after`. Jobs without a `$timeout` rely on `retry_after` alone, and `queue:work --timeout` is not visible
+to the driver, so keep `retry_after` above it.
 
 `block_for` is the `max_duration` of the `RECEIVE_<queue>()` call. Receiving is a long running streaming
 query rather than a poll, so a worker blocks inside it until a message arrives or the duration elapses.
@@ -681,7 +684,7 @@ and reserves every message it receives:
 1. The attempt counter in the payload (`attempts`, which `$job->attempts()` returns) is incremented.
 2. In one read-write transaction, the received message is acknowledged (deleted by its primary key) and a
    fresh message with a new `MessageId` and the incremented payload is sent, scheduled `retry_after` seconds
-   ahead. An interleaved queue keeps the key columns of the message it replaces.
+   ahead (or the job's `$timeout` plus 10 seconds, if that is longer). An interleaved queue keeps the key columns of the message it replaces.
 3. If the acknowledging `DELETE` removes no row, another worker reserved the message first and it is skipped,
    as is a message whose 10 second lease has already run out. No locking is needed for this.
 4. The worker runs the job against the reserved message.
@@ -699,9 +702,9 @@ Because every delivery goes through reservation, the attempt counter also counts
 so a job that kills its worker cannot retry forever. `--tries` and `--backoff` behave as they do with the
 `database` and `redis` drivers, since the retry decisions are made by Laravel's worker, not by the driver.
 
-If a job runs longer than `retry_after`, its reserved message becomes deliverable while it is still running
+If a job runs longer than its reservation (`retry_after`, or the longer `$timeout` window), its reserved message becomes deliverable while it is still running
 and another worker may start the same job. When the first worker finishes, its acknowledgement finds no row
-and does nothing. Keep `retry_after` above your longest job.
+and does nothing. Keep `retry_after` above your longest job, or give long jobs a `$timeout`.
 
 Two more consequences are worth knowing:
 

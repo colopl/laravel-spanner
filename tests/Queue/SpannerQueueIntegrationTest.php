@@ -26,6 +26,7 @@ use Colopl\Spanner\Schema\QueueDefinition;
 use Colopl\Spanner\Tests\Support\RecordingLogger;
 use Colopl\Spanner\Tests\TestCase;
 use Closure;
+use Google\Cloud\Spanner\Timestamp;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\Events\JobFailed;
@@ -419,6 +420,31 @@ class SpannerQueueIntegrationTest extends TestCase
 
         $second->delete();
         $this->assertSame(0, $queue->size());
+    }
+
+    public function test_a_job_is_reserved_for_longer_than_its_timeout(): void
+    {
+        config()->set('queue.connections.spanner.retry_after', 5);
+        $queue = $this->queue();
+        $queue->pushRaw((string) json_encode(['job' => 'Foo', 'timeout' => 300]));
+
+        $job = $this->popWithin($queue, 10);
+        $this->assertInstanceOf(SpannerJob::class, $job);
+
+        $row = $this->getDefaultConnection()->selectOne(sprintf(
+            'select DeliverTime from `%s` where MessageId = ?',
+            $this->queueName,
+        ), [$job->getJobId()]);
+        $this->assertIsArray($row);
+        $deliverTime = $row['DeliverTime'];
+        $this->assertInstanceOf(Timestamp::class, $deliverTime);
+        // The timeout and its margin, not the shorter retry_after.
+        $this->assertGreaterThan(
+            time() + 300,
+            $deliverTime->get()->getTimestamp(),
+        );
+
+        $job->delete();
     }
 
     public function test_acknowledging_a_message_twice_reports_the_second_as_already_taken(): void

@@ -31,6 +31,7 @@ use Illuminate\Container\Container;
 use Illuminate\Support\Carbon;
 use InvalidArgumentException;
 use LogicException;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 
@@ -209,6 +210,39 @@ class SpannerQueueTest extends TestCase
         Carbon::setTestNow();
     }
 
+    /**
+     * @return array<string, array{mixed, int}>
+     */
+    public static function reservationTimeouts(): array
+    {
+        return [
+            'a timeout beyond retry_after extends the reservation' => [300, 310],
+            'a timeout within retry_after keeps retry_after' => [30, 120],
+            'a timeout that only just fits keeps retry_after' => [110, 120],
+            'a timeout just over retry_after minus the margin extends it' => [111, 121],
+            'no timeout keeps retry_after' => [null, 120],
+            'a zero timeout keeps retry_after' => [0, 120],
+            'a non numeric timeout keeps retry_after' => ['300', 120],
+        ];
+    }
+
+    #[DataProvider('reservationTimeouts')]
+    public function test_the_reservation_outlasts_the_timeout_of_the_job(mixed $timeout, int $reservedFor): void
+    {
+        Carbon::setTestNow($now = Carbon::parse('2026-09-18 12:00:00'));
+
+        $conn = new RecordingConnection();
+        $conn->messages = [$this->message([
+            SpannerQueue::PAYLOAD_COLUMN => json_encode(['uuid' => 'job-uuid', 'attempts' => 0, 'timeout' => $timeout]),
+        ])];
+
+        $this->assertInstanceOf(SpannerJob::class, $this->createQueue($conn, retryAfter: 120)->pop());
+
+        $this->assertSame($now->getTimestamp() + $reservedFor, $conn->recordedAt(2)['bindings'][2]->getTimestamp());
+
+        Carbon::setTestNow();
+    }
+
     public function test_pop_counts_every_delivery_as_an_attempt(): void
     {
         $conn = new RecordingConnection();
@@ -356,7 +390,7 @@ class SpannerQueueTest extends TestCase
             sprintf('Job "%s" of queue "Jobs" could not be deleted', $job->getJobId()),
             $logger->records[0]['message'],
         );
-        $this->assertStringContainsString('retry_after (90 seconds)', $logger->records[0]['message']);
+        $this->assertStringContainsString('retry_after of 90 seconds', $logger->records[0]['message']);
     }
 
     public function test_deleting_a_job_normally_logs_nothing(): void
