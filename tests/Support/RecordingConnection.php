@@ -159,6 +159,21 @@ class RecordingConnection extends Connection
     /**
      * @inheritDoc
      * @param array<array-key, mixed> $bindings
+     * @param array<string, mixed> $options
+     * @return array<int, array<array-key, mixed>>
+     */
+    public function selectWithOptions(string $query, array $bindings, array $options): array
+    {
+        $this->record($query, $bindings, $options);
+
+        return $this->selectUsing !== null
+            ? ($this->selectUsing)($query)
+            : $this->selectResults;
+    }
+
+    /**
+     * @inheritDoc
+     * @param array<array-key, mixed> $bindings
      */
     public function affectingStatement($query, $bindings = []): int
     {

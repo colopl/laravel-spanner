@@ -22,6 +22,7 @@ use Colopl\Spanner\Queue\ProvidesInterleaveKeys;
 use Colopl\Spanner\Queue\SpannerJob;
 use Colopl\Spanner\Queue\SpannerQueue;
 use Colopl\Spanner\Tests\Support\RecordingConnection;
+use Colopl\Spanner\Tests\Support\RecordingLogger;
 use Colopl\Spanner\Tests\TestCase;
 use DateTimeImmutable;
 use DateTimeInterface;
@@ -30,6 +31,8 @@ use Illuminate\Container\Container;
 use Illuminate\Support\Carbon;
 use InvalidArgumentException;
 use LogicException;
+use Psr\Log\LoggerInterface;
+use RuntimeException;
 
 class SpannerQueueTest extends TestCase
 {
@@ -43,13 +46,15 @@ class SpannerQueueTest extends TestCase
     }
 
     /**
-     * @param list<string> $interleaveKeys
+     * @param array<array-key, list<string>|null>|null $interleaveKeys defaults to the queue not being interleaved,
+     *   so that a test does not trigger the information schema lookup by accident
      */
     protected function createQueue(
         RecordingConnection $connection,
         int $retryAfter = 60,
         int $blockFor = 20,
-        array $interleaveKeys = [],
+        ?array $interleaveKeys = null,
+        ?LoggerInterface $logger = null,
     ): SpannerQueue {
         $queue = new SpannerQueue(
             $connection,
@@ -57,7 +62,8 @@ class SpannerQueueTest extends TestCase
             $retryAfter,
             $blockFor,
             false,
-            $interleaveKeys,
+            $interleaveKeys ?? [self::QUEUE_NAME => []],
+            $logger,
         );
         $queue->setContainer(Container::getInstance());
         $queue->setConnectionName('spanner');
@@ -469,7 +475,7 @@ class SpannerQueueTest extends TestCase
     public function test_interleaved_queue_writes_the_interleave_keys(): void
     {
         $conn = new RecordingConnection();
-        $this->createQueue($conn, interleaveKeys: ['UserId'])
+        $this->createQueue($conn, interleaveKeys: ['Jobs' => ['UserId']])
             ->push('JobClass', ['userId' => 'user-1']);
 
         $recorded = $conn->recordedAt(0);
@@ -485,7 +491,7 @@ class SpannerQueueTest extends TestCase
         $conn = new RecordingConnection();
         $conn->messages = [$this->message(['UserId' => 'user-1'])];
 
-        $job = $this->createQueue($conn, interleaveKeys: ['UserId'])->pop();
+        $job = $this->createQueue($conn, interleaveKeys: ['Jobs' => ['UserId']])->pop();
 
         $this->assertInstanceOf(SpannerJob::class, $job);
         $this->assertSame(
@@ -509,7 +515,7 @@ class SpannerQueueTest extends TestCase
             SpannerQueue::PAYLOAD_COLUMN => json_encode(['data' => ['userId' => 'wrong-user']]),
         ])];
 
-        $job = $this->createQueue($conn, interleaveKeys: ['UserId'])->pop();
+        $job = $this->createQueue($conn, interleaveKeys: ['Jobs' => ['UserId']])->pop();
         $this->assertInstanceOf(SpannerJob::class, $job);
 
         $resend = $conn->recordedAt(2);
@@ -523,7 +529,7 @@ class SpannerQueueTest extends TestCase
         $conn = new RecordingConnection();
         $conn->messages = [$this->message(['UserId' => 'user-1'])];
 
-        $queue = $this->createQueue($conn, interleaveKeys: ['UserId']);
+        $queue = $this->createQueue($conn, interleaveKeys: ['Jobs' => ['UserId']]);
         $job = $queue->pop();
         $this->assertInstanceOf(SpannerJob::class, $job);
 
@@ -541,7 +547,7 @@ class SpannerQueueTest extends TestCase
         $conn = new RecordingConnection();
         $conn->messages = [$this->message(['UserId' => 'user-1'])];
 
-        $job = $this->createQueue($conn, interleaveKeys: ['UserId'])->pop();
+        $job = $this->createQueue($conn, interleaveKeys: ['Jobs' => ['UserId']])->pop();
         $this->assertInstanceOf(SpannerJob::class, $job);
 
         $reservedId = $job->getJobId();
@@ -557,7 +563,7 @@ class SpannerQueueTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Interleave key "UserId" of queue "Jobs" could not be resolved');
 
-        $this->createQueue($conn, interleaveKeys: ['UserId'])->pushRaw('{}');
+        $this->createQueue($conn, interleaveKeys: ['Jobs' => ['UserId']])->pushRaw('{}');
     }
 
     public function test_interleave_keys_are_discovered_from_a_job_property(): void
@@ -566,7 +572,7 @@ class SpannerQueueTest extends TestCase
 
         // No interface: the driver reads the job's own property,
         // which it can only do before the job is serialized into the payload.
-        $this->createQueue($conn, interleaveKeys: ['UserId'])
+        $this->createQueue($conn, interleaveKeys: ['Jobs' => ['UserId']])
             ->push(new FakeJobWithUserId('user-7'));
 
         $this->assertSame('user-7', $conn->recordedAt(0)['bindings'][0]);
@@ -576,7 +582,7 @@ class SpannerQueueTest extends TestCase
     {
         $conn = new RecordingConnection();
 
-        $this->createQueue($conn, interleaveKeys: ['UserId'])
+        $this->createQueue($conn, interleaveKeys: ['Jobs' => ['UserId']])
             ->push('JobClass', ['userId' => 'user-8']);
 
         $this->assertSame('user-8', $conn->recordedAt(0)['bindings'][0]);
@@ -588,7 +594,7 @@ class SpannerQueueTest extends TestCase
         // job's own declaration wins.
         $conn = new RecordingConnection();
 
-        $this->createQueue($conn, interleaveKeys: ['UserId'])
+        $this->createQueue($conn, interleaveKeys: ['Jobs' => ['UserId']])
             ->push(new FakeJobProvidingInterleaveKeys('user-1', 'user-declared'));
 
         $this->assertSame('user-declared', $conn->recordedAt(0)['bindings'][0]);
@@ -598,7 +604,7 @@ class SpannerQueueTest extends TestCase
     {
         $conn = new RecordingConnection();
 
-        $this->createQueue($conn, interleaveKeys: ['UserId'])
+        $this->createQueue($conn, interleaveKeys: ['Jobs' => ['UserId']])
             ->later(60, new FakeJobWithUserId('user-7'));
 
         $this->assertSame('user-7', $conn->recordedAt(0)['bindings'][0]);
@@ -609,10 +615,112 @@ class SpannerQueueTest extends TestCase
         $conn = new RecordingConnection();
 
         // Nothing in the payload to discover, so the keys come from the options.
-        $this->createQueue($conn, interleaveKeys: ['UserId'])
+        $this->createQueue($conn, interleaveKeys: ['Jobs' => ['UserId']])
             ->pushRaw('{"job":"Foo"}', null, ['keys' => ['UserId' => 'user-9']]);
 
         $this->assertSame('user-9', $conn->recordedAt(0)['bindings'][0]);
+    }
+
+    public function test_each_queue_has_its_own_interleave_keys(): void
+    {
+        $conn = new RecordingConnection();
+        $queue = $this->createQueue($conn, interleaveKeys: ['UserTasks' => ['UserId'], 'Jobs' => []]);
+
+        $this->assertSame(['UserId'], $queue->getInterleaveKeys('UserTasks'));
+        $this->assertSame([], $queue->getInterleaveKeys('Jobs'));
+        $this->assertSame([], $queue->getInterleaveKeys());
+
+        $queue->pushRaw('{}');
+        $queue->pushRaw('{}', 'UserTasks', ['keys' => ['UserId' => 'user-1']]);
+
+        $this->assertSame(
+            'insert into `Jobs` (`MessageId`, `Payload`, `DeliverTime`) values (?, ?, ?)',
+            $conn->recordedAt(0)['sql'],
+        );
+        $this->assertSame(
+            'insert into `UserTasks` (`UserId`, `MessageId`, `Payload`, `DeliverTime`) values (?, ?, ?, ?)',
+            $conn->recordedAt(1)['sql'],
+        );
+        // Declared queues never touch the information schema.
+        $this->assertCount(2, $conn->recorded);
+    }
+
+    public function test_an_unlisted_queue_is_looked_up_in_the_information_schema_with_a_warning(): void
+    {
+        $conn = new RecordingConnection('app_');
+        $conn->selectResults = [['column_name' => 'UserId'], ['column_name' => 'MessageId']];
+        $logger = new RecordingLogger();
+        $queue = $this->createQueue($conn, logger: $logger);
+
+        $this->assertSame(['UserId'], $queue->getInterleaveKeys('UserTasks'));
+
+        $lookup = $conn->recordedAt(0);
+        $this->assertStringContainsString('`information_schema`.`index_columns`', $lookup['sql']);
+        $this->assertSame(['app_UserTasks'], $lookup['bindings']);
+        // Not part of the open transaction, which Cloud Spanner would reject.
+        $this->assertTrue($lookup['options']['singleUse']);
+
+        $this->assertCount(1, $logger->records);
+        $this->assertSame('warning', $logger->records[0]['level']);
+        $this->assertStringContainsString('no interleave_keys entry for queue "UserTasks"', $logger->records[0]['message']);
+        $this->assertSame(['queue' => 'UserTasks', 'interleave_keys' => ['UserId']], $logger->records[0]['context']);
+    }
+
+    public function test_a_queue_declared_as_null_is_looked_up_without_a_warning(): void
+    {
+        $conn = new RecordingConnection();
+        $conn->selectResults = [['column_name' => 'UserId'], ['column_name' => 'MessageId']];
+        $logger = new RecordingLogger();
+        $queue = $this->createQueue($conn, interleaveKeys: ['UserTasks' => null], logger: $logger);
+
+        $this->assertSame(['UserId'], $queue->getInterleaveKeys('UserTasks'));
+        $this->assertSame([], $logger->records);
+    }
+
+    public function test_a_looked_up_queue_is_only_looked_up_once(): void
+    {
+        $conn = new RecordingConnection();
+        $conn->selectResults = [['column_name' => 'MessageId']];
+        $logger = new RecordingLogger();
+        $queue = $this->createQueue($conn, interleaveKeys: [], logger: $logger);
+
+        $queue->pushRaw('{}');
+        $queue->pushRaw('{}');
+
+        $this->assertSame(1, count(array_filter(
+            $conn->recordedSql(),
+            static fn(string $sql): bool => str_contains($sql, 'information_schema'),
+        )));
+        $this->assertCount(1, $logger->records);
+    }
+
+    public function test_the_lookup_stops_at_the_message_id(): void
+    {
+        $conn = new RecordingConnection();
+        // A queue that declares DeliverTime as part of its key, as the README shows.
+        $conn->selectResults = [
+            ['column_name' => 'UserId'],
+            ['column_name' => 'MessageId'],
+            ['column_name' => 'DeliverTime'],
+        ];
+
+        $this->assertSame(['UserId'], $this->createQueue($conn, interleaveKeys: [])->getInterleaveKeys());
+    }
+
+    public function test_the_lookup_fails_clearly_for_a_queue_without_a_message_id(): void
+    {
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Cannot work out the interleave keys of queue "Jobs"');
+
+        $this->createQueue(new RecordingConnection(), interleaveKeys: [])->getInterleaveKeys();
+    }
+
+    public function test_interleave_keys_must_be_keyed_by_queue_name(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('interleave_keys must be keyed by queue name');
+
+        new SpannerQueue(new RecordingConnection(), 'Jobs', 60, 20, false, ['UserId']);
     }
 
     public function test_interleave_keys_must_not_repeat_the_message_id(): void
@@ -620,7 +728,7 @@ class SpannerQueueTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('must not contain "MessageId"');
 
-        new SpannerQueue(new RecordingConnection(), 'Jobs', 60, 20, false, ['MessageId']);
+        new SpannerQueue(new RecordingConnection(), 'Jobs', 60, 20, false, ['Jobs' => ['MessageId']]);
     }
 
     public function test_interleave_keys_must_be_spanner_identifiers(): void
@@ -628,7 +736,7 @@ class SpannerQueueTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Interleave key "UserId`; drop table `User" is not a valid');
 
-        new SpannerQueue(new RecordingConnection(), 'Jobs', 60, 20, false, ['UserId`; drop table `User']);
+        new SpannerQueue(new RecordingConnection(), 'Jobs', 60, 20, false, ['Jobs' => ['UserId`; drop table `User']]);
     }
 }
 

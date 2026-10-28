@@ -34,6 +34,7 @@ use Illuminate\Queue\Queue as BaseQueue;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 use LogicException;
+use Psr\Log\LoggerInterface;
 use RuntimeException;
 use UnitEnum;
 
@@ -89,12 +90,19 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
     protected array $receivers = [];
 
     /**
-     * Names of the interleave key columns that precede
-     * {@see self::MESSAGE_ID_COLUMN}, in order.
+     * Interleave key columns declared per queue name. See the constructor for
+     * what each kind of entry means.
      *
-     * @var list<string>
+     * @var array<array-key, list<string>|null>
      */
     protected array $interleaveKeys;
+
+    /**
+     * Interleave key columns read from the information schema, by queue name.
+     *
+     * @var array<string, list<string>>
+     */
+    protected array $lookedUpInterleaveKeys = [];
 
     /**
      * @param Connection $connection
@@ -102,7 +110,10 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
      * @param int $retryAfter seconds a reserved message stays invisible
      * @param int $blockFor seconds a single `RECEIVE_<queue>()` call streams for
      * @param bool $dispatchAfterCommit
-     * @param list<string> $interleaveKeys key columns the queue inherits from the table it is interleaved into
+     * @param array<array-key, list<string>|null> $interleaveKeys key columns that precede `MessageId` in each queue,
+     *   by queue name. A list is used as is, so `[]` declares a queue that is not interleaved. `null` reads them
+     *   from the information schema. A queue that is not listed is read the same way, with a warning.
+     * @param LoggerInterface|null $logger receives the warning for a queue that is not listed
      */
     public function __construct(
         protected Connection $connection,
@@ -111,6 +122,7 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
         protected int $blockFor = 20,
         bool $dispatchAfterCommit = false,
         array $interleaveKeys = [],
+        protected ?LoggerInterface $logger = null,
     ) {
         if ($retryAfter < 1) {
             throw new InvalidArgumentException('retry_after must be at least 1 second.');
@@ -119,14 +131,23 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
             throw new InvalidArgumentException('block_for must be at least 1 second.');
         }
 
-        foreach ($interleaveKeys as $column) {
-            $this->assertIsIdentifier($column, 'Interleave key');
+        foreach ($interleaveKeys as $queue => $columns) {
+            if (!is_string($queue)) {
+                throw new InvalidArgumentException(
+                    'interleave_keys must be keyed by queue name, for example ["UserTasks" => ["UserId"]].',
+                );
+            }
 
-            if (strcasecmp($column, self::MESSAGE_ID_COLUMN) === 0) {
-                throw new InvalidArgumentException(sprintf(
-                    'interleave_keys must not contain "%s"; it is always the last key column.',
-                    self::MESSAGE_ID_COLUMN,
-                ));
+            foreach ($columns ?? [] as $column) {
+                $this->assertIsIdentifier($column, 'Interleave key');
+
+                if (strcasecmp($column, self::MESSAGE_ID_COLUMN) === 0) {
+                    throw new InvalidArgumentException(sprintf(
+                        'interleave_keys of queue "%s" must not contain "%s"; it is always the last key column.',
+                        $queue,
+                        self::MESSAGE_ID_COLUMN,
+                    ));
+                }
             }
         }
 
@@ -388,18 +409,30 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
     }
 
     /**
-     * Names of the interleave key columns that precede
+     * Names of the interleave key columns of a queue that precede
      * {@see self::MESSAGE_ID_COLUMN}, in order.
+     *
+     * Taken from the constructor's `$interleaveKeys` when the queue is declared
+     * there with a list. Otherwise read from the information schema once and
+     * remembered, which logs a warning unless the queue was declared as `null`.
      *
      * Careful: this returns the column names, `['UserId']`, while the
      * identically named {@see ProvidesInterleaveKeys::getInterleaveKeys()}
      * returns a value for each of them, `['UserId' => 'a-user-id']`.
      *
+     * @param UnitEnum|string|null $queue
      * @return list<string>
      */
-    public function getInterleaveKeys(): array
+    public function getInterleaveKeys($queue = null): array
     {
-        return $this->interleaveKeys;
+        $queue = $this->getQueue($queue);
+
+        $declared = $this->interleaveKeys[$queue] ?? null;
+        if ($declared !== null) {
+            return $declared;
+        }
+
+        return $this->lookedUpInterleaveKeys[$queue] ??= $this->lookUpInterleaveKeys($queue);
     }
 
     /**
@@ -464,7 +497,7 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
         $interleaveKeyValues ??= $this->resolveInterleaveKeyValues($queue, $payload, null);
 
         $key = [];
-        foreach ($this->interleaveKeys as $column) {
+        foreach ($this->getInterleaveKeys($queue) as $column) {
             $value = $interleaveKeyValues[$column] ?? null;
 
             if (!is_scalar($value)) {
@@ -496,7 +529,7 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
      * payload's `data`, which covers `push('Job', ['userId' => ...])`.
      *
      * The result maps column names to values, whereas
-     * {@see self::$interleaveKeys} holds the names alone.
+     * {@see self::getInterleaveKeys()} returns the names alone.
      *
      * A dispatched job object is serialized into an opaque blob inside the
      * payload, so the object itself has to be inspected before that happens,
@@ -510,7 +543,9 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
      */
     protected function resolveInterleaveKeyValues(string $queue, string $payload, ?object $job): array
     {
-        if ($this->interleaveKeys === []) {
+        $columns = $this->getInterleaveKeys($queue);
+
+        if ($columns === []) {
             return [];
         }
 
@@ -525,7 +560,7 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
         $data = is_array($data) ? $data : [];
 
         $interleaveKeyValues = [];
-        foreach ($this->interleaveKeys as $column) {
+        foreach ($columns as $column) {
             $value = $this->discoverInterleaveKeyValue($column, $job, $data);
 
             if ($value !== null) {
@@ -559,6 +594,60 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
         }
 
         return null;
+    }
+
+    /**
+     * Reads a queue's interleave keys from the information schema: the primary
+     * key columns in front of {@see self::MESSAGE_ID_COLUMN}.
+     *
+     * Logs a warning unless the queue is declared in `$interleaveKeys` as
+     * `null`, since a declared list saves this lookup altogether.
+     *
+     * @param string $queue
+     * @return list<string>
+     */
+    protected function lookUpInterleaveKeys(string $queue): array
+    {
+        // Cloud Spanner rejects information schema queries inside a read-write
+        // transaction, and a message may well be sent from inside one, so this
+        // has to be a read of its own.
+        $rows = $this->connection->selectWithOptions(
+            'select `column_name` from `information_schema`.`index_columns` ' .
+            "where `table_schema` = '' and `table_name` = ? and `index_type` = 'PRIMARY_KEY' " .
+            'order by `ordinal_position`',
+            [$this->qualifyQueue($queue)],
+            ['singleUse' => true],
+        );
+
+        $columns = [];
+        foreach ($rows as $row) {
+            $column = $row['column_name'] ?? null;
+            assert(is_string($column));
+
+            if (strcasecmp($column, self::MESSAGE_ID_COLUMN) === 0) {
+                if (!array_key_exists($queue, $this->interleaveKeys)) {
+                    $this->logger?->warning(sprintf(
+                        'Queue connection [%s] has no interleave_keys entry for queue "%s", so its interleave keys ' .
+                        '[%s] were read from the information schema. List the queue in interleave_keys to skip ' .
+                        'the lookup, or set it to null to look it up without this warning.',
+                        $this->connectionName,
+                        $queue,
+                        implode(', ', $columns),
+                    ), ['queue' => $queue, 'interleave_keys' => $columns]);
+                }
+
+                return $columns;
+            }
+
+            $columns[] = $column;
+        }
+
+        throw new RuntimeException(sprintf(
+            'Cannot work out the interleave keys of queue "%s": it has no "%s" primary key column. ' .
+            'Does the queue exist?',
+            $queue,
+            self::MESSAGE_ID_COLUMN,
+        ));
     }
 
     /**
@@ -607,7 +696,7 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
     protected function keyOf(string $queue, array $message): array
     {
         $key = [];
-        foreach ([...$this->interleaveKeys, self::MESSAGE_ID_COLUMN] as $column) {
+        foreach ([...$this->getInterleaveKeys($queue), self::MESSAGE_ID_COLUMN] as $column) {
             $value = $message[$column] ?? null;
 
             if (!is_scalar($value)) {
@@ -696,7 +785,7 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
         $columns = array_map(
             fn(string $column): string => $this->wrapIdentifier($column),
             [
-                ...$this->interleaveKeys,
+                ...$this->getInterleaveKeys($queue),
                 self::MESSAGE_ID_COLUMN,
                 self::PAYLOAD_COLUMN,
                 self::LEASE_EXPIRATION_COLUMN,

@@ -19,6 +19,7 @@
 namespace Colopl\Spanner\Tests\Queue;
 
 use Colopl\Spanner\Queue\SpannerQueue;
+use Colopl\Spanner\Tests\Support\RecordingLogger;
 use Colopl\Spanner\Tests\TestCase;
 use Illuminate\Queue\QueueManager;
 use InvalidArgumentException;
@@ -43,6 +44,27 @@ class SpannerConnectorTest extends TestCase
         $this->assertSame('spanner', $queue->getConnectionName());
         $this->assertSame('Jobs', $queue->getQueue(null));
         $this->assertSame('main', $queue->getConnection()->getName());
+    }
+
+    public function test_interleave_keys_are_configured_per_queue(): void
+    {
+        config()->set('queue.connections.spanner', [
+            'driver' => 'spanner',
+            'connection' => 'main',
+            'queue' => 'Jobs',
+            'interleave_keys' => ['UserTasks' => ['UserId'], 'Jobs' => []],
+        ]);
+        $logger = new RecordingLogger();
+        $this->app->instance('log', $logger);
+
+        /** @var QueueManager $manager */
+        $manager = $this->app->make('queue');
+        $queue = $manager->connection('spanner');
+        assert($queue instanceof SpannerQueue);
+
+        $this->assertSame(['UserId'], $queue->getInterleaveKeys('UserTasks'));
+        $this->assertSame([], $queue->getInterleaveKeys());
+        $this->assertSame([], $logger->records);
     }
 
     public function test_driver_rejects_a_non_spanner_database_connection(): void

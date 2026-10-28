@@ -25,6 +25,7 @@ use Illuminate\Contracts\Queue\Queue as QueueContract;
 use Illuminate\Database\ConnectionResolverInterface;
 use Illuminate\Queue\Connectors\ConnectorInterface;
 use InvalidArgumentException;
+use Psr\Log\LoggerInterface;
 
 /**
  * @phpstan-type TQueueConfig array{
@@ -34,16 +35,18 @@ use InvalidArgumentException;
  *   retry_after?: int,
  *   block_for?: int,
  *   after_commit?: bool|null,
- *   interleave_keys?: list<string>,
+ *   interleave_keys?: array<array-key, list<string>|null>,
  * }
  */
 class SpannerConnector implements ConnectorInterface
 {
     /**
      * @param ConnectionResolverInterface $connections
+     * @param LoggerInterface|null $logger handed to every queue, for its warnings
      */
     public function __construct(
         protected ConnectionResolverInterface $connections,
+        protected ?LoggerInterface $logger = null,
     ) {
     }
 
@@ -72,6 +75,7 @@ class SpannerConnector implements ConnectorInterface
             (int) ($config['block_for'] ?? 20),
             (bool) ($config['after_commit'] ?? false),
             $config['interleave_keys'] ?? [],
+            $this->logger,
         );
     }
 }

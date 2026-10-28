@@ -24,6 +24,7 @@ use Illuminate\Database\DatabaseManager;
 use Illuminate\Queue\QueueManager;
 use Illuminate\Support\ServiceProvider;
 use LogicException;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Cache\Adapter\AdapterInterface;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 
@@ -55,7 +56,9 @@ class SpannerServiceProvider extends ServiceProvider
             $queue->addConnector('spanner', function (): SpannerConnector {
                 /** @var DatabaseManager $db */
                 $db = $this->app->make('db');
-                return new SpannerConnector($db);
+                /** @var LoggerInterface $logger */
+                $logger = $this->app->make(LoggerInterface::class);
+                return new SpannerConnector($db, $logger);
             });
         });
 

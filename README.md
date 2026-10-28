@@ -553,8 +553,10 @@ Add a `spanner` queue connection to `config/queue.php`:
             // Seconds a single receiving call waits for messages.
             'block_for' => 20,
             'after_commit' => false,
-            // Key columns in front of MessageId. Only for an interleaved queue.
-            'interleave_keys' => [],
+            // Key columns in front of MessageId, by queue name. See "Interleaved queues".
+            'interleave_keys' => [
+                'Jobs' => [],
+            ],
         ],
     ],
 ];
@@ -577,13 +579,29 @@ as `SIGTERM` once the current call returns, so it also delays graceful shutdown 
 
 A queue interleaved into a table is keyed by that table's key columns followed by `MessageId`, so the driver
 has to know what to write into them. These are the same interleave keys an Eloquent model declares in its
-[`$interleaveKeys` property](#eloquent). List them in `interleave_keys`, in primary key order:
+[`$interleaveKeys` property](#eloquent). List them in `interleave_keys` under the name of the queue, in primary
+key order. Every queue has its own entry, so one connection can serve queues of different shapes:
 
 ```php
 'spanner' => [
     'driver' => 'spanner',
-    'queue' => 'UserTasks',
-    'interleave_keys' => ['UserId'],
+    'queue' => 'Jobs',
+    'interleave_keys' => [
+        'UserTasks' => ['UserId'],
+        'Jobs' => [],
+    ],
+],
+```
+
+An entry that is a list is used as is, and `[]` declares a queue that is not interleaved. `null` makes the driver
+read the keys from the information schema instead: the queue's primary key columns in front of `MessageId`,
+looked up once per process. A queue without an entry is read the same way, but logs a warning, so that a queue
+you forgot to declare shows up in your logs. The lookup is a read of its own, so it also works while a transaction
+is open, but it costs a request per queue and process, which is why declaring the keys is the better choice.
+
+```php
+'interleave_keys' => [
+    'UserTasks' => null, // read from the information schema, without a warning
 ],
 ```
 

@@ -23,6 +23,7 @@ use Colopl\Spanner\Queue\SpannerJob;
 use Colopl\Spanner\Queue\SpannerQueue;
 use Colopl\Spanner\Schema\Blueprint;
 use Colopl\Spanner\Schema\QueueDefinition;
+use Colopl\Spanner\Tests\Support\RecordingLogger;
 use Colopl\Spanner\Tests\TestCase;
 use Closure;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -86,6 +87,7 @@ class SpannerQueueIntegrationTest extends TestCase
             'queue' => $this->queueName,
             'retry_after' => 60,
             'block_for' => 1,
+            'interleave_keys' => [$this->queueName => []],
         ]);
     }
 
@@ -251,7 +253,7 @@ class SpannerQueueIntegrationTest extends TestCase
             'connection' => 'main',
             'queue' => $interleaved,
             'block_for' => 1,
-            'interleave_keys' => ['userId'],
+            'interleave_keys' => [$interleaved => ['userId']],
         ]);
 
         /** @var QueueManager $manager */
@@ -269,6 +271,131 @@ class SpannerQueueIntegrationTest extends TestCase
 
         $job->delete();
         $this->assertSame(0, $queue->size());
+    }
+
+    /**
+     * Creates a queue interleaved in the User table, dropped when the test ends.
+     */
+    protected function createInterleavedQueue(string $name): void
+    {
+        $connection = $this->getDefaultConnection();
+
+        $connection->getSchemaBuilder()->createQueue(
+            $name,
+            static function (Blueprint $queue) {
+                $queue->string('userId', 36);
+                $queue->string(SpannerQueue::MESSAGE_ID_COLUMN, 36);
+                $queue->string(SpannerQueue::PAYLOAD_COLUMN, 'max');
+                $queue->primary(['userId', SpannerQueue::MESSAGE_ID_COLUMN]);
+                $queue->interleaveInParent(self::TABLE_NAME_USER)->cascadeOnDelete();
+            },
+        );
+        $this->beforeApplicationDestroyed(function () use ($connection, $name) {
+            $connection->getSchemaBuilder()->dropQueueIfExists($name);
+        });
+    }
+
+    public function test_queues_of_one_connection_can_have_different_interleave_keys(): void
+    {
+        $connection = $this->getDefaultConnection();
+        $interleaved = $this->generateTableName('QueueInterleavedTest');
+        $userId = $this->generateUuid();
+        $this->createInterleavedQueue($interleaved);
+        $connection->table(self::TABLE_NAME_USER)->insert(['userId' => $userId, 'name' => 'test']);
+
+        config()->set('queue.connections.spanner.interleave_keys', [
+            $this->queueName => [],
+            $interleaved => ['userId'],
+        ]);
+        $queue = $this->queue();
+
+        $queue->push('Foo', ['userId' => $userId], $interleaved);
+        $queue->pushRaw('{"job":"Bar"}', $this->queueName);
+
+        $this->assertSame(1, $queue->size($interleaved));
+        $this->assertSame(1, $queue->size($this->queueName));
+
+        $interleavedJob = $queue->pop($interleaved);
+        $this->assertInstanceOf(SpannerJob::class, $interleavedJob);
+        $this->assertSame($userId, $interleavedJob->getKey()['userId']);
+        $interleavedJob->delete();
+
+        $plainJob = $queue->pop($this->queueName);
+        $this->assertInstanceOf(SpannerJob::class, $plainJob);
+        $this->assertSame([SpannerQueue::MESSAGE_ID_COLUMN], array_keys($plainJob->getKey()));
+        $plainJob->delete();
+    }
+
+    public function test_an_unlisted_queue_falls_back_to_the_catalog_and_warns(): void
+    {
+        $connection = $this->getDefaultConnection();
+        $interleaved = $this->generateTableName('QueueInterleavedTest');
+        $userId = $this->generateUuid();
+        $this->createInterleavedQueue($interleaved);
+        $connection->table(self::TABLE_NAME_USER)->insert(['userId' => $userId, 'name' => 'test']);
+
+        $logger = new RecordingLogger();
+        $this->app->instance('log', $logger);
+        config()->set('queue.connections.spanner.interleave_keys', []);
+        $queue = $this->queue();
+
+        $this->assertSame(['userId'], $queue->getInterleaveKeys($interleaved));
+        $this->assertSame([], $queue->getInterleaveKeys($this->queueName));
+
+        $this->assertCount(2, $logger->records);
+        $this->assertSame('warning', $logger->records[0]['level']);
+        $this->assertSame($interleaved, $logger->records[0]['context']['queue']);
+
+        // The looked up keys really are the ones the queue needs.
+        $queue->push('Foo', ['userId' => $userId], $interleaved);
+        $job = $queue->pop($interleaved);
+        $this->assertInstanceOf(SpannerJob::class, $job);
+        $this->assertSame($userId, $job->getKey()['userId']);
+        $job->delete();
+    }
+
+    public function test_a_queue_declared_as_null_falls_back_to_the_catalog_quietly(): void
+    {
+        $interleaved = $this->generateTableName('QueueInterleavedTest');
+        $this->createInterleavedQueue($interleaved);
+
+        $logger = new RecordingLogger();
+        $this->app->instance('log', $logger);
+        config()->set('queue.connections.spanner.interleave_keys', [$interleaved => null]);
+
+        $this->assertSame(['userId'], $this->queue()->getInterleaveKeys($interleaved));
+        $this->assertSame([], $logger->records);
+    }
+
+    public function test_the_catalog_fallback_works_inside_a_transaction(): void
+    {
+        $connection = $this->getDefaultConnection();
+        $interleaved = $this->generateTableName('QueueInterleavedTest');
+        $userId = $this->generateUuid();
+        $this->createInterleavedQueue($interleaved);
+        $connection->table(self::TABLE_NAME_USER)->insert(['userId' => $userId, 'name' => 'test']);
+
+        $this->app->instance('log', new RecordingLogger());
+        config()->set('queue.connections.spanner.interleave_keys', [$interleaved => null]);
+        $queue = $this->queue();
+
+        // The lookup is the first thing to touch the catalog, and Cloud Spanner
+        // does not allow that from a read-write transaction.
+        $connection->transaction(function () use ($queue, $interleaved, $userId): void {
+            $queue->push('Foo', ['userId' => $userId], $interleaved);
+        });
+
+        $this->assertSame(1, $queue->size($interleaved));
+    }
+
+    public function test_the_catalog_fallback_names_a_queue_that_does_not_exist(): void
+    {
+        config()->set('queue.connections.spanner.interleave_keys', ['Missing' => null]);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Cannot work out the interleave keys of queue "Missing"');
+
+        $this->queue()->getInterleaveKeys('Missing');
     }
 
     public function test_an_unacknowledged_job_is_delivered_again_after_retry_after(): void
