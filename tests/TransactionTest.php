@@ -379,6 +379,22 @@ class TransactionTest extends TestCase
         $this->assertSame(11, $conn->getDefaultMaxTransactionAttempts());
     }
 
+    public function test_emulator_cleanup_retries_active_transaction_conflicts(): void
+    {
+        $attempts = 0;
+        $result = $this->withEmulatorTransactionConflictRetry(function () use (&$attempts) {
+            $attempts++;
+            if ($attempts < 3) {
+                throw new AbortedException('The emulator only supports one transaction at a time.');
+            }
+
+            return 'cleaned';
+        });
+
+        $this->assertSame('cleaned', $result);
+        $this->assertSame(3, $attempts);
+    }
+
     public function test_setDefaultMaxTransactionAttempts(): void
     {
         $events = Event::fake();
