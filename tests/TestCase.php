@@ -23,6 +23,7 @@ use Colopl\Spanner\Connection;
 use Colopl\Spanner\Schema\Blueprint;
 use Colopl\Spanner\SpannerServiceProvider;
 use DateTimeImmutable;
+use Google\Cloud\Core\Exception\AbortedException;
 use Google\Cloud\Spanner\Bytes;
 use Google\Cloud\Spanner\Date;
 use Google\Cloud\Spanner\Numeric;
@@ -178,7 +179,29 @@ abstract class TestCase extends \Orchestra\Testbench\TestCase
     protected function cleanupDatabase(Connection $conn): void
     {
         foreach ($conn->select("SELECT t.table_name FROM information_schema.tables as t WHERE t.table_schema = ''") as $row) {
-            $conn->table($row['table_name'])->truncate();
+            $this->withEmulatorTransactionConflictRetry(
+                fn() => $conn->table($row['table_name'])->truncate(),
+            );
+        }
+    }
+
+    /**
+     * @template T
+     * @param Closure(): T $callback
+     * @return T
+     */
+    protected function withEmulatorTransactionConflictRetry(Closure $callback): mixed
+    {
+        for ($attempt = 0; ; $attempt++) {
+            try {
+                return $callback();
+            } catch (AbortedException $e) {
+                if ($attempt >= 3 || !str_contains($e->getMessage(), 'The emulator only supports one transaction at a time.')) {
+                    throw $e;
+                }
+
+                usleep(100_000 * (1 << $attempt));
+            }
         }
     }
 
