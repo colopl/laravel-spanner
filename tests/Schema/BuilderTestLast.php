@@ -654,4 +654,45 @@ class BuilderTestLast extends TestCase
         $tables = $sb->getTables();
         $this->assertEmpty($tables);
     }
+
+    public function test_dropAllTables_with_prefix(): void
+    {
+        config()->set('database.connections.main.prefix', 'test_');
+        $conn = $this->getConnection('main');
+        $sb = $conn->getSchemaBuilder();
+        $base = $this->generateTableName(class_basename(__CLASS__));
+
+        $parent = "{$base}_parent";
+        $sb->create($parent, function (Blueprint $table) {
+            $table->uuid('id')->primary();
+        });
+
+        $child = "{$base}_child";
+        $sb->create($child, function (Blueprint $table) use ($conn, $parent) {
+            $table->uuid('id');
+            $table->uuid('child_id');
+            $table->primary(['id', 'child_id']);
+            // NOTE: unlike foreign(), interleaveInParent() does not apply the table prefix to the parent
+            $table->interleaveInParent($conn->getTablePrefix() . $parent);
+        });
+
+        $other = "{$base}_other";
+        $sb->create($other, function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('something');
+            $table->index('something');
+        });
+
+        $linked = "{$base}_linked";
+        $sb->create($linked, function (Blueprint $table) use ($other) {
+            $table->uuid('id')->primary();
+            $table->uuid('other_id');
+            $table->foreign('other_id')->references('id')->on($other);
+        });
+
+        $sb->dropAllTables();
+
+        $this->assertEmpty($sb->getTables());
+        $this->assertSame('test_', $conn->getTablePrefix());
+    }
 }
