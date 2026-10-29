@@ -33,6 +33,7 @@ use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Queue\QueueManager;
 use Illuminate\Queue\Worker;
 use Illuminate\Queue\WorkerOptions;
+use InvalidArgumentException;
 use RuntimeException;
 use Throwable;
 
@@ -327,76 +328,15 @@ class SpannerQueueIntegrationTest extends TestCase
         $plainJob->delete();
     }
 
-    public function test_an_unlisted_queue_falls_back_to_the_catalog_and_warns(): void
+    public function test_an_unlisted_queue_is_a_configuration_error(): void
     {
-        $connection = $this->getDefaultConnection();
-        $interleaved = $this->generateTableName('QueueInterleavedTest');
-        $userId = $this->generateUuid();
-        $this->createInterleavedQueue($interleaved);
-        $connection->table(self::TABLE_NAME_USER)->insert(['userId' => $userId, 'name' => 'test']);
-
-        $logger = new RecordingLogger();
-        $this->app->instance('log', $logger);
         config()->set('queue.connections.spanner.interleave_keys', []);
         $queue = $this->queue();
 
-        $this->assertSame(['userId'], $queue->getInterleaveKeys($interleaved));
-        $this->assertSame([], $queue->getInterleaveKeys($this->queueName));
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage(sprintf('no interleave_keys entry for queue "%s"', $this->queueName));
 
-        $this->assertCount(2, $logger->records);
-        $this->assertSame('warning', $logger->records[0]['level']);
-        $this->assertSame($interleaved, $logger->records[0]['context']['queue']);
-
-        // The looked up keys really are the ones the queue needs.
-        $queue->push('Foo', ['userId' => $userId], $interleaved);
-        $job = $queue->pop($interleaved);
-        $this->assertInstanceOf(SpannerJob::class, $job);
-        $this->assertSame($userId, $job->getKey()['userId']);
-        $job->delete();
-    }
-
-    public function test_a_queue_declared_as_null_falls_back_to_the_catalog_quietly(): void
-    {
-        $interleaved = $this->generateTableName('QueueInterleavedTest');
-        $this->createInterleavedQueue($interleaved);
-
-        $logger = new RecordingLogger();
-        $this->app->instance('log', $logger);
-        config()->set('queue.connections.spanner.interleave_keys', [$interleaved => null]);
-
-        $this->assertSame(['userId'], $this->queue()->getInterleaveKeys($interleaved));
-        $this->assertSame([], $logger->records);
-    }
-
-    public function test_the_catalog_fallback_works_inside_a_transaction(): void
-    {
-        $connection = $this->getDefaultConnection();
-        $interleaved = $this->generateTableName('QueueInterleavedTest');
-        $userId = $this->generateUuid();
-        $this->createInterleavedQueue($interleaved);
-        $connection->table(self::TABLE_NAME_USER)->insert(['userId' => $userId, 'name' => 'test']);
-
-        $this->app->instance('log', new RecordingLogger());
-        config()->set('queue.connections.spanner.interleave_keys', [$interleaved => null]);
-        $queue = $this->queue();
-
-        // The lookup is the first thing to touch the catalog, and Cloud Spanner
-        // does not allow that from a read-write transaction.
-        $connection->transaction(function () use ($queue, $interleaved, $userId): void {
-            $queue->push('Foo', ['userId' => $userId], $interleaved);
-        });
-
-        $this->assertSame(1, $queue->size($interleaved));
-    }
-
-    public function test_the_catalog_fallback_names_a_queue_that_does_not_exist(): void
-    {
-        config()->set('queue.connections.spanner.interleave_keys', ['Missing' => null]);
-
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Cannot work out the interleave keys of queue "Missing"');
-
-        $this->queue()->getInterleaveKeys('Missing');
+        $queue->pushRaw('{}');
     }
 
     public function test_an_unacknowledged_job_is_delivered_again_after_retry_after(): void
@@ -502,6 +442,7 @@ class SpannerQueueIntegrationTest extends TestCase
             'connection' => 'main',
             'queue' => $expiring,
             'block_for' => 1,
+            'interleave_keys' => [$expiring => []],
         ]);
 
         /** @var QueueManager $manager */

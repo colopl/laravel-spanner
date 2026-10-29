@@ -96,19 +96,11 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
     protected array $receivers = [];
 
     /**
-     * Interleave key columns declared per queue name. See the constructor for
-     * what each kind of entry means.
+     * Interleave key columns declared per queue name.
      *
-     * @var array<array-key, list<string>|null>
+     * @var array<array-key, list<string>>
      */
     protected array $interleaveKeys;
-
-    /**
-     * Interleave key columns read from the information schema, by queue name.
-     *
-     * @var array<string, list<string>>
-     */
-    protected array $lookedUpInterleaveKeys = [];
 
     /**
      * @param Connection $connection
@@ -116,10 +108,9 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
      * @param int $retryAfter seconds a reserved message stays invisible, unless the job's `timeout` plus {@see self::TIMEOUT_MARGIN} is longer
      * @param int $blockFor seconds a single `RECEIVE_<queue>()` call streams for
      * @param bool $dispatchAfterCommit
-     * @param array<array-key, list<string>|null> $interleaveKeys key columns that precede `MessageId` in each queue,
-     *   by queue name. A list is used as is, so `[]` declares a queue that is not interleaved. `null` reads them
-     *   from the information schema. A queue that is not listed is read the same way, with a warning.
-     * @param LoggerInterface|null $logger receives the warning for a queue that is not listed
+     * @param array<array-key, list<string>> $interleaveKeys key columns that precede `MessageId` in each queue,
+     *   by queue name. `[]` declares a queue that is not interleaved. Every queue in use has to be listed.
+     * @param LoggerInterface|null $logger receives the notice for a job that was already processed elsewhere
      */
     public function __construct(
         protected Connection $connection,
@@ -144,7 +135,15 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
                 );
             }
 
-            foreach ($columns ?? [] as $column) {
+            // @phpstan-ignore function.alreadyNarrowedType (config is not validated by its type)
+            if (!is_array($columns)) {
+                throw new InvalidArgumentException(sprintf(
+                    'interleave_keys of queue "%s" must be a list of column names, or [] for a queue that is not interleaved.',
+                    $queue,
+                ));
+            }
+
+            foreach ($columns as $column) {
                 $this->assertIsIdentifier($column, 'Interleave key');
 
                 if (strcasecmp($column, self::MESSAGE_ID_COLUMN) === 0) {
@@ -442,9 +441,9 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
      * Names of the interleave key columns of a queue that precede
      * {@see self::MESSAGE_ID_COLUMN}, in order.
      *
-     * Taken from the constructor's `$interleaveKeys` when the queue is declared
-     * there with a list. Otherwise read from the information schema once and
-     * remembered, which logs a warning unless the queue was declared as `null`.
+     * Taken from the constructor's `$interleaveKeys`. A queue that is not listed
+     * there is a configuration error, since the driver cannot tell a queue
+     * without interleave keys from a queue that was forgotten.
      *
      * Careful: this returns the column names, `['UserId']`, while the
      * identically named {@see ProvidesInterleaveKeys::getInterleaveKeys()}
@@ -452,17 +451,19 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
      *
      * @param UnitEnum|string|null $queue
      * @return list<string>
+     * @throws InvalidArgumentException when the queue is not listed in `$interleaveKeys`
      */
     public function getInterleaveKeys($queue = null): array
     {
         $queue = $this->getQueue($queue);
 
-        $declared = $this->interleaveKeys[$queue] ?? null;
-        if ($declared !== null) {
-            return $declared;
-        }
-
-        return $this->lookedUpInterleaveKeys[$queue] ??= $this->lookUpInterleaveKeys($queue);
+        return $this->interleaveKeys[$queue] ?? throw new InvalidArgumentException(sprintf(
+            'Queue connection [%s] has no interleave_keys entry for queue "%s". List it in interleave_keys, ' .
+            'using [] for a queue that is not interleaved, for example ["%s" => []].',
+            $this->connectionName,
+            $queue,
+            $queue,
+        ));
     }
 
     /**
@@ -624,60 +625,6 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
         }
 
         return null;
-    }
-
-    /**
-     * Reads a queue's interleave keys from the information schema: the primary
-     * key columns in front of {@see self::MESSAGE_ID_COLUMN}.
-     *
-     * Logs a warning unless the queue is declared in `$interleaveKeys` as
-     * `null`, since a declared list saves this lookup altogether.
-     *
-     * @param string $queue
-     * @return list<string>
-     */
-    protected function lookUpInterleaveKeys(string $queue): array
-    {
-        // Cloud Spanner rejects information schema queries inside a read-write
-        // transaction, and a message may well be sent from inside one, so this
-        // has to be a read of its own.
-        $rows = $this->connection->selectWithOptions(
-            'select `column_name` from `information_schema`.`index_columns` ' .
-            "where `table_schema` = '' and `table_name` = ? and `index_type` = 'PRIMARY_KEY' " .
-            'order by `ordinal_position`',
-            [$this->qualifyQueue($queue)],
-            ['singleUse' => true],
-        );
-
-        $columns = [];
-        foreach ($rows as $row) {
-            $column = $row['column_name'] ?? null;
-            assert(is_string($column));
-
-            if (strcasecmp($column, self::MESSAGE_ID_COLUMN) === 0) {
-                if (!array_key_exists($queue, $this->interleaveKeys)) {
-                    $this->logger?->warning(sprintf(
-                        'Queue connection [%s] has no interleave_keys entry for queue "%s", so its interleave keys ' .
-                        '[%s] were read from the information schema. List the queue in interleave_keys to skip ' .
-                        'the lookup, or set it to null to look it up without this warning.',
-                        $this->connectionName,
-                        $queue,
-                        implode(', ', $columns),
-                    ), ['queue' => $queue, 'interleave_keys' => $columns]);
-                }
-
-                return $columns;
-            }
-
-            $columns[] = $column;
-        }
-
-        throw new RuntimeException(sprintf(
-            'Cannot work out the interleave keys of queue "%s": it has no "%s" primary key column. ' .
-            'Does the queue exist?',
-            $queue,
-            self::MESSAGE_ID_COLUMN,
-        ));
     }
 
     /**

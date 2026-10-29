@@ -35,7 +35,7 @@ use Psr\Log\LoggerInterface;
  *   retry_after?: int,
  *   block_for?: int,
  *   after_commit?: bool|null,
- *   interleave_keys?: array<array-key, list<string>|null>,
+ *   interleave_keys?: array<array-key, list<string>>,
  * }
  */
 class SpannerConnector implements ConnectorInterface

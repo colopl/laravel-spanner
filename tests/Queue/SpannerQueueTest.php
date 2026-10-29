@@ -714,74 +714,40 @@ class SpannerQueueTest extends TestCase
         $this->assertCount(2, $conn->recorded);
     }
 
-    public function test_an_unlisted_queue_is_looked_up_in_the_information_schema_with_a_warning(): void
-    {
-        $conn = new RecordingConnection('app_');
-        $conn->selectResults = [['column_name' => 'UserId'], ['column_name' => 'MessageId']];
-        $logger = new RecordingLogger();
-        $queue = $this->createQueue($conn, logger: $logger);
-
-        $this->assertSame(['UserId'], $queue->getInterleaveKeys('UserTasks'));
-
-        $lookup = $conn->recordedAt(0);
-        $this->assertStringContainsString('`information_schema`.`index_columns`', $lookup['sql']);
-        $this->assertSame(['app_UserTasks'], $lookup['bindings']);
-        // Not part of the open transaction, which Cloud Spanner would reject.
-        $this->assertTrue($lookup['options']['singleUse']);
-
-        $this->assertCount(1, $logger->records);
-        $this->assertSame('warning', $logger->records[0]['level']);
-        $this->assertStringContainsString('no interleave_keys entry for queue "UserTasks"', $logger->records[0]['message']);
-        $this->assertSame(['queue' => 'UserTasks', 'interleave_keys' => ['UserId']], $logger->records[0]['context']);
-    }
-
-    public function test_a_queue_declared_as_null_is_looked_up_without_a_warning(): void
+    public function test_an_unlisted_queue_is_a_configuration_error(): void
     {
         $conn = new RecordingConnection();
-        $conn->selectResults = [['column_name' => 'UserId'], ['column_name' => 'MessageId']];
-        $logger = new RecordingLogger();
-        $queue = $this->createQueue($conn, interleaveKeys: ['UserTasks' => null], logger: $logger);
+        $queue = $this->createQueue($conn, interleaveKeys: ['Jobs' => []]);
 
-        $this->assertSame(['UserId'], $queue->getInterleaveKeys('UserTasks'));
-        $this->assertSame([], $logger->records);
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('no interleave_keys entry for queue "UserTasks"');
+
+        try {
+            $queue->pushRaw('{}', 'UserTasks');
+        } finally {
+            // Nothing was sent and nothing was read from the database.
+            $this->assertSame([], $conn->recorded);
+        }
     }
 
-    public function test_a_looked_up_queue_is_only_looked_up_once(): void
+    public function test_an_unlisted_default_queue_cannot_be_popped(): void
     {
         $conn = new RecordingConnection();
-        $conn->selectResults = [['column_name' => 'MessageId']];
-        $logger = new RecordingLogger();
-        $queue = $this->createQueue($conn, interleaveKeys: [], logger: $logger);
+        $queue = $this->createQueue($conn, interleaveKeys: ['Other' => []]);
 
-        $queue->pushRaw('{}');
-        $queue->pushRaw('{}');
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('no interleave_keys entry for queue "Jobs"');
 
-        $this->assertSame(1, count(array_filter(
-            $conn->recordedSql(),
-            static fn(string $sql): bool => str_contains($sql, 'information_schema'),
-        )));
-        $this->assertCount(1, $logger->records);
+        $queue->pop();
     }
 
-    public function test_the_lookup_stops_at_the_message_id(): void
+    public function test_an_interleave_keys_entry_must_be_a_list(): void
     {
-        $conn = new RecordingConnection();
-        // A queue that declares DeliverTime as part of its key, as the README shows.
-        $conn->selectResults = [
-            ['column_name' => 'UserId'],
-            ['column_name' => 'MessageId'],
-            ['column_name' => 'DeliverTime'],
-        ];
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('interleave_keys of queue "Jobs" must be a list of column names');
 
-        $this->assertSame(['UserId'], $this->createQueue($conn, interleaveKeys: [])->getInterleaveKeys());
-    }
-
-    public function test_the_lookup_fails_clearly_for_a_queue_without_a_message_id(): void
-    {
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Cannot work out the interleave keys of queue "Jobs"');
-
-        $this->createQueue(new RecordingConnection(), interleaveKeys: [])->getInterleaveKeys();
+        // @phpstan-ignore argument.type
+        $this->createQueue(new RecordingConnection(), interleaveKeys: ['Jobs' => null]);
     }
 
     public function test_interleave_keys_must_be_keyed_by_queue_name(): void

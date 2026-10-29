@@ -596,17 +596,9 @@ key order. Every queue has its own entry, so one connection can serve queues of 
 ],
 ```
 
-An entry that is a list is used as is, and `[]` declares a queue that is not interleaved. `null` makes the driver
-read the keys from the information schema instead: the queue's primary key columns in front of `MessageId`,
-looked up once per process. A queue without an entry is read the same way, but logs a warning, so that a queue
-you forgot to declare shows up in your logs. The lookup is a read of its own, so it also works while a transaction
-is open, but it costs a request per queue and process, which is why declaring the keys is the better choice.
-
-```php
-'interleave_keys' => [
-    'UserTasks' => null, // read from the information schema, without a warning
-],
-```
+Every queue you use needs an entry: a list of the key columns, or `[]` for a queue that is not interleaved.
+The driver cannot tell a queue without interleave keys from one you forgot to declare, so a queue without an
+entry throws an `InvalidArgumentException` naming it, the first time it is pushed to or popped from.
 
 The values are then worked out automatically. A dispatched job object is serialized into an opaque blob
 inside the payload, so the driver inspects the job itself before the payload is built, and falls back to the
