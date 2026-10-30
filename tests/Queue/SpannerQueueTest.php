@@ -432,6 +432,30 @@ class SpannerQueueTest extends TestCase
         Carbon::setTestNow();
     }
 
+    public function test_releasing_a_job_that_another_worker_already_processed_sends_no_copy(): void
+    {
+        $conn = new RecordingConnection();
+        $conn->messages = [$this->message()];
+        // The delete of the reserved message (after receive, reserve's delete and insert) removes nothing.
+        $conn->affectedRows = [3 => 0];
+        $logger = new RecordingLogger();
+
+        $job = $this->createQueue($conn, logger: $logger)->pop();
+        $this->assertInstanceOf(SpannerJob::class, $job);
+        $job->release(45);
+
+        $this->assertTrue($job->isReleased());
+        // Only the delete ran; the payload was not sent again.
+        $this->assertCount(4, $conn->recorded);
+        $this->assertStringStartsWith('delete from `Jobs`', $conn->recordedAt(3)['sql']);
+        $this->assertCount(1, $logger->records);
+        $this->assertSame('notice', $logger->records[0]['level']);
+        $this->assertStringContainsString(
+            sprintf('Job "%s" of queue "Jobs" could not be released', $job->getJobId()),
+            $logger->records[0]['message'],
+        );
+    }
+
     public function test_size_counts_every_message(): void
     {
         $conn = new RecordingConnection();

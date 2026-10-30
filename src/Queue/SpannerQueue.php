@@ -373,20 +373,16 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
     public function deleteReserved(string $queue, array $key): void
     {
         if ($this->acknowledge($queue, $key) === 0) {
-            $this->logger?->notice(sprintf(
-                'Job "%s" of queue "%s" could not be deleted because another worker already processed it. ' .
-                'Its reservation (retry_after of %d seconds, or longer when the job declares a timeout) ' .
-                'ran out while it was still running.',
-                $key[self::MESSAGE_ID_COLUMN] ?? '',
-                $queue,
-                $this->retryAfter,
-            ));
+            $this->noticeAlreadyProcessed('deleted', $queue, $key);
         }
     }
 
     /**
      * Acknowledges a reserved message and sends its payload back to the queue,
      * atomically, so the job is neither lost nor duplicated.
+     *
+     * When nothing was acknowledged, another worker already took the job, so
+     * sending it again would only add a copy of it.
      *
      * @param string $queue
      * @param SpannerJob $job
@@ -397,10 +393,39 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
     {
         $key = $job->getKey();
 
-        $this->connection->transaction(function () use ($queue, $job, $key, $delay): void {
-            $this->acknowledge($queue, $key);
+        $released = $this->connection->transaction(function () use ($queue, $job, $key, $delay): bool {
+            if ($this->acknowledge($queue, $key) === 0) {
+                return false;
+            }
             $this->send($queue, $job->getRawBody(), $delay, $key);
+            return true;
         });
+
+        if (!$released) {
+            $this->noticeAlreadyProcessed('released', $queue, $key);
+        }
+    }
+
+    /**
+     * Logs that a finished job's reserved message was gone, because the
+     * reservation ran out and another worker took the job.
+     *
+     * @param string $action what could not be done with the job
+     * @param string $queue
+     * @param array<string, scalar> $key full primary key of the reserved message
+     * @return void
+     */
+    protected function noticeAlreadyProcessed(string $action, string $queue, array $key): void
+    {
+        $this->logger?->notice(sprintf(
+            'Job "%s" of queue "%s" could not be %s because another worker already processed it. ' .
+            'Its reservation (retry_after of %d seconds, or longer when the job declares a timeout) ' .
+            'ran out while it was still running.',
+            $key[self::MESSAGE_ID_COLUMN] ?? '',
+            $queue,
+            $action,
+            $this->retryAfter,
+        ));
     }
 
     /**
