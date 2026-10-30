@@ -81,7 +81,6 @@ class SpannerQueueTest extends TestCase
         return $overrides + [
             SpannerQueue::MESSAGE_ID_COLUMN => 'message-1',
             SpannerQueue::PAYLOAD_COLUMN => json_encode(['uuid' => 'job-uuid', 'attempts' => 0]),
-            SpannerQueue::LEASE_EXPIRATION_COLUMN => new Timestamp(new DateTimeImmutable('+10 seconds')),
         ];
     }
 
@@ -173,7 +172,7 @@ class SpannerQueueTest extends TestCase
 
         $receive = $conn->recordedAt(0);
         $this->assertSame(
-            'select `MessageId`, `Payload`, `SpannerLeaseExpirationTimestamp` ' .
+            'select `MessageId`, `Payload` ' .
             "from RECEIVE_Jobs(max_duration => '30s')",
             $receive['sql'],
         );
@@ -326,21 +325,6 @@ class SpannerQueueTest extends TestCase
             'insert into `Jobs` (`MessageId`, `Payload`, `DeliverTime`) values (?, ?, ?)',
         ], array_slice($conn->recordedSql(), 1));
         $this->assertSame(['mine'], $conn->recordedAt(2)['bindings']);
-    }
-
-    public function test_pop_skips_a_message_whose_lease_already_expired(): void
-    {
-        $conn = new RecordingConnection();
-        $conn->messages = [
-            $this->message([
-                SpannerQueue::MESSAGE_ID_COLUMN => 'expired',
-                SpannerQueue::LEASE_EXPIRATION_COLUMN => new Timestamp(new DateTimeImmutable('-1 second')),
-            ]),
-        ];
-
-        $this->assertNull($this->createQueue($conn)->pop());
-        // Only the receiving query ran; the message was left for redelivery.
-        $this->assertCount(1, $conn->recorded);
     }
 
     public function test_pop_rejects_receiving_inside_a_transaction(): void
@@ -588,7 +572,7 @@ class SpannerQueueTest extends TestCase
 
         $this->assertInstanceOf(SpannerJob::class, $job);
         $this->assertSame(
-            'select `UserId`, `MessageId`, `Payload`, `SpannerLeaseExpirationTimestamp` ' .
+            'select `UserId`, `MessageId`, `Payload` ' .
             "from RECEIVE_Jobs(max_duration => '20s')",
             $conn->recordedAt(0)['sql'],
         );

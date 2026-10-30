@@ -78,11 +78,6 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
     public const string DELIVER_TIME_COLUMN = 'DeliverTime';
 
     /**
-     * Column of `RECEIVE_<queue>()` holding the lease expiration.
-     */
-    public const string LEASE_EXPIRATION_COLUMN = 'SpannerLeaseExpirationTimestamp';
-
-    /**
      * Seconds a reservation outlasts the job's own `timeout`, which is how long
      * the worker needs after killing a job to release or fail it.
      */
@@ -665,12 +660,6 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
      */
     protected function reserve(string $queue, array $message): ?SpannerJob
     {
-        if ($this->leaseHasExpired($message)) {
-            // Another receiver may already hold this message. Leave it alone
-            // and let Spanner redeliver it.
-            return null;
-        }
-
         $key = $this->keyOf($queue, $message);
         $rawPayload = $message[self::PAYLOAD_COLUMN];
         assert(is_string($rawPayload));
@@ -718,18 +707,6 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
         }
 
         return $key;
-    }
-
-    /**
-     * @param array<array-key, mixed> $message
-     * @return bool
-     */
-    protected function leaseHasExpired(array $message): bool
-    {
-        $expiresAt = $message[self::LEASE_EXPIRATION_COLUMN] ?? null;
-
-        return $expiresAt instanceof Timestamp
-            && $expiresAt->get() < new DateTimeImmutable();
     }
 
     /**
@@ -813,7 +790,6 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
                 ...$this->getInterleaveKeys($queue),
                 self::MESSAGE_ID_COLUMN,
                 self::PAYLOAD_COLUMN,
-                self::LEASE_EXPIRATION_COLUMN,
             ],
         );
 

@@ -677,8 +677,9 @@ and reserves every message it receives:
 2. In one read-write transaction, the received message is acknowledged (deleted by its primary key) and a
    fresh message with a new `MessageId` and the incremented payload is sent, scheduled `retry_after` seconds
    ahead (or the job's `$timeout` plus 10 seconds, if that is longer). An interleaved queue keeps the key columns of the message it replaces.
-3. If the acknowledging `DELETE` removes no row, another worker reserved the message first and it is skipped,
-   as is a message whose 10 second lease has already run out. No locking is needed for this.
+3. If the acknowledging `DELETE` removes no row, another worker reserved the message first and it is skipped.
+   This also covers a message whose 10 second lease ran out and was delivered to a second worker: only one of
+   them can delete it, so no locking is needed, and the worker's clock is never compared with Spanner's.
 4. The worker runs the job against the reserved message.
 
 **What happens next** depends on how the job ends:
