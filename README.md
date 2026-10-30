@@ -449,6 +449,10 @@ $schemaBuilder->createQueue('Jobs', function (Blueprint $queue) {
 });
 ```
 
+`Payload` has to be a `STRING` column. The driver writes the job's JSON as a string, so a `BYTES` payload, as
+`$queue->binary('Payload')` would create, is rejected by Spanner on the first push with *"Value has type STRING
+which cannot be inserted into column Payload, which has type BYTES"*.
+
 Spanner adds a `DeliverTime` column to every queue implicitly, so you don't declare it.
 
 Queues can also be interleaved into a table. Interleaving requires the queue's primary key to be prefixed by
