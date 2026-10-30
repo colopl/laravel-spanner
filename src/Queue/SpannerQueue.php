@@ -664,16 +664,20 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
         $rawPayload = $message[self::PAYLOAD_COLUMN];
         assert(is_string($rawPayload));
 
-        $payload = $this->incrementAttempts($rawPayload);
+        // Decoded once for both the attempt counter and the job's timeout.
+        $decoded = json_decode($rawPayload, true);
+        $decoded = is_array($decoded) ? $decoded : null;
+        $payload = $this->incrementAttempts($rawPayload, $decoded);
+        $reservedFor = $this->reservationFor($decoded);
 
-        $reservedKey = $this->connection->transaction(function () use ($queue, $key, $payload): ?array {
+        $reservedKey = $this->connection->transaction(function () use ($queue, $key, $payload, $reservedFor): ?array {
             if ($this->acknowledge($queue, $key) === 0) {
                 // The message is already gone, so it was handled elsewhere.
                 return null;
             }
             // The reserved message keeps the key columns of the one it
             // replaces, so an interleaved queue stays under the same parent.
-            return $this->send($queue, $payload, $this->reservationFor($payload), $key);
+            return $this->send($queue, $payload, $reservedFor, $key);
         });
 
         return $reservedKey !== null
@@ -715,13 +719,12 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
      * that is longer, so a job allowed to run for minutes is not delivered to a
      * second worker after `retry_after` seconds.
      *
-     * @param string $payload
+     * @param array<array-key, mixed>|null $decoded the decoded payload, null when it is not a JSON object
      * @return int
      */
-    protected function reservationFor(string $payload): int
+    protected function reservationFor(?array $decoded): int
     {
-        $decoded = json_decode($payload, true);
-        $timeout = is_array($decoded) ? ($decoded['timeout'] ?? null) : null;
+        $timeout = $decoded['timeout'] ?? null;
 
         return is_int($timeout) && $timeout > 0
             ? max($this->retryAfter, $timeout + self::TIMEOUT_MARGIN)
@@ -735,13 +738,12 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
      * accurate even when a worker crashes without releasing the job.
      *
      * @param string $payload
+     * @param array<array-key, mixed>|null $decoded the decoded payload, null when it is not a JSON object
      * @return string
      */
-    protected function incrementAttempts(string $payload): string
+    protected function incrementAttempts(string $payload, ?array $decoded): string
     {
-        $decoded = json_decode($payload, true);
-
-        if (!is_array($decoded)) {
+        if ($decoded === null) {
             return $payload;
         }
 
