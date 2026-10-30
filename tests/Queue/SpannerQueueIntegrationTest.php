@@ -387,6 +387,26 @@ class SpannerQueueIntegrationTest extends TestCase
         $job->delete();
     }
 
+    public function test_a_message_that_is_not_json_is_deleted_and_logged(): void
+    {
+        $logger = new RecordingLogger();
+        $this->app->instance('log', $logger);
+        $queue = $this->queue();
+        $messageId = $queue->pushRaw('not json');
+
+        // Nothing can be run from it, so popping only removes it.
+        $deadline = microtime(true) + 10;
+        while ($queue->size() > 0 && microtime(true) < $deadline) {
+            $this->assertNull($queue->pop());
+        }
+
+        $this->assertSame(0, $queue->size());
+        $errors = array_values(array_filter($logger->records, static fn(array $r): bool => $r['level'] === 'error'));
+        $this->assertCount(1, $errors);
+        $this->assertStringContainsString($messageId, $errors[0]['message']);
+        $this->assertSame('not json', $errors[0]['context']['payload']);
+    }
+
     public function test_acknowledging_a_message_twice_reports_the_second_as_already_taken(): void
     {
         $queue = $this->queue();

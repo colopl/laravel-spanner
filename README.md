@@ -686,6 +686,10 @@ and reserves every message it receives:
    them can delete it, so no locking is needed, and the worker's clock is never compared with Spanner's.
 4. The worker runs the job against the reserved message.
 
+A message whose payload is not a JSON object, for example one sent by another service, cannot be run by any
+worker and would otherwise be redelivered forever. It is deleted instead of reserved, and logged as an error
+with the full payload in the log context, since the log is the only trace of it that remains.
+
 **What happens next** depends on how the job ends:
 
 | Outcome | What the driver does |

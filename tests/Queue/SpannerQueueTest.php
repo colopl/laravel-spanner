@@ -327,6 +327,61 @@ class SpannerQueueTest extends TestCase
         $this->assertSame(['mine'], $conn->recordedAt(2)['bindings']);
     }
 
+    public function test_pop_deletes_and_logs_a_message_that_is_not_json_and_moves_on(): void
+    {
+        $conn = new RecordingConnection();
+        $conn->messages = [
+            $this->message([SpannerQueue::MESSAGE_ID_COLUMN => 'broken', SpannerQueue::PAYLOAD_COLUMN => 'not json']),
+            $this->message([SpannerQueue::MESSAGE_ID_COLUMN => 'fine']),
+        ];
+        $logger = new RecordingLogger();
+
+        $job = $this->createQueue($conn, logger: $logger)->pop();
+
+        // The next message is reserved as usual.
+        $this->assertInstanceOf(SpannerJob::class, $job);
+        $this->assertSame([
+            'delete from `Jobs` where `MessageId` = ?',
+            'delete from `Jobs` where `MessageId` = ?',
+            'insert into `Jobs` (`MessageId`, `Payload`, `DeliverTime`) values (?, ?, ?)',
+        ], array_slice($conn->recordedSql(), 1));
+        $this->assertSame(['broken'], $conn->recordedAt(1)['bindings']);
+        $this->assertSame(['fine'], $conn->recordedAt(2)['bindings']);
+
+        $this->assertCount(1, $logger->records);
+        $this->assertSame('error', $logger->records[0]['level']);
+        $this->assertStringContainsString(
+            'Message "broken" of queue "Jobs" was deleted because its payload is not a JSON object (Syntax error)',
+            $logger->records[0]['message'],
+        );
+        $this->assertSame('not json', $logger->records[0]['context']['payload']);
+    }
+
+    public function test_pop_deletes_a_message_whose_payload_is_json_but_not_an_object(): void
+    {
+        $conn = new RecordingConnection();
+        $conn->messages = [$this->message([SpannerQueue::PAYLOAD_COLUMN => '"hello"'])];
+        $logger = new RecordingLogger();
+
+        $this->assertNull($this->createQueue($conn, logger: $logger)->pop());
+
+        $this->assertSame(['delete from `Jobs` where `MessageId` = ?'], array_slice($conn->recordedSql(), 1));
+        $this->assertCount(1, $logger->records);
+        $this->assertStringContainsString('(it is JSON string)', $logger->records[0]['message']);
+    }
+
+    public function test_a_message_that_is_not_json_is_logged_only_by_the_worker_that_deletes_it(): void
+    {
+        $conn = new RecordingConnection();
+        $conn->messages = [$this->message([SpannerQueue::PAYLOAD_COLUMN => 'not json'])];
+        // Another worker deleted it first.
+        $conn->affectedRows = [1 => 0];
+        $logger = new RecordingLogger();
+
+        $this->assertNull($this->createQueue($conn, logger: $logger)->pop());
+        $this->assertSame([], $logger->records);
+    }
+
     public function test_pop_rejects_receiving_inside_a_transaction(): void
     {
         $conn = new RecordingConnection();

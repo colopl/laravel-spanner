@@ -656,7 +656,7 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
      *
      * @param string $queue
      * @param array<array-key, mixed> $message
-     * @return SpannerJob|null null when the message was already taken by another worker
+     * @return SpannerJob|null null when the message was already taken by another worker, or was discarded
      */
     protected function reserve(string $queue, array $message): ?SpannerJob
     {
@@ -666,7 +666,15 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
 
         // Decoded once for both the attempt counter and the job's timeout.
         $decoded = json_decode($rawPayload, true);
-        $decoded = is_array($decoded) ? $decoded : null;
+
+        if (!is_array($decoded)) {
+            $reason = json_last_error() !== JSON_ERROR_NONE
+                ? json_last_error_msg()
+                : 'it is JSON ' . get_debug_type($decoded);
+            $this->discard($queue, $key, $rawPayload, $reason);
+            return null;
+        }
+
         $payload = $this->incrementAttempts($rawPayload, $decoded);
         $reservedFor = $this->reservationFor($decoded);
 
@@ -714,15 +722,44 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
     }
 
     /**
+     * Deletes a message whose payload is not a JSON object.
+     *
+     * No worker can run such a message, so it would otherwise be delivered
+     * again every time its lease runs out, forever. The payload is logged in
+     * full, since the log is the only trace of it that remains.
+     *
+     * @param string $queue
+     * @param array<string, scalar> $key
+     * @param string $payload
+     * @param string $reason why the payload is not a JSON object
+     * @return void
+     */
+    protected function discard(string $queue, array $key, string $payload, string $reason): void
+    {
+        // When nothing was deleted, another worker discarded it and logged it.
+        if ($this->acknowledge($queue, $key) === 0) {
+            return;
+        }
+
+        $this->logger?->error(sprintf(
+            'Message "%s" of queue "%s" was deleted because its payload is not a JSON object (%s), so no worker ' .
+            'can run it.',
+            $key[self::MESSAGE_ID_COLUMN] ?? '',
+            $queue,
+            $reason,
+        ), ['queue' => $queue, 'key' => $key, 'payload' => $payload]);
+    }
+
+    /**
      * Seconds a reserved message stays invisible: `retry_after`, or the job's
      * own `timeout` (which Laravel writes into the payload) plus a margin when
      * that is longer, so a job allowed to run for minutes is not delivered to a
      * second worker after `retry_after` seconds.
      *
-     * @param array<array-key, mixed>|null $decoded the decoded payload, null when it is not a JSON object
+     * @param array<array-key, mixed> $decoded the decoded payload
      * @return int
      */
-    protected function reservationFor(?array $decoded): int
+    protected function reservationFor(array $decoded): int
     {
         $timeout = $decoded['timeout'] ?? null;
 
@@ -738,15 +775,11 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
      * accurate even when a worker crashes without releasing the job.
      *
      * @param string $payload
-     * @param array<array-key, mixed>|null $decoded the decoded payload, null when it is not a JSON object
+     * @param array<array-key, mixed> $decoded the decoded payload
      * @return string
      */
-    protected function incrementAttempts(string $payload, ?array $decoded): string
+    protected function incrementAttempts(string $payload, array $decoded): string
     {
-        if ($decoded === null) {
-            return $payload;
-        }
-
         $attempts = $decoded['attempts'] ?? 0;
         $decoded['attempts'] = (is_int($attempts) ? $attempts : 0) + 1;
         $encoded = json_encode($decoded, JSON_UNESCAPED_UNICODE);
