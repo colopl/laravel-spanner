@@ -42,7 +42,7 @@ class SpannerConnector implements ConnectorInterface
 {
     /**
      * @param ConnectionResolverInterface $connections
-     * @param LoggerInterface|null $logger handed to every queue, for its warnings
+     * @param LoggerInterface|null $logger handed to every queue, for its notices
      */
     public function __construct(
         protected ConnectionResolverInterface $connections,
