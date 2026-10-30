@@ -109,7 +109,7 @@ trait ManagesTransactions
 
                     $result = $callback($this);
 
-                    $this->performSpannerCommit();
+                    $this->commitSpannerTransaction();
 
                     return $result;
                 } catch (Throwable $e) {
@@ -117,6 +117,19 @@ trait ManagesTransactions
                     throw $e;
                 }
             }, $options);
+
+            // After-commit callbacks must run after runTransaction() has returned, since
+            // callbacks that write to Spanner start their own transaction and the client
+            // does not support nested transactions.
+            $this->transactionsManager?->commit(
+                /**
+                 * TODO: throws error
+                 * @phpstan-ignore argument.type
+                 */
+                $this->getName(),
+                1,
+                $this->transactions,
+            );
 
             $this->fireConnectionEvent('committed');
 
@@ -179,19 +192,9 @@ trait ManagesTransactions
      */
     protected function performSpannerCommit(): void
     {
-        if ($this->transactions === 1 && $this->currentTransaction !== null) {
-            $this->fireConnectionEvent('committing');
-            $this->currentTransaction->commit($this->getCommitOptions());
-        }
+        $levelBeingCommitted = $this->transactions;
 
-        [$levelBeingCommitted, $this->transactions] = [
-            $this->transactions,
-            max(0, $this->transactions - 1),
-        ];
-
-        if ($this->isTransactionFinished()) {
-            $this->currentTransaction = null;
-        }
+        $this->commitSpannerTransaction();
 
         $this->transactionsManager?->commit(
             /**
@@ -202,6 +205,27 @@ trait ManagesTransactions
             $levelBeingCommitted,
             $this->transactions,
         );
+    }
+
+    /**
+     * Commits the Spanner transaction if this is the outermost level and decrements the level.
+     * Does not run the after-commit callbacks.
+     *
+     * @return void
+     * @throws AbortedException
+     */
+    protected function commitSpannerTransaction(): void
+    {
+        if ($this->transactions === 1 && $this->currentTransaction !== null) {
+            $this->fireConnectionEvent('committing');
+            $this->currentTransaction->commit($this->getCommitOptions());
+        }
+
+        $this->transactions = max(0, $this->transactions - 1);
+
+        if ($this->isTransactionFinished()) {
+            $this->currentTransaction = null;
+        }
     }
 
     /**
