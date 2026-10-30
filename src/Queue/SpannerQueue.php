@@ -292,6 +292,10 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
      * Pushes every job in a single Spanner transaction, so that either all or
      * none of them are sent.
      *
+     * Jobs dispatched after commit (`after_commit`, `ShouldQueueAfterCommit`)
+     * are the exception: Laravel holds each of them back until the transaction
+     * commits and then sends them one by one, so they are not sent atomically.
+     *
      * {@inheritDoc}
      * @param iterable<array-key, mixed> $jobs
      * @param UnitEnum|string|null $queue
