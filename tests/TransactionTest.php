@@ -258,6 +258,63 @@ class TransactionTest extends TestCase
         $this->assertSame(0, $count);
     }
 
+    public function test_afterCommit_can_write(): void
+    {
+        $conn = $this->getDefaultConnection();
+
+        $tableName = self::TABLE_NAME_USER;
+        $insertRow = ['userId' => $this->generateUuid(), 'name' => 't'];
+
+        $conn->transaction(function (Connection $conn) use ($tableName, $insertRow) {
+            $conn->afterCommit(static function () use ($conn, $tableName, $insertRow) {
+                $conn->table($tableName)->insert($insertRow);
+            });
+        });
+
+        $this->assertDatabaseHas($tableName, $insertRow);
+    }
+
+    public function test_afterCommit_can_write_with_deprecated_commit(): void
+    {
+        $conn = $this->getDefaultConnection();
+
+        $tableName = self::TABLE_NAME_USER;
+        $insertRow = ['userId' => $this->generateUuid(), 'name' => 't'];
+
+        $conn->beginTransaction();
+        $conn->afterCommit(static function () use ($conn, $tableName, $insertRow) {
+            $conn->table($tableName)->insert($insertRow);
+        });
+        $conn->commit();
+
+        $this->assertDatabaseHas($tableName, $insertRow);
+    }
+
+    public function test_afterCommit_called_once_after_retry(): void
+    {
+        $conn = $this->getDefaultConnection();
+
+        $tableName = self::TABLE_NAME_USER;
+        $insertRow = ['userId' => $this->generateUuid(), 'name' => 't'];
+
+        $attempts = 0;
+        $count = 0;
+        $conn->transaction(function (Connection $conn) use ($tableName, $insertRow, &$attempts, &$count) {
+            $attempts++;
+            $conn->afterCommit(static function () use ($conn, $tableName, $insertRow, &$count) {
+                $count++;
+                $conn->table($tableName)->insert($insertRow);
+            });
+            if ($attempts < 2) {
+                throw new AbortedException('aborted');
+            }
+        });
+
+        $this->assertSame(2, $attempts);
+        $this->assertSame(1, $count);
+        $this->assertDatabaseHas($tableName, $insertRow);
+    }
+
     public function testRetrySuccess(): void
     {
         Event::fake();
