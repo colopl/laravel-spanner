@@ -21,6 +21,7 @@ namespace Colopl\Spanner\Tests\Queue;
 use Colopl\Spanner\Connection;
 use Colopl\Spanner\Queue\SpannerJob;
 use Colopl\Spanner\Queue\SpannerQueue;
+use Colopl\Spanner\Queue\UndecodablePayloadException;
 use Colopl\Spanner\Schema\Blueprint;
 use Colopl\Spanner\Schema\QueueDefinition;
 use Colopl\Spanner\Tests\Support\RecordingLogger;
@@ -387,24 +388,27 @@ class SpannerQueueIntegrationTest extends TestCase
         $job->delete();
     }
 
-    public function test_a_message_that_is_not_json_is_deleted_and_logged(): void
+    public function test_a_message_that_is_not_json_is_deleted_and_reported(): void
     {
-        $logger = new RecordingLogger();
-        $this->app->instance('log', $logger);
         $queue = $this->queue();
         $messageId = $queue->pushRaw('not json');
 
-        // Nothing can be run from it, so popping only removes it.
+        // The emulator may hand the message out more than once, but only the
+        // worker that deletes it throws.
+        $reported = [];
         $deadline = microtime(true) + 10;
         while ($queue->size() > 0 && microtime(true) < $deadline) {
-            $this->assertNull($queue->pop());
+            try {
+                $this->assertNull($queue->pop());
+            } catch (UndecodablePayloadException $e) {
+                $reported[] = $e;
+            }
         }
 
         $this->assertSame(0, $queue->size());
-        $errors = array_values(array_filter($logger->records, static fn(array $r): bool => $r['level'] === 'error'));
-        $this->assertCount(1, $errors);
-        $this->assertStringContainsString($messageId, $errors[0]['message']);
-        $this->assertSame('not json', $errors[0]['context']['payload']);
+        $this->assertCount(1, $reported);
+        $this->assertStringContainsString($messageId, $reported[0]->getMessage());
+        $this->assertSame('not json', $reported[0]->context()['payload']);
     }
 
     public function test_acknowledging_a_message_twice_reports_the_second_as_already_taken(): void

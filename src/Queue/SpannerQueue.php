@@ -320,6 +320,7 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
      * {@inheritDoc}
      * @param UnitEnum|string|null $queue
      * @return JobContract|null
+     * @throws UndecodablePayloadException after deleting a message whose payload is not a JSON object
      */
     public function pop($queue = null)
     {
@@ -656,7 +657,8 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
      *
      * @param string $queue
      * @param array<array-key, mixed> $message
-     * @return SpannerJob|null null when the message was already taken by another worker, or was discarded
+     * @return SpannerJob|null null when the message was already taken by another worker
+     * @throws UndecodablePayloadException after deleting a message whose payload is not a JSON object
      */
     protected function reserve(string $queue, array $message): ?SpannerJob
     {
@@ -671,8 +673,21 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
             $reason = json_last_error() !== JSON_ERROR_NONE
                 ? json_last_error_msg()
                 : 'it is JSON ' . get_debug_type($decoded);
-            $this->discard($queue, $key, $rawPayload, $reason);
-            return null;
+
+            // When nothing was deleted, another worker already deleted and reported it.
+            if ($this->acknowledge($queue, $key) === 0) {
+                return null;
+            }
+
+            // No worker can run it, so it is deleted rather than redelivered
+            // forever, and the worker reports the exception with the payload.
+            throw new UndecodablePayloadException(sprintf(
+                'Message "%s" of queue "%s" was deleted because its payload is not a JSON object (%s), so no ' .
+                'worker can run it.',
+                $key[self::MESSAGE_ID_COLUMN],
+                $queue,
+                $reason,
+            ), $queue, $key, $rawPayload);
         }
 
         $payload = $this->incrementAttempts($rawPayload, $decoded);
@@ -719,35 +734,6 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
         }
 
         return $key;
-    }
-
-    /**
-     * Deletes a message whose payload is not a JSON object.
-     *
-     * No worker can run such a message, so it would otherwise be delivered
-     * again every time its lease runs out, forever. The payload is logged in
-     * full, since the log is the only trace of it that remains.
-     *
-     * @param string $queue
-     * @param array<string, scalar> $key
-     * @param string $payload
-     * @param string $reason why the payload is not a JSON object
-     * @return void
-     */
-    protected function discard(string $queue, array $key, string $payload, string $reason): void
-    {
-        // When nothing was deleted, another worker discarded it and logged it.
-        if ($this->acknowledge($queue, $key) === 0) {
-            return;
-        }
-
-        $this->logger?->error(sprintf(
-            'Message "%s" of queue "%s" was deleted because its payload is not a JSON object (%s), so no worker ' .
-            'can run it.',
-            $key[self::MESSAGE_ID_COLUMN] ?? '',
-            $queue,
-            $reason,
-        ), ['queue' => $queue, 'key' => $key, 'payload' => $payload]);
     }
 
     /**
