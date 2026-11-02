@@ -25,6 +25,7 @@ use Colopl\Spanner\SpannerServiceProvider;
 use DateTimeImmutable;
 use Google\Cloud\Spanner\Bytes;
 use Google\Cloud\Spanner\Date;
+use Google\Cloud\Spanner\KeySet;
 use Google\Cloud\Spanner\Numeric;
 use Google\Cloud\Spanner\SpannerClient;
 use Illuminate\Foundation\Application;
@@ -177,9 +178,26 @@ abstract class TestCase extends \Orchestra\Testbench\TestCase
      */
     protected function cleanupDatabase(Connection $conn): void
     {
-        foreach ($conn->select("SELECT t.table_name FROM information_schema.tables as t WHERE t.table_schema = ''") as $row) {
-            $conn->table($row['table_name'])->truncate();
+        // Delete all rows with mutations in a single transaction instead of running
+        // one partitioned DML per table, which is much slower (especially outside the emulator).
+        $parents = [];
+        foreach ($conn->select("SELECT t.table_name, t.parent_table_name FROM information_schema.tables as t WHERE t.table_schema = ''") as $row) {
+            $parents[$row['table_name']] = $row['parent_table_name'];
         }
+
+        $depth = static function (string $table) use (&$depth, $parents): int {
+            return $parents[$table] !== null ? 1 + $depth($parents[$table]) : 0;
+        };
+
+        // Delete interleaved children before their parents.
+        $tables = array_keys($parents);
+        usort($tables, static fn(string $a, string $b): int => $depth($b) <=> $depth($a));
+
+        $conn->transaction(static function () use ($conn, $tables) {
+            foreach ($tables as $table) {
+                $conn->deleteUsingMutation($table, new KeySet(['all' => true]));
+            }
+        });
     }
 
     /**
