@@ -232,8 +232,15 @@ class Builder extends BaseBuilder
      */
     public function dropAllTables()
     {
-        $this->dropAllQueues();
+        // getTables() reports the names as stored, prefix included, so it must not be applied to them again.
+        $this->connection->withoutTablePrefix(function () {
+            $this->dropAllQueues();
+            $this->dropAllTablesAsListed();
+        });
+    }
 
+    protected function dropAllTablesAsListed(): void
+    {
         $connection = $this->connection;
         /** @var list<array{
          *     name: string,
