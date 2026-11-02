@@ -658,7 +658,7 @@ class BuilderTestLast extends TestCase
     public function test_dropAllTables_with_prefix(): void
     {
         config()->set('database.connections.main.prefix', 'test_');
-        $conn = $this->getConnection('main');
+        $conn = $this->getDefaultConnection();
         $sb = $conn->getSchemaBuilder();
         $base = $this->generateTableName(class_basename(__CLASS__));
 
