@@ -110,7 +110,8 @@ For more detailed instructions, see `Colopl\Spanner\Tests\Eloquent\ModelTest`.
 
 Since Spanner recommends using UUID as a primary key, `Blueprint::increments` (and all of its variants) will create a 
 column of type `STRING(36) DEFAULT (GENERATE_UUID())` to generate and fill the column with a UUID
-and flag it as a primary key. If you want to use `AUTO_INCREMENT`, you can do so by specifying it directly like this:
+and flag it as a primary key. See [UUID](#uuid) for using Spanner's native `UUID` type instead.
+If you want to use `AUTO_INCREMENT`, you can do so by specifying it directly like this:
 
 ```php
 // `default_sequence_kind` must be set in order to use auto increment
@@ -267,8 +268,71 @@ You can use following classes by [Google Cloud PHP Client](https://github.com/go
 When fetching rows, the library coverts the following column types
 - `Timestamp` -> [Carbon](https://laravel.com/api/10.x/Illuminate/Support/Carbon.html) with the default timezone in PHP
 - `Numeric` -> `string`
+- `Uuid` -> `string`
 
 Note that if you execute a query without QueryBuilder, it will not have these conversions.
+
+
+### UUID
+
+Spanner has a native [`UUID`](https://cloud.google.com/spanner/docs/reference/standard-sql/data-types#uuid_type) type.
+`Blueprint::uuid()` still creates a `STRING(36)` column for backward compatibility, so the native type is opt-in.
+
+```php
+$schemaBuilder->create('user', function (Blueprint $table) {
+    $table->nativeUuid('id')->primary()->generateUuid();
+    $table->nativeUuid('inviter_id')->nullable();
+    $table->nativeUuidArray('friend_ids')->nullable();
+});
+
+$schemaBuilder->create('user_item', function (Blueprint $table) {
+    $table->nativeUuid('id')->primary();
+    $table->foreignNativeUuid('user_id')->references('id')->on('user');
+});
+```
+
+To make `Blueprint::uuid()` create native `UUID` columns everywhere, including `Blueprint::increments()`
+and `morphs()`, enable it on the schema builder. Do this in a service provider so it applies to every migration.
+
+```php
+Colopl\Spanner\Schema\Builder::$useNativeUuid = true;
+```
+
+`Blueprint::foreignUuid()` follows the same setting, so a foreign key never ends up as `STRING(36)`
+while the key it references is a `UUID`.
+
+Values are read back as lowercase `string`, so a native `UUID` column behaves the same as `STRING(36)`
+did from PHP, and a `string` binding is coerced by Spanner for ordinary comparisons.
+
+```php
+$query->where('id', $uuid)->first();
+```
+
+Arrays are **not** coerced, so a list of strings compared against a `UUID` column fails with
+`No matching signature for operator IN UNNEST for argument types: UUID, ARRAY<STRING>`.
+This matters for `whereIn()`, which switches to `UNNEST()` once `parameter_unnest_threshold` is
+exceeded, so an unmarked query can work for a small list and fail for a large one.
+Mark the values with `Uuids::from()` to send them as `ARRAY<UUID>`.
+
+```php
+use Colopl\Spanner\Query\Uuids;
+
+$query->whereIn('id', Uuids::from($ids))->get();
+$query->whereInUnnest('id', Uuids::from($ids))->get();
+```
+
+The same applies when writing an `ARRAY<UUID>` column.
+
+```php
+$query->insert(['id' => $id, 'friend_ids' => Uuids::from($friendIds)]);
+```
+
+#### Migrating existing columns
+
+Spanner cannot change the type of an existing column from `STRING(36)` to `UUID`.
+An existing table has to be migrated by adding a new column, backfilling it, and dropping the old one.
+Note also that `GENERATE_UUID()` returns a `STRING` and cannot be used as the default of a `UUID` column;
+`generateUuid()` emits `NEW_UUID()` instead when the column is of the native type.
 
 
 ### Partitioned DML
