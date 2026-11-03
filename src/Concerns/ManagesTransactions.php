@@ -182,16 +182,6 @@ trait ManagesTransactions
      */
     public function commit()
     {
-        $this->performSpannerCommit();
-        $this->fireConnectionEvent('committed');
-    }
-
-    /**
-     * @return void
-     * @throws AbortedException
-     */
-    protected function performSpannerCommit(): void
-    {
         $levelBeingCommitted = $this->transactions;
 
         $this->commitSpannerTransaction();
@@ -205,6 +195,8 @@ trait ManagesTransactions
             $levelBeingCommitted,
             $this->transactions,
         );
+
+        $this->fireConnectionEvent('committed');
     }
 
     /**
