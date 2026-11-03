@@ -35,7 +35,6 @@ use Psr\Log\LoggerInterface;
  *   retry_after?: int,
  *   block_for?: int,
  *   after_commit?: bool|null,
- *   interleave_keys?: array<array-key, list<string>>,
  * }
  */
 class SpannerConnector implements ConnectorInterface
@@ -74,7 +73,6 @@ class SpannerConnector implements ConnectorInterface
             (int) ($config['retry_after'] ?? 60),
             (int) ($config['block_for'] ?? 20),
             (bool) ($config['after_commit'] ?? false),
-            $config['interleave_keys'] ?? [],
             $this->logger,
         );
     }

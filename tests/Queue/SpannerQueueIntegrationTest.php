@@ -19,6 +19,7 @@
 namespace Colopl\Spanner\Tests\Queue;
 
 use Colopl\Spanner\Connection;
+use Colopl\Spanner\Queue\ProvidesInterleaveKeys;
 use Colopl\Spanner\Queue\SpannerJob;
 use Colopl\Spanner\Queue\SpannerQueue;
 use Colopl\Spanner\Queue\UndecodablePayloadException;
@@ -29,12 +30,12 @@ use Colopl\Spanner\Tests\TestCase;
 use Closure;
 use Google\Cloud\Spanner\Timestamp;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Queue\QueueManager;
 use Illuminate\Queue\Worker;
 use Illuminate\Queue\WorkerOptions;
-use InvalidArgumentException;
 use RuntimeException;
 use Throwable;
 
@@ -90,19 +91,18 @@ class SpannerQueueIntegrationTest extends TestCase
             'queue' => $this->queueName,
             'retry_after' => 60,
             'block_for' => 1,
-            'interleave_keys' => [$this->queueName => []],
         ]);
     }
 
     /**
      * Polls the way a worker does, until a job arrives or the time is up.
      */
-    protected function popWithin(SpannerQueue $queue, int $seconds): ?SpannerJob
+    protected function popWithin(SpannerQueue $queue, int $seconds, ?string $name = null): ?SpannerJob
     {
         $deadline = microtime(true) + $seconds;
 
         do {
-            $job = $queue->pop();
+            $job = $queue->pop($name);
             if ($job instanceof SpannerJob) {
                 return $job;
             }
@@ -228,54 +228,6 @@ class SpannerQueueIntegrationTest extends TestCase
         $this->assertNull($queue->pop());
     }
 
-    public function test_an_interleaved_queue_keeps_a_job_under_its_parent_row(): void
-    {
-        $connection = $this->getDefaultConnection();
-        $interleaved = $this->generateTableName('QueueInterleavedTest');
-        $userId = $this->generateUuid();
-
-        $connection->getSchemaBuilder()->createQueue(
-            $interleaved,
-            static function (Blueprint $queue) {
-                // Must positionally match the parent's primary key, in name and type.
-                $queue->string('userId', 36);
-                $queue->string(SpannerQueue::MESSAGE_ID_COLUMN, 36);
-                $queue->string(SpannerQueue::PAYLOAD_COLUMN, 'max');
-                $queue->primary(['userId', SpannerQueue::MESSAGE_ID_COLUMN]);
-                $queue->interleaveInParent(self::TABLE_NAME_USER)->cascadeOnDelete();
-            },
-        );
-        $this->beforeApplicationDestroyed(function () use ($connection, $interleaved) {
-            $connection->getSchemaBuilder()->dropQueueIfExists($interleaved);
-        });
-
-        $connection->table(self::TABLE_NAME_USER)->insert(['userId' => $userId, 'name' => 'test']);
-
-        config()->set('queue.connections.spanner-interleaved', [
-            'driver' => 'spanner',
-            'connection' => 'main',
-            'queue' => $interleaved,
-            'block_for' => 1,
-            'interleave_keys' => [$interleaved => ['userId']],
-        ]);
-
-        /** @var QueueManager $manager */
-        $manager = $this->app->make('queue');
-        $queue = $manager->connection('spanner-interleaved');
-        assert($queue instanceof SpannerQueue);
-
-        // `userId` is discovered from the payload's data.
-        $queue->push('Foo', ['userId' => $userId]);
-
-        $job = $queue->pop();
-        $this->assertInstanceOf(SpannerJob::class, $job);
-        // Reservation must not move the message to a different parent row.
-        $this->assertSame($userId, $job->getKey()['userId']);
-
-        $job->delete();
-        $this->assertSame(0, $queue->size());
-    }
-
     /**
      * Creates a queue interleaved in the User table, dropped when the test ends.
      */
@@ -286,6 +238,7 @@ class SpannerQueueIntegrationTest extends TestCase
         $connection->getSchemaBuilder()->createQueue(
             $name,
             static function (Blueprint $queue) {
+                // Must positionally match the parent's primary key, in name and type.
                 $queue->string('userId', 36);
                 $queue->string(SpannerQueue::MESSAGE_ID_COLUMN, 36);
                 $queue->string(SpannerQueue::PAYLOAD_COLUMN, 'max');
@@ -298,46 +251,68 @@ class SpannerQueueIntegrationTest extends TestCase
         });
     }
 
-    public function test_queues_of_one_connection_can_have_different_interleave_keys(): void
+    public function test_an_interleaved_queue_keeps_a_job_under_its_parent_row(): void
     {
-        $connection = $this->getDefaultConnection();
         $interleaved = $this->generateTableName('QueueInterleavedTest');
         $userId = $this->generateUuid();
         $this->createInterleavedQueue($interleaved);
-        $connection->table(self::TABLE_NAME_USER)->insert(['userId' => $userId, 'name' => 'test']);
+        $this->getDefaultConnection()->table(self::TABLE_NAME_USER)->insert(['userId' => $userId, 'name' => 'test']);
 
-        config()->set('queue.connections.spanner.interleave_keys', [
-            $this->queueName => [],
-            $interleaved => ['userId'],
-        ]);
         $queue = $this->queue();
+        $queue->push(new InterleavedQueueIntegrationJob($userId), '', $interleaved);
 
-        $queue->push('Foo', ['userId' => $userId], $interleaved);
+        $job = $this->popWithin($queue, 10, $interleaved);
+        $this->assertInstanceOf(SpannerJob::class, $job);
+        // The key columns come from the received row, so no config names them.
+        $this->assertSame(['userId', SpannerQueue::MESSAGE_ID_COLUMN], array_keys($job->getKey()));
+        // Reservation must not move the message to a different parent row.
+        $this->assertSame($userId, $job->getKey()['userId']);
+
+        $job->release();
+        $released = $this->popWithin($queue, 10, $interleaved);
+        $this->assertInstanceOf(SpannerJob::class, $released);
+        $this->assertSame($userId, $released->getKey()['userId']);
+
+        $released->delete();
+        $this->assertSame(0, $queue->size($interleaved));
+    }
+
+    public function test_one_connection_serves_plain_and_interleaved_queues(): void
+    {
+        $interleaved = $this->generateTableName('QueueInterleavedTest');
+        $userId = $this->generateUuid();
+        $this->createInterleavedQueue($interleaved);
+        $this->getDefaultConnection()->table(self::TABLE_NAME_USER)->insert(['userId' => $userId, 'name' => 'test']);
+
+        $queue = $this->queue();
+        $queue->pushRaw('{"job":"Foo"}', $interleaved, ['keys' => ['userId' => $userId]]);
         $queue->pushRaw('{"job":"Bar"}', $this->queueName);
 
-        $this->assertSame(1, $queue->size($interleaved));
-        $this->assertSame(1, $queue->size($this->queueName));
-
-        $interleavedJob = $queue->pop($interleaved);
+        $interleavedJob = $this->popWithin($queue, 10, $interleaved);
         $this->assertInstanceOf(SpannerJob::class, $interleavedJob);
         $this->assertSame($userId, $interleavedJob->getKey()['userId']);
         $interleavedJob->delete();
 
-        $plainJob = $queue->pop($this->queueName);
+        $plainJob = $this->popWithin($queue, 10, $this->queueName);
         $this->assertInstanceOf(SpannerJob::class, $plainJob);
         $this->assertSame([SpannerQueue::MESSAGE_ID_COLUMN], array_keys($plainJob->getKey()));
         $plainJob->delete();
     }
 
-    public function test_an_unlisted_queue_is_a_configuration_error(): void
+    public function test_a_job_without_interleave_keys_cannot_be_sent_to_an_interleaved_queue(): void
     {
-        config()->set('queue.connections.spanner.interleave_keys', []);
+        $interleaved = $this->generateTableName('QueueInterleavedTest');
+        $this->createInterleavedQueue($interleaved);
         $queue = $this->queue();
 
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage(sprintf('no interleave_keys entry for queue "%s"', $this->queueName));
+        try {
+            $queue->push(new QueueIntegrationJob(), '', $interleaved);
+            $this->fail('Spanner accepted a message without its interleave key.');
+        } catch (QueryException $e) {
+            $this->assertStringContainsString('userId', $e->getMessage());
+        }
 
-        $queue->pushRaw('{}');
+        $this->assertSame(0, $queue->size($interleaved));
     }
 
     public function test_an_unacknowledged_job_is_delivered_again_after_retry_after(): void
@@ -466,7 +441,6 @@ class SpannerQueueIntegrationTest extends TestCase
             'connection' => 'main',
             'queue' => $expiring,
             'block_for' => 1,
-            'interleave_keys' => [$expiring => []],
         ]);
 
         /** @var QueueManager $manager */
@@ -593,5 +567,24 @@ class QueueIntegrationJob implements ShouldQueue
         if ($this->fail) {
             throw new RuntimeException('boom');
         }
+    }
+}
+
+class InterleavedQueueIntegrationJob implements ShouldQueue, ProvidesInterleaveKeys
+{
+    use Queueable;
+
+    public function __construct(
+        public string $userId,
+    ) {
+    }
+
+    public function getInterleaveKeys(): array
+    {
+        return ['userId' => $this->userId];
+    }
+
+    public function handle(): void
+    {
     }
 }

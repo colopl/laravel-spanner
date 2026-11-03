@@ -557,10 +557,6 @@ Add a `spanner` queue connection to `config/queue.php`:
             // Seconds a single receiving call waits for messages.
             'block_for' => 20,
             'after_commit' => false,
-            // Key columns in front of MessageId, by queue name. See "Interleaved queues".
-            'interleave_keys' => [
-                'Jobs' => [],
-            ],
         ],
     ],
 ];
@@ -584,46 +580,12 @@ as `SIGTERM` once the current call returns, so it also delays graceful shutdown 
 
 #### Interleaved queues
 
-A queue interleaved into a table is keyed by that table's key columns followed by `MessageId`, so the driver
-has to know what to write into them. These are the same interleave keys an Eloquent model declares in its
-[`$interleaveKeys` property](#eloquent). List them in `interleave_keys` under the name of the queue, in primary
-key order. Every queue has its own entry, so one connection can serve queues of different shapes:
+A queue interleaved into a table is keyed by that table's key columns followed by `MessageId`. These are the
+same interleave keys an Eloquent model declares in its [`$interleaveKeys` property](#eloquent). No configuration
+names them: the job that is sent provides their values, and a received message brings its own.
 
-```php
-'spanner' => [
-    'driver' => 'spanner',
-    'queue' => 'Jobs',
-    'interleave_keys' => [
-        'UserTasks' => ['UserId'],
-        'Jobs' => [],
-    ],
-],
-```
-
-Every queue you use needs an entry: a list of the key columns, or `[]` for a queue that is not interleaved.
-The driver cannot tell a queue without interleave keys from one you forgot to declare, so a queue without an
-entry throws an `InvalidArgumentException` naming it, the first time it is pushed to or popped from.
-
-The values are then worked out automatically. A dispatched job object is serialized into an opaque blob
-inside the payload, so the driver inspects the job itself before the payload is built, and falls back to the
-payload for jobs pushed as a class name. A job implementing `Colopl\Spanner\Queue\ProvidesInterleaveKeys` is
-asked directly; otherwise each column is looked for as a public property of the job, then under the payload's
-`data`. Both the column's own spelling and its `lcfirst` form are tried, so `UserId` matches `$userId` too.
-
-So this needs no extra code at all:
-
-```php
-class ProcessUserTask implements ShouldQueue
-{
-    public function __construct(public string $userId) {}
-}
-
-// or
-Queue::push('ProcessUserTask', ['userId' => $userId]);
-```
-
-Implement `ProvidesInterleaveKeys` when the value has to be computed, which is the usual case once a job
-holds a model rather than an id:
+A job sent to an interleaved queue implements `Colopl\Spanner\Queue\ProvidesInterleaveKeys` and returns a
+value for each key column, keyed by column name:
 
 ```php
 class ProcessUserTask implements ShouldQueue, ProvidesInterleaveKeys
@@ -637,16 +599,25 @@ class ProcessUserTask implements ShouldQueue, ProvidesInterleaveKeys
 }
 ```
 
-`pushRaw()` can pass the values directly, which is useful when there is no payload to derive them from:
+A dispatched job object is serialized into an opaque blob inside the payload, so the driver asks the job
+before the payload is built. A job that doesn't implement the interface is sent without interleave keys, which
+is right for a queue that is not interleaved, and which Spanner rejects for an interleaved one with an error
+naming the missing column. One connection can therefore serve queues of different shapes.
+
+`pushRaw()` has no job to ask, so it takes the values directly:
 
 ```php
 $queue->pushRaw($payload, 'UserTasks', ['keys' => ['UserId' => $userId]]);
 ```
 
-If a column cannot be resolved, sending fails with an error naming the column and every way to supply it.
+Receiving selects every column of `RECEIVE_<queue>()`, and every column of a queue other than `Payload` is part
+of its primary key. The driver therefore takes a received message's key to be all of its columns except
+`Payload`, `DeliverTime` and those starting with `Spanner`, which `RECEIVE_<queue>()` adds
+(`SpannerLeaseExpirationTimestamp`, `SpannerLeaseToken` and `SpannerLastBatchMessage`). Don't give a queue's
+key columns names starting with `Spanner`.
 
-Only newly sent messages go through this. Reserving and releasing a job carry the key values of the message
-they came from, so a job never moves to a different parent row.
+Only newly sent jobs are asked. Reserving and releasing a job carry the key values of the message they came
+from, so a job never moves to a different parent row.
 
 With `interleaveInParent()` the parent row must already exist when the message is sent, so send it in the
 same transaction that creates the parent.
