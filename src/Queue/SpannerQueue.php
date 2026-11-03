@@ -375,7 +375,9 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
         }
         $this->receivers = [];
 
-        return $this->connection->table($this->getQueue($queue))->whereRaw('true')->delete();
+        return $this->connection->table($this->getQueue($queue))
+            ->whereRaw('true')
+            ->delete();
     }
 
     /**
@@ -409,19 +411,18 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
      *
      * @param string $queue
      * @param string $payload
-     * @param DateTimeInterface|DateInterval|int $delay
+     * @param DateTimeInterface|DateInterval|int|null $delay null when pushed without a delay
      * @param array<string, scalar> $interleaveKey values of the key columns in front of `MessageId`
      * @return array<string, scalar> full primary key of the sent message
      */
     protected function pushToDatabase(string $queue, string $payload, $delay = 0, array $interleaveKey = []): array
     {
         $key = $interleaveKey;
-        $key[self::MESSAGE_ID_COLUMN] = (string) Str::uuid();
+        $key[self::MESSAGE_ID_COLUMN] = Str::uuid()->toString();
 
-        $values = $key + [
-            self::PAYLOAD_COLUMN => $payload,
-            self::DELIVER_TIME_COLUMN => new DateTimeImmutable('@' . $this->availableAt($delay ?? 0)),
-        ];
+        $values = $key;
+        $values[self::PAYLOAD_COLUMN] = $payload;
+        $values[self::DELIVER_TIME_COLUMN] = new DateTimeImmutable('@' . $this->availableAt($delay ?? 0));
 
         $this->connection->table($queue)->insert($values);
 
@@ -482,17 +483,18 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
 
         $payload = $this->incrementAttempts($rawPayload, $decoded);
         $reservedFor = $this->reservationFor($decoded);
+        $interleaveKey = $this->interleaveKeyValuesOf($key);
 
-        $reservedKey = $this->connection->transaction(function () use ($queue, $key, $payload, $reservedFor): ?array {
+        $reservedKey = $this->connection->transaction(function () use ($queue, $key, $payload, $reservedFor, $interleaveKey): ?array {
             if ($this->acknowledge($queue, $key) === 0) {
                 // The message is already gone, so it was handled elsewhere.
                 return null;
             }
-            return $this->pushToDatabase($queue, $payload, $reservedFor, $this->interleaveKeyValuesOf($key));
+            return $this->pushToDatabase($queue, $payload, $reservedFor, $interleaveKey);
         });
 
         return $reservedKey !== null
-            ? new SpannerJob($this->container, $this, $payload, $reservedKey, $this->connectionName, $queue)
+            ? new SpannerJob($this->container, $this, $payload, $reservedKey, $queue)
             : null;
     }
 

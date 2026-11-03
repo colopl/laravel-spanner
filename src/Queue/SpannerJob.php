@@ -31,7 +31,6 @@ class SpannerJob extends BaseJob implements JobContract
      * @param SpannerQueue $spannerQueue
      * @param string $payload raw payload of the reserved message
      * @param array<string, scalar> $key full primary key of the reserved message
-     * @param string $connectionName
      * @param string $queue
      */
     public function __construct(
@@ -39,11 +38,10 @@ class SpannerJob extends BaseJob implements JobContract
         protected SpannerQueue $spannerQueue,
         protected string $payload,
         protected array $key,
-        string $connectionName,
         string $queue,
     ) {
         $this->container = $container;
-        $this->connectionName = $connectionName;
+        $this->connectionName = $this->spannerQueue->getConnectionName();
         $this->queue = $queue;
     }
 
