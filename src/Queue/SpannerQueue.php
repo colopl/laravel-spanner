@@ -100,8 +100,6 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
      * @param string $default name of the Spanner queue used when none is given
      * @param int $retryAfter seconds a reserved message stays invisible, unless the job's `timeout` plus {@see self::TIMEOUT_MARGIN} is longer
      * @param int $blockFor seconds a single `RECEIVE_<queue>()` call streams for
-     * @param int $maxBatchSize messages Spanner leases to this worker at a time. Each leased message is
-     *   invisible to other workers until it is reserved, and a worker reserves one message per job.
      * @param bool $dispatchAfterCommit
      * @param LoggerInterface|null $logger receives the notice for a job that was already processed elsewhere
      */
@@ -110,7 +108,6 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
         protected string $default,
         protected int $retryAfter = 60,
         protected int $blockFor = 20,
-        protected int $maxBatchSize = 1,
         bool $dispatchAfterCommit = false,
         protected ?LoggerInterface $logger = null,
     ) {
@@ -119,9 +116,6 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
         }
         if ($blockFor < 1) {
             throw new InvalidArgumentException('block_for must be at least 1 second.');
-        }
-        if ($maxBatchSize < 1) {
-            throw new InvalidArgumentException('max_batch_size must be at least 1.');
         }
 
         $this->dispatchAfterCommit = $dispatchAfterCommit;
@@ -605,10 +599,9 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
         // Every column, so that a message brings its whole primary key along,
         // whatever key columns an interleaved queue has.
         $sql = sprintf(
-            'select * from %s(max_duration => %s, max_batch_size => %d)',
+            'select * from %s(max_duration => %s)',
             'RECEIVE_' . $this->qualifyQueue($queue),
             $this->connection->getQueryGrammar()->quoteString($this->blockFor . 's'),
-            $this->maxBatchSize,
         );
 
         return $this->connection->cursorWithOptions($sql, [], [

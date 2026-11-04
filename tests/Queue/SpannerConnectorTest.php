@@ -45,25 +45,6 @@ class SpannerConnectorTest extends TestCase
         $this->assertSame('main', $queue->getConnection()->getName());
     }
 
-    public function test_max_batch_size_is_configurable(): void
-    {
-        config()->set('queue.connections.spanner', [
-            'driver' => 'spanner',
-            'connection' => 'main',
-            'queue' => 'Jobs',
-            'max_batch_size' => 0,
-        ]);
-
-        /** @var QueueManager $manager */
-        $manager = $this->app->make('queue');
-
-        // The value reaches the queue, which rejects it.
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('max_batch_size must be at least 1.');
-
-        $manager->connection('spanner');
-    }
-
     public function test_driver_rejects_a_non_spanner_database_connection(): void
     {
         config()->set('database.connections.sqlite', [

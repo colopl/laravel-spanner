@@ -34,7 +34,6 @@ use Psr\Log\LoggerInterface;
  *   queue?: string,
  *   retry_after?: int,
  *   block_for?: int,
- *   max_batch_size?: int,
  *   after_commit?: bool|null,
  * }
  */
@@ -73,7 +72,6 @@ class SpannerConnector implements ConnectorInterface
             $config['queue'] ?? 'default',
             (int) ($config['retry_after'] ?? 60),
             (int) ($config['block_for'] ?? 20),
-            (int) ($config['max_batch_size'] ?? 1),
             (bool) ($config['after_commit'] ?? false),
             $this->logger,
         );
