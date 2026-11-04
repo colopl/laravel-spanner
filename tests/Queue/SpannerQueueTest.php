@@ -52,12 +52,14 @@ class SpannerQueueTest extends TestCase
         int $retryAfter = 60,
         int $blockFor = 20,
         ?LoggerInterface $logger = null,
+        int $maxBatchSize = 1,
     ): SpannerQueue {
         $queue = new SpannerQueue(
             $connection,
             self::QUEUE_NAME,
             $retryAfter,
             $blockFor,
+            $maxBatchSize,
             false,
             $logger,
         );
@@ -191,7 +193,9 @@ class SpannerQueueTest extends TestCase
 
         $receive = $conn->recordedAt(0);
         // Every column, so a message brings its whole primary key along.
-        $this->assertSame("select * from RECEIVE_Jobs(max_duration => '30s')", $receive['sql']);
+        // One message at a time by default, so that no other message is leased
+        // to this worker while it runs a job.
+        $this->assertSame("select * from RECEIVE_Jobs(max_duration => '30s', max_batch_size => 1)", $receive['sql']);
         // A strong read is required, so the query must not join a transaction.
         $this->assertTrue($receive['options']['singleUse']);
         // The RPC deadline has to outlive max_duration.
@@ -614,6 +618,26 @@ class SpannerQueueTest extends TestCase
         $this->expectExceptionMessage('retry_after');
 
         new SpannerQueue(new RecordingConnection(), 'Jobs', 0);
+    }
+
+    public function test_pop_receives_the_configured_batch_size(): void
+    {
+        $conn = new RecordingConnection();
+
+        $this->createQueue($conn, maxBatchSize: 10)->pop();
+
+        $this->assertSame(
+            "select * from RECEIVE_Jobs(max_duration => '20s', max_batch_size => 10)",
+            $conn->recordedAt(0)['sql'],
+        );
+    }
+
+    public function test_max_batch_size_must_be_positive(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('max_batch_size');
+
+        new SpannerQueue(new RecordingConnection(), 'Jobs', 60, 20, 0);
     }
 
     public function test_block_for_must_be_positive(): void

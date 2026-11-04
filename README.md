@@ -556,6 +556,8 @@ Add a `spanner` queue connection to `config/queue.php`:
             'retry_after' => 90,
             // Seconds a single receiving call waits for messages.
             'block_for' => 20,
+            // Messages Spanner leases to a worker at a time.
+            'max_batch_size' => 1,
             'after_commit' => false,
         ],
     ],
@@ -572,6 +574,11 @@ to the driver, so keep `retry_after` above it.
 query rather than a poll, so a worker blocks inside it until a message arrives or the duration elapses.
 A longer duration means fewer requests, but a worker can only react to `queue:restart` and to signals such
 as `SIGTERM` once the current call returns, so it also delays graceful shutdown by up to that long.
+
+`max_batch_size` is passed to `RECEIVE_<queue>()` as its `max_batch_size`. Spanner leases every message of a
+batch to the receiving worker at once, which hides them from other workers, but a worker runs one job at a
+time. The default of `1` therefore leases only the message the worker is about to reserve, so the rest stay
+available to idle workers. Without the argument Spanner uses a batch size of its own, which is larger.
 
 > [!WARNING]
 > As with the `redis` driver's `block_for`, avoid giving one worker several queues
