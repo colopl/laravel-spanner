@@ -85,8 +85,8 @@ trait ManagesTransactions
 
         $options = $this->withDefaultTimeout($options);
 
-        return $this->withSessionNotFoundHandling(function () use ($callback, $options) {
-            $return = $this->getSpannerDatabase()->runTransaction(function (Transaction $tx) use ($callback) {
+        $return = $this->withSessionNotFoundHandling(function () use ($callback, $options) {
+            return $this->getSpannerDatabase()->runTransaction(function (Transaction $tx) use ($callback) {
                 try {
                     if ($this->inSnapshot()) {
                         throw new LogicException('Calling transaction() inside a snapshot is not supported.');
@@ -117,24 +117,24 @@ trait ManagesTransactions
                     throw $e;
                 }
             }, $options);
-
-            // After-commit callbacks must run after runTransaction() has returned, since
-            // callbacks that write to Spanner start their own transaction and the client
-            // does not support nested transactions.
-            $this->transactionsManager?->commit(
-                /**
-                 * TODO: throws error
-                 * @phpstan-ignore argument.type
-                 */
-                $this->getName(),
-                1,
-                $this->transactions,
-            );
-
-            $this->fireConnectionEvent('committed');
-
-            return $return;
         });
+
+        // After-commit callbacks must run after runTransaction() has returned, since
+        // callbacks that write to Spanner start their own transaction and the client
+        // does not support nested transactions.
+        $this->transactionsManager?->commit(
+            /**
+             * TODO: throws error
+             * @phpstan-ignore argument.type
+             */
+            $this->getName(),
+            1,
+            $this->transactions,
+        );
+
+        $this->fireConnectionEvent('committed');
+
+        return $return;
     }
 
     /**
