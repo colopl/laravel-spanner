@@ -28,6 +28,9 @@ use Colopl\Spanner\Schema\QueueDefinition;
 use Colopl\Spanner\Tests\Support\RecordingLogger;
 use Colopl\Spanner\Tests\TestCase;
 use Closure;
+use DateTimeImmutable;
+use Google\Cloud\Spanner\Bytes;
+use Google\Cloud\Spanner\Date;
 use Google\Cloud\Spanner\Timestamp;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Database\QueryException;
@@ -312,6 +315,62 @@ class SpannerQueueIntegrationTest extends TestCase
             $this->assertStringContainsString('userId', $e->getMessage());
         }
 
+        $this->assertSame(0, $queue->size($interleaved));
+    }
+
+    public function test_an_interleaved_queue_accepts_non_string_and_null_key_values(): void
+    {
+        $connection = $this->getDefaultConnection();
+        $schema = $connection->getSchemaBuilder();
+        $parent = $this->generateTableName('QueueParentTest');
+        $interleaved = $this->generateTableName('QueueInterleavedTest');
+        $keyColumns = static function (Blueprint $table) {
+            $table->timestamp('At');
+            $table->date('Day');
+            $table->binary('Blob', 16);
+            $table->string('Tag', 36)->nullable();
+        };
+
+        $schema->create($parent, static function (Blueprint $table) use ($keyColumns) {
+            $keyColumns($table);
+            $table->primary(['At', 'Day', 'Blob', 'Tag']);
+        });
+        $schema->createQueue($interleaved, static function (Blueprint $queue) use ($keyColumns, $parent) {
+            $keyColumns($queue);
+            $queue->string(SpannerQueue::MESSAGE_ID_COLUMN, 36);
+            $queue->string(SpannerQueue::PAYLOAD_COLUMN, 'max');
+            $queue->primary(['At', 'Day', 'Blob', 'Tag', SpannerQueue::MESSAGE_ID_COLUMN]);
+            $queue->interleaveInParent($parent)->cascadeOnDelete();
+        });
+        $this->beforeApplicationDestroyed(function () use ($schema, $parent, $interleaved) {
+            $schema->dropQueueIfExists($interleaved);
+            $schema->dropIfExists($parent);
+        });
+
+        $keys = [
+            'At' => new DateTimeImmutable('2026-01-02 03:04:05.123456 UTC'),
+            'Day' => new Date(new DateTimeImmutable('2026-01-02')),
+            'Blob' => new Bytes("\x00\xffkey"),
+            'Tag' => null,
+        ];
+        $connection->table($parent)->insert($keys);
+
+        $queue = $this->queue();
+        $queue->pushRaw('{"job":"Foo"}', $interleaved, ['keys' => $keys]);
+
+        $job = $this->popWithin($queue, 10, $interleaved);
+        $this->assertInstanceOf(SpannerJob::class, $job);
+        $this->assertSame(['At', 'Day', 'Blob', 'Tag', SpannerQueue::MESSAGE_ID_COLUMN], array_keys($job->getKey()));
+        $this->assertNull($job->getKey()['Tag']);
+
+        // Releasing re-sends the message under the same parent row, then the
+        // released message has to be found again by those same values.
+        $job->release();
+        $released = $this->popWithin($queue, 10, $interleaved);
+        $this->assertInstanceOf(SpannerJob::class, $released);
+        $this->assertSame((string) $keys['Blob'], (string) $released->getKey()['Blob']);
+
+        $released->delete();
         $this->assertSame(0, $queue->size($interleaved));
     }
 

@@ -196,13 +196,13 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
 
     /**
      * {@inheritDoc}
-     * @param array{ keys?: array<string, scalar> } $options interleave key values, for an interleaved queue
+     * @param array{ keys?: array<string, mixed> } $options interleave key values, for an interleaved queue
      */
     public function pushRaw($payload, $queue = null, array $options = []): string
     {
         $key = $this->pushToDatabase($this->getQueue($queue), $payload, 0, $options['keys'] ?? []);
 
-        return (string) $key[self::MESSAGE_ID_COLUMN];
+        return $this->messageIdOf($key);
     }
 
     /**
@@ -222,7 +222,7 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
             function (string $payload, string $queue, $delay) use ($job): string {
                 $interleaveKey = $job instanceof ProvidesInterleaveKeys ? $job->getInterleaveKeys() : [];
                 $key = $this->pushToDatabase($queue, $payload, $delay, $interleaveKey);
-                return (string) $key[self::MESSAGE_ID_COLUMN];
+                return $this->messageIdOf($key);
             },
         );
     }
@@ -284,7 +284,7 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
      * Acknowledges a message, removing it from the queue.
      *
      * @param string $queue
-     * @param array<string, scalar> $key full primary key of the message
+     * @param array<string, mixed> $key full primary key of the message
      * @return int number of messages that were acknowledged (0 or 1)
      */
     public function acknowledge(string $queue, array $key): int
@@ -303,7 +303,7 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
      * another worker took the job, so it is running or has run twice.
      *
      * @param string $queue
-     * @param array<string, scalar> $key full primary key of the reserved message
+     * @param array<string, mixed> $key full primary key of the reserved message
      * @return void
      */
     public function deleteReserved(string $queue, array $key): void
@@ -349,7 +349,7 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
      *
      * @param string $action what could not be done with the job
      * @param string $queue
-     * @param array<string, scalar> $key full primary key of the reserved message
+     * @param array<string, mixed> $key full primary key of the reserved message
      * @return void
      */
     protected function noticeAlreadyProcessed(string $action, string $queue, array $key): void
@@ -358,7 +358,7 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
             'Job "%s" of queue "%s" could not be %s because another worker already processed it. ' .
             'Its reservation (retry_after of %d seconds, or longer when the job declares a timeout) ' .
             'ran out while it was still running.',
-            $key[self::MESSAGE_ID_COLUMN] ?? '',
+            $this->messageIdOf($key),
             $queue,
             $action,
             $this->retryAfter,
@@ -412,8 +412,8 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
      * @param string $queue
      * @param string $payload
      * @param DateTimeInterface|DateInterval|int|null $delay null when pushed without a delay
-     * @param array<string, scalar> $interleaveKey values of the key columns in front of `MessageId`
-     * @return array<string, scalar> full primary key of the sent message
+     * @param array<string, mixed> $interleaveKey values of the key columns in front of `MessageId`
+     * @return array<string, mixed> full primary key of the sent message
      */
     protected function pushToDatabase(string $queue, string $payload, $delay = 0, array $interleaveKey = []): array
     {
@@ -434,13 +434,27 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
      * which a message sent in its place has to keep, so that a job stays under
      * the same parent row of an interleaved queue.
      *
-     * @param array<string, scalar> $key full primary key of a message
-     * @return array<string, scalar>
+     * @param array<string, mixed> $key full primary key of a message
+     * @return array<string, mixed>
      */
     protected function interleaveKeyValuesOf(array $key): array
     {
         unset($key[self::MESSAGE_ID_COLUMN]);
         return $key;
+    }
+
+    /**
+     * The `MessageId` of a message's primary key, which the driver always
+     * generates as a UUID string.
+     *
+     * @param array<string, mixed> $key full primary key of a message
+     * @return string
+     */
+    protected function messageIdOf(array $key): string
+    {
+        $messageId = $key[self::MESSAGE_ID_COLUMN];
+        assert(is_string($messageId));
+        return $messageId;
     }
 
     /**
@@ -475,7 +489,7 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
             throw new UndecodablePayloadException(sprintf(
                 'Message "%s" of queue "%s" was deleted because its payload is not a JSON object (%s), so no ' .
                 'worker can run it.',
-                $key[self::MESSAGE_ID_COLUMN],
+                $this->messageIdOf($key),
                 $queue,
                 $reason,
             ), $queue, $key, $rawPayload);
@@ -508,7 +522,7 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
      * without it, which still matches the single message with its `MessageId`.
      *
      * @param array<array-key, mixed> $message
-     * @return array<string, scalar>
+     * @return array<string, mixed>
      */
     protected function extractKeyFromMessage(array $message): array
     {
@@ -521,7 +535,6 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
             ) {
                 continue;
             }
-            assert(is_scalar($value));
             $key[$column] = $value;
         }
         return $key;

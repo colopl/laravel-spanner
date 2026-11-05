@@ -36,7 +36,7 @@ class UndecodablePayloadException extends InvalidPayloadException
     /**
      * @param string $message
      * @param string $queue
-     * @param array<string, scalar> $key full primary key of the deleted message
+     * @param array<string, mixed> $key full primary key of the deleted message
      * @param string $payload
      */
     public function __construct(

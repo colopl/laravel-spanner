@@ -30,7 +30,7 @@ class SpannerJob extends BaseJob implements JobContract
      * @param Container $container
      * @param SpannerQueue $spannerQueue
      * @param string $payload raw payload of the reserved message
-     * @param array<string, scalar> $key full primary key of the reserved message
+     * @param array<string, mixed> $key full primary key of the reserved message
      * @param string $queue
      */
     public function __construct(
@@ -50,7 +50,9 @@ class SpannerJob extends BaseJob implements JobContract
      */
     public function getJobId()
     {
-        return (string) $this->key[SpannerQueue::MESSAGE_ID_COLUMN];
+        $messageId = $this->key[SpannerQueue::MESSAGE_ID_COLUMN];
+        assert(is_string($messageId));
+        return $messageId;
     }
 
     /**
@@ -59,7 +61,7 @@ class SpannerJob extends BaseJob implements JobContract
      * An interleaved queue is keyed by its parent's key columns followed by
      * `MessageId`, so acknowledging needs all of them.
      *
-     * @return array<string, scalar>
+     * @return array<string, mixed>
      */
     public function getKey(): array
     {
