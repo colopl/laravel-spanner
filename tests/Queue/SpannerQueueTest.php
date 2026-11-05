@@ -413,6 +413,31 @@ class SpannerQueueTest extends TestCase
         $this->createQueue($conn)->pop();
     }
 
+    public function test_pop_rejects_reading_a_held_stream_inside_a_transaction(): void
+    {
+        $conn = new RecordingConnection();
+        $conn->messages = [
+            $this->message([SpannerQueue::MESSAGE_ID_COLUMN => 'message-1']),
+            $this->message([SpannerQueue::MESSAGE_ID_COLUMN => 'message-2']),
+        ];
+
+        $queue = $this->createQueue($conn);
+        $this->assertInstanceOf(SpannerJob::class, $queue->pop());
+        $recorded = count($conn->recorded);
+
+        // The stream opened outside the transaction still holds message-2.
+        // Reserving it inside the transaction would let a rollback restore it
+        // after the job was already handed out.
+        $conn->pretendInTransaction = true;
+        try {
+            $queue->pop();
+            $this->fail('pop() read a held stream inside a transaction.');
+        } catch (LogicException $e) {
+            $this->assertStringContainsString('strong read', $e->getMessage());
+        }
+        $this->assertCount($recorded, $conn->recorded);
+    }
+
     public function test_deleting_a_job_acknowledges_its_message(): void
     {
         $conn = new RecordingConnection();

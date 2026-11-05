@@ -265,9 +265,21 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
      * @param UnitEnum|string|null $queue
      * @return JobContract|null
      * @throws UndecodablePayloadException after deleting a message whose payload is not a JSON object
+     * @throws LogicException inside a transaction or a snapshot
      */
     public function pop($queue = null)
     {
+        // Checked on every call, not only when a stream is opened: reading a
+        // stream held from an earlier call would otherwise reserve its message
+        // inside the transaction, which a rollback would undo after the job
+        // was already handed out.
+        if ($this->connection->inTransaction() || $this->connection->inSnapshot()) {
+            throw new LogicException(
+                'Messages cannot be received inside a transaction or a snapshot, ' .
+                'because Cloud Spanner rejects anything but a strong read.',
+            );
+        }
+
         $queue = $this->getQueue($queue);
 
         while (($message = $this->receiver($queue)->next()) !== null) {
@@ -596,23 +608,13 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
     }
 
     /**
-     * Opens a `RECEIVE_<queue>()` stream.
-     *
-     * The call must be a strong read, so it can neither join an open
-     * read-write transaction nor run inside a snapshot.
+     * Opens a `RECEIVE_<queue>()` stream, as a single use strong read.
      *
      * @param string $queue
      * @return Generator<int, array<array-key, mixed>>
      */
     protected function receive(string $queue): Generator
     {
-        if ($this->connection->inTransaction() || $this->connection->inSnapshot()) {
-            throw new LogicException(
-                'Messages cannot be received inside a transaction or a snapshot, ' .
-                'because Cloud Spanner rejects anything but a strong read.',
-            );
-        }
-
         // Every column, so that a message brings its whole primary key along,
         // whatever key columns an interleaved queue has.
         $sql = sprintf(
