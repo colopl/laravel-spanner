@@ -642,6 +642,11 @@ reads messages from it as `queue:work` asks for them, instead of polling. A stre
 read, which is why messages cannot be received from inside a transaction. When a stream has reached its
 `max_duration` it is replaced rather than reused.
 
+> [!WARNING]
+> On Cloud Spanner, an open stream can lease a burst of messages ahead of its worker. With slow jobs,
+> unread messages can outlive their 10 second leases and incur growing redelivery backoff, delaying them
+> even when other workers are idle.
+
 Spanner hands out a message with a fixed, non-configurable 10 second lease, which is too short for most
 Laravel jobs, and PHP cannot renew it from a background thread while a job is running. The driver therefore
 uses the pattern Google documents for
