@@ -236,7 +236,7 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
      * commits and then sends them one by one, so they are not sent atomically.
      *
      * {@inheritDoc}
-     * @param iterable<array-key, mixed> $jobs
+     * @param array<array-key, mixed> $jobs
      * @param UnitEnum|string|null $queue
      */
     public function bulk($jobs, $data = '', $queue = null)
