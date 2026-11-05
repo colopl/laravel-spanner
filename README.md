@@ -494,7 +494,8 @@ A message gets a fresh `DeliverTime` each time a job is reserved or released, so
 retried does not expire. Only a message that has gone unhandled for the given number of days does.
 
 Queue options are set on the `QueueDefinition` that the callback receives as its second argument.
-`disableSend` rejects new messages, which is useful to drain a queue before dropping it, and
+`disableSend` rejects all new messages, including the replacements this driver sends when reserving and
+releasing jobs, so workers cannot drain the queue while it is enabled. Stop producers instead when draining.
 `disableDelivery` pauses delivery to consumers:
 
 ```php
