@@ -589,6 +589,44 @@ class SpannerQueueTest extends TestCase
         $this->assertSame('delete from `Jobs` where true', $conn->recordedAt(0)['sql']);
     }
 
+    public function test_clear_drops_the_messages_the_open_stream_already_received(): void
+    {
+        $conn = new RecordingConnection();
+        $conn->messages = [
+            $this->message([SpannerQueue::MESSAGE_ID_COLUMN => 'message-1']),
+            $this->message([SpannerQueue::MESSAGE_ID_COLUMN => 'message-2']),
+        ];
+
+        $queue = $this->createQueue($conn);
+        $this->assertInstanceOf(SpannerJob::class, $queue->pop());
+        $conn->messages = [];
+        $queue->clear('Jobs');
+
+        // message-2 was received before the clear, so it must not be handed out.
+        $this->assertNull($queue->pop());
+        $this->assertSame(2, $conn->streamsOpened);
+    }
+
+    public function test_clear_keeps_the_streams_of_other_queues_open(): void
+    {
+        $conn = new RecordingConnection();
+        $conn->messages = [
+            $this->message([SpannerQueue::MESSAGE_ID_COLUMN => 'message-1']),
+            $this->message([SpannerQueue::MESSAGE_ID_COLUMN => 'message-2']),
+        ];
+
+        $queue = $this->createQueue($conn);
+        $this->assertInstanceOf(SpannerJob::class, $queue->pop('Other'));
+        $conn->messages = [];
+        $queue->clear('Jobs');
+
+        $this->assertInstanceOf(SpannerJob::class, $queue->pop('Other'));
+        $this->assertSame(1, $conn->streamsOpened);
+        // Recorded: receive, reserve message-1 (delete, insert), clear, reserve message-2.
+        $this->assertSame('delete from `Other` where `MessageId` = ?', $conn->recordedAt(4)['sql']);
+        $this->assertSame(['message-2'], $conn->recordedAt(4)['bindings']);
+    }
+
     public function test_queue_name_falls_back_to_the_default(): void
     {
         $queue = $this->createQueue(new RecordingConnection());

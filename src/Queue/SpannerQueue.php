@@ -370,12 +370,16 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
      */
     public function clear($queue)
     {
-        foreach ($this->receivers as $receiver) {
-            $receiver->close();
-        }
-        $this->receivers = [];
+        $queue = $this->getQueue($queue);
 
-        return $this->connection->table($this->getQueue($queue))
+        // Messages its stream already received would otherwise still be handed
+        // out after the clear. Streams of other queues stay open.
+        if (isset($this->receivers[$queue])) {
+            $this->receivers[$queue]->close();
+            unset($this->receivers[$queue]);
+        }
+
+        return $this->connection->table($queue)
             ->whereRaw('true')
             ->delete();
     }
