@@ -54,8 +54,7 @@ class SpannerServiceProvider extends ServiceProvider
 
         $this->app->resolving('queue', function (QueueManager $queue) {
             $queue->addConnector('spanner', function (): SpannerConnector {
-                /** @var DatabaseManager $db */
-                $db = $this->app->make('db');
+                $db = $this->app->make(DatabaseManager::class);
                 /** @var LoggerInterface $logger */
                 $logger = $this->app->make(LoggerInterface::class);
                 return new SpannerConnector($db, $logger);
