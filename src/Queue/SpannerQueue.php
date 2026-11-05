@@ -246,7 +246,7 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
     public function getQueueableOptions($job, $queue, $payload, $delay = null): array
     {
         return $job instanceof ProvidesInterleaveKeys
-            ? ['keys' => $job->getInterleaveKeys()]
+            ? ['keys' => $job->getInterleaveKeyValues()]
             : [];
     }
 

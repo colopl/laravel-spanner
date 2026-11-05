@@ -593,7 +593,7 @@ class ProcessUserTask implements ShouldQueue, ProvidesInterleaveKeys
 {
     public function __construct(private User $user) {}
 
-    public function getInterleaveKeys(): array
+    public function getInterleaveKeyValues(): array
     {
         return ['UserId' => $this->user->getKey()];
     }

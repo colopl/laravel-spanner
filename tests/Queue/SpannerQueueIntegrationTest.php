@@ -669,7 +669,7 @@ class InterleavedQueueIntegrationJob implements ShouldQueue, ProvidesInterleaveK
     ) {
     }
 
-    public function getInterleaveKeys(): array
+    public function getInterleaveKeyValues(): array
     {
         return ['userId' => $this->userId];
     }
