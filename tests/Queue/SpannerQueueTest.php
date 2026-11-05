@@ -35,6 +35,7 @@ use LogicException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use stdClass;
 
 class SpannerQueueTest extends TestCase
 {
@@ -697,6 +698,19 @@ class SpannerQueueTest extends TestCase
             $conn->recordedAt(0)['sql'],
         );
         $this->assertSame('user-1', $this->insertedRow($conn, 0)['UserId']);
+    }
+
+    public function test_queueable_options_carry_the_interleave_keys_for_queue_retry(): void
+    {
+        $queue = $this->createQueue(new RecordingConnection());
+
+        // `queue:retry` passes these options to pushRaw() for a failed job.
+        $this->assertSame(
+            ['keys' => ['UserId' => 'user-1']],
+            $queue->getQueueableOptions(new FakeJobProvidingInterleaveKeys('user-1'), 'Jobs', '{}'),
+        );
+        $this->assertSame([], $queue->getQueueableOptions(new stdClass(), 'Jobs', '{}'));
+        $this->assertSame([], $queue->getQueueableOptions('SomeJob@handle', 'Jobs', '{}'));
     }
 
     public function test_later_takes_the_interleave_keys_from_the_job_too(): void

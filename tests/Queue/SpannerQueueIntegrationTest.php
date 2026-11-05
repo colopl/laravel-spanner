@@ -39,6 +39,7 @@ use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Queue\QueueManager;
 use Illuminate\Queue\Worker;
 use Illuminate\Queue\WorkerOptions;
+use Illuminate\Support\Facades\Artisan;
 use RuntimeException;
 use Throwable;
 
@@ -316,6 +317,36 @@ class SpannerQueueIntegrationTest extends TestCase
         }
 
         $this->assertSame(0, $queue->size($interleaved));
+    }
+
+    public function test_queue_retry_sends_a_failed_job_back_under_the_same_parent_row(): void
+    {
+        $interleaved = $this->generateTableName('QueueInterleavedTest');
+        $userId = $this->generateUuid();
+        $this->createInterleavedQueue($interleaved);
+        $this->getDefaultConnection()->table(self::TABLE_NAME_USER)->insert(['userId' => $userId, 'name' => 'test']);
+
+        $failedJobs = sys_get_temp_dir() . '/failed-jobs-' . bin2hex(random_bytes(4)) . '.json';
+        $this->beforeApplicationDestroyed(static fn() => @unlink($failedJobs));
+        config()->set('queue.failed', ['driver' => 'file', 'path' => $failedJobs]);
+
+        $queue = $this->queue();
+        $queue->push(new InterleavedQueueIntegrationJob($userId), '', $interleaved);
+        $job = $this->popWithin($queue, 10, $interleaved);
+        $this->assertInstanceOf(SpannerJob::class, $job);
+
+        // What `queue:work` does with a job that failed for good.
+        $exception = new RuntimeException('boom');
+        $job->fail($exception);
+        $this->app['queue.failer']->log('spanner', $interleaved, $job->getRawBody(), $exception);
+        $this->assertSame(0, $queue->size($interleaved));
+
+        $this->assertSame(0, Artisan::call('queue:retry', ['id' => ['all']]));
+
+        $retried = $this->popWithin($queue, 10, $interleaved);
+        $this->assertInstanceOf(SpannerJob::class, $retried);
+        $this->assertSame($userId, $retried->getKey()['userId']);
+        $retried->delete();
     }
 
     public function test_an_interleaved_queue_accepts_non_string_and_null_key_values(): void

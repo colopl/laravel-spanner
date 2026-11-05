@@ -213,11 +213,12 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
     public function later($delay, $job, $data = '', $queue = null)
     {
         $queue = $this->getQueue($queue);
-        $interleaveKey = $job instanceof ProvidesInterleaveKeys ? $job->getInterleaveKeys() : [];
+        $payload = $this->createPayload($job, $queue, $data, $delay);
+        $interleaveKey = $this->getQueueableOptions($job, $queue, $payload, $delay)['keys'] ?? [];
 
         return $this->enqueueUsing(
             $job,
-            $this->createPayload($job, $queue, $data, $delay),
+            $payload,
             $queue,
             $delay,
             function (string $payload, string $queue, $delay) use ($interleaveKey): string {
@@ -225,6 +226,28 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
                 return $this->messageIdOf($key);
             },
         );
+    }
+
+    /**
+     * Options to send a job with: the interleave key values of a job that
+     * provides them.
+     *
+     * `queue:retry` calls this with the job it unserialized from a failed
+     * payload and passes the result to {@see self::pushRaw()}, so a retried job
+     * goes back under the same parent row. A job pushed with `pushRaw()` has no
+     * job object, so `queue:retry` cannot recover its keys.
+     *
+     * @param mixed $job
+     * @param string|null $queue
+     * @param string $payload
+     * @param DateTimeInterface|DateInterval|int|null $delay
+     * @return array{ keys?: array<string, mixed> }
+     */
+    public function getQueueableOptions($job, $queue, $payload, $delay = null): array
+    {
+        return $job instanceof ProvidesInterleaveKeys
+            ? ['keys' => $job->getInterleaveKeys()]
+            : [];
     }
 
     /**

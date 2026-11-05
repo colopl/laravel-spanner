@@ -611,6 +611,10 @@ naming the missing column. One connection can therefore serve queues of differen
 $queue->pushRaw($payload, 'UserTasks', ['keys' => ['UserId' => $userId]]);
 ```
 
+`queue:retry` sends a failed job object back under the same parent row, because Laravel unserializes the job
+and asks the queue for its options. A job sent with `pushRaw()` has no job object, so `queue:retry` cannot
+recover its keys and Spanner rejects the retry. Send such a job again with `pushRaw()` and its keys instead.
+
 Receiving selects every column of `RECEIVE_<queue>()`, and every column of a queue other than `Payload` is part
 of its primary key. The driver therefore takes a received message's key to be all of its columns except
 `Payload`, `DeliverTime` and those starting with `Spanner`, which `RECEIVE_<queue>()` adds
