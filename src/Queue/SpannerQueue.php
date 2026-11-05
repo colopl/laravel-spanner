@@ -379,8 +379,7 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
     }
 
     /**
-     * Logs that a finished job's reserved message was gone, because the
-     * reservation ran out and another worker took the job.
+     * Logs that a finished job's reserved message no longer exists.
      *
      * @param string $action what could not be done with the job
      * @param string $queue
@@ -390,13 +389,11 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
     protected function noticeAlreadyProcessed(string $action, string $queue, array $key): void
     {
         $this->logger?->notice(sprintf(
-            'Job "%s" of queue "%s" could not be %s because another worker already processed it. ' .
-            'Its reservation (retry_after of %d seconds, or longer when the job declares a timeout) ' .
-            'ran out while it was still running.',
+            'Job "%s" of queue "%s" could not be %s because its reserved message no longer exists. ' .
+            'It was processed by another worker, cleared, or removed by a row deletion policy.',
             $this->messageIdOf($key),
             $queue,
             $action,
-            $this->retryAfter,
         ));
     }
 

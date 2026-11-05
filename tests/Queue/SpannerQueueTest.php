@@ -456,7 +456,7 @@ class SpannerQueueTest extends TestCase
         $this->assertSame([$reservedId], $conn->recordedAt(3)['bindings']);
     }
 
-    public function test_deleting_a_job_that_another_worker_already_processed_logs_a_notice(): void
+    public function test_deleting_a_job_whose_reserved_message_no_longer_exists_logs_a_notice(): void
     {
         $conn = new RecordingConnection();
         $conn->messages = [$this->message()];
@@ -471,11 +471,14 @@ class SpannerQueueTest extends TestCase
         $this->assertTrue($job->isDeleted());
         $this->assertCount(1, $logger->records);
         $this->assertSame('notice', $logger->records[0]['level']);
-        $this->assertStringContainsString(
-            sprintf('Job "%s" of queue "Jobs" could not be deleted', $job->getJobId()),
+        $this->assertSame(
+            sprintf(
+                'Job "%s" of queue "Jobs" could not be deleted because its reserved message no longer exists. ' .
+                'It was processed by another worker, cleared, or removed by a row deletion policy.',
+                $job->getJobId(),
+            ),
             $logger->records[0]['message'],
         );
-        $this->assertStringContainsString('retry_after of 90 seconds', $logger->records[0]['message']);
     }
 
     public function test_deleting_a_job_normally_logs_nothing(): void
@@ -517,7 +520,7 @@ class SpannerQueueTest extends TestCase
         Carbon::setTestNow();
     }
 
-    public function test_releasing_a_job_that_another_worker_already_processed_sends_no_copy(): void
+    public function test_releasing_a_job_whose_reserved_message_no_longer_exists_sends_no_copy(): void
     {
         $conn = new RecordingConnection();
         $conn->messages = [$this->message()];
@@ -535,8 +538,12 @@ class SpannerQueueTest extends TestCase
         $this->assertStringStartsWith('delete from `Jobs`', $conn->recordedAt(3)['sql']);
         $this->assertCount(1, $logger->records);
         $this->assertSame('notice', $logger->records[0]['level']);
-        $this->assertStringContainsString(
-            sprintf('Job "%s" of queue "Jobs" could not be released', $job->getJobId()),
+        $this->assertSame(
+            sprintf(
+                'Job "%s" of queue "Jobs" could not be released because its reserved message no longer exists. ' .
+                'It was processed by another worker, cleared, or removed by a row deletion policy.',
+                $job->getJobId(),
+            ),
             $logger->records[0]['message'],
         );
     }
