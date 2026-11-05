@@ -213,14 +213,14 @@ class SpannerQueue extends BaseQueue implements QueueContract, ClearableQueue
     public function later($delay, $job, $data = '', $queue = null)
     {
         $queue = $this->getQueue($queue);
+        $interleaveKey = $job instanceof ProvidesInterleaveKeys ? $job->getInterleaveKeys() : [];
 
         return $this->enqueueUsing(
             $job,
             $this->createPayload($job, $queue, $data, $delay),
             $queue,
             $delay,
-            function (string $payload, string $queue, $delay) use ($job): string {
-                $interleaveKey = $job instanceof ProvidesInterleaveKeys ? $job->getInterleaveKeys() : [];
+            function (string $payload, string $queue, $delay) use ($interleaveKey): string {
                 $key = $this->pushToDatabase($queue, $payload, $delay, $interleaveKey);
                 return $this->messageIdOf($key);
             },
