@@ -41,14 +41,11 @@ use Illuminate\Queue\Worker;
 use Illuminate\Queue\WorkerOptions;
 use Illuminate\Support\Facades\Artisan;
 use RuntimeException;
-use Throwable;
 
 /**
- * End to end coverage against the configured Cloud Spanner database.
- *
- * Cloud Spanner queues require the Enterprise or Enterprise Plus edition, and
- * only recent builds of the Spanner emulator implement them, so every test here
- * is skipped unless `create queue` actually succeeds.
+ * End to end coverage against the configured Cloud Spanner database, which
+ * needs queues: the Enterprise or Enterprise Plus edition, or emulator 1.5.59
+ * or later.
  *
  * Mind the differences between the emulator and Cloud Spanner when writing
  * assertions. The emulator releases a stream's rows when its `max_duration`
@@ -71,19 +68,13 @@ class SpannerQueueIntegrationTest extends TestCase
         $this->queueName = $this->generateTableName('QueueTest');
         $connection = $this->getDefaultConnection();
 
-        try {
-            $connection->getSchemaBuilder()->createQueue(
-                $this->queueName,
-                static function (Blueprint $queue) {
-                    $queue->string(SpannerQueue::MESSAGE_ID_COLUMN, 36)->primary();
-                    $queue->string(SpannerQueue::PAYLOAD_COLUMN, 'max');
-                },
-            );
-        } catch (Throwable $e) {
-            $this->markTestSkipped(
-                'Cloud Spanner queues are unavailable on this backend: ' . $e->getMessage(),
-            );
-        }
+        $connection->getSchemaBuilder()->createQueue(
+            $this->queueName,
+            static function (Blueprint $queue) {
+                $queue->string(SpannerQueue::MESSAGE_ID_COLUMN, 36)->primary();
+                $queue->string(SpannerQueue::PAYLOAD_COLUMN, 'max');
+            },
+        );
 
         $this->beforeApplicationDestroyed(function () use ($connection) {
             $connection->getSchemaBuilder()->dropQueueIfExists($this->queueName);

@@ -23,7 +23,6 @@ use Colopl\Spanner\Tests\TestCase;
 use Exception;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
-use Throwable;
 
 class BuilderTestLast extends TestCase
 {
@@ -667,14 +666,10 @@ class BuilderTestLast extends TestCase
         });
 
         $standalone = $this->generateTableName('QueueStandalone');
-        try {
-            $sb->createQueue($standalone, function (Blueprint $queue) {
-                $queue->string('MessageId', 36)->primary();
-                $queue->string('Payload', 'max');
-            });
-        } catch (Throwable $e) {
-            $this->markTestSkipped('Cloud Spanner queues are unavailable on this backend: ' . $e->getMessage());
-        }
+        $sb->createQueue($standalone, function (Blueprint $queue) {
+            $queue->string('MessageId', 36)->primary();
+            $queue->string('Payload', 'max');
+        });
 
         // The parent cannot be dropped while a queue is interleaved in it.
         $interleaved = $this->generateTableName('QueueInterleaved');
