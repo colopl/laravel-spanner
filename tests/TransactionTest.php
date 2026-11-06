@@ -315,6 +315,36 @@ class TransactionTest extends TestCase
         $this->assertDatabaseHas($tableName, $insertRow);
     }
 
+    public function test_afterCommit_aborted_does_not_retry_committed_transaction(): void
+    {
+        $conn = $this->getDefaultConnection();
+
+        $tableName = self::TABLE_NAME_USER;
+        $insertRow = ['userId' => $this->generateUuid(), 'name' => 't'];
+
+        $attempts = 0;
+        $count = 0;
+        $caught = null;
+        try {
+            $conn->transaction(function (Connection $conn) use ($tableName, $insertRow, &$attempts, &$count) {
+                $attempts++;
+                $conn->table($tableName)->insert($insertRow);
+                $conn->afterCommit(static function () use (&$count) {
+                    $count++;
+                    throw new AbortedException('aborted');
+                });
+            });
+        } catch (AbortedException $e) {
+            $caught = $e;
+        }
+
+        $this->assertInstanceOf(AbortedException::class, $caught);
+        $this->assertSame(1, $attempts);
+        $this->assertSame(1, $count);
+        $this->assertSame(0, $conn->transactionLevel());
+        $this->assertDatabaseHas($tableName, $insertRow);
+    }
+
     public function testRetrySuccess(): void
     {
         Event::fake();
