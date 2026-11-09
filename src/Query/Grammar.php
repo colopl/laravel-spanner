@@ -150,7 +150,7 @@ class Grammar extends BaseGrammar
         }
 
         if (count($values) <= 0) {
-            return '0 = 1';
+            return $where['not'] ? '1 = 1' : '0 = 1';
         }
 
         return $this->wrap($where['column'])
