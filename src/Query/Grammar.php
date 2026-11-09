@@ -107,16 +107,10 @@ class Grammar extends BaseGrammar
             return '';
         }
 
-        // Query parameters cannot be used in statement hints, so the value is written
-        // into the SQL verbatim. Make sure it really is an identifier first.
-        if (preg_match('/\A[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)?\z/', $indexHint->index) !== 1) {
-            throw new InvalidArgumentException('Invalid index name for FORCE_INDEX: ' . $indexHint->index);
-        }
-
         $statements = [];
 
         $statements[] = match ($indexHint->type) {
-            'force' => "FORCE_INDEX={$indexHint->index}",
+            'force' => 'FORCE_INDEX=' . $this->validateIndexHintName($indexHint->index),
             default => $this->markAsNotSupported('index type: ' . $indexHint->type),
         };
 
@@ -125,6 +119,26 @@ class Grammar extends BaseGrammar
         }
 
         return '@{' . implode(',', $statements) . '}';
+    }
+
+    /**
+     * Query parameters cannot be used in statement hints, so the index name is written
+     * into the SQL verbatim. Accept a plain or backtick-quoted identifier, optionally
+     * schema-qualified, and reject anything else.
+     *
+     * @see https://cloud.google.com/spanner/docs/reference/standard-sql/lexical#identifiers
+     * @param string $index
+     * @return string
+     */
+    protected function validateIndexHintName(string $index): string
+    {
+        $identifier = '(?:[A-Za-z_][A-Za-z0-9_]*|`[^`]+`)';
+
+        if (preg_match("/\\A{$identifier}(?:\\.{$identifier})?\\z/", $index) !== 1) {
+            throw new InvalidArgumentException('Invalid index name for FORCE_INDEX: ' . $index);
+        }
+
+        return $index;
     }
 
     /**

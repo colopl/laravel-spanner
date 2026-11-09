@@ -509,6 +509,16 @@ class BuilderTest extends TestCase
 
         $this->assertSame('select * from `User` @{FORCE_INDEX=_BASE_TABLE}', $qb->forceIndex('_BASE_TABLE')->toSql());
         $this->assertSame('select * from `User` @{FORCE_INDEX=sch.idx}', $qb->forceIndex('sch.idx')->toSql());
+        $this->assertSame('select * from `User` @{FORCE_INDEX=`my index`}', $qb->forceIndex('`my index`')->toSql());
+        $this->assertSame('select * from `User` @{FORCE_INDEX=`sch`.`my index`}', $qb->forceIndex('`sch`.`my index`')->toSql());
+
+        // other hint types are still reported as unsupported, whatever the name
+        try {
+            $conn->table(self::TABLE_NAME_USER)->useIndex('bad name')->toSql();
+            $this->fail('expected BadMethodCallException');
+        } catch (BadMethodCallException $e) {
+            $this->assertSame('Cloud Spanner does not support index type: hint', $e->getMessage());
+        }
 
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Invalid index name for FORCE_INDEX: idx} select 1 --');
