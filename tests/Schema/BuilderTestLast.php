@@ -310,6 +310,7 @@ class BuilderTestLast extends TestCase
     public function test_information_schema_queries_escape_names(): void
     {
         $conn = $this->getDefaultConnection();
+        $conn->useDefaultSchemaGrammar();
         $grammar = $conn->getSchemaGrammar();
         $table = "t' or true or '";
 

@@ -903,6 +903,7 @@ class BlueprintTest extends TestCase
         $tableName = $this->generateTableName();
 
         $blueprint = new Blueprint($conn, $tableName, function (Blueprint $table) {
+            $table->create();
             $table->uuid('id')->primary();
             $table->string('str')->default('a"b\\c\'d');
             $table->string('multi')->default("x\ny");
