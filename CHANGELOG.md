@@ -1,3 +1,7 @@
+# Unreleased
+
+- Escape quotes, backslashes, newlines and NUL in string literals written by the grammars (`quoteString()`, string column defaults) and reject non-identifier values passed to `forceIndex()` (#320)
+
 # v8.3.1 (2025-01-07)
 
 - Fix Grammar::substituteBindingsIntoRawSql fails during unnesting (#246)

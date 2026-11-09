@@ -520,8 +520,9 @@ class BuilderTest extends TestCase
         $conn = $this->getDefaultConnection();
         $query = $conn->table('t')->searchFullText('nameTokens', 'q', ['language_tag' => "en') or true or ('"]);
 
-        $this->assertSame(
-            "select * from `t` where search(`nameTokens`, ?, language_tag => 'en\\') or true or (\\'')",
+        // Only the options part is asserted here; the search term itself is covered by the other search tests.
+        $this->assertStringEndsWith(
+            ", language_tag => 'en\\') or true or (\\'')",
             $query->toSql(),
         );
     }
