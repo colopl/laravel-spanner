@@ -520,9 +520,20 @@ class BuilderTest extends TestCase
             $this->assertSame('Cloud Spanner does not support index type: hint', $e->getMessage());
         }
 
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Invalid index name for FORCE_INDEX: idx} select 1 --');
-        $qb->forceIndex('idx} select 1 --')->toSql();
+        foreach ([
+            'idx} select 1 --',
+            '`idx`} select 1 --',
+            // a backslash escapes the backtick in GoogleSQL, so the first identifier would not end where it appears to
+            '`idx\\`.`} union all select * from `Other` -- `',
+            '`idx\\\\`',
+        ] as $invalid) {
+            try {
+                $qb->forceIndex($invalid)->toSql();
+                $this->fail('expected InvalidArgumentException for ' . $invalid);
+            } catch (InvalidArgumentException $e) {
+                $this->assertSame('Invalid index name for FORCE_INDEX: ' . $invalid, $e->getMessage());
+            }
+        }
     }
 
     public function test_search_option_string_values_are_escaped(): void

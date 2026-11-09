@@ -124,7 +124,9 @@ class Grammar extends BaseGrammar
     /**
      * Query parameters cannot be used in statement hints, so the index name is written
      * into the SQL verbatim. Accept a plain or backtick-quoted identifier, optionally
-     * schema-qualified, and reject anything else.
+     * schema-qualified, and reject anything else. Backslashes are not allowed inside a
+     * quoted identifier, because GoogleSQL treats `\`` as an escaped backtick and the
+     * identifier would then end at a different backtick than the pattern assumes.
      *
      * @see https://cloud.google.com/spanner/docs/reference/standard-sql/lexical#identifiers
      * @param string $index
@@ -132,7 +134,7 @@ class Grammar extends BaseGrammar
      */
     protected function validateIndexHintName(string $index): string
     {
-        $identifier = '(?:[A-Za-z_][A-Za-z0-9_]*|`[^`]+`)';
+        $identifier = '(?:[A-Za-z_][A-Za-z0-9_]*|`[^`\\\\]+`)';
 
         if (preg_match("/\\A{$identifier}(?:\\.{$identifier})?\\z/", $index) !== 1) {
             throw new InvalidArgumentException('Invalid index name for FORCE_INDEX: ' . $index);
