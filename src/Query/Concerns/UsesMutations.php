@@ -21,6 +21,7 @@ namespace Colopl\Spanner\Query\Concerns;
 use Colopl\Spanner\Concerns\ManagesMutations;
 use Colopl\Spanner\Connection;
 use Google\Cloud\Spanner\KeySet;
+use Illuminate\Contracts\Database\Query\Expression;
 
 /**
  * @phpstan-import-type TDataSet from ManagesMutations
@@ -66,10 +67,18 @@ trait UsesMutations
     }
 
     /**
+     * Mutations bypass the grammar, so the table prefix that `wrapTable()` would normally
+     * add has to be applied here.
+     *
      * @return string
      */
     private function getTableName(): string
     {
-        return (string) $this->getGrammar()->getValue($this->from);
+        // A raw expression is taken as-is, like wrapTable() does.
+        if ($this->from instanceof Expression) {
+            return (string) $this->getGrammar()->getValue($this->from);
+        }
+
+        return $this->connection->getTablePrefix() . $this->from;
     }
 }

@@ -1,3 +1,7 @@
+# Unreleased
+
+- Apply the table prefix in `Query\Builder::insertUsingMutation()`, `updateUsingMutation()`, `insertOrUpdateUsingMutation()` and `deleteUsingMutation()` (#321)
+
 # v8.3.1 (2025-01-07)
 
 - Fix Grammar::substituteBindingsIntoRawSql fails during unnesting (#246)
