@@ -896,6 +896,37 @@ class BlueprintTest extends TestCase
         ], $blueprint->toSql());
     }
 
+    public function test_default_string_values_are_escaped(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $conn->useDefaultSchemaGrammar();
+        $tableName = $this->generateTableName();
+
+        $blueprint = new Blueprint($conn, $tableName, function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->string('str')->default('a"b\\c\'d');
+            $table->string('multi')->default("x\ny");
+        });
+        $statements = $blueprint->toSql();
+
+        $this->assertSame(
+            'create table `' . $tableName . '` (' . implode(', ', [
+                '`id` string(36) not null',
+                '`str` string(255) not null default ("a\\"b\\\\c\\\'d")',
+                '`multi` string(255) not null default ("x\\ny")',
+            ]) . ') primary key (`id`)',
+            $statements[0],
+        );
+
+        $blueprint->build();
+        $query = $conn->table($tableName);
+        $query->insert(['id' => Uuid::uuid4()->toString()]);
+        /** @var array<string, mixed> $result */
+        $result = $query->sole();
+        $this->assertSame('a"b\\c\'d', $result['str']);
+        $this->assertSame("x\ny", $result['multi']);
+    }
+
     public function test_default_values(): void
     {
         $conn = $this->getDefaultConnection();

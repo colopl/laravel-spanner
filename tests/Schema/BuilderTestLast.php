@@ -307,6 +307,22 @@ class BuilderTestLast extends TestCase
         ], Arr::sole($tables, fn($row) => $row['schema'] === $schema && $row['name'] === $table));
     }
 
+    public function test_information_schema_queries_escape_names(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $grammar = $conn->getSchemaGrammar();
+        $table = "t' or true or '";
+
+        $this->assertStringContainsString("where `table_name` = 't\\' or true or \\''", $grammar->compileColumns(null, $table));
+        $this->assertStringContainsString("where i.table_name = 't\\' or true or \\''", $grammar->compileIndexes(null, $table));
+        $this->assertStringContainsString("where kc.table_name = 't\\' or true or \\''", $grammar->compileForeignKeys(null, $table));
+        $this->assertStringContainsString("and `table_schema` in ('a', 'b\\'c')", $grammar->compileTables(['a', "b'c"]));
+        $this->assertSame("'a\\\\b\\'c\\\"d\\ne\\rf\\000g'", $grammar->quoteString("a\\b'c\"d\ne\rf\0g"));
+
+        // the emulator must still answer for a name that only looks like SQL
+        $this->assertFalse($conn->getSchemaBuilder()->hasColumn($table, 'id'));
+    }
+
     public function test_getColumns_with_nullable(): void
     {
         $conn = $this->getDefaultConnection();

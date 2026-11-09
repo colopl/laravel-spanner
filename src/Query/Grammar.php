@@ -24,6 +24,7 @@ use Illuminate\Contracts\Database\Query\Expression;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Database\Query\Grammars\Grammar as BaseGrammar;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 use RuntimeException;
 
 class Grammar extends BaseGrammar
@@ -104,6 +105,12 @@ class Grammar extends BaseGrammar
     {
         if ($indexHint->index === null) {
             return '';
+        }
+
+        // Query parameters cannot be used in statement hints, so the value is written
+        // into the SQL verbatim. Make sure it really is an identifier first.
+        if (preg_match('/\A[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)?\z/', $indexHint->index) !== 1) {
+            throw new InvalidArgumentException('Invalid index name for FORCE_INDEX: ' . $indexHint->index);
         }
 
         $statements = [];
