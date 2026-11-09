@@ -1185,7 +1185,7 @@ class BuilderTest extends TestCase
         ]);
 
         $query = $conn->table($tableName)->searchFullText('nameTokens', 'test0 OR test1 OR test2');
-        $this->assertSame("select * from `{$tableName}` where search(`nameTokens`, 'test0 OR test1 OR test2')", $query->toRawSql());
+        $this->assertSame("select * from `{$tableName}` where search(`nameTokens`, ?)", $query->toSql());
         $this->assertSame(['test1', 'test2'], $query->pluck('name')->sort()->values()->all());
     }
 
@@ -1209,7 +1209,7 @@ class BuilderTest extends TestCase
         ]);
 
         $query = $conn->table($tableName)->searchFullText('nameTokens', 'test1', ['enhance_query' => true]);
-        $this->assertSame("select * from `{$tableName}` where search(`nameTokens`, 'test1', enhance_query => true)", $query->toRawSql());
+        $this->assertSame("select * from `{$tableName}` where search(`nameTokens`, ?, enhance_query => true)", $query->toSql());
         $this->assertSame(['test1'], $query->pluck('name')->sort()->values()->all());
     }
 
@@ -1233,7 +1233,7 @@ class BuilderTest extends TestCase
         ]);
 
         $query = $conn->table($tableName)->searchNgrams('nameTokens', 't1', ['min_ngrams' => 3]);
-        $this->assertSame("select * from `{$tableName}` where search_ngrams(`nameTokens`, 't1', min_ngrams => 3)", $query->toRawSql());
+        $this->assertSame("select * from `{$tableName}` where search_ngrams(`nameTokens`, ?, min_ngrams => 3)", $query->toSql());
         $this->assertSame(['test1'], $query->pluck('name')->sort()->values()->all());
     }
 
@@ -1257,7 +1257,65 @@ class BuilderTest extends TestCase
         ]);
 
         $query = $conn->table($tableName)->searchSubstring('nameTokens', 't1');
-        $this->assertSame("select * from `{$tableName}` where search_substring(`nameTokens`, 't1')", $query->toRawSql());
+        $this->assertSame("select * from `{$tableName}` where search_substring(`nameTokens`, ?)", $query->toSql());
         $this->assertSame(['test1'], $query->pluck('name')->sort()->values()->all());
+    }
+
+    public function test_searchSubstring_with_quote_in_query(): void
+    {
+        $tableName = $this->generateTableName('FTS_Search_Substring');
+        $conn = $this->getDefaultConnection();
+        $conn->useDefaultSchemaGrammar();
+        $blueprint = new Blueprint($conn, $tableName, function (Blueprint $table) {
+            $table->create();
+            $table->uuid('id')->primary();
+            $table->string('name');
+            $table->tokenList('nameTokens', TokenizerFunction::Substring, 'name');
+            $table->fullText('nameTokens');
+        });
+        $blueprint->build();
+
+        $conn->table($tableName)->insert([
+            ['id' => $this->generateUuid(), 'name' => "O'Reilly"],
+            ['id' => $this->generateUuid(), 'name' => 'test1'],
+        ]);
+
+        $this->assertSame(["O'Reilly"], $conn->table($tableName)->searchSubstring('nameTokens', "O'Re")->pluck('name')->all());
+        $this->assertSame([], $conn->table($tableName)->searchSubstring('nameTokens', "zzz') OR TRUE OR ('")->pluck('name')->all());
+    }
+
+    public function test_searchSubstring_followed_by_where(): void
+    {
+        $tableName = $this->generateTableName('FTS_Search_Substring');
+        $conn = $this->getDefaultConnection();
+        $conn->useDefaultSchemaGrammar();
+        $blueprint = new Blueprint($conn, $tableName, function (Blueprint $table) {
+            $table->create();
+            $table->uuid('id')->primary();
+            $table->string('name');
+            $table->tokenList('nameTokens', TokenizerFunction::Substring, 'name');
+            $table->fullText('nameTokens');
+        });
+        $blueprint->build();
+
+        $conn->table($tableName)->insert([
+            ['id' => $this->generateUuid(), 'name' => 'コロプラ'],
+            ['id' => $this->generateUuid(), 'name' => 'あコロ'],
+        ]);
+
+        $query = $conn->table($tableName)
+            ->searchSubstring('nameTokens', 'コロ')
+            ->where('name', 'like', 'コロ%');
+        $this->assertSame(['コロプラ'], $query->pluck('name')->all());
+    }
+
+    public function test_get_throws_on_fetchUsing(): void
+    {
+        $conn = $this->getDefaultConnection();
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('$fetchUsing is not supported by Cloud Spanner');
+
+        $conn->table(self::TABLE_NAME_USER)->fetchUsing('foo')->get();
     }
 }

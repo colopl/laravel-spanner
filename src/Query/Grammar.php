@@ -194,11 +194,10 @@ class Grammar extends BaseGrammar
     protected function buildSearchFunction(string $function, array $where): string
     {
         $tokens = $this->wrap($where['tokens']);
-        $rawQuery = $where['query'];
         $options = $where['options'];
         return $function . '(' . implode(', ', array_filter([
             $tokens,
-            $this->quoteString($rawQuery),
+            $this->parameter($where['query']),
             $this->formatOptions($options, ' => '),
         ])) . ')';
     }
