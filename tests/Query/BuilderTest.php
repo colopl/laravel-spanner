@@ -1103,6 +1103,36 @@ class BuilderTest extends TestCase
         $this->assertSame('select * from `test_User`', $conn->table('User')->toRawSql());
     }
 
+    public function test_mutations_apply_table_prefix(): void
+    {
+        config()->set('database.connections.main.prefix', 'test_');
+        $conn = $this->getDefaultConnection();
+        $this->assertSame('test_', $conn->getTablePrefix());
+
+        // created as `test_<name>` by the schema builder
+        $table = $this->createTempTable(function (Blueprint $blueprint): void {
+            $blueprint->uuid('id')->primary();
+            $blueprint->string('name');
+        });
+        $id = $this->generateUuid();
+
+        $conn->table($table)->insertUsingMutation(['id' => $id, 'name' => 'a']);
+        $this->assertSame('a', $conn->table($table)->where('id', $id)->value('name'));
+
+        $conn->table($table)->updateUsingMutation(['id' => $id, 'name' => 'b']);
+        $this->assertSame('b', $conn->table($table)->where('id', $id)->value('name'));
+
+        $conn->table($table)->insertOrUpdateUsingMutation(['id' => $id, 'name' => 'c']);
+        $this->assertSame('c', $conn->table($table)->where('id', $id)->value('name'));
+
+        $conn->table($table)->deleteUsingMutation($id);
+        $this->assertSame(0, $conn->table($table)->count());
+
+        // a raw expression is used as-is
+        $conn->table($conn->raw('test_' . $table))->insertUsingMutation(['id' => $id, 'name' => 'd']);
+        $this->assertSame('d', $conn->table($table)->where('id', $id)->value('name'));
+    }
+
     public function test_toRawSql(): void
     {
         $table = 'RawSqlTest';
