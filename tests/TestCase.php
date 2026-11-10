@@ -180,8 +180,9 @@ abstract class TestCase extends \Orchestra\Testbench\TestCase
     {
         // Delete all rows with mutations in a single transaction instead of running
         // one partitioned DML per table, which is much slower (especially outside the emulator).
+        // Queues are listed too, but mutations cannot write to them.
         $parents = [];
-        foreach ($conn->select("SELECT t.table_name, t.parent_table_name FROM information_schema.tables as t WHERE t.table_schema = ''") as $row) {
+        foreach ($conn->select("SELECT t.table_name, t.parent_table_name FROM information_schema.tables as t WHERE t.table_schema = '' AND t.table_type = 'BASE TABLE'") as $row) {
             $parents[$row['table_name']] = $row['parent_table_name'];
         }
 

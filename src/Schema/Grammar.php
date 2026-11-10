@@ -44,6 +44,30 @@ class Grammar extends BaseGrammar
      */
     public function compileTables($schema)
     {
+        return $this->compileTablesOfType('BASE TABLE', $schema);
+    }
+
+    /**
+     * Compile the query to determine the queues.
+     *
+     * Queues are listed in the same `information_schema.tables` view as tables,
+     * so {@see self::compileTables()} does not return them.
+     *
+     * @param string|string[]|null $schema
+     * @return string
+     */
+    public function compileQueues($schema = null): string
+    {
+        return $this->compileTablesOfType('QUEUE', $schema);
+    }
+
+    /**
+     * @param string $tableType value of the `table_type` column, e.g. `BASE TABLE` or `QUEUE`
+     * @param string|string[]|null $schema
+     * @return string
+     */
+    protected function compileTablesOfType(string $tableType, $schema): string
+    {
         return implode(' ', [
             'select',
             implode(', ', [
@@ -52,13 +76,13 @@ class Grammar extends BaseGrammar
                 'parent_table_name as `parent`',
             ]),
             'from `information_schema`.`tables`',
-            'where `table_type` = \'BASE TABLE\'',
+            'where `table_type` = ' . $this->quoteString($tableType),
             (match (true) {
                 is_array($schema) => 'and `table_schema` in (' . $this->quoteString($schema) . ')',
                 !is_null($schema) => 'and `table_schema` = ' . $this->quoteString($schema),
                 default => '',
             }),
-            'order by `table_schema`, `table_name`'
+            'order by `table_schema`, `table_name`',
         ]);
     }
 
@@ -441,6 +465,106 @@ class Grammar extends BaseGrammar
     public function compileDropChangeStream(Blueprint $blueprint, ChangeStreamDefinition $command): string
     {
         return 'drop change stream ' . $this->wrap($command->stream);
+    }
+
+    /**
+     * Compile a create queue command.
+     *
+     * @see https://cloud.google.com/spanner/docs/reference/standard-sql/data-definition-language#create_queue
+     * @param Blueprint $blueprint
+     * @param QueueDefinition $command
+     * @return string
+     */
+    public function compileCreateQueue(Blueprint $blueprint, QueueDefinition $command): string
+    {
+        return $this->compileCreateQueueStatement($blueprint, $command, false);
+    }
+
+    /**
+     * @param Blueprint $blueprint
+     * @param QueueDefinition $command
+     * @return string
+     */
+    public function compileCreateQueueIfNotExists(Blueprint $blueprint, QueueDefinition $command): string
+    {
+        return $this->compileCreateQueueStatement($blueprint, $command, true);
+    }
+
+    /**
+     * @param Blueprint $blueprint
+     * @param QueueDefinition $command
+     * @param bool $ifNotExists
+     * @return string
+     */
+    protected function compileCreateQueueStatement(
+        Blueprint $blueprint,
+        QueueDefinition $command,
+        bool $ifNotExists,
+    ): string {
+        return sprintf(
+            'create queue %s%s (%s) %s%s%s%s',
+            $ifNotExists ? 'if not exists ' : '',
+            $this->wrapTable($blueprint),
+            implode(', ', $this->getColumns($blueprint)),
+            $this->addPrimaryKeys($blueprint),
+            $this->addInterleaveToTable($blueprint),
+            $this->addRowDeletionPolicy($blueprint),
+            $this->addQueueOptions($command),
+        );
+    }
+
+    /**
+     * Compile an alter queue command.
+     *
+     * @see https://cloud.google.com/spanner/docs/reference/standard-sql/data-definition-language#alter_queue
+     * @param Blueprint $blueprint
+     * @param QueueDefinition $command
+     * @return list<string>
+     */
+    public function compileAlterQueue(Blueprint $blueprint, QueueDefinition $command): array
+    {
+        $options = $command->getOptions();
+
+        return $options !== []
+            ? [sprintf(
+                'alter queue %s set options (%s)',
+                $this->wrapTable($blueprint),
+                $this->formatOptions($options),
+            )]
+            : [];
+    }
+
+    /**
+     * @param Blueprint $blueprint
+     * @param Fluent<string, mixed> $command
+     * @return string
+     */
+    public function compileDropQueue(Blueprint $blueprint, Fluent $command): string
+    {
+        return 'drop queue ' . $this->wrapTable($blueprint);
+    }
+
+    /**
+     * @param Blueprint $blueprint
+     * @param Fluent<string, mixed> $command
+     * @return string
+     */
+    public function compileDropQueueIfExists(Blueprint $blueprint, Fluent $command): string
+    {
+        return 'drop queue if exists ' . $this->wrapTable($blueprint);
+    }
+
+    /**
+     * @param QueueDefinition $definition
+     * @return string
+     */
+    protected function addQueueOptions(QueueDefinition $definition): string
+    {
+        $options = $definition->getOptions();
+
+        return $options !== []
+            ? ', options (' . $this->formatOptions($options) . ')'
+            : '';
     }
 
     protected function formatChangeStreamTables(ChangeStreamDefinition $definition): string
