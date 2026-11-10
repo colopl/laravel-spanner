@@ -1,7 +1,3 @@
-# Unreleased
-
-- Fix `whereInUnnest()` with an empty list shifting the bindings of later conditions, and make an empty `whereNotInUnnest()` match all rows (#319)
-
 # v8.3.1 (2025-01-07)
 
 - Fix Grammar::substituteBindingsIntoRawSql fails during unnesting (#246)
