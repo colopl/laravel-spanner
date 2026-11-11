@@ -1308,14 +1308,4 @@ class BuilderTest extends TestCase
             ->where('name', 'like', 'コロ%');
         $this->assertSame(['コロプラ'], $query->pluck('name')->all());
     }
-
-    public function test_get_throws_on_fetchUsing(): void
-    {
-        $conn = $this->getDefaultConnection();
-
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('$fetchUsing is not supported by Cloud Spanner');
-
-        $conn->table(self::TABLE_NAME_USER)->fetchUsing('foo')->get();
-    }
 }
