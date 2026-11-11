@@ -502,6 +502,48 @@ class BuilderTest extends TestCase
         $this->assertInstanceOf(Builder::class, $qb->forceIndex(null));
     }
 
+    public function test_forceIndex_rejects_non_identifier(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $qb = $conn->table(self::TABLE_NAME_USER);
+
+        $this->assertSame('select * from `User` @{FORCE_INDEX=_BASE_TABLE}', $qb->forceIndex('_BASE_TABLE')->toSql());
+        $this->assertSame('select * from `User` @{FORCE_INDEX="sch.idx"}', $qb->forceIndex('sch.idx')->toSql());
+
+        // other hint types are still reported as unsupported, whatever the name
+        try {
+            $conn->table(self::TABLE_NAME_USER)->useIndex('bad name')->toSql();
+            $this->fail('expected BadMethodCallException');
+        } catch (BadMethodCallException $e) {
+            $this->assertSame('Cloud Spanner does not support index type: hint', $e->getMessage());
+        }
+
+        foreach ([
+            'idx} select 1 --',
+            '`idx`',
+            '`sch`.`idx`',
+        ] as $invalid) {
+            try {
+                $qb->forceIndex($invalid)->toSql();
+                $this->fail('expected InvalidArgumentException for ' . $invalid);
+            } catch (InvalidArgumentException $e) {
+                $this->assertSame('Invalid index name for FORCE_INDEX: ' . $invalid, $e->getMessage());
+            }
+        }
+    }
+
+    public function test_search_option_string_values_are_escaped(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $query = $conn->table('t')->searchFullText('nameTokens', 'q', ['language_tag' => "en') or true or ('"]);
+
+        // Only the options part is asserted here; the search term itself is covered by the other search tests.
+        $this->assertStringEndsWith(
+            ", language_tag => 'en\\') or true or (\\'')",
+            $query->toSql(),
+        );
+    }
+
     public function test_disableEmulatorNullFilteredIndexCheck(): void
     {
         $conn = $this->getDefaultConnection();

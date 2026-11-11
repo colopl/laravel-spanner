@@ -24,6 +24,7 @@ use Illuminate\Contracts\Database\Query\Expression;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Database\Query\Grammars\Grammar as BaseGrammar;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 use RuntimeException;
 
 class Grammar extends BaseGrammar
@@ -109,7 +110,7 @@ class Grammar extends BaseGrammar
         $statements = [];
 
         $statements[] = match ($indexHint->type) {
-            'force' => "FORCE_INDEX={$indexHint->index}",
+            'force' => 'FORCE_INDEX=' . $this->compileForceIndexName($indexHint->index),
             default => $this->markAsNotSupported('index type: ' . $indexHint->type),
         };
 
@@ -118,6 +119,28 @@ class Grammar extends BaseGrammar
         }
 
         return '@{' . implode(',', $statements) . '}';
+    }
+
+    /**
+     * Query parameters cannot be used in statement hints, so the index name is written
+     * into the SQL verbatim. Accept a plain identifier, optionally schema-qualified,
+     * and reject anything else. A schema-qualified name has to be given as a string
+     * (`FORCE_INDEX="sch.idx"`); written bare, Spanner reads `sch` as a column name.
+     *
+     * @see https://cloud.google.com/spanner/docs/reference/standard-sql/lexical#identifiers
+     * @see https://cloud.google.com/spanner/docs/named-schemas
+     * @param string $index
+     * @return string
+     */
+    protected function compileForceIndexName(string $index): string
+    {
+        $identifier = '[A-Za-z_][A-Za-z0-9_]*';
+
+        if (preg_match("/\\A{$identifier}(?:\\.{$identifier})?\\z/", $index) !== 1) {
+            throw new InvalidArgumentException('Invalid index name for FORCE_INDEX: ' . $index);
+        }
+
+        return str_contains($index, '.') ? '"' . $index . '"' : $index;
     }
 
     /**
