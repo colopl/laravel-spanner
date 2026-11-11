@@ -324,6 +324,26 @@ class BuilderTestLast extends TestCase
         $this->assertFalse($conn->getSchemaBuilder()->hasColumn($table, 'id'));
     }
 
+    public function test_forceIndex_with_named_schema_index(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $sb = $conn->getSchemaBuilder();
+        $schema = $this->generateNamedSchemaName();
+        $table = $this->generateTableName(class_basename(__CLASS__));
+        $index = "{$schema}.{$table}_name";
+
+        $sb->createNamedSchema($schema);
+        $sb->create("{$schema}.{$table}", function (Blueprint $table) use ($index) {
+            $table->uuid('id');
+            $table->string('name');
+            $table->primary('id');
+            $table->index('name', $index);
+        });
+        $conn->table("{$schema}.{$table}")->insert(['id' => $this->generateUuid(), 'name' => 'a']);
+
+        $this->assertSame(['a'], $conn->table("{$schema}.{$table}")->forceIndex($index)->pluck('name')->all());
+    }
+
     public function test_getColumns_with_nullable(): void
     {
         $conn = $this->getDefaultConnection();
