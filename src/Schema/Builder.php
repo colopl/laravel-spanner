@@ -44,6 +44,22 @@ class Builder extends BaseBuilder
     public static $defaultMorphKeyType = 'uuid';
 
     /**
+     * Whether {@see Blueprint::uuid()} creates a column of Spanner's native `UUID`
+     * type instead of `STRING(36)`.
+     *
+     * This also applies to everything routed through it, such as
+     * {@see Blueprint::increments()} and `morphs()`.
+     *
+     * Spanner cannot change the type of an existing column from `STRING(36)` to
+     * `UUID`, so only enable this for databases whose tables are created from
+     * scratch. Existing tables must be migrated by adding a new column, backfilling
+     * it, and dropping the old one.
+     *
+     * @var bool
+     */
+    public static $useNativeUuid = false;
+
+    /**
      * @param array<string, scalar|null> $options
      * @return void
      */

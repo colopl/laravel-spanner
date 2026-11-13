@@ -19,7 +19,9 @@
 namespace Colopl\Spanner\Tests\Schema;
 
 use Colopl\Spanner\Connection;
+use Colopl\Spanner\Query\Uuids;
 use Colopl\Spanner\Schema\Blueprint;
+use Colopl\Spanner\Schema\Builder;
 use Colopl\Spanner\Schema\ChangeStreamValueCaptureType;
 use Colopl\Spanner\Schema\TokenizerFunction;
 use Colopl\Spanner\Tests\TestCase;
@@ -148,6 +150,178 @@ class BlueprintTest extends TestCase
         $row = $conn->table($tableName)->first();
         $this->assertSame(36, strlen($row['id']));
         $this->assertSame('t', $row['name']);
+    }
+
+    public function test_create_with_nativeUuid(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $tableName = $this->generateTableName();
+        $blueprint = new Blueprint($conn, $tableName, function (Blueprint $table) {
+            $table->nativeUuid('id')->primary();
+            $table->nativeUuid('ref')->nullable();
+            $table->nativeUuidArray('refs')->nullable();
+            $table->string('name');
+        });
+        $blueprint->create();
+
+        $queries = $blueprint->toSql();
+        $this->assertSame(
+            'create table `' . $tableName . '` (' . implode(', ', [
+                '`id` uuid not null',
+                '`ref` uuid',
+                '`refs` array<uuid>',
+                '`name` string(255) not null',
+            ]) . ') primary key (`id`)',
+            $queries[0],
+        );
+
+        $conn->runDdlBatch($queries);
+
+        $id = $this->generateUuid();
+        $ref = $this->generateUuid();
+        $conn->table($tableName)->insert(['id' => $id, 'ref' => $ref, 'name' => 't']);
+
+        $row = $conn->table($tableName)->first();
+        // UUID columns are read back as strings, so they behave like STRING(36) did.
+        $this->assertSame($id, $row['id']);
+        $this->assertSame($ref, $row['ref']);
+        $this->assertSame('t', $row['name']);
+
+        // a plain string binding is coerced to UUID by Spanner
+        $this->assertTrue($conn->table($tableName)->where('id', $id)->exists());
+    }
+
+    public function test_create_with_nativeUuid_and_generateUuid(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $tableName = $this->generateTableName();
+        $blueprint = new Blueprint($conn, $tableName, function (Blueprint $table) {
+            $table->nativeUuid('id')->primary()->generateUuid();
+            $table->string('name');
+        });
+        $blueprint->create();
+
+        $queries = $blueprint->toSql();
+        // GENERATE_UUID() returns a STRING and cannot be used as the default of a UUID column.
+        $this->assertSame(
+            'create table `' . $tableName . '` (' . implode(', ', [
+                '`id` uuid not null default (new_uuid())',
+                '`name` string(255) not null',
+            ]) . ') primary key (`id`)',
+            $queries[0],
+        );
+
+        $conn->runDdlBatch($queries);
+        $conn->table($tableName)->insert(['name' => 't']);
+        $row = $conn->table($tableName)->first();
+        $this->assertIsString($row['id']);
+        $this->assertSame(36, strlen($row['id']));
+        $this->assertSame('t', $row['name']);
+    }
+
+    public function test_nativeUuidArray_round_trip(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $tableName = $this->generateTableName();
+        $conn->getSchemaBuilder()->create($tableName, function (Blueprint $table) {
+            $table->nativeUuid('id')->primary();
+            $table->nativeUuidArray('refs')->nullable();
+        });
+
+        $id = $this->generateUuid();
+        $refs = [$this->generateUuid(), $this->generateUuid()];
+        $conn->table($tableName)->insert(['id' => $id, 'refs' => Uuids::from($refs)]);
+
+        $row = $conn->table($tableName)->first();
+        $this->assertSame($refs, $row['refs']);
+    }
+
+    public function test_foreignNativeUuid(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $sb = $conn->getSchemaBuilder();
+
+        $parentTable = $this->generateTableName(class_basename(__CLASS__) . '_parent');
+        $sb->create($parentTable, function (Blueprint $table) {
+            $table->nativeUuid('id')->primary();
+        });
+
+        $childTable = $this->generateTableName(class_basename(__CLASS__) . '_child');
+        $sb->create($childTable, function (Blueprint $table) use ($parentTable) {
+            $table->nativeUuid('id')->primary();
+            $table->foreignNativeUuid('parent_id');
+            $table->foreign('parent_id')->references('id')->on($parentTable);
+        });
+
+        $this->assertSame('UUID', Arr::first(
+            $sb->getColumns($childTable),
+            fn(array $column) => $column['name'] === 'parent_id',
+        )['type']);
+
+        $parentId = $this->generateUuid();
+        $childId = $this->generateUuid();
+        $conn->table($parentTable)->insert(['id' => $parentId]);
+        $conn->table($childTable)->insert(['id' => $childId, 'parent_id' => $parentId]);
+
+        $this->assertSame($parentId, $conn->table($childTable)->first()['parent_id']);
+
+        // the foreign key breaks the table truncation done on teardown
+        $sb->drop($childTable);
+        $sb->drop($parentTable);
+    }
+
+    public function test_useNativeUuid_switches_foreignUuid(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $tableName = $this->generateTableName();
+
+        Builder::$useNativeUuid = true;
+        try {
+            $blueprint = new Blueprint($conn, $tableName, function (Blueprint $table) {
+                $table->nativeUuid('id')->primary();
+                $table->foreignUuid('parent_id');
+            });
+            $blueprint->create();
+            $queries = $blueprint->toSql();
+        } finally {
+            Builder::$useNativeUuid = false;
+        }
+
+        // the parent hardcodes the type, so without the override this would be string(36)
+        $this->assertStringContainsString('`parent_id` uuid not null', implode(' ', $queries));
+    }
+
+    public function test_useNativeUuid_switches_uuid_and_increments(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $tableName = $this->generateTableName();
+
+        Builder::$useNativeUuid = true;
+        try {
+            $blueprint = new Blueprint($conn, $tableName, function (Blueprint $table) {
+                $table->increments('id');
+                $table->uuid('ref');
+            });
+            $blueprint->create();
+            $queries = $blueprint->toSql();
+        } finally {
+            Builder::$useNativeUuid = false;
+        }
+
+        $this->assertSame(
+            'create table `' . $tableName . '` (' . implode(', ', [
+                '`id` uuid not null default (new_uuid())',
+                '`ref` uuid not null',
+            ]) . ') primary key (`id`)',
+            $queries[0],
+        );
+
+        $conn->runDdlBatch($queries);
+        $ref = $this->generateUuid();
+        $conn->table($tableName)->insert(['ref' => $ref]);
+        $row = $conn->table($tableName)->first();
+        $this->assertSame(36, strlen($row['id']));
+        $this->assertSame($ref, $row['ref']);
     }
 
     public function test_drop(): void

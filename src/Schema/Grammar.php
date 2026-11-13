@@ -844,6 +844,18 @@ class Grammar extends BaseGrammar
     }
 
     /**
+     * Create the column definition for Spanner's native uuid type.
+     *
+     * @see https://cloud.google.com/spanner/docs/reference/standard-sql/data-types#uuid_type
+     * @param ColumnDefinition $column
+     * @return string
+     */
+    protected function typeNativeUuid(Fluent $column)
+    {
+        return 'uuid';
+    }
+
+    /**
      * Create the column definition for a ARRAY<T> type.
      * https://cloud.google.com/spanner/docs/arrays
      *
