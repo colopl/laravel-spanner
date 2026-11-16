@@ -47,6 +47,44 @@ trait SharedGrammarCalls
     }
 
     /**
+     * {@inheritDoc}
+     *
+     * The base implementation only wraps the value in single quotes, so a quote or
+     * backslash inside the value would end or corrupt the literal.
+     *
+     * @param string|array<array-key, string> $value
+     * @return string
+     */
+    public function quoteString($value)
+    {
+        if (is_array($value)) {
+            return implode(', ', array_map($this->quoteString(...), $value));
+        }
+
+        return "'" . $this->escapeStringLiteral($value) . "'";
+    }
+
+    /**
+     * Escape a value for use inside a quoted (non-raw) GoogleSQL string literal.
+     * Works for both single- and double-quoted literals.
+     *
+     * @see https://cloud.google.com/spanner/docs/reference/standard-sql/lexical#string_and_bytes_literals
+     * @param string $value
+     * @return string
+     */
+    protected function escapeStringLiteral(string $value): string
+    {
+        return strtr($value, [
+            '\\' => '\\\\',
+            "'" => "\\'",
+            '"' => '\\"',
+            "\n" => '\\n',
+            "\r" => '\\r',
+            "\0" => '\\000',
+        ]);
+    }
+
+    /**
      * @param array<string, scalar|BackedEnum> $options
      * @param string $delimiter
      * @return string

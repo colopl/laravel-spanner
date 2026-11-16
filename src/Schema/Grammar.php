@@ -1103,7 +1103,7 @@ class Grammar extends BaseGrammar
     protected function formatStringValue(Fluent $column, mixed $value): string
     {
         assert(is_string($value));
-        return '"' . $value . '"';
+        return '"' . $this->escapeStringLiteral($value) . '"';
     }
 
     /**
