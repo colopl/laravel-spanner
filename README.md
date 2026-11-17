@@ -425,6 +425,302 @@ $schemaBuilder->table('user_items', function (Blueprint $table) {
 });
 ```
 
+### Queues
+
+Spanner supports [Queues](https://cloud.google.com/spanner/docs/queues/queues-overview), a transactional
+messaging feature that lets you send and acknowledge messages atomically together with your other writes.
+This package ships a Laravel queue driver built on top of it.
+
+> [!IMPORTANT]
+> Spanner queues require the Enterprise or Enterprise Plus edition. The Spanner emulator supports them from
+> version 1.5.59, with a few differences described in [Using the emulator](#using-the-emulator).
+> An instance is limited to 100 queues.
+
+#### Creating a queue
+
+Every Laravel queue name maps to one Spanner `QUEUE` object, which is created through the schema builder.
+The queue must have a `Payload` column, and every other column has to be part of the primary key.
+The driver expects a `MessageId` primary key and a `Payload` column holding the serialized job:
+
+```php
+$schemaBuilder->createQueue('Jobs', function (Blueprint $queue) {
+    $queue->string('MessageId', 36)->primary();
+    $queue->string('Payload', 'max');
+});
+```
+
+`Payload` has to be a `STRING` column. The driver writes the job's JSON as a string, so a `BYTES` payload, as
+`$queue->binary('Payload')` would create, is rejected by Spanner on the first push with *"Value has type STRING
+which cannot be inserted into column Payload, which has type BYTES"*.
+
+Spanner adds a `DeliverTime` column to every queue implicitly, so you don't declare it.
+
+Queues can also be interleaved into a table. Interleaving requires the queue's primary key to be prefixed by
+the parent's key columns, positionally matching in name and type, so the queue gains key columns in front of
+`MessageId` (see [Interleaved queues](#interleaved-queues) for what the driver needs in order to write them):
+
+```php
+$schemaBuilder->createQueue('UserTasks', function (Blueprint $queue) {
+    $queue->string('UserId', 36);
+    $queue->string('MessageId', 36);
+    $queue->string('Payload', 'max');
+    $queue->primary(['UserId', 'MessageId']);
+    $queue->interleaveInParent('User')->cascadeOnDelete();
+});
+
+$schemaBuilder->dropQueue('UserTasks');
+```
+
+`interleaveInParent()` requires the parent row to exist for every message. `interleaveIn()` is part of the
+documented grammar as well, but the emulator rejects it for queues, so it has not been verified.
+
+#### Expiring stale messages
+
+A [Row Deletion Policy](#row-deletion-policy) can remove messages that nothing has picked up. The policy has to
+use a column that the queue declares itself, so the implicit `DeliverTime` has to be declared explicitly, as
+part of the primary key:
+
+```php
+$schemaBuilder->createQueue('Jobs', function (Blueprint $queue) {
+    $queue->string('MessageId', 36);
+    $queue->timestamp('DeliverTime');
+    $queue->string('Payload', 'max');
+    $queue->primary(['MessageId', 'DeliverTime']);
+    $queue->deleteRowsOlderThan('DeliverTime', 7);
+});
+```
+
+A message gets a fresh `DeliverTime` each time a job is reserved or released, so a job that keeps being
+retried does not expire. Only a message that has gone unhandled for the given number of days does.
+
+Queue options are set on the `QueueDefinition` that the callback receives as its second argument.
+`disableSend` rejects all new messages, including the replacements this driver sends when reserving and
+releasing jobs, so workers cannot drain the queue while it is enabled. Stop producers instead when draining.
+`disableDelivery` pauses delivery to consumers:
+
+```php
+use Colopl\Spanner\Schema\QueueDefinition;
+
+$schemaBuilder->createQueue('Jobs', function (Blueprint $queue, QueueDefinition $definition) {
+    // Collect messages without delivering them yet.
+    $definition->disableDelivery(true);
+
+    $queue->string('MessageId', 36)->primary();
+    $queue->string('Payload', 'max');
+});
+```
+
+Don't call `$queue->createQueue()` yourself in that callback, since the schema builder already did. A second
+call would declare a second queue.
+
+Options can be changed afterwards with `alterQueue()`:
+
+```php
+$schemaBuilder->table('Jobs', function (Blueprint $queue) {
+    $queue->alterQueue()->disableDelivery(true);
+});
+
+// Passing null resets an option back to its default.
+$schemaBuilder->table('Jobs', function (Blueprint $queue) {
+    $queue->alterQueue()->disableDelivery(null);
+});
+```
+
+Queues are not tables, so `hasTable()` and `getTables()` never report them. Use `hasQueue()` and `getQueues()`
+instead, the latter also telling which table a queue is interleaved in:
+
+```php
+$schemaBuilder->hasQueue('Jobs'); // true
+
+foreach ($schemaBuilder->getQueues() as $queue) {
+    echo $queue['name'], ' => ', $queue['parent'] ?? '-', PHP_EOL;
+}
+```
+
+`dropAllTables()`, and with it `db:wipe` and `migrate:fresh`, drops queues too. Queues go first, since a table
+can't be dropped while a queue is interleaved in it.
+
+#### Configuration
+
+Add a `spanner` queue connection to `config/queue.php`:
+
+```php
+[
+    'connections' => [
+        'spanner' => [
+            'driver' => 'spanner',
+            // Database connection from config/database.php. Defaults to the default connection.
+            'connection' => 'spanner',
+            // Name of the Spanner queue, as created above.
+            'queue' => 'Jobs',
+            // Seconds a reserved job stays invisible before it is delivered again.
+            'retry_after' => 90,
+            // Seconds a single receiving call waits for messages.
+            'block_for' => 20,
+            'after_commit' => false,
+        ],
+    ],
+];
+```
+
+`retry_after` works like it does for the `database` and `redis` drivers and must be longer than your longest
+job, otherwise the job will be processed twice. A job that declares a `$timeout` is covered without raising it
+for every job: its reserved message stays invisible for the `$timeout` plus 10 seconds when that is longer than
+`retry_after`. Jobs without a `$timeout` rely on `retry_after` alone, and `queue:work --timeout` is not visible
+to the driver, so keep `retry_after` above it.
+
+`block_for` is the `max_duration` of the `RECEIVE_<queue>()` call. Receiving is a long running streaming
+query rather than a poll, so a worker blocks inside it until a message arrives or the duration elapses.
+A longer duration means fewer requests, but a worker can only react to `queue:restart` and to signals such
+as `SIGTERM` once the current call returns, so it also delays graceful shutdown by up to that long.
+
+> [!WARNING]
+> As with the `redis` driver's `block_for`, avoid giving one worker several queues
+> (`queue:work spanner --queue=High,Low`) while `block_for` is long. Queues are read in order, so an empty
+> `High` makes the worker wait `block_for` seconds before it even looks at `Low`.
+
+#### Interleaved queues
+
+A queue interleaved into a table is keyed by that table's key columns followed by `MessageId`. These are the
+same interleave keys an Eloquent model declares in its [`$interleaveKeys` property](#eloquent). No configuration
+names them: the job that is sent provides their values, and a received message brings its own.
+
+A job sent to an interleaved queue implements `Colopl\Spanner\Queue\ProvidesInterleaveKeys` and returns a
+value for each key column, keyed by column name:
+
+```php
+class ProcessUserTask implements ShouldQueue, ProvidesInterleaveKeys
+{
+    public function __construct(private User $user) {}
+
+    public function getInterleaveKeyValues(): array
+    {
+        return ['UserId' => $this->user->getKey()];
+    }
+}
+```
+
+A dispatched job object is serialized into an opaque blob inside the payload, so the driver asks the job
+before the payload is built. A job that doesn't implement the interface is sent without interleave keys, which
+is right for a queue that is not interleaved, and which Spanner rejects for an interleaved one with an error
+naming the missing column. One connection can therefore serve queues of different shapes.
+
+`pushRaw()` has no job to ask, so it takes the values directly:
+
+```php
+$queue->pushRaw($payload, 'UserTasks', ['keys' => ['UserId' => $userId]]);
+```
+
+`queue:retry` sends a failed job object back under the same parent row, because Laravel unserializes the job
+and asks the queue for its options. A job sent with `pushRaw()` has no job object, so `queue:retry` cannot
+recover its keys and Spanner rejects the retry. Send such a job again with `pushRaw()` and its keys instead.
+
+Receiving selects every column of `RECEIVE_<queue>()`, and every column of a queue other than `Payload` is part
+of its primary key. The driver therefore takes a received message's key to be all of its columns except
+`Payload`, `DeliverTime` and those starting with `Spanner`, which `RECEIVE_<queue>()` adds
+(`SpannerLeaseExpirationTimestamp`, `SpannerLeaseToken` and `SpannerLastBatchMessage`). Don't give a queue's
+key columns names starting with `Spanner`.
+
+Only newly sent jobs are asked. Reserving and releasing a job carry the key values of the message they came
+from, so a job never moves to a different parent row.
+
+With `interleaveInParent()` the parent row must already exist when the message is sent, so send it in the
+same transaction that creates the parent.
+
+#### Dispatching jobs transactionally
+
+Because messages are rows, dispatching a job inside a transaction makes it part of that transaction. The job
+becomes deliverable only if the transaction commits, without needing the `afterCommit` dance:
+
+```php
+DB::connection('spanner')->transaction(function () use ($user) {
+    $user->save();
+    // Never delivered if the transaction is rolled back.
+    ProcessSignup::dispatch($user);
+});
+```
+
+#### How a job is dequeued and retried
+
+**Dequeuing.** Each worker keeps one `RECEIVE_<queue>(max_duration => block_for)` stream open per queue and
+reads messages from it as `queue:work` asks for them, instead of polling. A stream is a single-use strong
+read, which is why messages cannot be received from inside a transaction. When a stream has reached its
+`max_duration` it is replaced rather than reused.
+
+> [!WARNING]
+> On Cloud Spanner, an open stream can lease a burst of messages ahead of its worker. With slow jobs,
+> unread messages can outlive their 10 second leases and incur growing redelivery backoff, delaying them
+> even when other workers are idle.
+
+Spanner hands out a message with a fixed, non-configurable 10 second lease, which is too short for most
+Laravel jobs, and PHP cannot renew it from a background thread while a job is running. The driver therefore
+uses the pattern Google documents for
+[long running work](https://cloud.google.com/spanner/docs/queues/queues-examples#handle-long-running-work),
+and reserves every message it receives:
+
+1. The attempt counter in the payload (`attempts`, which `$job->attempts()` returns) is incremented.
+2. In one read-write transaction, the received message is acknowledged (deleted by its primary key) and a
+   fresh message with a new `MessageId` and the incremented payload is sent, scheduled `retry_after` seconds
+   ahead (or the job's `$timeout` plus 10 seconds, if that is longer). An interleaved queue keeps the key columns of the message it replaces.
+3. If the acknowledging `DELETE` removes no row, another worker reserved the message first and it is skipped.
+   This also covers a message whose 10 second lease ran out and was delivered to a second worker: only one of
+   them can delete it, so no locking is needed, and the worker's clock is never compared with Spanner's.
+4. The worker runs the job against the reserved message.
+
+A message whose payload is not a JSON object, for example one sent by another service, cannot be run by any
+worker and would otherwise be redelivered forever. It is deleted instead of reserved, and `pop()` then throws
+`Colopl\Spanner\Queue\UndecodablePayloadException`. The worker reports it to the exception handler and moves
+on, and the exception's `context()` puts the full payload in the log entry, since the log is the only trace of
+it that remains.
+
+**What happens next** depends on how the job ends:
+
+| Outcome | What the driver does |
+|---|---|
+| The job succeeds | The reserved message is acknowledged, so the job is gone. |
+| The job throws and has tries left | Laravel calls `release($backoff)`. In one transaction the reserved message is acknowledged and the payload is sent again, deliverable after `$backoff` seconds (immediately without a backoff). |
+| The job exceeds `--tries` or `--max-exceptions`, or calls `fail()` | Laravel records it in the failed jobs provider and the reserved message is acknowledged. |
+| The worker is killed, crashes or times out | Nothing is released. Once `retry_after` seconds have passed the reserved message becomes deliverable and the next worker receives and reserves it again. |
+
+Because every delivery goes through reservation, the attempt counter also counts deliveries after a crash,
+so a job that kills its worker cannot retry forever. `--tries` and `--backoff` behave as they do with the
+`database` and `redis` drivers, since the retry decisions are made by Laravel's worker, not by the driver.
+
+If a job runs longer than its reservation (`retry_after`, or the longer `$timeout` window), its reserved message becomes deliverable while it is still running
+and another worker may start the same job. When the first worker finishes, its acknowledgement finds no row
+and does nothing. Keep `retry_after` above your longest job, or give long jobs a `$timeout`.
+
+Two more consequences are worth knowing:
+
+- Delivery is at-least-once, as it is for every Laravel queue driver, so jobs should be idempotent.
+- A reserved job is stored as a message that is not deliverable yet, which Spanner cannot tell apart from a
+  delayed one. `Queue::delayedSize()` therefore counts in-flight jobs as well, and `Queue::reservedSize()`
+  always returns `0`.
+
+#### Using the emulator
+
+The emulator can run queues, but it differs from Cloud Spanner in ways that matter to a worker:
+
+- It releases a stream's rows when its `max_duration` ends instead of pushing them as they arrive, so every
+  receiving call lasts the whole `block_for`, even with messages waiting. Set `block_for` to `1` or `2` for
+  local development and for tests.
+- It can hand one message to several workers at once, which Cloud Spanner does not do while the message is
+  leased. The driver copes: exactly one worker's acknowledgement succeeds and the others skip the message.
+- It accepts `disable_send`, `disable_delivery` and `locality_group` without enforcing them, and rejects
+  `INTERLEAVE IN` for queues.
+
+#### Other notes
+
+- Keep payloads under 4 KB, as Google recommends. Use the
+  [out-of-band storage pattern](https://cloud.google.com/spanner/docs/queues/queues-examples#handle-large-message-payloads)
+  for bigger data.
+- A queue name is interpolated into the `RECEIVE_<queue>()` function name, where it cannot be bound as a
+  parameter, so it must be a plain Spanner identifier.
+- Each worker keeps one receiving stream open per queue, as Spanner expects. A queue allows at most 1000
+  concurrent receivers.
+- `Queue::clear()` deletes every message in a single transaction, so it is subject to the transaction
+  mutation limit and is not suited to very large queues.
+
 ### Mutations
 
 You can [insert, update, and delete data using mutations](https://cloud.google.com/spanner/docs/modify-mutation-api) to modify data instead of using DML to improve performance.
