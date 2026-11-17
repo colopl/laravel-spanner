@@ -502,6 +502,48 @@ class BuilderTest extends TestCase
         $this->assertInstanceOf(Builder::class, $qb->forceIndex(null));
     }
 
+    public function test_forceIndex_rejects_non_identifier(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $qb = $conn->table(self::TABLE_NAME_USER);
+
+        $this->assertSame('select * from `User` @{FORCE_INDEX=_BASE_TABLE}', $qb->forceIndex('_BASE_TABLE')->toSql());
+        $this->assertSame('select * from `User` @{FORCE_INDEX="sch.idx"}', $qb->forceIndex('sch.idx')->toSql());
+
+        // other hint types are still reported as unsupported, whatever the name
+        try {
+            $conn->table(self::TABLE_NAME_USER)->useIndex('bad name')->toSql();
+            $this->fail('expected BadMethodCallException');
+        } catch (BadMethodCallException $e) {
+            $this->assertSame('Cloud Spanner does not support index type: hint', $e->getMessage());
+        }
+
+        foreach ([
+            'idx} select 1 --',
+            '`idx`',
+            '`sch`.`idx`',
+        ] as $invalid) {
+            try {
+                $qb->forceIndex($invalid)->toSql();
+                $this->fail('expected InvalidArgumentException for ' . $invalid);
+            } catch (InvalidArgumentException $e) {
+                $this->assertSame('Invalid index name for FORCE_INDEX: ' . $invalid, $e->getMessage());
+            }
+        }
+    }
+
+    public function test_search_option_string_values_are_escaped(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $query = $conn->table('t')->searchFullText('nameTokens', 'q', ['language_tag' => "en') or true or ('"]);
+
+        // Only the options part is asserted here; the search term itself is covered by the other search tests.
+        $this->assertStringEndsWith(
+            ", language_tag => 'en\\') or true or (\\'')",
+            $query->toSql(),
+        );
+    }
+
     public function test_disableEmulatorNullFilteredIndexCheck(): void
     {
         $conn = $this->getDefaultConnection();
@@ -1103,6 +1145,36 @@ class BuilderTest extends TestCase
         $this->assertSame('select * from `test_User`', $conn->table('User')->toRawSql());
     }
 
+    public function test_mutations_apply_table_prefix(): void
+    {
+        config()->set('database.connections.main.prefix', 'test_');
+        $conn = $this->getDefaultConnection();
+        $this->assertSame('test_', $conn->getTablePrefix());
+
+        // created as `test_<name>` by the schema builder
+        $table = $this->createTempTable(function (Blueprint $blueprint): void {
+            $blueprint->uuid('id')->primary();
+            $blueprint->string('name');
+        });
+        $id = $this->generateUuid();
+
+        $conn->table($table)->insertUsingMutation(['id' => $id, 'name' => 'a']);
+        $this->assertSame('a', $conn->table($table)->where('id', $id)->value('name'));
+
+        $conn->table($table)->updateUsingMutation(['id' => $id, 'name' => 'b']);
+        $this->assertSame('b', $conn->table($table)->where('id', $id)->value('name'));
+
+        $conn->table($table)->insertOrUpdateUsingMutation(['id' => $id, 'name' => 'c']);
+        $this->assertSame('c', $conn->table($table)->where('id', $id)->value('name'));
+
+        $conn->table($table)->deleteUsingMutation($id);
+        $this->assertSame(0, $conn->table($table)->count());
+
+        // a raw expression is used as-is
+        $conn->table($conn->raw('test_' . $table))->insertUsingMutation(['id' => $id, 'name' => 'd']);
+        $this->assertSame('d', $conn->table($table)->where('id', $id)->value('name'));
+    }
+
     public function test_toRawSql(): void
     {
         $table = 'RawSqlTest';
@@ -1345,7 +1417,7 @@ class BuilderTest extends TestCase
         ]);
 
         $query = $conn->table($tableName)->searchFullText('nameTokens', 'test0 OR test1 OR test2');
-        $this->assertSame("select * from `{$tableName}` where search(`nameTokens`, 'test0 OR test1 OR test2')", $query->toRawSql());
+        $this->assertSame("select * from `{$tableName}` where search(`nameTokens`, ?)", $query->toSql());
         $this->assertSame(['test1', 'test2'], $query->pluck('name')->sort()->values()->all());
     }
 
@@ -1369,7 +1441,7 @@ class BuilderTest extends TestCase
         ]);
 
         $query = $conn->table($tableName)->searchFullText('nameTokens', 'test1', ['enhance_query' => true]);
-        $this->assertSame("select * from `{$tableName}` where search(`nameTokens`, 'test1', enhance_query => true)", $query->toRawSql());
+        $this->assertSame("select * from `{$tableName}` where search(`nameTokens`, ?, enhance_query => true)", $query->toSql());
         $this->assertSame(['test1'], $query->pluck('name')->sort()->values()->all());
     }
 
@@ -1393,7 +1465,7 @@ class BuilderTest extends TestCase
         ]);
 
         $query = $conn->table($tableName)->searchNgrams('nameTokens', 't1', ['min_ngrams' => 3]);
-        $this->assertSame("select * from `{$tableName}` where search_ngrams(`nameTokens`, 't1', min_ngrams => 3)", $query->toRawSql());
+        $this->assertSame("select * from `{$tableName}` where search_ngrams(`nameTokens`, ?, min_ngrams => 3)", $query->toSql());
         $this->assertSame(['test1'], $query->pluck('name')->sort()->values()->all());
     }
 
@@ -1417,8 +1489,56 @@ class BuilderTest extends TestCase
         ]);
 
         $query = $conn->table($tableName)->searchSubstring('nameTokens', 't1');
-        $this->assertSame("select * from `{$tableName}` where search_substring(`nameTokens`, 't1')", $query->toRawSql());
+        $this->assertSame("select * from `{$tableName}` where search_substring(`nameTokens`, ?)", $query->toSql());
         $this->assertSame(['test1'], $query->pluck('name')->sort()->values()->all());
+    }
+
+    public function test_searchSubstring_with_quote_in_query(): void
+    {
+        $tableName = $this->generateTableName('FTS_Search_Substring');
+        $conn = $this->getDefaultConnection();
+        $conn->useDefaultSchemaGrammar();
+        $blueprint = new Blueprint($conn, $tableName, function (Blueprint $table) {
+            $table->create();
+            $table->uuid('id')->primary();
+            $table->string('name');
+            $table->tokenList('nameTokens', TokenizerFunction::Substring, 'name');
+            $table->fullText('nameTokens');
+        });
+        $blueprint->build();
+
+        $conn->table($tableName)->insert([
+            ['id' => $this->generateUuid(), 'name' => "O'Reilly"],
+            ['id' => $this->generateUuid(), 'name' => 'test1'],
+        ]);
+
+        $this->assertSame(["O'Reilly"], $conn->table($tableName)->searchSubstring('nameTokens', "O'Re")->pluck('name')->all());
+        $this->assertSame([], $conn->table($tableName)->searchSubstring('nameTokens', "zzz') OR TRUE OR ('")->pluck('name')->all());
+    }
+
+    public function test_searchSubstring_followed_by_where(): void
+    {
+        $tableName = $this->generateTableName('FTS_Search_Substring');
+        $conn = $this->getDefaultConnection();
+        $conn->useDefaultSchemaGrammar();
+        $blueprint = new Blueprint($conn, $tableName, function (Blueprint $table) {
+            $table->create();
+            $table->uuid('id')->primary();
+            $table->string('name');
+            $table->tokenList('nameTokens', TokenizerFunction::Substring, 'name');
+            $table->fullText('nameTokens');
+        });
+        $blueprint->build();
+
+        $conn->table($tableName)->insert([
+            ['id' => $this->generateUuid(), 'name' => 'コロプラ'],
+            ['id' => $this->generateUuid(), 'name' => 'あコロ'],
+        ]);
+
+        $query = $conn->table($tableName)
+            ->searchSubstring('nameTokens', 'コロ')
+            ->where('name', 'like', 'コロ%');
+        $this->assertSame(['コロプラ'], $query->pluck('name')->all());
     }
 
     public function test_get_throws_on_fetchUsing(): void

@@ -205,7 +205,12 @@ class Builder extends BaseBuilder
 
         $this->wheres[] = compact('type', 'column', 'values', 'boolean', 'not');
 
-        $this->addBinding($values);
+        // The grammar renders an empty list as a constant ("0 = 1" / "1 = 1") with no
+        // placeholder, so a binding must not be added for it or every later "?" would
+        // receive the value meant for the one before it.
+        if (count($values) > 0) {
+            $this->addBinding($values);
+        }
 
         return $this;
     }

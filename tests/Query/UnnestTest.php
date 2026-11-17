@@ -59,7 +59,44 @@ class UnnestTest extends TestCase
         $results = $qb->get('testId')->pluck('testId')->sort()->values();
 
         $this->assertSame('select * from `Test` where 0 = 1', $sql);
+        $this->assertSame([], $qb->getBindings());
         $this->assertSame([], $results->all());
+    }
+
+    public function test_whereInUnnest__with_empty_values_followed_by_where(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $tableName = self::TABLE_NAME_TEST;
+        $qb = $conn->table($tableName);
+        $row = $this->generateTestRow();
+        $qb->insert($row);
+
+        $qb = $conn->table($tableName)
+            ->whereInUnnest('testId', [])
+            ->orWhere(function ($q) use ($row) {
+                $q->where('testId', $row['testId'])->where('stringTest', 'test');
+            });
+
+        $this->assertSame('select * from `Test` where 0 = 1 or (`testId` = ? and `stringTest` = ?)', $qb->toSql());
+        $this->assertSame([$row['testId'], 'test'], $qb->getBindings());
+        $this->assertSame([$row['testId']], $qb->pluck('testId')->all());
+    }
+
+    public function test_whereNotInUnnest__with_empty_values(): void
+    {
+        $conn = $this->getDefaultConnection();
+        $tableName = self::TABLE_NAME_TEST;
+        $qb = $conn->table($tableName);
+        $row = $this->generateTestRow();
+        $qb->insert($row);
+
+        $qb = $conn->table($tableName)
+            ->whereNotInUnnest('testId', [])
+            ->where('testId', $row['testId']);
+
+        $this->assertSame('select * from `Test` where 1 = 1 and `testId` = ?', $qb->toSql());
+        $this->assertSame([$row['testId']], $qb->getBindings());
+        $this->assertSame([$row['testId']], $qb->pluck('testId')->all());
     }
 
     public function test_whereInUnnest__with_more_than_950_parameters(): void
